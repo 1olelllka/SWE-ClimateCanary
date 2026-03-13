@@ -49,8 +49,10 @@ sonarqube-analysis:
   variables:
     GIT_DEPTH: "0"
   script:
-    # configuration in sonar-project.properties file
-    - sonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.projectName="${CI_PROJECT_NAME} ${GITLAB_USER_NAME}"
+    script:
+    - sonar-scanner \
+        -Dsonar.host.url=$SONAR_HOST_URL \
+        -Dsonar.login=$SONAR_TOKEN
   needs:
     - job: backend-unit-tests
       artifacts: true
