@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="false" name="Launch and Debug React App" type="CompoundRunConfigurationType">
+        <toRun name="Launch Chrome" type="JavascriptDebugType"/>
+        <toRun name="start" type="js.build_tools.npm"/>
+        <method v="2"/>
+    </configuration>
+</component>

@@ -1,0 +1,59 @@
+stages:
+  - test
+  - analyze
+
+# global pipeline configuration
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"' # rule to always run the pipeline on main branch
+    - if: '$CI_MERGE_REQUEST_ID' # rule to run pipeline on merge requests (or at least parts of it)
+    - when: never # don't run pipeline on other branches/in other cases
+
+.before_script_template:
+  before_script:
+    - apk add --update maven
+    - apk add --update openjdk25
+    - apk add --update git
+    - mkdir -p ~/.m2
+    # necessary for proxy settings
+    - cp settings.xml ~/.m2/settings.xml
+
+# Spring Boot Backend Unit Tests
+backend-unit-tests:
+  stage: test
+  image: alpine:3.23
+  extends: .before_script_template
+  # m2 cache
+  cache:
+    key: "maven"
+    paths:
+      - .m2/repository
+  script:
+    - echo "Running unit tests ..."
+    # to also generate Jacoco report (see pom.xml); use cache
+    - mvn -Dmaven.repo.local=.m2/repository clean verify -Dskip.frontend=true
+    # for sonar-scanner in next stage; use cache
+    - mvn -Dmaven.repo.local=.m2/repository dependency:copy-dependencies
+  artifacts:
+    paths:
+      # for sonar-scanner in next stage
+      - target
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_MERGE_REQUEST_ID'
+
+# SonarQube Analysis for Frontend and Backend
+sonarqube-analysis:
+  stage: analyze
+  image: sonarsource/sonar-scanner-cli:latest
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    # configuration in sonar-project.properties file
+    - sonar-scanner -Dsonar.projectKey=${SONAR_PROJECT_KEY} -Dsonar.projectName="${CI_PROJECT_NAME} ${GITLAB_USER_NAME}"
+  needs:
+    - job: backend-unit-tests
+      artifacts: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
