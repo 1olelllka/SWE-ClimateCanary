@@ -1,13 +1,560 @@
 openapi: 3.0.0
 info:
-  title: ClimateCanary API documentation
+  title: ClimateCanary API
   version: 1.0.0
-  description: Simple API documentation for our project
+  description: API for out climate monitoring project with RBAC
+
+tags:
+  - name: Users
+    description: User management
+  - name: Roles
+    description: Role and permission management
 
 paths:
-  /users:
-    get:
-      summary: Get all users
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDTO'
       responses:
         '200':
-          description: Successful response
+          description: Successful login
+        '401':
+          description: Unauthorized
+
+  /users:
+    get:
+      tags: [Users]
+      summary: Get all users
+      description: Requires CAN_MANAGE_USERS permission
+      responses:
+        '200':
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDTO'
+        '401':
+          description: Unauthorized
+
+    post:
+      tags: [Users]
+      summary: Create new user
+      description: Requires CAN_MANAGE_USERS permission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateDTO'
+      responses:
+        '201':
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      description: Requires CAN_MANAGE_USERS permission
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Requested user 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDTO'
+
+    patch:
+      tags: [Users]
+      summary: Update user
+      description: Requires CAN_MANAGE_USERS permission
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateDTO'
+      responses:
+        '200':
+          description: Updated user
+
+    delete:
+      tags: [Users]
+      summary: Delete user
+      description: Requires CAN_MANAGE_USERS permission
+      parameters:
+         - $ref: '#/components/parameters/UserId'
+      responses:
+        '204':
+          description: User deleted
+
+  # Assigning or changing role for the user
+  /users/{id}/roles:
+    get:
+      tags: [Users]
+      summary: Get roles of a user
+      parameters:
+          - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Roles of user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleDTO'
+
+    post:
+      tags: [Users]
+      summary: Assign role to user
+      parameters:
+          - $ref: '#/components/parameters/UserId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRoleDTO'
+      responses:
+        '200':
+          description: Role assigned
+
+  /users/{id}/roles/{roleId}:
+    delete:
+      tags: [Users]
+      summary: Remove role from user
+      parameters:
+          - $ref: '#/components/parameters/UserId'
+          - $ref: '#/components/parameters/RoleId'
+      responses:
+        '204':
+          description: Role removed
+
+  # Role managment
+  /roles:
+    get:
+      tags: [Roles]
+      summary: Get all roles
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleDTO'
+
+    post:
+      tags: [Roles]
+      summary: Create role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateDTO'
+      responses:
+        '201':
+          description: Role created
+
+  /roles/{id}:
+    get:
+      tags: [Roles]
+      summary: Get role by ID
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '200':
+          description: Role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDTO'
+
+    patch:
+      tags: [Roles]
+      summary: Update role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdateDTO'
+      responses:
+        '200':
+          description: Role updated
+
+    delete:
+      tags: [Roles]
+      summary: Delete role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '204':
+          description: Role deleted
+
+  # Role permissions
+  /roles/{id}/permissions:
+    get:
+      tags: [Roles]
+      summary: Get all permissions of a role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      responses:
+        '200':
+          description: List of permissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+    put:
+      tags: [Roles]
+      summary: Replace all permissions of a role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionUpdateDTO'
+      responses:
+        '200':
+          description: Permissions updated
+
+    post:
+      tags: [Roles]
+      summary: Add permission to role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SinglePermissionDTO'
+      responses:
+        '200':
+          description: Permission added
+
+  /roles/{id}/permissions/{permission}:
+    delete:
+      tags: [Roles]
+      summary: Remove permission from role
+      parameters:
+        - $ref: '#/components/parameters/RoleId'
+        - name: permission
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Permission removed
+
+  /rooms:
+    get:
+      summary: Get all rooms
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoomDTO'
+
+    post:
+      summary: Create room
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomDTO'
+      responses:
+        '201':
+          description: Room created
+
+  /rooms/{id}:
+    get:
+      summary: Get room by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomDTO'
+
+  /rooms/{id}/climate-stats:
+    get:
+      summary: Get climate stats for room
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Climate stats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClimateStatsDTO'
+
+  /warnings:
+    get:
+      summary: Get warnings
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: roomId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of warnings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WarningDTO'
+
+  /notifications:
+    get:
+      summary: Get notifications
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationDTO'
+
+  /absences:
+    get:
+      summary: Get absences
+      responses:
+        '200':
+          description: List of absences
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AbsenceDTO'
+
+    post:
+      summary: Create absence
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbsenceDTO'
+      responses:
+        '201':
+          description: Absence created
+
+  /limits:
+    get:
+      summary: Get all limits
+      responses:
+        '200':
+          description: Limits list
+
+    patch:
+      summary: Update limits
+      responses:
+        '200':
+          description: Limits updated
+
+components:
+
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+    RoleId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+
+    UserDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleDTO'
+
+    UserCreateDTO:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    UserUpdateDTO:
+      type: object
+      properties:
+        username:
+          type: string
+
+    RoleDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    RoleCreateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+
+    RoleUpdateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+
+    AssignRoleDTO:
+      type: object
+      properties:
+        roleId:
+          type: string
+
+    PermissionUpdateDTO:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+
+    SinglePermissionDTO:
+      type: object
+      properties:
+        permission:
+          type: string
+
+    RoomDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        roomType:
+          type: string
+        defaultPeopleCnt:
+          type: integer
+
+    ClimateStatsDTO:
+      type: object
+      properties:
+        tempVal:
+          type: integer
+        humVal:
+          type: integer
+        pollVal:
+          type: integer
+        date:
+          type: string
+
+    WarningDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+
+    NotificationDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        msg:
+          type: string
+
+    AbsenceDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+
+    LoginDTO:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
