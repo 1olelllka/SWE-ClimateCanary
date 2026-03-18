@@ -76,8 +76,8 @@ paths:
     get:
       tags: [Climate Data]
       summary: Get aggregated data for diagrams (Day/Month/Year)
-          Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission.
-      description: "Frontend calls this to draw the historical charts seen in the 'Analysis' view."
+      description: "Frontend calls this to draw the historical charts seen in the 'Analysis' view.
+       Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission."
       parameters:
         - name: id
           in: path
@@ -141,8 +141,9 @@ paths:
   /buildings/global-status:
     get:
       tags: [Climate Data]
-      summary: Get status of the entire building. CAN_VIEW_COMPANY_AGGR required.
-      description: "Populates the landing page charts showing counts of Good vs. Critical rooms."
+      summary: Get status of the entire building. 
+      description: "Populates the landing page charts showing counts of Good vs. Critical rooms.
+       CAN_VIEW_COMPANY_AGGR required."
       responses:
         '200':
           description: Global building health stats
