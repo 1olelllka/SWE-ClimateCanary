@@ -146,7 +146,7 @@ paths:
         '204':
           description: Role removed
 
-  # Role managment
+  # ROLE MANAGEMENT
   /roles:
     get:
       tags: [Roles]
@@ -161,32 +161,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/RoleDTO'
 
-    post:
-      tags: [Roles]
-      summary: Create role
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RoleCreateDTO'
-      responses:
-        '201':
-          description: Role created
-
-  /roles/{id}:
-    get:
-      tags: [Roles]
-      summary: Get role by ID
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      responses:
-        '200':
-          description: Role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleDTO'
-
     patch:
       tags: [Roles]
       summary: Update role
@@ -200,75 +174,6 @@ paths:
       responses:
         '200':
           description: Role updated
-
-    delete:
-      tags: [Roles]
-      summary: Delete role
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      responses:
-        '204':
-          description: Role deleted
-
-  # Role permissions
-  /roles/{id}/permissions:
-    get:
-      tags: [Roles]
-      summary: Get all permissions of a role
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      responses:
-        '200':
-          description: List of permissions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-
-    put:
-      tags: [Roles]
-      summary: Replace all permissions of a role
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PermissionUpdateDTO'
-      responses:
-        '200':
-          description: Permissions updated
-
-    post:
-      tags: [Roles]
-      summary: Add permission to role
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SinglePermissionDTO'
-      responses:
-        '200':
-          description: Permission added
-
-  /roles/{id}/permissions/{permission}:
-    delete:
-      tags: [Roles]
-      summary: Remove permission from role
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-        - name: permission
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Permission removed
 
   /rooms:
     get:
@@ -496,6 +401,26 @@ components:
 
   schemas:
 
+    PermissionEnum:
+      type: string
+      description: "All possible permission constants"
+      enum:
+        - CAN_VIEW_OWN_OFFICE_CLIMATE
+        - CAN_VIEW_OWN_SHARED_CLIMATE
+        - CAN_MANAGE_OWN_ABSENCE
+        - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+        - CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION
+        - CAN_VIEW_ABSENCE_VIEW
+        - CAN_VIEW_COMPANY_AGGR
+        - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+        - CAN_CHANGE_LIMITS
+        - CAN_MANAGE_TIPS
+        - CAN_VIEW_ALL_ROOMS
+        - CAN_MANAGE_USERS
+        - CAN_MANAGE_BUILDING_STRUCTURE
+        - CAN_MANAGE_DEVICES
+
+    # what the server gives as a list back
     UserDTO:
       type: object
       properties:
@@ -508,6 +433,7 @@ components:
           items:
             $ref: '#/components/schemas/RoleDTO'
 
+    # what Frontend sends for creating of an entity
     UserCreateDTO:
       type: object
       required: [username, password]
@@ -525,27 +451,61 @@ components:
 
     RoleDTO:
       type: object
+      required: [id, name]
       properties:
-        id:
+        id: 
           type: string
-        name:
+          format: uuid
+          description: "Unique identifier from the Entity"
+        name: 
           type: string
-        permissions:
+        permissions: 
           type: array
-          items:
+          description: "List of permission strings assigned to this role"
+          items: 
             type: string
-
-    RoleCreateDTO:
-      type: object
-      properties:
-        name:
-          type: string
+            enum: 
+              - CAN_VIEW_OWN_OFFICE_CLIMATE
+              - CAN_VIEW_OWN_SHARED_CLIMATE
+              - CAN_MANAGE_OWN_ABSENCE
+              - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+              - CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION
+              - CAN_VIEW_ABSENCE_VIEW
+              - CAN_VIEW_COMPANY_AGGR
+              - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+              - CAN_CHANGE_LIMITS
+              - CAN_MANAGE_TIPS
+              - CAN_VIEW_ALL_ROOMS
+              - CAN_MANAGE_USERS
+              - CAN_MANAGE_BUILDING_STRUCTURE
+              - CAN_MANAGE_DEVICES
 
     RoleUpdateDTO:
       type: object
+      description: "Fields for updating an existing role. ID is excluded as it is in the path."
       properties:
-        name:
+        name: 
           type: string
+        permissions: 
+          type: array
+          description: "List of permission strings assigned to this role"
+          items: 
+            type: string
+            enum: 
+              - CAN_VIEW_OWN_OFFICE_CLIMATE
+              - CAN_VIEW_OWN_SHARED_CLIMATE
+              - CAN_MANAGE_OWN_ABSENCE
+              - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+              - CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION
+              - CAN_VIEW_ABSENCE_VIEW
+              - CAN_VIEW_COMPANY_AGGR
+              - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+              - CAN_CHANGE_LIMITS
+              - CAN_MANAGE_TIPS
+              - CAN_VIEW_ALL_ROOMS
+              - CAN_MANAGE_USERS
+              - CAN_MANAGE_BUILDING_STRUCTURE
+              - CAN_MANAGE_DEVICES
 
     AssignRoleDTO:
       type: object
