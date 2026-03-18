@@ -17,6 +17,8 @@ tags:
     description: Device management for the system admin
   - name: Limit Management
     description: Setting limit values per room
+  - name: Climate Data
+    description: Operations related to sensor readings, historical diagrams, and building-wide climate status.
 
 paths:
 
@@ -35,6 +37,141 @@ paths:
         '401':
           description: Unauthorized
 
+  # CLIMATE DATA
+  /measurements:
+    post:
+      tags: [Climate Data]
+      summary: Raspberry Pi pushes new sensor data
+      description: "Hardware-facing endpoint. The Pi sends a batch of readings for a room every {frequency} seconds."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeasurementCreateDTO' }
+      responses:
+        '201':
+          description: Measurements successfully stored
+        '400':
+          description: Invalid data format
+
+  /rooms/{id}/current-climate:
+    get:
+      tags: [Climate Data]
+      summary: Get the latest reading for a specific room
+      description: "Used for Dashboard cards to show the most recent Temp, Humidity, and CO2."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Latest data point retrieved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClimateDataPointDTO' }
+
+  /rooms/{id}/climate-history:
+    get:
+      tags: [Climate Data]
+      summary: Get aggregated data for diagrams (Day/Month/Year)
+      description: "Frontend calls this to draw the historical charts seen in the 'Analysis' view."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: timeframe
+          in: query
+          required: true
+          schema: { type: string, enum: [DAY, WEEK, MONTH, YEAR] }
+        - name: granularity
+          in: query
+          description: "Aggregation level (e.g., FIVE_MIN for Day view, DAY for Month view)"
+          schema: { type: string, enum: [RAW, FIVE_MIN, HOUR, DAY, MONTH] }
+      responses:
+        '200':
+          description: List of data points for the diagram
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClimateDataPointDTO' }
+
+  /rooms/{id}/violations:
+    get:
+      tags: [Climate Data]
+      summary: Get historical violation log for a room
+      description: "Returns the table of limit breaches seen below the charts in the UI."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of past warnings/violations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ViolationLogDTO' }
+
+  /departments/{id}/summary:
+    get:
+      tags: [Climate Data]
+      summary: Get climate overview for a whole department
+      description: "Used for the 'Department Overview' screen to show averages and status colors."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Department-wide climate summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DepartmentClimateSummaryDTO' }
+
+  /buildings/global-status:
+    get:
+      tags: [Climate Data]
+      summary: Get status of the entire building
+      description: "Populates the landing page charts showing counts of Good vs. Critical rooms."
+      responses:
+        '200':
+          description: Global building health stats
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BuildingGlobalStatusDTO' }
+
+  /warnings:
+    get:
+      tags: [Climate Data]
+      summary: Get all active climate warnings
+      description: "Used for the global notification bell or dashboard alert list."
+      responses:
+        '200':
+          description: List of current active warnings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WarningCreateDTO' }
+    post:
+      tags: [Climate Data]
+      summary: Raspberry Pi reports a limit violation
+      description: "Hardware-facing endpoint. Triggered instantly when a sensor crosses a threshold."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WarningCreateDTO' }
+      responses:
+        '201':
+          description: Warning recorded and notification triggered
+          
   # LIMIT MANAGEMENT
   /rooms/{id}/limits:
     get:
@@ -899,3 +1036,68 @@ components:
           type: integer
           example: 1000
           description: "PPM threshold for Air Quality warnings"
+
+    MeasurementCreateDTO:
+      type: object
+      required: [roomId, timestamp, readings]
+      description: Sent by Pi every {frequency} seconds.
+      properties:
+        roomId: { type: string, format: uuid }
+        timestamp: { type: string, format: date-time }
+        readings:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
+              value: { type: number, example: 22.5 }
+
+    WarningCreateDTO:
+      type: object
+      required: [roomId, sensorType, value, limitExceeded]
+      description: Sent by Pi ONLY when a limit is exceeded
+      properties:
+        roomId: { type: string, format: uuid }
+        sensorType: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
+        value: { type: number, example: 1200 }
+        limitExceeded: { type: number, example: 1000 }
+        message: { type: string, example: "Critical CO2 level in Room 101" }
+
+    ClimateDataPointDTO:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        temperature: { type: number }
+        humidity: { type: number }
+        co2: { type: integer }
+        tempMax: { type: number }
+        tempMin: { type: number }
+
+    DepartmentClimateSummaryDTO:
+      type: object
+      properties:
+        departmentId: { type: string, format: uuid }
+        avgTemperature: { type: number }
+        activeWarnings: { type: integer }
+        status: { type: string, enum: [GOOD, WARNING, CRITICAL] }
+
+    # For the "Building Overview" / "Department Trend" charts
+    BuildingGlobalStatusDTO:
+      type: object
+      properties:
+        totalRooms: { type: integer }
+        roomsGood: { type: integer }    # Green count
+        roomsWarning: { type: integer } # Yellow count
+        roomsCritical: { type: integer } # Red count
+        avgAirQuality: { type: number }
+        trend: { type: string, enum: [UP, DOWN, STABLE] }
+
+    # For the "Violation Log" table in the Room Analysis view
+    ViolationLogDTO:
+      type: object
+      properties:
+        timestamp: { type: string, format: date-time }
+        sensorType: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
+        value: { type: number }
+        limitViolated: { type: number }
+        duration: { type: string, example: "15 min" }
