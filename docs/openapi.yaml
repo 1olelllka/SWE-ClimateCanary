@@ -11,6 +11,8 @@ tags:
     description: Role and permission management
   - name: Absences
     description: Absence management (vacation, illness, etc.)
+  - name: Building Structure
+    description: Managment of the buildings, departments and rooms
 
 paths:
 
@@ -28,6 +30,160 @@ paths:
           description: Successful login
         '401':
           description: Unauthorized
+
+  # BUILDING STRUCTURE MANAGEMENT
+  /buildings:
+    get:
+      tags: [Building Structure]
+      summary: Get all buildings
+      responses:
+        '200':
+          description: List of buildings
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BuildingDTO' }
+    post:
+      tags: [Building Structure]
+      summary: Add a new building
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BuildingCreateDTO' }
+      responses:
+        '201':
+          description: Building created
+  
+  /buildings/{id}:
+    patch:
+      tags: [Building Structure]
+      summary: Update building details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BuildingCreateDTO' }
+      responses:
+        '200':
+          description: Building updated
+    delete:
+      tags: [Building Structure]
+      summary: Delete a building
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Building deleted
+
+  /departments:
+    get:
+      tags: [Building Structure]
+      summary: Get all departments for the table view
+      responses:
+        '200':
+          description: Returns departments with building names and room lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DepartmentDTO' }
+    post:
+      tags: [Building Structure]
+      summary: Create a new department
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepartmentCreateDTO' }
+      responses:
+        '201':
+          description: Department created
+
+  /departments/{id}:
+    patch:
+      tags: [Building Structure]
+      summary: Update department details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DepartmentCreateDTO' }
+      responses:
+        '200':
+          description: Department updated
+    delete:
+      tags: [Building Structure]
+      summary: Remove a department 
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Department deleted
+
+  /rooms:
+    get:
+      tags: [Building Structure]
+      summary: Get all rooms
+      responses:
+        '200':
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RoomDTO' }
+    post:
+      tags: [Building Structure]
+      summary: Create a new room
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoomCreateDTO' }
+      responses:
+        '201':
+          description: Room created
+
+  /rooms/{id}:
+    patch:
+      tags: [Building Structure]
+      summary: Update room details 
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RoomCreateDTO' }
+      responses:
+        '200':
+          description: Room updated
+    delete:
+      tags: [Building Structure]
+      summary: Delete a room
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Room deleted
 
   #USER MANAGEMENT
   /users:
@@ -412,6 +568,85 @@ components:
         status:
           type: string
           enum: [PENDING, APPROVED, REJECTED]
+
+    BuildingDTO:
+      type: object
+      required: [id, name, address]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: "HQ" }
+        address:
+          type: string
+          example: "Main Street 5, 6020 Innsbruck"
+
+    DepartmentDTO:
+      type: object
+      required: [id, name, buildingId]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: "IT" }
+        buildingId: { type: string, format: uuid }
+        buildingName: { type: string, example: "HQ" } 
+        roomNumbers: 
+          type: array
+          items: { type: string }
+
+    RoomDTO:
+      type: object
+      required: [id, roomNumber, departmentId]
+      properties:
+        id: { type: string, format: uuid }
+        roomNumber: { type: string, example: "101" }
+        departmentId: { type: string, format: uuid }
+        roomType:
+          type: string
+          enum: [OFFICE, SHARED]
+        defaultPeopleCnt:
+          type: integer
+          description: "The standard number of people assigned to this room"
+
+    BuildingCreateDTO:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: "Finance Centre West"
+        address:
+          type: string
+          example: "Main Street 5, 6020 Innsbruck"
+
+    DepartmentCreateDTO:
+      type: object
+      required: [name, buildingId]
+      properties:
+        name:
+          type: string
+          example: "HR"
+        buildingId:
+          type: string
+          format: uuid
+          description: "The UUID of the building this department belongs to"
+
+    RoomCreateDTO:
+      type: object
+      required: [roomNumber, departmentId]
+      properties:
+        roomNumber:
+          type: string
+          example: "101"
+          description: "The human-readable number/name of the room"
+        departmentId:
+          type: string
+          format: uuid
+          description: "The UUID of the department this room belongs to"
+        roomType:
+          type: string
+          enum: [OFFICE, SHARED]
+        defaultPeopleCnt:
+          type: integer
+          description: "The standard number of people assigned to this room"
+          
 
     
 
