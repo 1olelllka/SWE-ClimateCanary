@@ -13,6 +13,8 @@ tags:
     description: Absence management (vacation, illness, etc.)
   - name: Building Structure
     description: Managment of the buildings, departments and rooms
+  - name: Devices
+    description: Device management for the system admin
 
 paths:
 
@@ -30,6 +32,89 @@ paths:
           description: Successful login
         '401':
           description: Unauthorized
+
+  # DEVICE MANAGEMENT
+  /devices:
+    get:
+      tags: [Devices]
+      summary: Get devices with optional filtering
+      parameters:
+        - name: roomId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: "Filter devices by a specific room"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, SLEEP, OFFLINE]
+          description: "Filter devices by their current status"
+      responses:
+        '200':
+          description: A filtered list of devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/DeviceDTO' }
+    post:
+      tags: [Devices]
+      summary: Add a new device (Add Device button in UI)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceCreateDTO' }
+      responses:
+        '201':
+          description: Device successfully registered
+
+  /devices/{id}:
+    get:
+      tags: [Devices]
+      summary: Get details for a specific device
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Device details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DeviceDTO' }
+    
+    patch:
+      tags: [Devices]
+      summary: Update device configuration 
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DeviceCreateDTO' }
+      responses:
+        '200':
+          description: Device updated
+
+    delete:
+      tags: [Devices]
+      summary: Remove a device 
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Device deleted
 
   # BUILDING STRUCTURE MANAGEMENT
   /buildings:
@@ -646,7 +731,39 @@ components:
         defaultPeopleCnt:
           type: integer
           description: "The standard number of people assigned to this room"
-          
 
-    
+    DeviceDTO:
+        type: object
+        required: [id, name, type, status, roomId]
+        properties:
+          id: { type: string, format: uuid }
+          name: { type: string, example: "Raspberry Pi 1" }
+          type: 
+            type: string
+            enum: [RASPBERRY_PI, SENSOR_STATION]
+          roomNumber: { type: string, example: "001" } 
+          roomId: { type: string, format: uuid }
+          connectedToId: 
+            type: string
+            format: uuid
+            nullable: true
+            description: "If this is a Sensor Station, the UUID of its Raspberry Pi"
+          status:
+            type: string
+            enum: [ACTIVE, SLEEP, OFFLINE]
+
+
+    DeviceCreateDTO:
+      type: object
+      required: [name, type, roomId]
+      properties:
+        name: { type: string, example: "Living Room Sensor" }
+        type: 
+          type: string
+          enum: [RASPBERRY_PI, SENSOR_STATION]
+        roomId: { type: string, format: uuid }
+        connectedToId: 
+          type: string
+          format: uuid
+          description: "Optional: The ID of the Raspberry Pi this device connects to"
 
