@@ -115,6 +115,27 @@ paths:
       responses:
         '204':
           description: Device deleted
+  
+  /devices/{id}/config:
+    get:
+      tags: [Devices]
+      summary: Fetch Raspberry Pi operational configuration
+      description: "Called by the Pi to get its heartbeat frequency and its list of child sensors."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "The UUID of the Raspberry Pi itself"
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Configuration successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PiConfigDTO'
 
   # BUILDING STRUCTURE MANAGEMENT
   /buildings:
@@ -767,3 +788,20 @@ components:
           format: uuid
           description: "Optional: The ID of the Raspberry Pi this device connects to"
 
+    PiConfigDTO:
+      type: object
+      required: [sensors]
+      properties:
+        frequency:
+          type: integer
+          example: 60
+          description: "How often (in seconds) the Pi should push data to the backend"
+        sensors:
+          type: array
+          description: "List of Arduino/Sensor Station IDs connected to this Pi"
+          items:
+            type: object
+            properties:
+              sensorId:
+                type: string
+                format: uuid
