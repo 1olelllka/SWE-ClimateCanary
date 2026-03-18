@@ -29,6 +29,7 @@ paths:
         '401':
           description: Unauthorized
 
+  #USER MANAGEMENT
   /users:
     get:
       tags: [Users]
@@ -104,48 +105,6 @@ paths:
         '204':
           description: User deleted
 
-  # Assigning or changing role for the user
-  /users/{id}/roles:
-    get:
-      tags: [Users]
-      summary: Get roles of a user
-      parameters:
-          - $ref: '#/components/parameters/UserId'
-      responses:
-        '200':
-          description: Roles of user
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RoleDTO'
-
-    post:
-      tags: [Users]
-      summary: Assign role to user
-      parameters:
-          - $ref: '#/components/parameters/UserId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssignRoleDTO'
-      responses:
-        '200':
-          description: Role assigned
-
-  /users/{id}/roles/{roleId}:
-    delete:
-      tags: [Users]
-      summary: Remove role from user
-      parameters:
-          - $ref: '#/components/parameters/UserId'
-          - $ref: '#/components/parameters/RoleId'
-      responses:
-        '204':
-          description: Role removed
-
   # ROLE MANAGEMENT
   /roles:
     get:
@@ -175,137 +134,20 @@ paths:
         '200':
           description: Role updated
 
-  /rooms:
-    get:
-      summary: Get all rooms
-      parameters:
-        - name: departmentId
-          in: query
-          schema:
-            type: string
-        - name: type
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of rooms
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RoomDTO'
-
-    post:
-      summary: Create room
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RoomDTO'
-      responses:
-        '201':
-          description: Room created
-
-  /rooms/{id}:
-    get:
-      summary: Get room by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Room
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoomDTO'
-
-  /rooms/{id}/climate-stats:
-    get:
-      summary: Get climate stats for room
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Climate stats
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ClimateStatsDTO'
-
-  /warnings:
-    get:
-      summary: Get warnings
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-        - name: roomId
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of warnings
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WarningDTO'
-
-  /notifications:
-    get:
-      summary: Get notifications
-      responses:
-        '200':
-          description: List of notifications
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/NotificationDTO'
-
-  /limits:
-    get:
-      summary: Get all limits
-      responses:
-        '200':
-          description: Limits list
-
-    patch:
-      summary: Update limits
-      responses:
-        '200':
-          description: Limits updated
-
+  # ABSENCES MANAGEMENT
   /absences:
 
     get:
       tags: [Absences]
-      summary: List absences (Context-Aware)
+      summary: List absences 
       description: |
         Returns absences based on the requester's role:
         - **Worker**: Returns only their own absences (same as /users/me/absences).
         - **Manager**: Returns all absences for users within their assigned department.
-        - **Admin**: Returns all absences in the system.
       parameters:
         - name: departmentId
           in: query
-          description: Optional filter for Managers/Admins to view a specific department.
+          description: Optional filter for Managers to view a specific department.
           schema:
             type: string
       responses:
@@ -321,7 +163,7 @@ paths:
     post:
       tags: [Absences]
       summary: Create a new absence
-      description: Workers create for themselves; Managers/Admins can create for others.
+      description: Workers create for themselves.
       requestBody:
         required: true
         content:
@@ -351,7 +193,7 @@ paths:
                 $ref: '#/components/schemas/AbsenceDTO'
     patch:
       tags: [Absences]
-      summary: Update an absence record
+      summary: Approve or reject an absence
       requestBody:
         content:
           application/json:
@@ -360,6 +202,7 @@ paths:
       responses:
         '200':
           description: Updated
+
     delete:
       tags: [Absences]
       summary: Delete an absence
@@ -371,7 +214,7 @@ paths:
     get:
       tags: [Absences, Users]
       summary: Get absences for the logged-in user
-      description: Handy shortcut for the "My Profile" or "My Absences" view.
+      description: A shortcut for the "My Absences" view.
       responses:
         '200':
           description: List of the current user's absences.
@@ -391,6 +234,7 @@ components:
       required: true
       schema:
         type: string
+        format: uuid
 
     RoleId:
       name: id
@@ -398,6 +242,7 @@ components:
       required: true
       schema:
         type: string
+        format: uuid
 
   schemas:
 
@@ -420,13 +265,19 @@ components:
         - CAN_MANAGE_BUILDING_STRUCTURE
         - CAN_MANAGE_DEVICES
 
-    # what the server gives as a list back
     UserDTO:
       type: object
       properties:
         id:
           type: string
+          format: uuid
+        employeeId:
+          type: string
         username:
+          type: string
+        firstName:
+          type: string
+        lastName:
           type: string
         roles:
           type: array
@@ -436,18 +287,27 @@ components:
     # what Frontend sends for creating of an entity
     UserCreateDTO:
       type: object
-      required: [username, password]
+      required: [username, password, employeeId, secondName]
       properties:
+        employeeId:
+          type: string
+          description: "The unique company employee number"
         username:
           type: string
         password:
           type: string
-
-    UserUpdateDTO:
-      type: object
-      properties:
-        username:
+          format: password
+          description: "Plain text password (will be hashed with bcrypt by the server)"
+        firstName:
           type: string
+        secondName:
+          type: string
+        roleIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: "List of Role UUIDs to assign to the new user"
 
     RoleDTO:
       type: object
@@ -463,22 +323,7 @@ components:
           type: array
           description: "List of permission strings assigned to this role"
           items: 
-            type: string
-            enum: 
-              - CAN_VIEW_OWN_OFFICE_CLIMATE
-              - CAN_VIEW_OWN_SHARED_CLIMATE
-              - CAN_MANAGE_OWN_ABSENCE
-              - CAN_VIEW_OWN_DEPARTMENT_MEASURES
-              - CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION
-              - CAN_VIEW_ABSENCE_VIEW
-              - CAN_VIEW_COMPANY_AGGR
-              - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
-              - CAN_CHANGE_LIMITS
-              - CAN_MANAGE_TIPS
-              - CAN_VIEW_ALL_ROOMS
-              - CAN_MANAGE_USERS
-              - CAN_MANAGE_BUILDING_STRUCTURE
-              - CAN_MANAGE_DEVICES
+            $ref: '#/components/schemas/PermissionEnum'
 
     RoleUpdateDTO:
       type: object
@@ -490,82 +335,7 @@ components:
           type: array
           description: "List of permission strings assigned to this role"
           items: 
-            type: string
-            enum: 
-              - CAN_VIEW_OWN_OFFICE_CLIMATE
-              - CAN_VIEW_OWN_SHARED_CLIMATE
-              - CAN_MANAGE_OWN_ABSENCE
-              - CAN_VIEW_OWN_DEPARTMENT_MEASURES
-              - CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION
-              - CAN_VIEW_ABSENCE_VIEW
-              - CAN_VIEW_COMPANY_AGGR
-              - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
-              - CAN_CHANGE_LIMITS
-              - CAN_MANAGE_TIPS
-              - CAN_VIEW_ALL_ROOMS
-              - CAN_MANAGE_USERS
-              - CAN_MANAGE_BUILDING_STRUCTURE
-              - CAN_MANAGE_DEVICES
-
-    AssignRoleDTO:
-      type: object
-      properties:
-        roleId:
-          type: string
-
-    PermissionUpdateDTO:
-      type: object
-      properties:
-        permissions:
-          type: array
-          items:
-            type: string
-
-    SinglePermissionDTO:
-      type: object
-      properties:
-        permission:
-          type: string
-
-    RoomDTO:
-      type: object
-      properties:
-        id:
-          type: string
-        roomType:
-          type: string
-        defaultPeopleCnt:
-          type: integer
-
-    ClimateStatsDTO:
-      type: object
-      properties:
-        tempVal:
-          type: integer
-        humVal:
-          type: integer
-        pollVal:
-          type: integer
-        date:
-          type: string
-
-    WarningDTO:
-      type: object
-      properties:
-        id:
-          type: string
-        message:
-          type: string
-        status:
-          type: string
-
-    NotificationDTO:
-      type: object
-      properties:
-        id:
-          type: string
-        msg:
-          type: string
+            $ref: '#/components/schemas/PermissionEnum'
 
     LoginDTO:
       type: object
@@ -577,54 +347,71 @@ components:
 
     AbsenceDTO:
       type: object
+      required: [id, userId, startDate, endDate, typeOfAbsence, status, createdAt]
       properties:
         id:
           type: string
+          format: uuid
         userId:
           type: string
-        userName:
+          format: uuid
+        # Included from User Entity for Frontend convenience
+        firstName: 
           type: string
-          description: "Full name or username to display in the Manager's list"
-        startTime:
+        secondName: 
+          type: string
+        # Included from Room Entity for Frontend convenience
+        room:
+          type: string
+        startDate:
           type: string
           format: date-time
-        endTime:
+        endDate:
           type: string
           format: date-time
-        reason:
+        typeOfAbsence:
           type: string
-          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+          enum: [ILLNESS, VACATION, OTHER]
         status:
           type: string
-          enum: [PLANNED, ACTIVE, COMPLETED]
+          enum: [PENDING, APPROVED, REJECTED]
+        createdAt:
+          type: string
+          format: date-time 
+          description: "Timestamp when the request was created"
 
     AbsenceCreateDTO:
       type: object
-      required: [userId, startTime, endTime, reason]
+      required: [startDate, endDate, reasonOfAbsence]
       properties:
-        userId:
-          type: string
-          description: "The user ID this absence belongs to"
-        startTime:
+        # Maps to the 'Select date' and 'From' / 'Till' fields in the UI:
+        startDate:
           type: string
           format: date-time
-        endTime:
+          description: "Starting date (and optionally time) of the absence."
+        endDate:
           type: string
           format: date-time
-        reason:
+          description: "Ending date (and optionally time) of the absence."
+        # Maps to the 'Reason of absence' dropdown in the UI:
+        reasonOfAbsence:
           type: string
-          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+          enum: [VACATION, ILLNESS, OTHER] 
+        # Maps to the 'Optional message' text box at the bottom of the UI:
+        comment:
+          type: string
+          description: "Optional message or context provided by the requesting user."
+        managerId:
+          type: string
+          format: uuid
+          description: "The UUID of the specific manager selected to approve this request"
 
     AbsenceUpdateDTO:
       type: object
       properties:
-        startTime:
+        status:
           type: string
-          format: date-time
-        endTime:
-          type: string
-          format: date-time
-        reason:
-          type: string
-          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+          enum: [PENDING, APPROVED, REJECTED]
+
+    
 
