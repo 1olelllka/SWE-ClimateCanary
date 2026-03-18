@@ -171,7 +171,51 @@ paths:
       responses:
         '201':
           description: Warning recorded and notification triggered
-          
+
+  # TIPS MANAGEMENT
+  /rooms/{id}/tips:
+    get:
+      tags: [Climate Data]
+      summary: Get all tips for a specific room
+      description: "Returns the tips for the 'Tips' section in the Room Analysis view."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of tips retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TipDTO' }
+    post:
+      tags: [Climate Data]
+      summary: Create a new tip for a room
+      description: "Triggered when 'Save Limits & Tips' is clicked."
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TipCreateDTO' }
+      responses:
+        '201':
+          description: Tip created
+
+  /tips/{tipId}:
+    delete:
+      tags: [Climate Data]
+      summary: Delete a specific tip
+      parameters:
+        - name: tipId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Tip deleted
+
   # LIMIT MANAGEMENT
   /rooms/{id}/limits:
     get:
@@ -1101,3 +1145,36 @@ components:
         value: { type: number }
         limitViolated: { type: number }
         duration: { type: string, example: "15 min" }
+
+    TipDTO:
+      type: object
+      required: [id, roomId, violationType, violatedSensor, message]
+      properties:
+        id: { type: string, format: uuid }
+        roomId: { type: string, format: uuid }
+        violationType:
+          type: string
+          enum: [OVER, UNDER]
+          example: "OVER"
+        violatedSensor:
+          type: string
+          enum: [TEMPERATURE, AIR, HUMIDITY]
+          example: "TEMPERATURE"
+        message:
+          type: string
+          example: "Please open windows for 5 minutes."
+
+    TipCreateDTO:
+      type: object
+      required: [roomId, violationType, violatedSensor, message]
+      properties:
+        roomId: { type: string, format: uuid }
+        violationType:
+          type: string
+          enum: [OVER, UNDER]
+          example: "OVER"
+        violatedSensor:
+          type: string
+          enum: [TEMPERATURE, AIR, HUMIDITY]
+          example: "TEMPERATURE"
+        message: { type: string }
