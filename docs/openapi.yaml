@@ -9,6 +9,8 @@ tags:
     description: User management
   - name: Roles
     description: Role and permission management
+  - name: Absences
+    description: Absence management (vacation, illness, etc.)
 
 paths:
 
@@ -372,30 +374,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/NotificationDTO'
 
-  /absences:
-    get:
-      summary: Get absences
-      responses:
-        '200':
-          description: List of absences
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AbsenceDTO'
-
-    post:
-      summary: Create absence
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AbsenceDTO'
-      responses:
-        '201':
-          description: Absence created
-
   /limits:
     get:
       summary: Get all limits
@@ -408,6 +386,96 @@ paths:
       responses:
         '200':
           description: Limits updated
+
+  /absences:
+
+    get:
+      tags: [Absences]
+      summary: List absences (Context-Aware)
+      description: |
+        Returns absences based on the requester's role:
+        - **Worker**: Returns only their own absences (same as /users/me/absences).
+        - **Manager**: Returns all absences for users within their assigned department.
+        - **Admin**: Returns all absences in the system.
+      parameters:
+        - name: departmentId
+          in: query
+          description: Optional filter for Managers/Admins to view a specific department.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of absences the user is authorized to see.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AbsenceDTO'
+
+    post:
+      tags: [Absences]
+      summary: Create a new absence
+      description: Workers create for themselves; Managers/Admins can create for others.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbsenceCreateDTO'
+      responses:
+        '201':
+          description: Absence created successfully.
+
+  /absences/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Absences]
+      summary: Get details of a specific absence
+      responses:
+        '200':
+          description: Details of a specific absence returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AbsenceDTO'
+    patch:
+      tags: [Absences]
+      summary: Update an absence record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbsenceUpdateDTO'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [Absences]
+      summary: Delete an absence
+      responses:
+        '204':
+          description: Deleted
+
+  /users/me/absences:
+    get:
+      tags: [Absences, Users]
+      summary: Get absences for the logged-in user
+      description: Handy shortcut for the "My Profile" or "My Absences" view.
+      responses:
+        '200':
+          description: List of the current user's absences.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AbsenceDTO'
 
 components:
 
@@ -539,18 +607,6 @@ components:
         msg:
           type: string
 
-    AbsenceDTO:
-      type: object
-      properties:
-        id:
-          type: string
-        type:
-          type: string
-        startDate:
-          type: string
-        endDate:
-          type: string
-
     LoginDTO:
       type: object
       properties:
@@ -558,3 +614,57 @@ components:
           type: string
         password:
           type: string
+
+    AbsenceDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        userName:
+          type: string
+          description: "Full name or username to display in the Manager's list"
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+        status:
+          type: string
+          enum: [PLANNED, ACTIVE, COMPLETED]
+
+    AbsenceCreateDTO:
+      type: object
+      required: [userId, startTime, endTime, reason]
+      properties:
+        userId:
+          type: string
+          description: "The user ID this absence belongs to"
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+
+    AbsenceUpdateDTO:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          enum: [VACATION, SICK, BUSINESS_TRIP, OTHER]
+
