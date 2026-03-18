@@ -58,7 +58,8 @@ paths:
     get:
       tags: [Climate Data]
       summary: Get the latest reading for a specific room
-      description: "Used for Dashboard cards to show the most recent Temp, Humidity, and CO2."
+      description: "Used for Dashboard cards to show the most recent Temp, Humidity, and CO2.
+            Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission." 
       parameters:
         - name: id
           in: path
@@ -75,6 +76,7 @@ paths:
     get:
       tags: [Climate Data]
       summary: Get aggregated data for diagrams (Day/Month/Year)
+          Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission.
       description: "Frontend calls this to draw the historical charts seen in the 'Analysis' view."
       parameters:
         - name: id
@@ -102,7 +104,8 @@ paths:
     get:
       tags: [Climate Data]
       summary: Get historical violation log for a room
-      description: "Returns the table of limit breaches seen below the charts in the UI."
+      description: "Returns the table of limit breaches seen below the charts in the UI.
+        Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission."
       parameters:
         - name: id
           in: path
@@ -121,7 +124,8 @@ paths:
     get:
       tags: [Climate Data]
       summary: Get climate overview for a whole department
-      description: "Used for the 'Department Overview' screen to show averages and status colors."
+      description: "Used for the 'Department Overview' screen to show averages and status colors.
+        Needs CAN_VIEW_DEPARTMENT_CLIMATE permission."
       parameters:
         - name: id
           in: path
@@ -137,7 +141,7 @@ paths:
   /buildings/global-status:
     get:
       tags: [Climate Data]
-      summary: Get status of the entire building
+      summary: Get status of the entire building. CAN_VIEW_COMPANY_AGGR required.
       description: "Populates the landing page charts showing counts of Good vs. Critical rooms."
       responses:
         '200':
@@ -176,7 +180,7 @@ paths:
   /rooms/{id}/tips:
     get:
       tags: [Climate Data]
-      summary: Get all tips for a specific room
+      summary: Get all tips for a specific room. 
       description: "Returns the tips for the 'Tips' section in the Room Analysis view."
       parameters:
         - name: id
@@ -194,7 +198,7 @@ paths:
     post:
       tags: [Climate Data]
       summary: Create a new tip for a room
-      description: "Triggered when 'Save Limits & Tips' is clicked."
+      description: "Triggered when 'Save Limits & Tips' is clicked. CAN_MANAGE_TIPS required"
       requestBody:
         content:
           application/json:
@@ -206,7 +210,8 @@ paths:
   /tips/{tipId}:
     delete:
       tags: [Climate Data]
-      summary: Delete a specific tip
+      summary: Delete a specific tip. 
+      description: CAN_MANAGE_TIPS required
       parameters:
         - name: tipId
           in: path
@@ -221,7 +226,7 @@ paths:
     get:
       tags: [Limit Management]
       summary: Get climate limits for a specific room
-      description: "Returns the configuration seen in the 'Limit Settings' UI for a single room."
+      description: "Returns the configuration seen in the 'Limit Settings' UI for a single room. CAN_MANAGE_TIPS required."
       parameters:
         - name: id
           in: path
@@ -240,7 +245,7 @@ paths:
     patch:
       tags: [Limit Management]
       summary: Update climate limits for a room
-      description: "Triggered when the Admin clicks 'Save' in the Limit Settings view."
+      description: "Triggered when the Admin clicks 'Save' in the Limit Settings view. CAN_MANAGE_TIPS required."
       parameters:
         - name: id
           in: path
@@ -285,6 +290,7 @@ paths:
     get:
       tags: [Devices]
       summary: Get devices with optional filtering
+      description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: roomId
           in: query
@@ -311,6 +317,7 @@ paths:
     post:
       tags: [Devices]
       summary: Add a new device (Add Device button in UI)
+      description: CAN_MANAGE_DEVICES permission required.
       requestBody:
         content:
           application/json:
@@ -323,6 +330,7 @@ paths:
     get:
       tags: [Devices]
       summary: Get details for a specific device
+      description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
           in: path
@@ -338,6 +346,7 @@ paths:
     patch:
       tags: [Devices]
       summary: Update device configuration 
+      description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
           in: path
@@ -354,6 +363,7 @@ paths:
     delete:
       tags: [Devices]
       summary: Remove a device 
+      description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
           in: path
@@ -389,6 +399,7 @@ paths:
     get:
       tags: [Building Structure]
       summary: Get all buildings
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       responses:
         '200':
           description: List of buildings
@@ -400,6 +411,7 @@ paths:
     post:
       tags: [Building Structure]
       summary: Add a new building
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       requestBody:
         content:
           application/json:
@@ -412,6 +424,7 @@ paths:
     patch:
       tags: [Building Structure]
       summary: Update building details
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -427,6 +440,7 @@ paths:
     delete:
       tags: [Building Structure]
       summary: Delete a building
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -440,6 +454,7 @@ paths:
     get:
       tags: [Building Structure]
       summary: Get all departments for the table view
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       responses:
         '200':
           description: Returns departments with building names and room lists
@@ -451,6 +466,7 @@ paths:
     post:
       tags: [Building Structure]
       summary: Create a new department
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       requestBody:
         content:
           application/json:
@@ -463,6 +479,7 @@ paths:
     patch:
       tags: [Building Structure]
       summary: Update department details
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -478,6 +495,7 @@ paths:
     delete:
       tags: [Building Structure]
       summary: Remove a department 
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -491,6 +509,7 @@ paths:
     get:
       tags: [Building Structure]
       summary: Get all rooms
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       responses:
         '200':
           description: List of rooms
@@ -502,6 +521,7 @@ paths:
     post:
       tags: [Building Structure]
       summary: Create a new room
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       requestBody:
         content:
           application/json:
@@ -514,6 +534,7 @@ paths:
     patch:
       tags: [Building Structure]
       summary: Update room details 
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -529,6 +550,7 @@ paths:
     delete:
       tags: [Building Structure]
       summary: Delete a room
+      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
       parameters:
         - name: id
           in: path
@@ -619,6 +641,7 @@ paths:
     get:
       tags: [Roles]
       summary: Get all roles
+      description: Requires CAN_MANAGE_USERS permission
       responses:
         '200':
           description: List of roles
@@ -632,6 +655,7 @@ paths:
     patch:
       tags: [Roles]
       summary: Update role
+      description: Requires CAN_MANAGE_USERS permission
       parameters:
         - $ref: '#/components/parameters/RoleId'
       requestBody:
@@ -672,7 +696,7 @@ paths:
     post:
       tags: [Absences]
       summary: Create a new absence
-      description: Workers create for themselves.
+      description: Workers create for themselves. CAN_MANAGE_OWN_ABSENCE permission required.
       requestBody:
         required: true
         content:
@@ -692,7 +716,7 @@ paths:
           type: string
     get:
       tags: [Absences]
-      summary: Get details of a specific absence
+      summary: Get details of a specific absence. CAN_MANAGE_ABSENCES permission required.
       responses:
         '200':
           description: Details of a specific absence returned successfully.
@@ -702,7 +726,7 @@ paths:
                 $ref: '#/components/schemas/AbsenceDTO'
     patch:
       tags: [Absences]
-      summary: Approve or reject an absence
+      summary: Approve or reject an absence. CAN_APPROVE_ABSENCES permission required.
       requestBody:
         content:
           application/json:
@@ -715,6 +739,7 @@ paths:
     delete:
       tags: [Absences]
       summary: Delete an absence
+      description: CAN_MANAGE_OWN_ABSENCE permission required.
       responses:
         '204':
           description: Deleted
@@ -723,7 +748,7 @@ paths:
     get:
       tags: [Absences, Users]
       summary: Get absences for the logged-in user
-      description: A shortcut for the "My Absences" view.
+      description: A shortcut for the "My Absences" view. CAN_MANAGE_OWN_ABSENCE permission required.
       responses:
         '200':
           description: List of the current user's absences.
