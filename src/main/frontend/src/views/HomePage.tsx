@@ -9,6 +9,7 @@ import {Message} from 'primereact/message';
 import React from "react";
 import NavbarComponent from "../components/NavbarComponent";
 import {FooterComponent} from "../components/FooterComponent";
+import {createLogger} from "vite";
 
 /**
  * The home page of the application.
@@ -30,14 +31,13 @@ class HomePage extends React.Component<any, any> {
 
         try {
             // Nachricht senden
-            const response = await fetch('http://172.20.10.4:8080/receive-msg', {
-                method: 'POST',
+            const response = await fetch('http://172.20.10.5:8080/test-raspberry', {
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ command: message })
             });
-
+            console.log(response);
             if (response.ok) {
                 // Wenn Backend antwortet
                 this.setState({
