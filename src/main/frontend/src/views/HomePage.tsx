@@ -11,32 +11,30 @@ import NavbarComponent from "../components/NavbarComponent";
 import { FooterComponent } from "../components/FooterComponent";
 import { TestControllerApi } from "../generated-skeleton-api";
 
-class HomePage extends React.Component<{}, { piMessage: string; message: string; status: string }> {
+class HomePage extends React.Component<any, any> {
 
     constructor(props: any) {
         super(props);
         this.state = {
-            piMessage: "Waiting for Backend...",
+            piMessage: "Backend wartet...",
             message: "",
             status: ""
         };
     }
 
-    // Fetch Pi message on load (your old TestControllerApi call)
     componentDidMount() {
         const api = new TestControllerApi();
         api.sayHello()
             .then((response) => {
                 this.setState({ piMessage: response.data.message });
-                console.log("Durchstich Erfolg:", response.data.message);
+                console.log("Connection Successful:", response.data.message);
             })
             .catch((error) => {
-                this.setState({ piMessage: "Fehler: Backend nicht erreichbar!" });
-                console.error("Durchstich Fehler:", error);
+                this.setState({ piMessage: "Error: Backend is not accessable" });
+                console.error("Error:", error);
             });
     }
 
-    // Send message to Arduino (your new fetch call)
     handleSend = async () => {
         const { message } = this.state;
         if (!message.trim()) return;
@@ -70,14 +68,14 @@ class HomePage extends React.Component<{}, { piMessage: string; message: string;
                     <header className="App-header">
                         <img src={logo} className="App-logo" alt="logo"/>
 
-                        {/* Durchstich - Pi Message Display */}
+                        {/* Durchstich - Pi Message */}
                         <div style={{ margin: '20px', padding: '15px', border: '2px dashed #61dafb', borderRadius: '10px' }}>
                             <h3 style={{ color: '#61dafb' }}>🚀 Durchstich 23.03.2026</h3>
                             <p>Status: <strong>{this.state.piMessage}</strong></p>
                         </div>
 
                         {/* Send Message to Arduino */}
-                        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', marginTop: '20px' }}>
+                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', marginTop: '20px' }}>
                             <h3 style={{ margin: '0 0 15px 0' }}>Nachricht an Arduino</h3>
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                                 <input
@@ -98,7 +96,9 @@ class HomePage extends React.Component<{}, { piMessage: string; message: string;
                                 <p style={{
                                     color: this.state.status.startsWith('Erfolgreich') ? '#4ade80' :
                                         this.state.status.startsWith('Warte') ? '#facc15' : '#fca5a5',
-                                    marginTop: '15px', fontWeight: 'bold', fontSize: '16px'
+                                    marginTop: '15px',
+                                    fontWeight: 'bold',
+                                    fontSize: '16px'
                                 }}>
                                     {this.state.status}
                                 </p>
