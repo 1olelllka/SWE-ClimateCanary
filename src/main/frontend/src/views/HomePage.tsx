@@ -5,57 +5,60 @@
 import logo from '../logo.svg';
 import '../styles/App.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
-import {Message} from 'primereact/message';
+import { Message } from 'primereact/message';
 import React from "react";
 import NavbarComponent from "../components/NavbarComponent";
-import {FooterComponent} from "../components/FooterComponent";
-import {createLogger} from "vite";
+import { FooterComponent } from "../components/FooterComponent";
+import { TestControllerApi } from "../generated-skeleton-api";
 
-/**
- * The home page of the application.
- */
-class HomePage extends React.Component<any, any> {
+class HomePage extends React.Component<{}, { piMessage: string; message: string; status: string }> {
+
     constructor(props: any) {
         super(props);
         this.state = {
+            piMessage: "Waiting for Backend...",
             message: "",
             status: ""
         };
     }
 
+    // Fetch Pi message on load (your old TestControllerApi call)
+    componentDidMount() {
+        const api = new TestControllerApi();
+        api.sayHello()
+            .then((response) => {
+                this.setState({ piMessage: response.data.message });
+                console.log("Durchstich Erfolg:", response.data.message);
+            })
+            .catch((error) => {
+                this.setState({ piMessage: "Fehler: Backend nicht erreichbar!" });
+                console.error("Durchstich Fehler:", error);
+            });
+    }
+
+    // Send message to Arduino (your new fetch call)
     handleSend = async () => {
         const { message } = this.state;
-        if (!message.trim()) return; // Nichts senden, wenn das Feld leer ist
+        if (!message.trim()) return;
 
         console.log("Versuche, Nachricht ans Backend zu senden:", message);
 
         try {
-            // Nachricht senden
             const response = await fetch('http://172.20.10.5:8080/test-raspberry', {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
             });
-            console.log(response);
+
             if (response.ok) {
-                // Wenn Backend antwortet
-                this.setState({
-                    status: "Erfolgreich ans Backend gesendet!",
-                    message: ""
-                });
+                this.setState({ status: "Erfolgreich ans Backend gesendet!", message: "" });
             } else {
-                // Wenn das Backend läuft, aber die URL noch nicht kennt
                 this.setState({ status: `Warte auf Backend... (Fehler ${response.status})` });
             }
-
         } catch (error) {
-            // Wenn Backend ausgeschaltet ist
             console.error("Netzwerkfehler:", error);
             this.setState({ status: "Backend ist nicht erreichbar." });
         }
 
-        // Meldung nach 4 Sekunden wieder ausblenden
         setTimeout(() => this.setState({ status: "" }), 4000);
     };
 
@@ -65,9 +68,16 @@ class HomePage extends React.Component<any, any> {
                 <NavbarComponent/>
                 <div className="App">
                     <header className="App-header">
+                        <img src={logo} className="App-logo" alt="logo"/>
 
-                        {/* Components Anfang */}
-                        <div style={{ padding: '20px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '8px', marginTop: '40px' }}>
+                        {/* Durchstich - Pi Message Display */}
+                        <div style={{ margin: '20px', padding: '15px', border: '2px dashed #61dafb', borderRadius: '10px' }}>
+                            <h3 style={{ color: '#61dafb' }}>🚀 Durchstich 23.03.2026</h3>
+                            <p>Status: <strong>{this.state.piMessage}</strong></p>
+                        </div>
+
+                        {/* Send Message to Arduino */}
+                        <div style={{ padding: '20px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', marginTop: '20px' }}>
                             <h3 style={{ margin: '0 0 15px 0' }}>Nachricht an Arduino</h3>
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                                 <input
@@ -84,21 +94,19 @@ class HomePage extends React.Component<any, any> {
                                     Senden
                                 </button>
                             </div>
-                            {/* Zeigt an, ob es geklappt hat, ob wir warten oder ob es einen Fehler gab */}
                             {this.state.status && (
                                 <p style={{
                                     color: this.state.status.startsWith('Erfolgreich') ? '#4ade80' :
                                         this.state.status.startsWith('Warte') ? '#facc15' : '#fca5a5',
-                                    marginTop: '15px',
-                                    fontWeight: 'bold',
-                                    fontSize: '16px'
+                                    marginTop: '15px', fontWeight: 'bold', fontSize: '16px'
                                 }}>
                                     {this.state.status}
                                 </p>
                             )}
                         </div>
-                        {/* Components Ende */}
 
+                        <p>Welcome to the SWA Skeleton Project!</p>
+                        <Message severity={"success"} text={"PrimeReact is installed!"}/>
                     </header>
                 </div>
                 <FooterComponent/>
