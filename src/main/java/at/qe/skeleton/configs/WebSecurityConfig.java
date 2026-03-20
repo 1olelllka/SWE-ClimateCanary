@@ -86,7 +86,7 @@ public class WebSecurityConfig {
                                                         .permitAll()
                                                         .requestMatchers("/swagger-ui/**")
                                                         .permitAll()
-
+                                                        .requestMatchers("/test-info", "/test-raspberry").permitAll()
                                                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
                                                         .requestMatchers("/api/**").authenticated()
                                                         .anyRequest().authenticated())
