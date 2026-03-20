@@ -1,7 +1,3 @@
-/**
- * This code is part of the skeleton project provided for students of the course "Software
- * Engineering" offered by Innsbruck University.
- */
 import logo from '../logo.svg';
 import '../styles/App.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
@@ -20,6 +16,13 @@ class HomePage extends React.Component<any, any> {
             message: "",
             status: ""
         };
+    }
+
+    getStatusColor(): string {
+        const { status } = this.state;
+        if (status.startsWith('Erfolgreich')) return '#4ade80';
+        if (status.startsWith('Warte')) return '#facc15';
+        return '#fca5a5';
     }
 
     componentDidMount() {
@@ -94,8 +97,7 @@ class HomePage extends React.Component<any, any> {
                             </div>
                             {this.state.status && (
                                 <p style={{
-                                    color: this.state.status.startsWith('Erfolgreich') ? '#4ade80' :
-                                        this.state.status.startsWith('Warte') ? '#facc15' : '#fca5a5',
+                                    color: this.getStatusColor(),
                                     marginTop: '15px',
                                     fontWeight: 'bold',
                                     fontSize: '16px'
