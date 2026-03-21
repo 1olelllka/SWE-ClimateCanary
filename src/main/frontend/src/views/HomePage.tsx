@@ -21,6 +21,7 @@ class HomePage extends React.Component<any, any> {
         const { status } = this.state;
         if (status.startsWith('Erfolgreich')) return '#4ade80';
         if (status.startsWith('Fehler')) return '#facc15';        // backend responded but with error
+        if (status.startsWith('Sende')) return '#aaaaaa';
         return '#fca5a5';                                         // unreachable
     }
 
@@ -43,6 +44,8 @@ class HomePage extends React.Component<any, any> {
         const { message } = this.state;
         if (!message.trim()) return;
 
+        this.setState({ message: "", status: "Sende..." });
+
         console.log("Versuche, Nachricht ans Backend zu senden:", message);
 
         try {
@@ -61,8 +64,6 @@ class HomePage extends React.Component<any, any> {
             console.error("Netzwerkfehler:", error);
             this.setState({ status: "Backend ist nicht erreichbar." });
         }
-
-        setTimeout(() => this.setState({ status: "" }), 4000);
     };
 
     render() {
