@@ -12,17 +12,17 @@ class HomePage extends React.Component<any, any> {
     constructor(props: any) {
         super(props);
         this.state = {
-            piMessage: "Warten auf das Signal...",
-            message: "",
-            status: ""
+            piMessage: "Warten auf das Signal...", //message from Pi
+            message: "", //message to send to Pi
+            status: "" //status for sending the message
         };
     }
 
     getStatusColor(): string {
         const { status } = this.state;
         if (status.startsWith('Erfolgreich')) return '#4ade80';
-        if (status.startsWith('Warte')) return '#facc15';
-        return '#fca5a5';
+        if (status.startsWith('Fehler')) return '#facc15';        // backend responded but with error
+        return '#fca5a5';                                         // unreachable
     }
 
     //Message received from Backend is shown here
@@ -31,11 +31,11 @@ class HomePage extends React.Component<any, any> {
         api.sayHello()
             .then((response) => {
                 this.setState({ piMessage: response.data.message });
-                console.log("Verbindung erstellt:", response.data.message);
+                console.log("Server hat eine Nachricht vom Raspberry Pi erhalten:", response.data.message);
             })
             .catch((error) => {
-                this.setState({ piMessage: "Backend ist nicht erreichbar" });
-                console.error("Fehler:", error);
+                this.setState({ piMessage: "Server ist nicht erreichbar" });
+                console.error("Serververbindung fehlgeschlagen", error);
             });
     }
 
@@ -54,9 +54,9 @@ class HomePage extends React.Component<any, any> {
             });
 
             if (response.ok) {
-                this.setState({ status: "Erfolgreich ans Backend gesendet!", message: "" });
+                this.setState({ status:  `Erfolgreich gesendet: "${message}"`, message: "" }); //resets field for input with ""
             } else {
-                this.setState({ status: `Warte auf Backend... (Fehler ${response.status})` });
+                this.setState({ status: `Fehler ${response.status}` });
             }
         } catch (error) {
             console.error("Netzwerkfehler:", error);
@@ -126,8 +126,6 @@ class HomePage extends React.Component<any, any> {
                                 </p>
                             )}
                         </div>
-
-                        <p>Welcome to the SWA Skeleton Project!</p>
                         <Message severity={"success"} text={"PrimeReact is installed!"}/>
                     </header>
                 </div>
