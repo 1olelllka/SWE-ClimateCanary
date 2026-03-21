@@ -5,7 +5,6 @@ import { Message } from 'primereact/message';
 import React from "react";
 import NavbarComponent from "../components/NavbarComponent";
 import { FooterComponent } from "../components/FooterComponent";
-import { TestControllerApi } from "../generated-skeleton-api";
 
 class HomePage extends React.Component<any, any> {
 
@@ -27,11 +26,11 @@ class HomePage extends React.Component<any, any> {
 
     //Message received from Backend is shown here
     componentDidMount() {
-        const api = new TestControllerApi();
-        api.sayHello()
-            .then((response) => {
-                this.setState({ piMessage: response.data.message });
-                console.log("Server hat eine Nachricht vom Raspberry Pi erhalten:", response.data.message);
+        fetch('http://172.20.10.5:8080/test-info')
+            .then((response) => response.json())
+            .then((data) => {
+                this.setState({ piMessage: data.message });
+                console.log("Server hat eine Nachricht vom Raspberry Pi erhalten:", data.message);
             })
             .catch((error) => {
                 this.setState({ piMessage: "Server ist nicht erreichbar" });
@@ -47,7 +46,7 @@ class HomePage extends React.Component<any, any> {
         console.log("Versuche, Nachricht ans Backend zu senden:", message);
 
         try {
-            const response = await fetch('http://172.20.10.5:8080/test-raspberry', {
+            const response = await fetch('http://172.20.10.5:8080/send-to-raspberry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })  // actually sends the message written

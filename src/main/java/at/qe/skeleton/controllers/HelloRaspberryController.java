@@ -19,7 +19,7 @@ public class HelloRaspberryController {
     public HelloRaspberryController(TestConnectionClient connectionClient) {
         this.connectionClient = connectionClient; // Spring automatically injects this
     }
-    
+
     // Frontend POSTs a message -> forwards to Pi
     @PostMapping("/send-to-raspberry")
     public ResponseEntity<Void> sendToPi(@RequestBody RaspberryCommandDTO command) {
@@ -40,7 +40,7 @@ public class HelloRaspberryController {
     }
 
     // Frontend GETs the latest Pi message
-    @GetMapping("/test-raspberry")
+    @GetMapping("/test-info")
     public ResponseEntity<RaspberryTestDTO> getRaspberryResponse(){
         return new ResponseEntity<>(latestPiMessage, HttpStatus.OK); //returns whatever Pi last sent
     }
