@@ -15,7 +15,7 @@ public class HelloRaspberryController {
     private static final Logger logger = LoggerFactory.getLogger(HelloRaspberryController.class);
     private final TestConnectionClient connectionClient;
     // placeholder for PiMessage (is overwritten as soon as message received)
-    private RaspberryTestDTO latestPiMessage = new RaspberryTestDTO("");
+    private RaspberryTestDTO latestPiMessage = new RaspberryTestDTO("Warte auf eine Nachricht...");
     public HelloRaspberryController(TestConnectionClient connectionClient) {
         this.connectionClient = connectionClient; // Spring automatically injects this
     }
