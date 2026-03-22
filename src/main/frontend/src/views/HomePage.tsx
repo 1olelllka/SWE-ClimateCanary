@@ -8,6 +8,8 @@ import { FooterComponent } from "../components/FooterComponent";
 
 class HomePage extends React.Component<any, any> {
 
+    interval = null;
+
     constructor(props: any) {
         super(props);
         this.state = {
@@ -27,11 +29,26 @@ class HomePage extends React.Component<any, any> {
 
     //Message received from Backend is shown here
     componentDidMount() {
-        fetch('http://172.20.10.5:8080/test-info')
+        // first time load
+        this.fetchMessage();
+
+        // repeat each second
+        this.interval = setInterval(() => {
+            this.fetchMessage();
+        }, 1000);
+    }
+
+    componentWillUnmount() {
+        // set to null when the component is not used
+        clearInterval(this.interval);
+    }
+
+    fetchMessage() {
+        fetch('http://172.20.10.4:8080/test-info')
             .then((response) => response.json())
             .then((data) => {
                 this.setState({ piMessage: data.message });
-                console.log("Server hat eine Nachricht vom Raspberry Pi erhalten:", data.message);
+                console.log("Neue Nachricht:", data.message);
             })
             .catch((error) => {
                 this.setState({ piMessage: "Server ist nicht erreichbar" });
@@ -49,7 +66,7 @@ class HomePage extends React.Component<any, any> {
         console.log("Versuche, Nachricht ans Backend zu senden:", message);
 
         try {
-            const response = await fetch('http://172.20.10.5:8080/send-to-raspberry', {
+            const response = await fetch('http://172.20.10.4:8080/send-to-raspberry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })  // actually sends the message written
