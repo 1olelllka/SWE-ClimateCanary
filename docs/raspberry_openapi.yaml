@@ -1,0 +1,163 @@
+openapi: 3.0.3
+
+info:
+  title: ClimateCanary – Raspberry Pi REST Server API
+  description: >
+    This API is implemented **on the Raspberry Pi itself**.
+    It is a minimal server that the central webapp calls to notify the Pi that
+    something has changed. To retrieve new information from Webapp like configurations 
+    or new limits it firstly receives lightweight notification pings here, then turns around and
+    pulls the actual updated data from the webapp's own API.
+
+    The Pi REST server runs on a configurable port on the Pi's
+    local IP address, which is registered in the webapp during device setup.
+
+  version: 1.0.0
+
+tags:
+  - name: Notifications
+    description: >
+      Notifications Pi receives from the Web App about any new changes (config, new limits)
+  - name: Health
+    description: >
+      Used for checking whether Pi is online and 
+      operational
+  - name: System
+    description: >
+      Administrative endpoints on the Raspberry Pi for headless management
+  - name: Privacy & Occupancy
+    description: Endpoints for managing the GDPR-compliant 5-person rule.
+
+paths:
+  /notify:
+    post:
+      tags: [Notifications]
+      summary: Webapp notifies Pi of a state change
+      description: >
+        Triggered by the Webapp. The Pi must immediately fetch the 
+        actual data from the Webapp's REST API based on the updateType.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifyRequestDTO'
+      responses:
+        '200':
+          description: Notification received and sync initiated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotifyResponseDTO'
+        '400':
+          description: Invalid updateType.
+        '500':
+          description: Pi could not reach the Webapp to complete the sync.
+
+  /privacy/occupancy:
+    put:
+      tags: [Privacy & Occupancy]
+      summary: Update current room occupancy headcount
+      description: >
+        Called by the Webapp to update the Pi on how many people are in the room.
+        If headcount < 5, the Pi must enter Privacy Mode (suspend data transmission).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [count]
+              properties:
+                count: { type: integer, example: 4 }
+                privacyModeShouldBeActive: { type: boolean }
+      responses:
+        '200':
+          description: Occupancy updated and Privacy Mode state adjusted.
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Periodic liveness check
+      responses:
+        '200':
+          description: Pi is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthDTO'
+
+  /system/reboot:
+    post:
+      tags: [System]
+      summary: Graceful software service restart
+      responses:
+        '202':
+          description: Restart sequence initiated.
+
+  /system/log-level:
+    put:
+      tags: [System]
+      summary: Adjust logging verbosity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                level: { type: string, enum: [DEBUG, INFO, WARN, ERROR] }
+      responses:
+        '200':
+          description: Log level changed.
+
+  /system/storage-cleanup:
+    post:
+      tags: [System]
+      summary: Clear local DB cache
+      description: Deletes sensor data that has been successfully transmitted.
+      responses:
+        '204':
+          description: Cache cleared.
+
+components:
+  schemas:
+    NotifyRequestDTO:
+      type: object
+      required: [updateType, triggeredAt]
+      properties:
+        updateType:
+          type: string
+          enum: [LIMITS, SENSORS, ABSENCE, CONFIG]
+        triggeredAt:
+          type: string
+          format: date-time
+
+    NotifyResponseDTO:
+      type: object
+      required: [status, updateType]
+      properties:
+        status:
+          type: string
+          enum: [ACCEPTED, FAILED]
+        updateType: { type: string }
+        message: { type: string }
+
+    HealthDTO:
+      type: object
+      required: [piId, status]
+      properties:
+        piId: { type: string, format: uuid }
+        status: { type: string, enum: [ACTIVE, OFFLINE] }
+        lastSyncAt: { type: string, format: date-time }
+        uptimeSeconds: { type: integer }
+        connectedSensorCount: { type: integer }
+        privacyModeActive: { type: boolean }
+        cpuLoad: { type: number }
+        storageUsagePercent: { type: integer }
+
+    ErrorDTO:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        detail: { type: string }
