@@ -163,12 +163,52 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ClimateDataPointDTO' }
 
+  /rooms/{id}/overtime:
+    get:
+      tags: [Climate Data]
+      summary: Get raw climate data with precise date and time window filtering
+      description: >
+        Returns measurements from ClimateStats. 
+        Example: Fetch data from 04:00 to 08:00 for the period between 23.03 and 26.03.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: startDate
+          in: query
+          required: true
+          description: "The starting day of the range (e.g., 2026-03-23)"
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          required: true
+          description: "The ending day of the range (e.g., 2026-03-26)"
+          schema: { type: string, format: date }
+        - name: startTime
+          in: query
+          required: false
+          description: "Filter for a specific time of day start (e.g., 04:00:00)"
+          schema: { type: string, example: "04:00:00" }
+        - name: endTime
+          in: query
+          required: false
+          description: "Filter for a specific time of day end (e.g., 08:00:00)"
+          schema: { type: string, example: "08:00:00" }
+      responses:
+        '200':
+          description: List of filtered raw data points
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClimateDataPointDTO' }
+
   /rooms/{id}/climate-history:
     get:
       tags: [Climate Data]
-      summary: Get aggregated data for diagrams (Day/Month/Year)
-      description: "Frontend calls this to draw the historical charts seen in the 'Analysis' view.
-       Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission."
+      summary: Get aggregated data for historical analysis
+      description: "Returns averaged data from AggregatedStats to reduce DB load for Day/Week/Month views."
       parameters:
         - name: id
           in: path
@@ -177,14 +217,14 @@ paths:
         - name: timeframe
           in: query
           required: true
-          schema: { type: string, enum: [DAY, WEEK, MONTH, YEAR] }
+          schema: { type: string, enum: [MONTH, WEEK, DAY] }
         - name: granularity
+          description: Aggregation level
           in: query
-          description: "Aggregation level (e.g., FIVE_MIN for Day view, DAY for Month view)"
-          schema: { type: string, enum: [RAW, FIVE_MIN, HOUR, DAY, MONTH] }
+          schema: { type: string, enum: [HOUR, DAY] }
       responses:
         '200':
-          description: List of data points for the diagram
+          description: List of aggregated data points
           content:
             application/json:
               schema:
