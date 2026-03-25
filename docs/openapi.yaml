@@ -23,6 +23,87 @@ tags:
     description: Operations related to sensor readings, historical diagrams, and building-wide climate status.
 paths:
 
+  # Sensor Station end-points
+  /sensor-stations:
+    get:
+      tags: [Sensor Station]
+      summary: List all Arduino sensor stations
+      parameters:
+        - name: piId
+          in: query
+          description: Filter by the Raspberry Pi they report to
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: List of sensor stations
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SensorStationDTO' }
+    post:
+      tags: [Sensor Station]
+      summary: Register a new Arduino station
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensorStationCreateDTO' }
+      responses:
+        '201':
+          description: Created
+
+  /sensor-stations/{id}:
+    patch:
+      tags: [Sensor Station]
+      summary: Update station details (e.g., move to a different Pi)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SensorStationCreateDTO' }
+      responses:
+        '200':
+          description: Updated
+    get:
+      tags: [Sensor Station]
+      summary: Get details of a specific Arduino
+      description: Returns hardware details and connection status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SensorStationDTO' }
+        '404':
+          description: Sensor Station not found.
+
+    delete:
+      tags: [Sensor Station]
+      summary: Remove an Arduino from the system
+      description: >
+        Deletes the device from the DB. 
+        CRITICAL: The Webapp must then send a NOTIFY (updateType: SENSORS) 
+        to the parent Raspberry Pi so it clears its BLE whitelist.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Successfully deleted.
+        '404':
+          description: Sensor Station not found.
+
   /auth/login:
     post:
       summary: Login user
@@ -1257,3 +1338,38 @@ components:
           enum: [TEMPERATURE, AIR, HUMIDITY]
           example: "TEMPERATURE"
         message: { type: string }
+
+    SensorStationDTO:
+      type: object
+      required: [id, name, bleHardwareAddress, status, roomId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Arduino-Nano-01"
+        bleHardwareAddress:
+          type: string
+          example: "AA:BB:CC:DD:EE:FF"
+          description: "The hardcoded MAC address for BLE identification."
+        status:
+          type: string
+          enum: [ACTIVE, OFFLINE]
+        roomId:
+          type: string
+          format: uuid
+        connectedToPiId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "The UUID of the Raspberry Pi acting as the BLE gateway."
+
+    SensorStationCreateDTO:
+      type: object
+      required: [name, bleHardwareAddress, roomId]
+      properties:
+        name: { type: string, example: "Office North Sensor" }
+        bleHardwareAddress: { type: string, example: "AA:BB:CC:DD:EE:FF" }
+        roomId: { type: string, format: uuid }
+        connectedToPiId: { type: string, format: uuid }
