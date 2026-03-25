@@ -25,17 +25,23 @@ tags:
   - name: System
     description: >
       Administrative endpoints on the Raspberry Pi for headless management
-  - name: Privacy & Occupancy
-    description: Endpoints for managing the GDPR-compliant 5-person rule.
 
 paths:
   /notify:
     post:
       tags: [Notifications]
       summary: Webapp notifies Pi of a state change
-      description: >
-        Triggered by the Webapp. The Pi must immediately fetch the 
-        actual data from the Webapp's REST API based on the updateType.
+      description: |
+        **Triggered by the Webapp.** Upon receiving this notification, the Raspberry Pi must immediately fetch the updated state from the Webapp's REST API using the following mapping:
+
+        | Update Type | Webapp Sync Endpoint to Call |
+        | :--- | :--- |
+        | **LIMITS** | `GET /raspberry-pis/{piId}/sync/limits` |
+        | **CONFIG** | `GET /raspberry-pis/{id}/config` |
+        | **SENSORS** | `GET /raspberry-pis/{id}/config` (Update BLE whitelist) |
+        | **ABSENCE** | `GET /raspberry-pis/{id}/sync/occupancy` (Check Privacy Mode) |
+
+        *Note: The Pi should perform these calls asynchronously to avoid blocking the notification acknowledgment.*
       requestBody:
         required: true
         content:
@@ -53,27 +59,6 @@ paths:
           description: Invalid updateType.
         '500':
           description: Pi could not reach the Webapp to complete the sync.
-
-  /privacy/occupancy:
-    put:
-      tags: [Privacy & Occupancy]
-      summary: Update current room occupancy headcount
-      description: >
-        Called by the Webapp to update the Pi on how many people are in the room.
-        If headcount < 5, the Pi must enter Privacy Mode (suspend data transmission).
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [count]
-              properties:
-                count: { type: integer, example: 4 }
-                privacyModeShouldBeActive: { type: boolean }
-      responses:
-        '200':
-          description: Occupancy updated and Privacy Mode state adjusted.
 
   /health:
     get:
