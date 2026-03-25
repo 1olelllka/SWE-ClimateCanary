@@ -13,13 +13,14 @@ tags:
     description: Absence management (vacation, illness, etc.)
   - name: Building Structure
     description: Managment of the buildings, departments and rooms
-  - name: Devices
-    description: Device management for the system admin
+  - name: Raspberry Pi
+    description: Raspberry Pi device management for the system admin
+  - name: Sensor Station
+    description: Sensor Station/Arduino management for the system admin
   - name: Limit Management
     description: Setting limit values per room
   - name: Climate Data
     description: Operations related to sensor readings, historical diagrams, and building-wide climate status.
-
 paths:
 
   /auth/login:
@@ -273,7 +274,38 @@ paths:
           description: Room limits updated
 
   # Special endpoint for the Raspberry Pi
-  /devices/{piId}/sync/limits:
+  /raspberry-pis/{id}/sync/occupancy:
+    get:
+      tags: [Raspberry Pi]
+      summary: Pi fetches current room occupancy and privacy status
+      description: >
+        Hardware-facing sync endpoint. Called by the Pi after receiving an 
+        ABSENCE updates. The Pi uses this to decide whether to 
+        suspend data transmission (Privacy Mode) based on the 5-person rule.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The UUID of the Raspberry Pi
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "Occupancy data successfully retrieved."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  effectiveOccupancy: 
+                    type: integer
+                    example: 4
+                  privacyModeActive: 
+                    type: boolean
+                    example: true
+        '404':
+          description: Raspberry Pi ID not found.
+
+  /raspberry-pis/{piId}/sync/limits:
     get:
       tags: [Limit Management]
       summary: Raspberry Pi fetches limits for all its assigned rooms
@@ -295,11 +327,11 @@ paths:
                 items:
                   $ref: '#/components/schemas/LimitsDTO'
 
-  # DEVICE MANAGEMENT
-  /devices:
+  # RASPBERRY PI MANAGEMENT
+  /raspberry-pis:
     get:
-      tags: [Devices]
-      summary: Get devices with optional filtering
+      tags: [Raspberry Pi]
+      summary: List all Raspberry Pis
       description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: roomId
@@ -308,38 +340,38 @@ paths:
           schema:
             type: string
             format: uuid
-          description: "Filter devices by a specific room"
+          description: "Filter Raspberry Pi devices by a specific room"
         - name: status
           in: query
           required: false
           schema:
             type: string
             enum: [ACTIVE, SLEEP, OFFLINE]
-          description: "Filter devices by their current status"
+          description: "Filter Raspberry Pi devices by their current status"
       responses:
         '200':
-          description: A filtered list of devices
+          description: A filtered list of Raspberry Pi devices
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/DeviceDTO' }
+                items: { $ref: '#/components/schemas/RaspberryDTO' }
     post:
-      tags: [Devices]
-      summary: Add a new device (Add Device button in UI)
+      tags: [Raspberry Pi]
+      summary: Add a new Raspberry Pi device (Add Device button in UI)
       description: CAN_MANAGE_DEVICES permission required.
       requestBody:
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/DeviceCreateDTO' }
+            schema: { $ref: '#/components/schemas/RaspberryCreateDTO' }
       responses:
         '201':
           description: Device successfully registered
 
-  /devices/{id}:
+  /raspberry-pis/{id}:
     get:
-      tags: [Devices]
-      summary: Get details for a specific device
+      tags: [Raspberry Pi]
+      summary: Get details for a specific Raspberry Pi device
       description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
@@ -351,11 +383,11 @@ paths:
           description: Device details
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/DeviceDTO' }
+              schema: { $ref: '#/components/schemas/RaspberryDTO' }
     
     patch:
-      tags: [Devices]
-      summary: Update device configuration 
+      tags: [Raspberry Pi]
+      summary: Update Raspberry Pi device configuration 
       description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
@@ -365,14 +397,14 @@ paths:
       requestBody:
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/DeviceCreateDTO' }
+            schema: { $ref: '#/components/schemas/RaspberryCreateDTO' }
       responses:
         '200':
-          description: Device updated
+          description: Raspberry Pi updated
 
     delete:
-      tags: [Devices]
-      summary: Remove a device 
+      tags: [Raspberry Pi]
+      summary: Remove Raspberry Pi
       description: CAN_MANAGE_DEVICES permission required.
       parameters:
         - name: id
@@ -381,11 +413,11 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         '204':
-          description: Device deleted
+          description: Raspberry Pi deleted
   
-  /devices/{id}/config:
+  /raspberry-pis/{id}/config:
     get:
-      tags: [Devices]
+      tags: [Raspberry Pi]
       summary: Fetch Raspberry Pi operational configuration
       description: "Called by the Pi to get its heartbeat frequency and its list of child sensors."
       parameters:
@@ -1035,58 +1067,70 @@ components:
           type: integer
           description: "The standard number of people assigned to this room"
 
-    DeviceDTO:
-        type: object
-        required: [id, name, type, status, roomId]
-        properties:
-          id: { type: string, format: uuid }
-          name: { type: string, example: "Raspberry Pi 1" }
-          type: 
-            type: string
-            enum: [RASPBERRY_PI, SENSOR_STATION]
-          roomNumber: { type: string, example: "001" } 
-          roomId: { type: string, format: uuid }
-          connectedToId: 
-            type: string
-            format: uuid
-            nullable: true
-            description: "If this is a Sensor Station, the UUID of its Raspberry Pi"
-          status:
-            type: string
-            enum: [ACTIVE, SLEEP, OFFLINE]
-
-
-    DeviceCreateDTO:
-      type: object
-      required: [name, type, roomId]
-      properties:
-        name: { type: string, example: "Living Room Sensor" }
-        type: 
-          type: string
-          enum: [RASPBERRY_PI, SENSOR_STATION]
-        roomId: { type: string, format: uuid }
-        connectedToId: 
-          type: string
-          format: uuid
-          description: "Optional: The ID of the Raspberry Pi this device connects to"
-
     PiConfigDTO:
       type: object
-      required: [sensors]
+      required: [frequency, sensors]
       properties:
         frequency:
           type: integer
           example: 60
-          description: "How often (in seconds) the Pi should push data to the backend"
+          description: "How often (seconds) the Pi pushes sensor batches to /measurements"
         sensors:
           type: array
-          description: "List of Arduino/Sensor Station IDs connected to this Pi"
+          description: "List of Sensor Stations (Arduinos) this Pi must listen to via BLE"
           items:
             type: object
             properties:
               sensorId:
                 type: string
                 format: uuid
+              name: 
+                type: string
+                example: "Station_Alpha_01"
+              bleHardwareAddress:
+                type: string
+                example: "D4:36:39:C1:22:AA"
+                description: "The MAC address used for BLE pairing/filtering"
+
+    PiOccupancyDTO:
+      type: object
+      required: [effectiveOccupancy, privacyModeActive]
+      properties:
+        effectiveOccupancy:
+          type: integer
+          example: 4
+          description: "Total people currently in the room (Default count minus active absences)"
+        privacyModeActive:
+          type: boolean
+          example: true
+          description: "If true, the Pi must stop sending climate data (5-person rule)"
+        lastUpdated:
+          type: string
+          format: date-time
+
+    RaspberryDTO:
+      type: object
+      required: [id, name, status, ipAddress, roomId]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: "Pi-Gateway-Room101" }
+        ipAddress: 
+          type: string
+          example: "192.168.1.50"
+          description: "The local IP used by the Webapp to send /notify pings"
+        status:
+          type: string
+          enum: [ACTIVE, OFFLINE, MAINTENANCE]
+        roomId: { type: string, format: uuid }
+        roomNumber: { type: string, example: "101" }
+
+    RaspberryCreateDTO:
+      type: object
+      required: [name, ipAddress, roomId]
+      properties:
+        name: { type: string }
+        ipAddress: { type: string }
+        roomId: { type: string, format: uuid }
     
     LimitsDTO:
       type: object
