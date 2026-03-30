@@ -1,4 +1,4 @@
-package at.qe.skeleton.services;
+package at.qe.skeleton.services.impl;
 
 
 import at.qe.skeleton.exceptions.ResourceNotFoundException;
@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class DepartmentService {
+public class DepartmentServiceImpl {
     private final DepartmentRepository departmentRepository;
 
-    public DepartmentService(DepartmentRepository departmentRepository){
+    public DepartmentServiceImpl(DepartmentRepository departmentRepository){
         this.departmentRepository = departmentRepository;
     }
 

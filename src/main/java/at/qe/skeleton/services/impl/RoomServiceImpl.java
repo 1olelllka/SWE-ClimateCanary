@@ -1,4 +1,4 @@
-package at.qe.skeleton.services;
+package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.exceptions.ResourceNotFoundException;
 import at.qe.skeleton.model.Department;
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class RoomService {
+public class RoomServiceImpl {
     private final RoomRepository roomRepository;
 
-    public RoomService(RoomRepository roomRepository){
+    public RoomServiceImpl(RoomRepository roomRepository){
         this.roomRepository = roomRepository;
     }
 

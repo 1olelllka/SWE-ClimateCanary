@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface BuildingRepository extends JpaRepository<Building, UUID> {
     Optional<Building> findByName(String name);
     Optional<Building> findByAddress(String address);
+    boolean existsByNameOrAddress(String name, String address);
 }
