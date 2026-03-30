@@ -7,6 +7,7 @@ import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.services.BuildingService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     private final BuildingRepository buildingRepository;
 
+    @Autowired
     public BuildingServiceImpl(BuildingRepository buildingRepository) {
         this.buildingRepository = buildingRepository;
     }
@@ -55,6 +57,7 @@ public class BuildingServiceImpl implements BuildingService {
         return buildingRepository.findById(id).map(building -> {
             Optional.ofNullable(newBuilding.getAddress()).ifPresent(building::setAddress);
             Optional.ofNullable(newBuilding.getName()).ifPresent(building::setName);
+            Optional.ofNullable(newBuilding.getDepartments()).ifPresent(b -> building.getDepartments().addAll(b));
             return buildingRepository.save(building);
         }).orElseThrow(() -> new NotFoundException("Building with id " + id + " was not found."));
     }

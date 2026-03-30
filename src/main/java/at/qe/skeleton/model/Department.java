@@ -3,6 +3,7 @@ package at.qe.skeleton.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,5 +28,5 @@ public class Department {
     private Building building;
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Room> rooms;
+    private List<Room> rooms = new ArrayList<>();
 }
