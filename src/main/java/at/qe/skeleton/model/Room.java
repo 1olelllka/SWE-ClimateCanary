@@ -1,23 +1,22 @@
 package at.qe.skeleton.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Entity
+@Builder
 @Table(name = "rooms")
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @Enumerated(EnumType.STRING)
@@ -34,5 +33,6 @@ public class Room {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
+    // now without users
 
 }
