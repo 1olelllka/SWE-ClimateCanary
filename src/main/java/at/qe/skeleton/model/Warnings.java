@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -33,4 +35,8 @@ public class Warnings {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private WarningStatus status;
+
+    @OneToMany(mappedBy = "warning", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Tip> tips = new ArrayList<>();
 }

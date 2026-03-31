@@ -27,4 +27,8 @@ public class Tip {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ViolatedSensor violatedSensor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warning_id", nullable = false)
+    private Warnings warning;
 }
