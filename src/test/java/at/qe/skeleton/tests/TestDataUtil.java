@@ -2,6 +2,8 @@ package at.qe.skeleton.tests;
 
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
+import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomType;
 
 import java.util.ArrayList;
 
@@ -22,6 +24,15 @@ public class TestDataUtil {
                 .name("Test Department")
                 .building(building)
                 .rooms(new ArrayList<>())
+                .build();
+    }
+
+    public static Room createRoomEntity(Department department) {
+        return Room.builder()
+                .isActive(true)
+                .roomType(RoomType.OFFICE)
+                .department(department)
+                .defaultPeopleCnt(10)
                 .build();
     }
 }

@@ -62,7 +62,7 @@ public class DepartmentController {
                         Department
                                 .builder()
                                 .name(dto.name())
-                                .building(Building.builder().id(dto.buildingId()).build())
+                                .building(Building.builder().id(dto.buildingID()).build())
                                 .build());
         return new ResponseEntity<>(departmentDetailMapper.mapTo(created), HttpStatus.CREATED);
     }
@@ -78,7 +78,7 @@ public class DepartmentController {
         Department patched = departmentService.patchSpecificDepartment(id,
                 Department.builder()
                         .name(dto.name())
-                        .building(Building.builder().id(dto.buildingId()).build())
+                        .building(Building.builder().id(dto.buildingID()).build())
                         .build());
         return new ResponseEntity<>(departmentDetailMapper.mapTo(patched), HttpStatus.OK);
     }

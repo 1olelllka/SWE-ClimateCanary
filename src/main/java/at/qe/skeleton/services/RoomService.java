@@ -8,10 +8,7 @@ import java.util.UUID;
 
 public interface RoomService {
     Page<Room> getPageOfRooms(Pageable pageable);
-
     void deleteRoom(UUID id);
-
     Room createRoom(Room room);
-
     Room patchRoom(UUID id, Room room);
 }

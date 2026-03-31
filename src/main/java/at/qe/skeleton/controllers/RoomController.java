@@ -1,8 +1,11 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.RoomCreateDTO;
 import at.qe.skeleton.dtos.RoomDTO;
+import at.qe.skeleton.dtos.RoomPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.mappers.RoomMapping;
+import at.qe.skeleton.mappers.RoomMapper;
+import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
 import at.qe.skeleton.services.RoomService;
 import jakarta.validation.Valid;
@@ -21,41 +24,53 @@ import java.util.stream.Collectors;
 public class RoomController {
 
     private RoomService roomService;
-    private RoomMapping roomMapping;
+    private RoomMapper roomMapper;
 
     public RoomController(RoomService roomService,
-                          RoomMapping roomMapping) {
+                          RoomMapper roomMapper) {
         this.roomService = roomService;
-        this.roomMapping = roomMapping;
+        this.roomMapper = roomMapper;
     }
 
     @GetMapping("")
     public ResponseEntity<Page<RoomDTO>> getPageOfRooms(Pageable pageable) {
         Page<Room> rooms = roomService.getPageOfRooms(pageable);
-        return new ResponseEntity<>(rooms.map(roomMapping::mapTo), HttpStatus.OK);
+        return new ResponseEntity<>(rooms.map(roomMapper::mapTo), HttpStatus.OK);
     }
 
     @PostMapping("")
-    public ResponseEntity<RoomDTO> createNewRoom(@RequestBody @Valid RoomDTO dto,
+    public ResponseEntity<RoomDTO> createNewRoom(@RequestBody @Valid RoomCreateDTO dto,
                                                  BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Room created = roomService.createRoom(roomMapping.mapFrom(dto));
-        return new ResponseEntity<>(roomMapping.mapTo(created), HttpStatus.CREATED);
+        Room created = roomService.createRoom(Room
+                .builder()
+                        .roomType(dto.roomType())
+                        .department(Department.builder().id(dto.departmentID()).build())
+                        .defaultPeopleCnt(dto.defaultPeopleCount())
+                        .isActive(dto.isActive())
+                .build());
+        return new ResponseEntity<>(roomMapper.mapTo(created), HttpStatus.CREATED);
     }
 
     @PatchMapping("{room_id}")
     public ResponseEntity<RoomDTO> patchSpecificRoom(@PathVariable(name="room_id") UUID id,
-                                                     @RequestBody @Valid RoomDTO dto,
+                                                     @RequestBody @Valid RoomPatchDTO dto,
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Room patched = roomService.patchRoom(id, roomMapping.mapFrom(dto));
-        return new ResponseEntity<>(roomMapping.mapTo(patched), HttpStatus.OK);
+        Room patched = roomService.patchRoom(id, Room
+                .builder()
+                .roomType(dto.roomType())
+                .department(dto.departmentID() != null ? Department.builder().id(dto.departmentID()).build() : null)
+                .defaultPeopleCnt(dto.defaultPeopleCount())
+                .isActive(dto.isActive())
+                .build());
+        return new ResponseEntity<>(roomMapper.mapTo(patched), HttpStatus.OK);
     }
 
     @DeleteMapping("{room_id}")

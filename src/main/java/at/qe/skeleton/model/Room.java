@@ -24,10 +24,10 @@ public class Room {
     private RoomType roomType;
 
     @Column(nullable = false)
-    private boolean isActive;
+    private Boolean isActive;
 
     @Column(nullable = false)
-    private int defaultPeopleCnt;
+    private Integer defaultPeopleCnt;
 
     @ManyToOne
     @JoinColumn(name = "department_id", nullable = false)

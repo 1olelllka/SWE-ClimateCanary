@@ -9,6 +9,6 @@ public record DepartmentCreateDTO(
         @NotBlank(message = "Name must not be blank.")
         String name,
         @NotNull(message = "Building ID must not be blank.")
-        UUID buildingId
+        UUID buildingID
 ) {
 }

@@ -6,10 +6,10 @@ import at.qe.skeleton.model.Room;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RoomMapping implements DTOMapper<Room, RoomDTO> {
+public class RoomMapper implements DTOMapper<Room, RoomDTO> {
     @Override
     public RoomDTO mapTo(Room entity) {
-        return new RoomDTO(entity.getId(), entity.getDepartment() != null ? entity.getDepartment().getId() : null,
+        return new RoomDTO(entity.getId(), entity.getDepartment().getId(), entity.getDepartment().getName(), entity.getIsActive(),
                 entity.getRoomType(), entity.getDefaultPeopleCnt());
     }
 
@@ -18,8 +18,9 @@ public class RoomMapping implements DTOMapper<Room, RoomDTO> {
         return Room.builder()
                 .id(dto.id())
                 .roomType(dto.roomType())
+                .isActive(dto.isActive())
                 .defaultPeopleCnt(dto.defaultPeopleCount())
-                .department(dto.departmentID() != null ? Department.builder().id(dto.departmentID()).build() : null)
+                .department(Department.builder().id(dto.departmentID()).build())
                 .build();
     }
 }
