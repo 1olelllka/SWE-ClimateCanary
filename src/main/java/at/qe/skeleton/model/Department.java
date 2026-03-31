@@ -27,6 +27,6 @@ public class Department {
     @JoinColumn(name = "building_id", nullable = false)
     private Building building;
 
-    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "department", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Room> rooms = new ArrayList<>();
 }

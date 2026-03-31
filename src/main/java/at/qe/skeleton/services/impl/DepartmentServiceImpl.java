@@ -55,7 +55,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     public Department patchSpecificDepartment(UUID id, Department department) {
         return departmentRepository.findById(id).map(dep -> {
             Optional.ofNullable(department.getName()).ifPresent(dep::setName);
-//            Optional.ofNullable(department.getBuilding()).ifPresent(dep::setBuilding);
+            Optional.ofNullable(department.getBuilding()).ifPresent(dep::setBuilding);
             Optional.ofNullable(department.getRooms()).ifPresent(d -> dep.getRooms().addAll(d));
             return departmentRepository.save(dep);
         }).orElseThrow(() -> new NotFoundException("Department with such id " + department.getId() + " was not found."));

@@ -1,8 +1,11 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.BuildingCreateDTO;
 import at.qe.skeleton.dtos.BuildingDTO;
+import at.qe.skeleton.dtos.BuildingListDTO;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.mappers.BuildingMapper;
+import at.qe.skeleton.mappers.BuildingDetailMapper;
+import at.qe.skeleton.mappers.BuildingListMapper;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.services.BuildingService;
 import jakarta.validation.Valid;
@@ -22,42 +25,53 @@ import java.util.stream.Collectors;
 public class BuildingController {
 
     private BuildingService buildingService;
-    private BuildingMapper buildingMapper;
+    private BuildingDetailMapper buildingDetailMapper;
+    private BuildingListMapper buildingListMapper;
 
     @Autowired
     public BuildingController(BuildingService buildingService,
-                              BuildingMapper mapper) {
+                              BuildingListMapper buildingListMapper,
+                              BuildingDetailMapper mapper) {
         this.buildingService = buildingService;
-        this.buildingMapper = mapper;
+        this.buildingDetailMapper = mapper;
+        this.buildingListMapper = buildingListMapper;
     }
 
     @GetMapping("")
-    public ResponseEntity<Page<BuildingDTO>> getPageOfBuildings(Pageable pageable) {
+    public ResponseEntity<Page<BuildingListDTO>> getPageOfBuildings(Pageable pageable) {
         Page<Building> entities = buildingService.getAllBuildings(pageable);
-        return new ResponseEntity<>(entities.map(buildingMapper::mapTo), HttpStatus.OK);
+        return new ResponseEntity<>(entities.map(buildingListMapper::mapTo), HttpStatus.OK);
+    }
+
+    @GetMapping("{building_id}")
+    public ResponseEntity<BuildingDTO> getSpecificBuilding(@PathVariable(name="building_id") UUID id) {
+        Building building = buildingService.getBuildingById(id);
+        return new ResponseEntity<>(buildingDetailMapper.mapTo(building), HttpStatus.OK);
     }
 
     @PostMapping("")
-    public ResponseEntity<BuildingDTO> createNewBuilding(@RequestBody @Valid BuildingDTO dto,
+    public ResponseEntity<BuildingDTO> createNewBuilding(@RequestBody @Valid BuildingCreateDTO dto,
                                                          BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Building created = buildingService.createBuilding(buildingMapper.mapFrom(dto));
-        return new ResponseEntity<>(buildingMapper.mapTo(created), HttpStatus.CREATED);
+        Building created = buildingService
+                .createBuilding(Building.builder().name(dto.name()).address(dto.address()).build());
+        return new ResponseEntity<>(buildingDetailMapper.mapTo(created), HttpStatus.CREATED);
     }
 
     @PatchMapping("{building_id}")
     public ResponseEntity<BuildingDTO> patchSpecificBuilding(@PathVariable(name = "building_id") UUID id,
-                                                             @RequestBody @Valid BuildingDTO dto,
+                                                             @RequestBody @Valid BuildingCreateDTO dto,
                                                              BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Building patched = buildingService.patchSpecificBuilding(id, buildingMapper.mapFrom(dto));
-        return new ResponseEntity<>(buildingMapper.mapTo(patched), HttpStatus.OK);
+        Building patched = buildingService.patchSpecificBuilding(id,
+                Building.builder().name(dto.name()).address(dto.address()).build());
+        return new ResponseEntity<>(buildingDetailMapper.mapTo(patched), HttpStatus.OK);
     }
 
     @DeleteMapping("{building_id}")

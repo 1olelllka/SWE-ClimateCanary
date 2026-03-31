@@ -9,7 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface BuildingRepository extends JpaRepository<Building, UUID> {
-    Optional<Building> findByName(String name);
-    Optional<Building> findByAddress(String address);
-    boolean existsByNameOrAddress(String name, String address);
+//    Optional<Building> findByName(String name);
+//    Optional<Building> findByAddress(String address);
+    boolean existsByName(String name);
+    boolean existsByAddress(String address);
 }

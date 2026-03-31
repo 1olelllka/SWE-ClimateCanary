@@ -8,7 +8,6 @@ import java.util.UUID;
 public record BuildingDTO(
         UUID id,
         String address,
-        @NotBlank(message = "Name cannot be blank.")
         String name,
         List<BuildingDepartmentsDTO> departments
 ) {

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
-public class BuildingMapper implements DTOMapper<Building, BuildingDTO> {
+public class BuildingDetailMapper implements DTOMapper<Building, BuildingDTO> {
     @Override
     public BuildingDTO mapTo(Building entity) {
         return new BuildingDTO(entity.getId(), entity.getAddress(), entity.getName(),
@@ -25,7 +25,10 @@ public class BuildingMapper implements DTOMapper<Building, BuildingDTO> {
                 .address(dto.address())
                 .name(dto.name())
                 .departments(dto.departments() != null ? dto.departments().stream()
-                        .map(e -> Department.builder().id(dto.id()).build()).toList()
+                        .map(e -> Department.builder()
+                                .id(e.id())
+                                .building(Building.builder().id(dto.id()).build())
+                                .build()).toList()
                         : List.of())
                 .build();
     }

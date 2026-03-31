@@ -11,4 +11,5 @@ public interface BuildingService {
     Building createBuilding(Building building);
     Building patchSpecificBuilding(UUID id, Building newBuilding);
     void deleteBuilding(UUID id);
+    Building getBuildingById(UUID id);
 }
