@@ -29,4 +29,8 @@ public class ClimateStats {
 
     @Column(nullable = false)
     private LocalDateTime date;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_monitoring_id", nullable = false)
+    private RoomMonitoring roomMonitoring;
 }

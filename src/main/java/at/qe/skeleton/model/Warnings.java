@@ -39,4 +39,8 @@ public class Warnings {
     @OneToMany(mappedBy = "warning", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<Tip> tips = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_monitoring_id", nullable = false)
+    private RoomMonitoring roomMonitoring;
 }

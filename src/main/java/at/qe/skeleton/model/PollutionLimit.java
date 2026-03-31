@@ -19,4 +19,7 @@ public class PollutionLimit extends LimitValues {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @OneToOne(mappedBy = "polLimit", fetch = FetchType.LAZY)
+    private RoomMonitoring roomMonitoring;
 }

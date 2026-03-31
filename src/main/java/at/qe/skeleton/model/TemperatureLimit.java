@@ -17,4 +17,7 @@ public class TemperatureLimit extends LimitValues{
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @OneToOne(mappedBy = "tempLimit", fetch = FetchType.LAZY)
+    private RoomMonitoring roomMonitoring;
 }

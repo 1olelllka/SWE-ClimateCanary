@@ -28,4 +28,6 @@ public class SensorStation {
     @Enumerated(EnumType.STRING)
     private DeviceStatus status;
 
+    @OneToOne(mappedBy = "sensorStation", fetch = FetchType.LAZY)
+    private RoomMonitoring roomMonitoring;
 }
