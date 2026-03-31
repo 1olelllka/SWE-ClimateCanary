@@ -1,4 +1,4 @@
-import logo from '../logo.svg';
+import logo from '../logo.png';
 import '../styles/App.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import { Message } from 'primereact/message';
@@ -44,7 +44,7 @@ class HomePage extends React.Component<any, any> {
     }
 
     fetchMessage() {
-        fetch('http://172.20.10.4:8080/test-info')
+        fetch('http://localhost:8080/test-info')
             .then((response) => response.json())
             .then((data) => {
                 this.setState({ piMessage: data.message });
@@ -66,7 +66,7 @@ class HomePage extends React.Component<any, any> {
         console.log("Versuche, Nachricht ans Backend zu senden:", message);
 
         try {
-            const response = await fetch('http://172.20.10.4:8080/send-to-raspberry', {
+            const response = await fetch('http://localhost:8080/send-to-raspberry', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message })  // actually sends the message written
