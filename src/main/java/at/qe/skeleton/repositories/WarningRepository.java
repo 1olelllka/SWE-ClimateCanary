@@ -16,17 +16,10 @@ public interface WarningRepository extends JpaRepository<Warnings, UUID> {
     List<Warnings> findByRoom(UUID roomId);
 
     List<Warnings> findByStatus(WarningStatus status);
+    long countByStatus(WarningStatus status);
 
     List<Warnings> findByRoomAndStatus(
             UUID roomId,
             WarningStatus status
-    );
-
-    @Query("SELECT w FROM Warnings w WHERE w.roomMonitoring.roomId = :roomId " +
-            "AND w.createdAt BETWEEN :from AND :to")
-    List<Warnings> findByRoomAndDateRange(
-            @Param("roomId") UUID roomId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to
     );
 }
