@@ -1,13 +1,11 @@
 package at.qe.skeleton.dtos;
 
-import java.util.List;
 import java.util.UUID;
 
-public record DepartmentDTO(
+public record DepartmentListDTO(
         UUID id,
         String name,
         String buildingID,
-        String buildingName,
-        List<UUID> roomNumbers
+        String buildingName
 ) {
 }

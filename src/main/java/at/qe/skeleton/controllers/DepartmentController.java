@@ -1,8 +1,12 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.DepartmentCreateDTO;
 import at.qe.skeleton.dtos.DepartmentDTO;
+import at.qe.skeleton.dtos.DepartmentListDTO;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.mappers.DepartmentMapper;
+import at.qe.skeleton.mappers.DepartmentDetailMapper;
+import at.qe.skeleton.mappers.DepartmentListMapper;
+import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.services.DepartmentService;
 import jakarta.validation.Valid;
@@ -22,42 +26,61 @@ import java.util.stream.Collectors;
 public class DepartmentController {
 
     private DepartmentService departmentService;
-    private DepartmentMapper departmentMapper;
+    private DepartmentDetailMapper departmentDetailMapper;
+    private DepartmentListMapper departmentListMapper;
 
     @Autowired
     public DepartmentController(DepartmentService departmentService,
-                                DepartmentMapper departmentMapper) {
-        this.departmentMapper = departmentMapper;
+                                DepartmentDetailMapper departmentDetailMapper,
+                                DepartmentListMapper departmentListMapper) {
+        this.departmentDetailMapper = departmentDetailMapper;
         this.departmentService = departmentService;
+        this.departmentListMapper = departmentListMapper;
     }
 
     @GetMapping("")
-    public ResponseEntity<Page<DepartmentDTO>> getPageOfDepartments(Pageable pageable) {
+    public ResponseEntity<Page<DepartmentListDTO>> getPageOfDepartments(Pageable pageable) {
         Page<Department> departments = departmentService.getPageOfDepartments(pageable);
-        return new ResponseEntity<>(departments.map(departmentMapper::mapTo), HttpStatus.OK);
+        return new ResponseEntity<>(departments.map(departmentListMapper::mapTo), HttpStatus.OK);
+    }
+
+    @GetMapping("{department_id}")
+    public ResponseEntity<DepartmentDTO> getSpecificDepartment(@PathVariable(name = "department_id") UUID id) {
+        Department department = departmentService.getDepartmentById(id);
+        return new ResponseEntity<>(departmentDetailMapper.mapTo(department), HttpStatus.OK);
     }
 
     @PostMapping("")
-    public ResponseEntity<DepartmentDTO> createNewDepartment(@RequestBody @Valid DepartmentDTO dto,
+    public ResponseEntity<DepartmentDTO> createNewDepartment(@RequestBody @Valid DepartmentCreateDTO dto,
                                                              BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Department created = departmentService.createDepartment(departmentMapper.mapFrom(dto));
-        return new ResponseEntity<>(departmentMapper.mapTo(created), HttpStatus.CREATED);
+        Department created = departmentService
+                .createDepartment(
+                        Department
+                                .builder()
+                                .name(dto.name())
+                                .building(Building.builder().id(dto.buildingId()).build())
+                                .build());
+        return new ResponseEntity<>(departmentDetailMapper.mapTo(created), HttpStatus.CREATED);
     }
 
     @PatchMapping("{department_id}")
     public ResponseEntity<DepartmentDTO> patchSpecificDepartment(@PathVariable(name="department_id") UUID id,
-                                                                 @RequestBody @Valid DepartmentDTO dto,
+                                                                 @RequestBody @Valid DepartmentCreateDTO dto,
                                                                  BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Department patched = departmentService.patchSpecificDepartment(id, departmentMapper.mapFrom(dto));
-        return new ResponseEntity<>(departmentMapper.mapTo(patched), HttpStatus.OK);
+        Department patched = departmentService.patchSpecificDepartment(id,
+                Department.builder()
+                        .name(dto.name())
+                        .building(Building.builder().id(dto.buildingId()).build())
+                        .build());
+        return new ResponseEntity<>(departmentDetailMapper.mapTo(patched), HttpStatus.OK);
     }
 
     @DeleteMapping("{department_id}")

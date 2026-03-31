@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-public class DepartmentMapper implements DTOMapper<Department, DepartmentDTO> {
+public class DepartmentDetailMapper implements DTOMapper<Department, DepartmentDTO> {
     @Override
     public DepartmentDTO mapTo(Department entity) {
         return new DepartmentDTO(entity.getId(), entity.getName(), entity.getBuilding().getId().toString(),
