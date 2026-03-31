@@ -33,8 +33,4 @@ public class Warnings {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private WarningStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_monitoring_id", nullable = false)
-    private RoomMonitoring roomMonitoring;
 }

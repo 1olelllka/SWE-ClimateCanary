@@ -1,8 +1,7 @@
 package at.qe.skeleton.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -10,8 +9,12 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Table(name = "aggregated_stats")
 public class AggregatedStats {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
