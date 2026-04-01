@@ -42,7 +42,7 @@ public class Userx implements Comparable<Userx>, UserDetails {
 
   @ManyToMany
   @JoinTable(name = "User_UserRole",
-          inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"),
+          inverseJoinColumns = @JoinColumn(name = "role_name", referencedColumnName = "name"),
           joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id")
   )
   private Set<UserRole> userRoles;

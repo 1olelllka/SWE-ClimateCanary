@@ -18,6 +18,7 @@ public class UserRole {
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
     private UUID id;
+    @Column(unique = true)
     private String name;
     @ElementCollection(targetClass = Permission.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "Role_RolePermissions")

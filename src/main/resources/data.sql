@@ -15,8 +15,8 @@ VALUES (RANDOM_UUID(), TRUE, 'Admin', 'Istrator', '{bcrypt}$2b$12$gimw81jnsxtcHM
 --VALUES (TRUE, 'Elvis', 'The King', '{bcrypt}$2b$12$gimw81jnsxtcHMBRe6LVe.NZCPf3G2ugUyKqcYwJRlJuN6ubTXkNS', 'elvis', NULL, '2024-01-01 00:00:00');
 --
 ---- Insert roles into USERX_USERX_ROLE table by looking up the corresponding user ID
---INSERT INTO USERX_USERX_ROLE (USERX_ID, ROLES)
---VALUES ((SELECT ID FROM USERX WHERE USERNAME = 'admin'), 'ADMIN');
+INSERT INTO USER_USER_ROLE (USER_ID, ROLE_NAME)
+VALUES ((SELECT ID FROM USERX WHERE USERNAME = 'admin'), 'EMPLOYEE');
 --
 --INSERT INTO USERX_USERX_ROLE (USERX_ID, ROLES)
 --VALUES ((SELECT ID FROM USERX WHERE USERNAME = 'admin'), 'EMPLOYEE');

@@ -5,6 +5,7 @@ import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -42,6 +43,17 @@ public class AdviceController {
                 ex.getMessage()
         );
         problemDetail.setTitle("Not Found");
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ProblemDetail authorizationDeniedException(AuthorizationDeniedException ex)  {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Authorization denied");
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
