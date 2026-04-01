@@ -5,6 +5,8 @@ import { Message } from 'primereact/message';
 import React from "react";
 import NavbarComponent from "../components/NavbarComponent";
 import { FooterComponent } from "../components/FooterComponent";
+import { Button } from 'primereact/button';
+import SidebarComponent from '../components/SidebarComponent';
 
 class HomePage extends React.Component<any, any> {
 
@@ -85,13 +87,29 @@ class HomePage extends React.Component<any, any> {
 
     render() {
         return (
-            <div>
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
                 <NavbarComponent/>
-                <div className="App">
-                    <header className="App-header">
-                        <img src={logo} className="App-logo" alt="logo"/>
 
-                        {/*  Pi Message */}
+                {/* Sidebar-Button */}
+                <div style={{ padding: '10px 20px', display: 'flex', justifyContent: 'flex-start', backgroundColor: '#f4f7f6' }}>
+                    <Button
+                        icon="pi pi-bars"
+                        onClick={() => this.setState({ sidebarVisible: true })}
+                        className="p-button-text p-button-plain p-button-lg"
+                        aria-label="Menu"
+                    />
+                </div>
+
+                {/* Sidebar */}
+                <SidebarComponent
+                    visible={this.state.sidebarVisible}
+                    onHide={() => this.setState({ sidebarVisible: false })}
+                />
+
+                <div className="App" style={{ flexGrow: 1 }}>
+                    <header className="App-header">
+
+                        {/* Pi Message */}
                         <div style={{ margin: '20px', padding: '15px', border: '2px dashed #61dafb', borderRadius: '10px' }}>
                             <h3 style={{ color: '#61dafb' }}>🚀 Durchstich 23.03.2026</h3>
                             <p>Status: <strong>{this.state.piMessage}</strong></p>
