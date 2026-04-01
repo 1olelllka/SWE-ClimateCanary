@@ -55,7 +55,7 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
                 {isManager && !isAdmin && (
                     <>
                         <div className="menu-category">Department Head</div>
-                        {renderMenuItem('Home (Dept. Overview)', '/')}
+                        {renderMenuItem('Home (Deptartment Overview)', '/')}
                         {renderMenuItem('Absences', '/absences')}
                     </>
                 )}
@@ -74,7 +74,7 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
                 {isSeniorManagement && (
                     <>
                         <div className="menu-category">Senior Management</div>
-                        {renderMenuItem('Home (Depts. Overview)', '/')}
+                        {renderMenuItem('Home (Department Overview)', '/')}
                     </>
                 )}
                 */}
