@@ -1,8 +1,7 @@
 package at.qe.skeleton.dtos;
 
-import at.qe.skeleton.model.UserxRole;
+import at.qe.skeleton.model.UserRole;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -21,9 +20,7 @@ public record UserxCreateDTO(
     String password,
     String firstName,
     String lastName,
-    String email,
-    String phone,
     boolean enabled,
-    @ArraySchema(schema = @Schema(implementation = UserxRole.class))
-    Set<UserxRole> roles
+    @ArraySchema(schema = @Schema(implementation = UserRole.class))
+    Set<UserRole> roles
 ) {}
