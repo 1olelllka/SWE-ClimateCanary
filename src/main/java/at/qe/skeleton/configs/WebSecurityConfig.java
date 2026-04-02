@@ -1,5 +1,6 @@
 package at.qe.skeleton.configs;
 
+import at.qe.skeleton.model.Permission;
 import org.springframework.core.env.Environment;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,6 @@ import java.util.List;
  */
 
 @Configuration
-@EnableMethodSecurity
 public class WebSecurityConfig {
 
         private final Environment environment;
@@ -78,7 +78,7 @@ public class WebSecurityConfig {
                                                                                                                          // H2
                                                                                                                          // console
                                         // backend endpoints we want to handle here
-                                        .securityMatcher("/api/**", "/authentication/**", "/h2-console/**")
+                                        .securityMatcher("/api/**", "/authentication/**", "/h2-console/**", "/**")
                                         .authorizeHttpRequests(authorize -> authorize
                                                         .requestMatchers("/h2-console/**").access(devOnly())
                                                         .requestMatchers("/authentication/**").permitAll()
@@ -88,6 +88,8 @@ public class WebSecurityConfig {
                                                         .permitAll()
                                                         .requestMatchers("/test-info", "/test-raspberry").permitAll()
                                                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
+                                                        .requestMatchers("/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
+                                                        .requestMatchers("/buildings/**", "/departments/**", "/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                                         .requestMatchers("/api/**").authenticated()
                                                         .anyRequest().authenticated())
                                         // Add the token authentication filter before the

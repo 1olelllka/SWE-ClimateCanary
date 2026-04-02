@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
 
@@ -45,6 +47,13 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    public void testThatDepartmentEndpointsAreSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/departments"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetPageOfDepartmentsReturnsHttp200OK() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -56,6 +65,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificDepartmentReturnsHttp200WhenExists() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -67,12 +77,14 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewDepartmentReturnsHttp201Created() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         DepartmentCreateDTO dto = new DepartmentCreateDTO("New Dept", b.getId());
@@ -86,6 +98,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewDepartmentReturnsHttp409ConflictIfSameNameExists() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -99,6 +112,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificDepartmentUpdatesFieldsSuccessfully() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -114,6 +128,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificDepartmentReturnsHttp409Conflict() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -131,6 +146,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatDeleteDepartmentReturnsHttp204NoContent() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));

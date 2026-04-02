@@ -2,6 +2,7 @@ package at.qe.skeleton.tests.controllers;
 
 import at.qe.skeleton.dtos.BuildingCreateDTO;
 import at.qe.skeleton.model.Building;
+import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.services.BuildingService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
 
@@ -40,6 +43,13 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    public void testThatBuildingEndpointsAreSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/buildings"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetPageOfBuildingsReturnsHttp200OK() throws Exception {
         buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         mockMvc.perform(MockMvcRequestBuilders.get("/buildings"))
@@ -49,6 +59,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificBuildingReturnsHttp200WhenExists() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         mockMvc.perform(MockMvcRequestBuilders.get("/buildings/" + saved.getId()))
@@ -58,12 +69,14 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificBuildingReturnsHttp404WhenNotFound() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/buildings/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewBuildingReturnsHttp201Created() throws Exception {
         Building building = TestDataUtil.createBuildingEntity();
         BuildingCreateDTO dto = new BuildingCreateDTO(building.getName(), building.getAddress());
@@ -78,6 +91,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateBuildingWithExistingNameReturnsHttp409Conflict() throws Exception {
         Building existing = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         BuildingCreateDTO duplicateDto = new BuildingCreateDTO(existing.getName(), "Some other address");
@@ -90,6 +104,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificBuildingUpdatesFieldsSuccessfully() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         BuildingCreateDTO patchDto = new BuildingCreateDTO("Updated Name", saved.getAddress());
@@ -104,6 +119,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchBuildingWithDuplicateAddressReturnsHttp409() throws Exception {
         Building building1 = buildingService.createBuilding(Building.builder().name("B1").address("Address 1").build());
         buildingService.createBuilding(Building.builder().name("B2").address("Address 2").build());
@@ -118,6 +134,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatDeleteBuildingReturnsHttp204NoContent() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
 

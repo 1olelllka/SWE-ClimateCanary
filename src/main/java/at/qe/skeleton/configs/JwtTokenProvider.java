@@ -72,7 +72,7 @@ public class JwtTokenProvider {
                 .and()
                 .subject(authentication.getName())
                 .claim("roles", roles)
-                .claim("permissions", roles)
+                .claim("permissions", permissions)
                 .claim("name", user.getFirstName() + " " + user.getLastName())
                 .claim("username", user.getUsername()).compact();
         //  @formatter:on

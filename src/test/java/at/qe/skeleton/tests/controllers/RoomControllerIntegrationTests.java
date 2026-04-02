@@ -17,10 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -49,6 +51,13 @@ public class RoomControllerIntegrationTests {
     }
 
     @Test
+    public void testThatRoomsEndpointsAreSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/rooms"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetPageOfRoomsReturnsHttp200OK() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
@@ -60,6 +69,7 @@ public class RoomControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewRoomReturnsHttp201Created() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
@@ -76,6 +86,7 @@ public class RoomControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificRoomUpdatesFieldsSuccessfully() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
@@ -94,6 +105,7 @@ public class RoomControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificRoomReturnsHttp404WhenNotFound() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
@@ -108,6 +120,7 @@ public class RoomControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatDeleteSpecificRoomReturnsHttp204NoContent() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
