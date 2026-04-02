@@ -50,7 +50,7 @@ public class UserxService implements UserDetailsService {
         return userRepository.findById(id);
     }
 
-    @PreAuthorize("hasAuthority('ADMIN')")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_USERS')")
     public Userx saveUser(Userx user) {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new UsernameDuplicateException("Username " + user.getUsername() + " not available");

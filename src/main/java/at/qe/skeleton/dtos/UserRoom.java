@@ -2,16 +2,12 @@ package at.qe.skeleton.dtos;
 
 import at.qe.skeleton.model.RoomType;
 
-import java.util.Set;
 import java.util.UUID;
 
-public record RoomDTO(
+public record UserRoom(
         UUID id,
         UUID departmentID,
         String departmentName,
-        boolean isActive,
-        RoomType roomType,
-        Integer defaultPeopleCount,
-        Set<UserxListDTO> users
+        RoomType roomType
 ) {
 }

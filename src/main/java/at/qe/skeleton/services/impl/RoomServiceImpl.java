@@ -2,21 +2,28 @@ package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.RoomService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
+    private final UserxRepository userxRepository;
 
-    public RoomServiceImpl(RoomRepository roomRepository){
+    public RoomServiceImpl(RoomRepository roomRepository,
+                           UserxRepository userxRepository){
         this.roomRepository = roomRepository;
+        this.userxRepository = userxRepository;
     }
 
     public Page<Room> getPageOfRooms(Pageable pageable) {return roomRepository.findAll(pageable);}
@@ -37,6 +44,13 @@ public class RoomServiceImpl implements RoomService {
             Optional.ofNullable(room.getDepartment()).ifPresent(r::setDepartment);
             Optional.ofNullable(room.getIsActive()).ifPresent(r::setIsActive);
             Optional.ofNullable(room.getDefaultPeopleCnt()).ifPresent(r::setDefaultPeopleCnt);
+            if (room.getUsers() != null) {
+                Set<Userx> foundUser = new HashSet<>();
+                for (Userx user : room.getUsers()) {
+                    foundUser.add(userxRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException("User with id" + user.getId() + " was not found.")));
+                }
+                r.setUsers(foundUser);
+            }
             return roomRepository.save(r);
         }).orElseThrow(() -> new NotFoundException("Room not found with id: " + id));
     }

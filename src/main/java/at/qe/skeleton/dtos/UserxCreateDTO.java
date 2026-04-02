@@ -22,5 +22,5 @@ public record UserxCreateDTO(
     String lastName,
     boolean enabled,
     @ArraySchema(schema = @Schema(implementation = UserRole.class))
-    Set<UserRole> roles
+    Set<UserRoleDTO> roles
 ) {}

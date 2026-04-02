@@ -5,8 +5,10 @@ import at.qe.skeleton.dtos.RoomDTO;
 import at.qe.skeleton.dtos.RoomPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.RoomMapper;
+import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.RoomService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -69,6 +71,7 @@ public class RoomController {
                 .department(dto.departmentID() != null ? Department.builder().id(dto.departmentID()).build() : null)
                 .defaultPeopleCnt(dto.defaultPeopleCount())
                 .isActive(dto.isActive())
+                .users(dto.users() != null ? dto.users().stream().map(u -> Userx.builder().id(u).build()).collect(Collectors.toSet()) : null)
                 .build());
         return new ResponseEntity<>(roomMapper.mapTo(patched), HttpStatus.OK);
     }

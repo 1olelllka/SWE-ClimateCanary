@@ -47,6 +47,9 @@ public class Userx implements Comparable<Userx>, UserDetails {
   )
   private Set<UserRole> userRoles;
 
+  @ManyToOne
+  private Room myRoom;
+
   boolean enabled;
 
   @Override
