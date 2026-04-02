@@ -18,7 +18,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/roles")
+@RequestMapping("/api/roles")
 public class UserRoleController {
 
     private UserRoleService userRoleService;

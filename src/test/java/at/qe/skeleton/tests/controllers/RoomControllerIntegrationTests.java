@@ -52,7 +52,7 @@ public class RoomControllerIntegrationTests {
 
     @Test
     public void testThatRoomsEndpointsAreSecured() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/rooms"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/rooms"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
@@ -63,7 +63,7 @@ public class RoomControllerIntegrationTests {
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
         roomService.createRoom(TestDataUtil.createRoomEntity(d));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/rooms"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/rooms"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
@@ -77,7 +77,7 @@ public class RoomControllerIntegrationTests {
         RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5);
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/rooms")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/rooms")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
@@ -96,7 +96,7 @@ public class RoomControllerIntegrationTests {
         RoomPatchDTO patchDto = new RoomPatchDTO(d.getId(), RoomType.SHARED, true, 20);
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/rooms/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/rooms/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -113,7 +113,7 @@ public class RoomControllerIntegrationTests {
         RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5);
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/rooms/" + java.util.UUID.randomUUID())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/rooms/" + java.util.UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isNotFound());
@@ -126,11 +126,11 @@ public class RoomControllerIntegrationTests {
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
         Room saved = roomService.createRoom(TestDataUtil.createRoomEntity(d));
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/rooms/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/rooms/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
         // Verify deletion
-        mockMvc.perform(MockMvcRequestBuilders.get("/rooms"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/rooms"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }

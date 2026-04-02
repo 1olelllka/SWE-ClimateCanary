@@ -48,7 +48,7 @@ public class DepartmentControllerIntegrationTests {
 
     @Test
     public void testThatDepartmentEndpointsAreSecured() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
@@ -58,7 +58,7 @@ public class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].rooms").doesNotExist()); // Verification for ListDTO
@@ -70,7 +70,7 @@ public class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.name").value(saved.getName()));
@@ -79,7 +79,7 @@ public class DepartmentControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + UUID.randomUUID()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
@@ -90,7 +90,7 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO dto = new DepartmentCreateDTO("New Dept", b.getId());
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/departments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
@@ -105,7 +105,7 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO dto = new DepartmentCreateDTO(d.getName(), b.getId());
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/departments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
@@ -120,7 +120,7 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO patchDto = new DepartmentCreateDTO("Updated Dept", b.getId());
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/departments/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/departments/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -139,7 +139,7 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO patchDto = new DepartmentCreateDTO(second.getName(), b.getId());
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/departments/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/departments/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
@@ -151,10 +151,10 @@ public class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/departments/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isNotFound());
     }
 }

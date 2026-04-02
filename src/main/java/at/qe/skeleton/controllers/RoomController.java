@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/rooms")
+@RequestMapping("/api/rooms")
 public class RoomController {
 
     private RoomService roomService;

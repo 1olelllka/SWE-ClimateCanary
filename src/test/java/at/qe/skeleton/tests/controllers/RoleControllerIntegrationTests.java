@@ -5,7 +5,6 @@ import at.qe.skeleton.dtos.UserRoleDTO;
 import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.services.UserRoleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.java.Log;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,14 +42,14 @@ public class RoleControllerIntegrationTests {
 
     @Test
     public void testThatPermissionsEndpointIsSecured() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/roles"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/roles"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(authorities = {"CAN_MANAGE_USERS"})
     public void testThatGetAllPermissionsReturnListOfPredefinedRoles() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/roles"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/roles"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").exists())
@@ -64,7 +63,7 @@ public class RoleControllerIntegrationTests {
     @WithMockUser(authorities = {"CAN_MANAGE_USERS"})
     public void testThatUpdatePermissionReturnsHttp404NotFoundIfRoleDoesNotExist() throws Exception {
         UserRoleCreateDTO dto = new UserRoleCreateDTO("Test", null);
-        mockMvc.perform(MockMvcRequestBuilders.patch("/roles/"+ UUID.randomUUID())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/roles/"+ UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
@@ -75,7 +74,7 @@ public class RoleControllerIntegrationTests {
     public void testThatUpdatePermissionReturnsHttp200CreatedAndUpdatedObject() throws Exception {
         UserRoleCreateDTO dto = new UserRoleCreateDTO(null, Set.of(Permission.CAN_VIEW_ALL_ROOMS));
         UUID id = userRoleService.getListOfPermissions().getFirst().getId();
-        String res = mockMvc.perform(MockMvcRequestBuilders.patch("/roles/"+ id)
+        String res = mockMvc.perform(MockMvcRequestBuilders.patch("/api/roles/"+ id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
