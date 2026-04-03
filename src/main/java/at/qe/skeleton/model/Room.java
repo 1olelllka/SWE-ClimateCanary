@@ -3,6 +3,7 @@ package at.qe.skeleton.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -33,6 +34,6 @@ public class Room {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
-    // now without users
-
+    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Set<Userx> users;
 }

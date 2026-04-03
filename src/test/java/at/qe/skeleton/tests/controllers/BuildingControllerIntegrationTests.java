@@ -2,6 +2,7 @@ package at.qe.skeleton.tests.controllers;
 
 import at.qe.skeleton.dtos.BuildingCreateDTO;
 import at.qe.skeleton.model.Building;
+import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.services.BuildingService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,10 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
 
@@ -40,36 +43,46 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    public void testThatBuildingEndpointsAreSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/buildings"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetPageOfBuildingsReturnsHttp200OK() throws Exception {
         buildingService.createBuilding(TestDataUtil.createBuildingEntity());
-        mockMvc.perform(MockMvcRequestBuilders.get("/buildings"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/buildings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].departments").doesNotExist());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificBuildingReturnsHttp200WhenExists() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
-        mockMvc.perform(MockMvcRequestBuilders.get("/buildings/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/buildings/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.name").value(saved.getName()));
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificBuildingReturnsHttp404WhenNotFound() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/buildings/" + UUID.randomUUID()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/buildings/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewBuildingReturnsHttp201Created() throws Exception {
         Building building = TestDataUtil.createBuildingEntity();
         BuildingCreateDTO dto = new BuildingCreateDTO(building.getName(), building.getAddress());
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/buildings")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/buildings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
@@ -78,24 +91,26 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateBuildingWithExistingNameReturnsHttp409Conflict() throws Exception {
         Building existing = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         BuildingCreateDTO duplicateDto = new BuildingCreateDTO(existing.getName(), "Some other address");
         String json = objectMapper.writeValueAsString(duplicateDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/buildings")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/buildings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificBuildingUpdatesFieldsSuccessfully() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
         BuildingCreateDTO patchDto = new BuildingCreateDTO("Updated Name", saved.getAddress());
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/buildings/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/buildings/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -104,6 +119,7 @@ public class BuildingControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchBuildingWithDuplicateAddressReturnsHttp409() throws Exception {
         Building building1 = buildingService.createBuilding(Building.builder().name("B1").address("Address 1").build());
         buildingService.createBuilding(Building.builder().name("B2").address("Address 2").build());
@@ -111,20 +127,21 @@ public class BuildingControllerIntegrationTests {
         BuildingCreateDTO conflictDto = new BuildingCreateDTO("B1", "Address 2");
         String json = objectMapper.writeValueAsString(conflictDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/buildings/" + building1.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/buildings/" + building1.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatDeleteBuildingReturnsHttp204NoContent() throws Exception {
         Building saved = buildingService.createBuilding(TestDataUtil.createBuildingEntity());
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/buildings/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/buildings/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/buildings/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/buildings/" + saved.getId()))
                 .andExpect(status().isNotFound());
     }
 }

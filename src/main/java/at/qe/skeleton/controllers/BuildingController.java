@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/buildings")
+@RequestMapping("/api/buildings")
 public class BuildingController {
 
     private BuildingService buildingService;

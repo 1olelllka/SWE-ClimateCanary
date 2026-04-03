@@ -13,10 +13,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
 
@@ -45,40 +47,50 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    public void testThatDepartmentEndpointsAreSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetPageOfDepartmentsReturnsHttp200OK() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].rooms").doesNotExist()); // Verification for ListDTO
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificDepartmentReturnsHttp200WhenExists() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.name").value(saved.getName()));
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + UUID.randomUUID()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewDepartmentReturnsHttp201Created() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         DepartmentCreateDTO dto = new DepartmentCreateDTO("New Dept", b.getId());
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/departments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isCreated())
@@ -86,19 +98,21 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewDepartmentReturnsHttp409ConflictIfSameNameExists() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
         DepartmentCreateDTO dto = new DepartmentCreateDTO(d.getName(), b.getId());
         String json = objectMapper.writeValueAsString(dto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/departments")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/departments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificDepartmentUpdatesFieldsSuccessfully() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -106,7 +120,7 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO patchDto = new DepartmentCreateDTO("Updated Dept", b.getId());
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/departments/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/departments/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -114,6 +128,7 @@ public class DepartmentControllerIntegrationTests {
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatPatchSpecificDepartmentReturnsHttp409Conflict() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
@@ -124,21 +139,22 @@ public class DepartmentControllerIntegrationTests {
         DepartmentCreateDTO patchDto = new DepartmentCreateDTO(second.getName(), b.getId());
         String json = objectMapper.writeValueAsString(patchDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.patch("/departments/" + saved.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/departments/" + saved.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isConflict());
     }
 
     @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatDeleteDepartmentReturnsHttp204NoContent() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/departments/" + saved.getId()))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/departments/" + saved.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isNotFound());
     }
 }

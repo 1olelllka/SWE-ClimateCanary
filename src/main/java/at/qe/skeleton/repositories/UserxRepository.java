@@ -1,20 +1,16 @@
 package at.qe.skeleton.repositories;
 
+import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.model.UserxRole;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-/**
- * Repository for managing {@link Userx} entities.
- *
- * This class is part of the skeleton project provided for students of the
-* course "Software Engineering" offered by Innsbruck University.
- */
-public interface UserxRepository extends AbstractRepository<Userx, Long> {
+public interface UserxRepository extends JpaRepository<Userx, UUID> {
 
     Optional<Userx> findFirstByUsername(String username);
 
@@ -23,8 +19,11 @@ public interface UserxRepository extends AbstractRepository<Userx, Long> {
     @Query("SELECT u FROM Userx u WHERE CONCAT(u.firstName, ' ', u.lastName) = :wholeName")
     List<Userx> findByWholeNameConcat(@Param("wholeName") String wholeName);
 
-    @Query("SELECT u FROM Userx u WHERE :role MEMBER OF u.roles")
-    List<Userx> findByRole(@Param("role") UserxRole role);
+    @Query("SELECT u FROM Userx u WHERE :role MEMBER OF u.userRoles")
+    List<Userx> findByRole(@Param("role") UserRole role);
+
+    @Query("SELECT u FROM Userx u LEFT JOIN FETCH u.userRoles r LEFT JOIN FETCH r.permissions WHERE u.username = :username")
+    Optional<Userx> findByUsernameWithRoles(@Param("username") String username);
 
     boolean existsByUsername(String username);
 

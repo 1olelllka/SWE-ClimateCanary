@@ -25,10 +25,7 @@ public class UserxCreateMapper implements DTOMapper<Userx, UserxCreateDTO> {
         user.setPassword(dto.password());
         user.setFirstName(dto.firstName());
         user.setLastName(dto.lastName());
-        user.setEmail(dto.email());
-        user.setPhone(dto.phone());
         user.setEnabled(dto.enabled());
-        user.setRoles(dto.roles());
         
         return user;
     }
