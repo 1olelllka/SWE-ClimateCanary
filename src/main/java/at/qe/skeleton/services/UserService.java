@@ -14,4 +14,6 @@ public interface UserService {
     void deleteUser(UUID id);
 
     Userx updateUser(UUID id, Userx dto);
+
+    Userx createNewUser(Userx userx);
 }

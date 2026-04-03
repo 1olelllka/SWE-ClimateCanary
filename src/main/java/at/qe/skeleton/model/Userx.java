@@ -50,7 +50,7 @@ public class Userx implements Comparable<Userx>, UserDetails {
   @ManyToOne
   private Room myRoom;
 
-  boolean enabled;
+  Boolean enabled;
 
   @Override
   public boolean isAccountNonExpired() {

@@ -1,9 +1,12 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.UserxCreateDTO;
 import at.qe.skeleton.dtos.UserxDTO;
 import at.qe.skeleton.dtos.UserxListDTO;
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
+import at.qe.skeleton.mappers.UserRoleMapper;
+import at.qe.skeleton.mappers.UserxCreateMapper;
 import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
@@ -37,13 +40,16 @@ import java.util.stream.Collectors;
 public class UserxController {
  
     private final UserxMapper userMapper;
+    private final UserxCreateMapper userxCreateMapper;
     private final UserService userService;
 
     @Autowired
     public UserxController(UserxMapper userMapper,
-                           UserService userService) {
+                           UserService userService,
+                           UserxCreateMapper userxCreateMapper) {
         this.userMapper = userMapper;
         this.userService = userService;
+        this.userxCreateMapper = userxCreateMapper;
     }
 
 //    @Operation(summary = "Get current user",
@@ -80,6 +86,17 @@ public class UserxController {
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
     }
 
+    @PostMapping("")
+    public ResponseEntity<UserxDTO> createNewUser(@RequestBody @Valid UserxCreateDTO dto,
+                                                  BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
+            throw new ValidationException(msg);
+        }
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(dto));
+        return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.CREATED);
+    }
+
     @PatchMapping("{user_id}")
     public ResponseEntity<UserxDTO> patchSpecificUser(@PathVariable(name = "user_id") UUID id,
                                                       @RequestBody @Valid UserxPatchDTO dto,
@@ -93,6 +110,7 @@ public class UserxController {
                         .username(dto.username())
                         .firstName(dto.firstName())
                         .lastName(dto.lastName())
+                        .enabled(dto.isEnabled())
                         .userRoles(dto.roles() != null
                                 ? dto.roles().stream().map(role -> UserRole.builder().id(role).build()).collect(Collectors.toSet())
                                 : null)

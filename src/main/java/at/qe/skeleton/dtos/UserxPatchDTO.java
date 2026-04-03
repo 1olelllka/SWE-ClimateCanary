@@ -7,6 +7,7 @@ public record UserxPatchDTO(
         String username,
         String firstName,
         String lastName,
+        Boolean isEnabled,
         Set<UUID> roles
 ) {
 }
