@@ -5,9 +5,7 @@ import at.qe.skeleton.dtos.UserxDTO;
 import at.qe.skeleton.dtos.UserxListDTO;
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.mappers.UserRoleMapper;
-import at.qe.skeleton.mappers.UserxCreateMapper;
-import at.qe.skeleton.mappers.UserxMapper;
+import at.qe.skeleton.mappers.*;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.AuthenticatedUserService;
@@ -41,43 +39,27 @@ public class UserxController {
  
     private final UserxMapper userMapper;
     private final UserxCreateMapper userxCreateMapper;
+    private final UserPatchMapper userPatchMapper;
+    private final UserListMapper userListMapper;
     private final UserService userService;
 
     @Autowired
     public UserxController(UserxMapper userMapper,
                            UserService userService,
-                           UserxCreateMapper userxCreateMapper) {
+                           UserxCreateMapper userxCreateMapper,
+                           UserPatchMapper userPatchMapper,
+                           UserListMapper userListMapper) {
         this.userMapper = userMapper;
         this.userService = userService;
         this.userxCreateMapper = userxCreateMapper;
+        this.userListMapper = userListMapper;
+        this.userPatchMapper = userPatchMapper;
     }
-
-//    @Operation(summary = "Get current user",
-//            description = "Get the currently authenticated user.")
-//    @ApiResponse(responseCode = "200", description = "The currently authenticated user.")
-//    @ApiResponse(responseCode = "401", description = "User not authenticated.")
-//    @ApiResponse(responseCode = "403", description = "User not authorized.")
-//    @GetMapping("/me")
-//    public ResponseEntity<UserxDTO> getCurrentUser() {
-//        Userx authenticatedUser = authenticatedUserService.getAuthenticatedUser();
-//        return ResponseEntity.ok(userMapper.mapTo(authenticatedUser));
-//    }
-//    @Operation(summary = "Check if user is authenticated",
-//            description = "Check if the user is authenticated.")
-//    @GetMapping("/authenticated")
-//    public ResponseEntity<String> isAuthenticated(@AuthenticationPrincipal UserDetails userDetails) {
-//        if (userDetails == null) {
-//            return ResponseEntity.status(401).body("User not authenticated");
-//        }
-//        return ResponseEntity.ok("User is authenticated: " + userDetails.getUsername());
-//
-//    }
 
     @GetMapping("")
     public ResponseEntity<Page<UserxListDTO>> getPageOfUsers(Pageable pageable) {
         Page<Userx> page = userService.getPageOfUsers(pageable);
-        return new ResponseEntity<>(page.map(u ->
-            new UserxListDTO(u.getId(), u.getCreateDate(), u.getUsername(), u.getFirstName(), u.getLastName())), HttpStatus.OK);
+        return new ResponseEntity<>(page.map(userListMapper::mapTo), HttpStatus.OK);
     }
 
     @GetMapping("{user_id}")
@@ -105,16 +87,7 @@ public class UserxController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Userx user = userService.updateUser(id,
-                Userx.builder()
-                        .username(dto.username())
-                        .firstName(dto.firstName())
-                        .lastName(dto.lastName())
-                        .enabled(dto.isEnabled())
-                        .userRoles(dto.roles() != null
-                                ? dto.roles().stream().map(role -> UserRole.builder().id(role).build()).collect(Collectors.toSet())
-                                : null)
-                        .build());
+        Userx user = userService.updateUser(id, userPatchMapper.mapFrom(dto));
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
     }
 

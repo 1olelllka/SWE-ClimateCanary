@@ -1,11 +1,12 @@
 package at.qe.skeleton.tests;
 
-import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Department;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomType;
+import at.qe.skeleton.dtos.UserxCreateDTO;
+import at.qe.skeleton.model.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
 
 public class TestDataUtil {
 
@@ -34,5 +35,37 @@ public class TestDataUtil {
                 .department(department)
                 .defaultPeopleCnt(10)
                 .build();
+    }
+
+    public static UserRole createUserRole(Set<Permission> permissions) {
+        return UserRole
+                .builder()
+                .name("TEST ROLE")
+                .permissions(permissions)
+                .build();
+    }
+
+    public static Userx createUserxEntity(UserRole userRole, Room room) {
+        return Userx.builder()
+                .username("jdoe")
+                .firstName("John")
+                .lastName("Doe")
+                .enabled(true)
+                .userRoles(userRole != null  ? Set.of(userRole) : null)
+                .myRoom(room)
+                .createDate(LocalDateTime.now())
+                .updateDate(LocalDateTime.now())
+                .build();
+    }
+
+    public static UserxCreateDTO createUserxCreateDTO(Set<UUID> roles) {
+        return new UserxCreateDTO(
+                "jdoe",
+                "password",
+                "John",
+                "Doe",
+                true,
+                roles
+        );
     }
 }
