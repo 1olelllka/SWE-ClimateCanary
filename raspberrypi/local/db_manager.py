@@ -1,11 +1,3 @@
-# /// script
-# requires-python = ">=3.14"
-# dependencies = [
-#     "aiosqlite>=0.22.1",
-#     "datetime>=6.0",
-#     "logging>=0.4.9.6",
-# ]
-# ///
 import aiosqlite 
 import logging
 from datetime import datetime 
@@ -147,3 +139,19 @@ class DatabaseManager:
                     (datetime.now().isoformat(), category, message)
                 )
                 await db.commit()
+
+    async def get_unsynced_logs(self) -> list:
+        """ Fetches all system logs that haven't been pushed to the Webapp yet. """
+        import aiosqlite # Ensure this is imported at the top of the file
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM system_logs WHERE synced_to_web=0 ORDER BY id ASC") as cursor:
+                rows = await cursor.fetchall()
+                return [dict(row) for row in rows]
+
+    async def mark_log_synced(self, log_id: int):
+        """ Marks a log as successfully synced so it isn't sent again. """
+        import aiosqlite
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("UPDATE system_logs SET synced_to_web=1 WHERE id=?", (log_id,))
+            await db.commit()
