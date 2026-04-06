@@ -11,4 +11,6 @@ import java.util.UUID;
 @Repository
 public interface AbsenceRepository extends JpaRepository<Absence, UUID> {
     Page<Absence> findAllByUserId(UUID userId, Pageable pageable);
+
+    Page<Absence> findByAssignedTo(UUID id, Pageable pageable);
 }
