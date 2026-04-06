@@ -13,7 +13,7 @@ import sys
 
 from config_manager import ConfigManager
 from db_manager import DatabaseManager
-# from data_processor import DataProcessor
+from data_processor import DataProcessor
 # from web_manager import WebManager
 # from ble_manager import BLEManager
 
@@ -29,11 +29,17 @@ async def main(config):
     processing_queue = asyncio.Queue()
     web_out_queue = asyncio.Queue()
     
-    # processor = DataProcessor(db, config, processing_queue, web_out_queue)
+    processor = DataProcessor(db, config, processing_queue, web_out_queue)
     # web_manager = WebManager(config, db, web_out_queue)
     # ble_manager = BLEManager(config, db, processing_queue)
 
-    tasks = []
+    tasks = [
+        # asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
+        # asyncio.create_task(web_manager.run_outgoing_worker(), name="WebOutgoing"),
+        # asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
+        asyncio.create_task(processor.run(), name="DataProcessor"),
+        # asyncio.create_task(ble_manager.run(), name="BLEConnection")
+    ]
 
     # Temporary heartbeat task to keep the script running until we add the real modules
     async def heartbeat():
