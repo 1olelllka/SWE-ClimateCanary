@@ -1,26 +1,19 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.UserxCreateDTO;
-import at.qe.skeleton.dtos.UserxDTO;
-import at.qe.skeleton.dtos.UserxListDTO;
-import at.qe.skeleton.dtos.UserxPatchDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.*;
-import at.qe.skeleton.model.UserRole;
+import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.services.AuthenticatedUserService;
+import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,18 +35,24 @@ public class UserxController {
     private final UserPatchMapper userPatchMapper;
     private final UserListMapper userListMapper;
     private final UserService userService;
+    private final AbsenceService absenceService;
+    private final AbsenceListMapper absenceListMapper;
 
     @Autowired
     public UserxController(UserxMapper userMapper,
                            UserService userService,
                            UserxCreateMapper userxCreateMapper,
                            UserPatchMapper userPatchMapper,
-                           UserListMapper userListMapper) {
+                           UserListMapper userListMapper,
+                           AbsenceService absenceService,
+                           AbsenceListMapper absenceListMapper) {
         this.userMapper = userMapper;
         this.userService = userService;
         this.userxCreateMapper = userxCreateMapper;
         this.userListMapper = userListMapper;
         this.userPatchMapper = userPatchMapper;
+        this.absenceService = absenceService;
+        this.absenceListMapper = absenceListMapper;
     }
 
     @GetMapping("")
@@ -62,10 +61,20 @@ public class UserxController {
         return new ResponseEntity<>(page.map(userListMapper::mapTo), HttpStatus.OK);
     }
 
-    @GetMapping("{user_id}")
+    @GetMapping("/{user_id}")
     public ResponseEntity<UserxDTO> getSpecificUser(@PathVariable(name = "user_id") UUID id) {
         Userx user = userService.getSpecificUser(id);
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
+    }
+
+    @GetMapping("/me/absences")
+    public ResponseEntity<Page<AbsenceListDTO>> getPageOfAbsencesOfAuthenticatedUser(Authentication authentication,
+                                                                                     Pageable pageable) {
+        // authentication.isAuthenticated() check is redundant here, as the endpoint requires specific permission
+        // which cannot be achieved if user is anonymous
+        Userx authenticated = (Userx) authentication.getCredentials();
+        Page<Absence> absences = absenceService.getAllAbsencesById(authenticated.getId(), pageable);
+        return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
     }
 
     @PostMapping("")
@@ -79,19 +88,14 @@ public class UserxController {
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.CREATED);
     }
 
-    @PatchMapping("{user_id}")
+    @PatchMapping("/{user_id}")
     public ResponseEntity<UserxDTO> patchSpecificUser(@PathVariable(name = "user_id") UUID id,
-                                                      @RequestBody @Valid UserxPatchDTO dto,
-                                                      BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
-            throw new ValidationException(msg);
-        }
+                                                      @RequestBody UserxPatchDTO dto) {
         Userx user = userService.updateUser(id, userPatchMapper.mapFrom(dto));
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
     }
 
-    @DeleteMapping("{user_id}")
+    @DeleteMapping("/{user_id}")
     public ResponseEntity<Void> deleteSpecificUser(@PathVariable(name="user_id") UUID id) {
         userService.deleteUser(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

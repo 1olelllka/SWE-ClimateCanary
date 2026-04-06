@@ -1,6 +1,7 @@
 package at.qe.skeleton.dtos;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
 import java.util.UUID;
@@ -19,5 +20,6 @@ public record UserxCreateDTO(
     String firstName,
     String lastName,
     boolean enabled,
+    @NotNull
     Set<UUID> roles
 ) {}

@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
             Optional.ofNullable(u.getLastName()).ifPresent(user::setLastName);
             Optional.ofNullable(u.getUserRoles()).ifPresent(user::setUserRoles);
             Optional.ofNullable(u.getEnabled()).ifPresent(user::setEnabled);
-            return user;
+            return userxRepository.save(user);
         }).orElseThrow(() -> new NotFoundException("User with id " + id + " was not found."));
     }
 

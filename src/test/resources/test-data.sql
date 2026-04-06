@@ -1,3 +1,5 @@
+-- mock request to avoid build failures
+SELECT * FROM USERX
 ---- Insert users into USERX table
 --INSERT INTO USERX (ID, ENABLED, FIRST_NAME, LAST_NAME, PASSWORD, USERNAME, CREATE_USER_ID, CREATE_DATE)
 --VALUES (1000, TRUE, 'Admin', 'Istrator', 'passwd', 'admin', 1000, '2024-01-01 00:00:00');

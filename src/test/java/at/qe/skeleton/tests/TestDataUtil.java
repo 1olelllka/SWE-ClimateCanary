@@ -68,4 +68,15 @@ public class TestDataUtil {
                 roles
         );
     }
+
+    public static Absence createAbsence(Userx userx) {
+        return Absence.builder()
+                .startDate(LocalDateTime.of(2025, 1, 1, 0, 0))
+                .endDate(LocalDateTime.of(2025, 1, 10, 0, 0))
+                .user(userx)
+                .comment("Simple test comment")
+                .typeOfAbsense(AbsenceType.ILLNESS)
+                .status(AbsenceStatus.APPROVED)
+                .build();
+    }
 }
