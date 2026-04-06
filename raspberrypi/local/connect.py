@@ -4,23 +4,16 @@ import aiohttp
 from aiohttp import web
 from bleak import BleakScanner, BleakClient
 
-# BLE Configuration
 TARGET_NAME = os.getenv("BLE_NAME", "SensorStation")
-# UUID for getting data FROM Arduino
-CHAR_UUID = os.getenv("BLE_UUID", "2A29")
-# UUID for writing TO Arduino
-WRITE_UUID = os.getenv("BLE_WRITE_UUID", "2A30")
+CHAR_UUID = os.getenv("BLE_UUID", "19B10001-E8F2-537E-4F6C-D104768A1214")
+WRITE_UUID = os.getenv("BLE_WRITE_UUID", "19B10002-E8F2-537E-4F6C-D104768A1214")
 
-# REST API Configuration (Sending to Webapp)
-API_URL = os.getenv("API_URL", "http://127.0.0.1:5000/api/sensor-data")
+API_URL = os.getenv("API_URL", "http://172.20.10.4:8080/test-info")
 
-# Local Server Configuration (Receiving from Webapp)
 LOCAL_PORT = int(os.getenv("LOCAL_PORT", 8080))
 
-# passes messages between the Web Server and the BLE connection
 command_queue = asyncio.Queue()
 
-# PI -> WEBAPP (Forwarding Arduino Data)
 async def send_to_webapp(data_string):
     headers = {"Content-Type": "application/json"}
     payload = {"device": TARGET_NAME, "message": data_string}
@@ -43,7 +36,6 @@ def notification_handler(sender, data):
     print(f"\n[Arduino -> Pi] Received: {message}")
     asyncio.create_task(send_to_webapp(message))
 
-# WEBAPP -> PI (Receiving Webapp Data)
 async def handle_webapp_post(request):
     try:
         data = await request.json()
@@ -69,9 +61,7 @@ async def start_local_server():
     await site.start()
     print(f"Pi Listening for Webapp commands on port {LOCAL_PORT}...")
 
-# BLE
 async def main():
-    # Start the local web server first so the webapp can immediately talk to the Pi
     await start_local_server()
 
     print("Perfoming webapp connection test.\n")
@@ -85,7 +75,6 @@ async def main():
 
     if not device:
         print(f"Error: Could not find '{TARGET_NAME}'.")
-        # Keep server alive even if BLE fails for debugging
         await asyncio.Event().wait()
         return
 
@@ -94,13 +83,8 @@ async def main():
         async with BleakClient(device, timeout=20.0) as client:
             print("Connected!")
 
-            # Start listening for Arduino notifications
             await client.start_notify(CHAR_UUID, notification_handler)
-            #await asyncio.sleep(2.0)
-            #await command_queue.put("test command.")
-            # This inner loop constantly checks the queue for new Webapp commands
             while True:
-                # This waits safely without blocking until a command arrives
                 new_command = await command_queue.get()
 
                 print(f"[Pi -> Arduino] Sending: {new_command}")
