@@ -10,11 +10,7 @@ import aiosqlite
 import logging
 from datetime import datetime 
 
-logging.basicConfig(
-    filename="/home/pi/logs/raspberrypi.log",
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     def __init__(self, db_path: str):   
@@ -67,7 +63,7 @@ class DatabaseManager:
             ''')
 
             await db.commit()
-            logging.info("Database initialized successfully with all tables.")
+            logger.info("Database initialized successfully with all tables.")
 
     async def insert_measurement(self, temp: float, moisture: float, co2: float):
         """ Insert current measurements into the corresponding table """
@@ -77,7 +73,7 @@ class DatabaseManager:
                 "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
                 (now, temp, moisture, co2)
             )
-            logging.info(f"New measurements received from sensor station at time {now}: temp={temp}, moisture={moisture}, co2={co2}")
+            logger.info(f"New measurements received from sensor station at time {now}: temp={temp}, moisture={moisture}, co2={co2}")
             await db.commit()
 
     async def set_limit(self, key: str, value: float):
@@ -93,7 +89,7 @@ class DatabaseManager:
                 (key, value, datetime.now().isoformat())
             )
             await db.commit()
-            logging.info(f"Limit updated via Webapp: {key} = {value}")
+            logger.info(f"Limit updated via Webapp: {key} = {value}")
 
     async def get_all_limits(self) -> dict:
         """ Fetches all current limits so the Pi can check incoming data against them """
@@ -115,7 +111,7 @@ class DatabaseManager:
                 (sensor_type, threshold, actual, datetime.now().isoformat())
             )
             await db.commit()
-            logging.warning(f"Limit violation. {sensor_type} hit {actual} (Limit: {threshold})")
+            logger.warning(f"Limit violation. {sensor_type} hit {actual} (Limit: {threshold})")
 
     async def resolve_violation(self, sensor_type: str):
         """ Marks an active violation as resolved when values return to normal """
@@ -125,7 +121,7 @@ class DatabaseManager:
                 (datetime.now().isoformat(), sensor_type)
             )
             await db.commit()
-            logging.info(f"Violation resolved for {sensor_type}.")
+            logger.info(f"Violation resolved for {sensor_type}.")
 
     async def get_active_violations(self) -> list:
         """ Fetches currently active violations to show on the Arduino display """
@@ -138,11 +134,11 @@ class DatabaseManager:
     async def log_event(self, category: str, message: str, level: str = "INFO"):
         """ Logs to file, and queues WARN/ERRORs in SQLite to sync to Webapp """
         if level == "ERROR":
-            logging.error(f"[{category}] {message}")
+            logger.error(f"[{category}] {message}")
         elif level == "WARN":
-            logging.warning(f"[{category}] {message}")
+            logger.warning(f"[{category}] {message}")
         else:
-            logging.info(f"[{category}] {message}")
+            logger.info(f"[{category}] {message}")
 
         if level in ["ERROR", "WARN"]:
             async with aiosqlite.connect(self.db_path) as db:
