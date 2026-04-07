@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/buildings")
+@CrossOrigin(origins = "*")
 public class BuildingController {
 
     private BuildingService buildingService;

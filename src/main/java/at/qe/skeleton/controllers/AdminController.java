@@ -31,6 +31,7 @@ import java.util.UUID;
 @Tag(name = "Admin Controller")
 @RestController
 @RequestMapping("/api/admin")
+@CrossOrigin(origins = "*")
 public class AdminController {
 
   private final UserxCreateMapper userCreateMapper;

@@ -5,7 +5,7 @@
 import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
 import {BEARER_TOKEN_LOCAL_STORAGE_KEY} from "../config/config";
 import {jwtDecode, JwtPayload} from "jwt-decode";
-import {LoginRequestDTO, UserxControllerApi, UserxDTO, UserxRole} from '../generated-skeleton-api';
+import {LoginRequestDTO, UserxControllerApi, UserxDTO} from '../generated-skeleton-api';
 import {AuthApi} from "../utilities/authApi";
 
 /**
@@ -27,8 +27,9 @@ interface UserContextType {
     logout: () => void;
     error: Error | null;
     isAdmin: boolean;
-    isManager: boolean;
     isEmployee: boolean;
+    isSeniorManager: boolean;
+    isBuildingManager: boolean;
     userIsAuthenticated: () => Promise<boolean>;
 }
 
@@ -115,8 +116,7 @@ export function UserProvider({children}: { children: React.ReactNode }) {
                 email: "",
                 phone: "",
                 enabled: true,
-                roles: new Set(roles.map((role) => role as UserxRole)),
-            };
+                roles: new Set(roles) as any,            };
         } catch {
             // invalid token -> treat as logged out
             return null;
@@ -154,10 +154,11 @@ export function UserProvider({children}: { children: React.ReactNode }) {
         }
     };
 
-    const roles = currentUser?.roles ?? new Set<UserxRole>();
-    const isAdmin = roles.has(UserxRole.ADMIN);
-    const isManager = roles.has(UserxRole.MANAGER);
-    const isEmployee = roles.has(UserxRole.EMPLOYEE);
+    const roles = currentUser?.roles as any as Set<string> ?? new Set<string>();
+    const isAdmin = roles.has("SYSADMIN") || roles.has("ROLE_SYSADMIN");
+    const isEmployee = roles.has("EMPLOYEE") || roles.has("ROLE_EMPLOYEE");
+    const isSeniorManager = roles.has("SENIOR_MANAGEMENT") || roles.has("ROLE_SENIOR_MANAGEMENT");
+    const isBuildingManager = roles.has("BUILDING_MANAGER") || roles.has("ROLE_BUILDING_MANAGER");
 
     return (
         <UserContext.Provider
@@ -167,8 +168,9 @@ export function UserProvider({children}: { children: React.ReactNode }) {
                 logout,
                 error,
                 isAdmin,
-                isManager,
                 isEmployee,
+                isSeniorManager,
+                isBuildingManager,
                 userIsAuthenticated
             }}
         >
