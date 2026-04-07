@@ -17,11 +17,9 @@ import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -49,8 +47,10 @@ public class JwtTokenProvider {
         // Get the authenticated user, we can do this since the UserxTypes class implements UserDetails
         Userx user = (Userx) authentication.getPrincipal();
 
-        List<String> roles = user.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
-
+        List<String> roles = user.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+                .filter(g -> g.startsWith("ROLE_")).toList();
+        List<String> permissions = user.getAuthorities()
+                .stream().map(GrantedAuthority::getAuthority).filter(g -> g.startsWith("CAN_")).toList();
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtConfig.getJwtSecret()));
 
         Instant now = Instant.now();
@@ -72,10 +72,9 @@ public class JwtTokenProvider {
                 .and()
                 .subject(authentication.getName())
                 .claim("roles", roles)
+                .claim("permissions", permissions)
                 .claim("name", user.getFirstName() + " " + user.getLastName())
-                .claim("username", user.getUsername())
-                .claim("email", user.getEmail()).compact();
-
+                .claim("username", user.getUsername()).compact();
         //  @formatter:on
     }
 

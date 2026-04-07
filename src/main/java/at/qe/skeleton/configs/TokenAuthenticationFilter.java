@@ -8,7 +8,7 @@
 package at.qe.skeleton.configs;
 
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.services.UserxService;
+import at.qe.skeleton.repositories.UserxRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
@@ -30,14 +30,15 @@ import java.util.Optional;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
-    private final UserxService userService;
     private final JwtConfig jwtConfig;
+    private final UserxRepository userxRepository;
 
     @Autowired
-    public TokenAuthenticationFilter(JwtTokenProvider tokenProvider, UserxService userService, JwtConfig jwtConfig) {
+    public TokenAuthenticationFilter(JwtTokenProvider tokenProvider, JwtConfig jwtConfig,
+                                      UserxRepository userxRepository) {
         this.tokenProvider = tokenProvider;
-        this.userService = userService;
         this.jwtConfig = jwtConfig;
+        this.userxRepository = userxRepository;
     }
 
     // This method is called by the filter chain to handle JWT authentication within a request lifecycle.
@@ -48,7 +49,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                     .flatMap(tokenProvider::validateTokenAndGetJws)
                     .ifPresent(jws -> {
                         String username = jws.getPayload().getSubject();
-                        Userx userDetails = userService.getUserByUsername(username);
+                        Userx userDetails = userxRepository.findByUsernameWithRoles(username).orElseThrow(() -> new RuntimeException("idk"));
                         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authentication);

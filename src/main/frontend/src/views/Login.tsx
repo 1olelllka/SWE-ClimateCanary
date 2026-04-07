@@ -5,10 +5,10 @@
 import {useState} from "react";
 
 import {Button} from "primereact/button";
-import {FloatLabel} from 'primereact/floatlabel';
 import {InputText} from "primereact/inputtext";
 import {Password} from "primereact/password";
 
+import logo from '../logo.png';
 import '../styles/Login.css';
 
 import {useNavigate} from 'react-router-dom';
@@ -71,37 +71,60 @@ const Login = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-card">
-                <h2>Login</h2>
-                <form onSubmit={handleLogin}>
-                    <FloatLabel style={{marginTop: 50}}>
-                        <InputText
-                            id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                            autoComplete="off"
-                            className="input-field"
-                        />
-                        <label htmlFor="username">Username:</label>
-                    </FloatLabel>
+        <div className="login-page-wrapper">
+            <div className="login-mockup-card">
 
-                    <FloatLabel style={{marginTop: 25}}>
-                        <Password
-                            inputId="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            feedback={false}
-                            autoComplete="off"
-                            className="input-field"
+                {/* Header Bereich mit Logo und Slogan */}
+                <div className="login-header">
+                    <img src={logo} alt="ClimateCanary Logo" className="brand-logo" />
+                    <h1 className="brand-title">Welcome to<br/>ClimateCanary</h1>
+                    <p className="brand-subtitle">Your early warning system for office climate.</p>
+                </div>
+
+                {/* Login Formular */}
+                <div className="form-section">
+                    <h2 className="login-heading">Login</h2>
+                    <form onSubmit={handleLogin} className="login-form">
+
+                        <div className="input-group">
+                            <InputText
+                                id="username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                autoComplete="off"
+                                placeholder="Username"
+                                className="mockup-input"
+                            />
+                        </div>
+
+                        <div className="input-group password-group">
+                            <Password
+                                inputId="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                feedback={false}
+                                toggleMask={false}
+                                autoComplete="off"
+                                placeholder="Password"
+                                className="password-input"
+                            />
+                            <a href="#" className="forgot-link" onClick={(e) => e.preventDefault()}>
+                                Forgot?
+                            </a>
+                        </div>
+
+                        <Button
+                            type="submit"
+                            label="Sign in"
+                            className="mockup-button"
+                            loading={loading}
                         />
-                        <label htmlFor="password">Password:</label>
-                    </FloatLabel>
-                    <Button type="submit" label="Login" className="loginButton"/>
-                </form>
-                {error && <p style={{color: 'red', marginTop: 25}}>{error}</p>}
+                    </form>
+
+                    {error && <p className="error-message">{error}</p>}
+                </div>
             </div>
         </div>
     );
