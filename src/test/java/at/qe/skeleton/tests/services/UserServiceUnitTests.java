@@ -6,7 +6,6 @@ import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.impl.UserServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
-import lombok.extern.java.Log;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

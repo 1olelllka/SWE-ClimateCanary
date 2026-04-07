@@ -27,5 +27,6 @@ public class Absence {
     private UUID assignedTo;
     private String comment;
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private Userx user;
 }

@@ -6,7 +6,6 @@ import at.qe.skeleton.model.Userx;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
 
 import java.util.UUID;
 
@@ -15,9 +14,9 @@ public interface AbsenceService {
 
     Absence createNewAbsenceForUser(Absence absence);
 
-    Absence getAbsenceById(UUID id);
+    Absence getAbsenceById(UUID id, Userx manager);
 
-    void deleteAbsenceById(UUID id, Authentication authentication);
+    void deleteAbsenceById(UUID id, Userx user);
 
     Absence updateAbsenceStatus(UUID id, @NotNull(message = "Status must not be null.") AbsenceStatus status);
 

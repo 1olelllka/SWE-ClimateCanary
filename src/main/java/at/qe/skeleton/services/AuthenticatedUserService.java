@@ -1,5 +1,6 @@
 package at.qe.skeleton.services;
 
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.UserxRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ public class AuthenticatedUserService {
      */
     public Userx getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return userRepository.findFirstByUsername(auth.getName()).orElse(null);
+        return userRepository.findFirstByUsername(auth.getName()).orElseThrow(() -> new NotFoundException("User with username " + auth.getName() + " was not found."));
     }
 
 }

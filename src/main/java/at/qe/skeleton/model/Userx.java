@@ -48,11 +48,12 @@ public class Userx implements Comparable<Userx>, UserDetails {
   private Set<UserRole> userRoles;
 
   @ManyToOne
+  @JoinColumn(name = "room_id")
   private Room myRoom;
 
   Boolean enabled;
 
-  @OneToMany
+  @OneToMany(mappedBy = "user")
   private Set<Absence> absences;
 
   @Override

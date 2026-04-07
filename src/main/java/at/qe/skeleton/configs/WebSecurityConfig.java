@@ -91,7 +91,6 @@ public class WebSecurityConfig {
                                                         .requestMatchers("/test-info", "/test-raspberry").permitAll()
                                                         .requestMatchers("/api/users/me/absences").hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
                                                         .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
-                                                        .requestMatchers("/api/absences/**").hasAnyRole("EMPLOYEE", "DEPARTMENT_MANAGER")
                                                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
                                                         .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())

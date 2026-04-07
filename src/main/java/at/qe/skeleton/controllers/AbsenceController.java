@@ -11,6 +11,7 @@ import at.qe.skeleton.mappers.AbsenceMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.AbsenceService;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -35,28 +36,32 @@ public class AbsenceController {
     private AbsenceListMapper absenceListMapper;
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
+    private AuthenticatedUserService authenticatedUserService;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
-                             AbsenceMapper absenceMapper) {
+                             AbsenceMapper absenceMapper,
+                             AuthenticatedUserService authenticatedUserService) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @GetMapping("")
+    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('DEPARTMENT_MANAGER')")
     public ResponseEntity<Page<AbsenceListDTO>> getAllAbsences(Authentication authentication,
                                                                Pageable pageable) {
         Set<String> authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         if (authorities.contains("ROLE_DEPARTMENT_MANAGER")) {
-            Userx user = (Userx) authentication.getCredentials();
+            Userx user = authenticatedUserService.getAuthenticatedUser();
             Page<Absence> absences = absenceService.getAllAbsencesByDepartment(user, pageable);
             return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
         } else if (authorities.contains("ROLE_EMPLOYEE")) {
-            Userx user = (Userx) authentication.getCredentials();
+            Userx user = authenticatedUserService.getAuthenticatedUser();
             return new ResponseEntity<>(absenceService.getAllAbsencesById(user.getId(), pageable).map(absenceListMapper::mapTo), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
@@ -79,9 +84,10 @@ public class AbsenceController {
     }
 
     @GetMapping("{absence_id}")
-    @PreAuthorize("hasAuthority('CAN_MANAGE_ABSENCES'")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_ABSENCES')")
     public ResponseEntity<AbsenceDTO> getSpecificAbsence(@PathVariable(name="absence_id") UUID id) {
-        Absence absence = absenceService.getAbsenceById(id);
+        Userx manager = authenticatedUserService.getAuthenticatedUser();
+        Absence absence = absenceService.getAbsenceById(id, manager);
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.OK);
     }
 
@@ -102,7 +108,8 @@ public class AbsenceController {
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
     public ResponseEntity<Void> deleteSpecificAbsence(@PathVariable(name="absence_id") UUID id,
                                                       Authentication authentication) {
-        absenceService.deleteAbsenceById(id, authentication);
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        absenceService.deleteAbsenceById(id, user);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
