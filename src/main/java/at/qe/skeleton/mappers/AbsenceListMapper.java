@@ -17,7 +17,7 @@ public class AbsenceListMapper implements DTOMapper<Absence, AbsenceListDTO> {
                     null,
                     entity.getStartDate(),
                     entity.getEndDate(),
-                    entity.getTypeOfAbsense(),
+                    entity.getTypeOfAbsence(),
                     entity.getStatus(),
                     entity.getCreatedAt());
         }
@@ -28,7 +28,7 @@ public class AbsenceListMapper implements DTOMapper<Absence, AbsenceListDTO> {
                 entity.getUser().getMyRoom() != null ? entity.getUser().getMyRoom().getId() : null,
                 entity.getStartDate(),
                 entity.getEndDate(),
-                entity.getTypeOfAbsense(),
+                entity.getTypeOfAbsence(),
                 entity.getStatus(),
                 entity.getCreatedAt());
     }
@@ -43,7 +43,7 @@ public class AbsenceListMapper implements DTOMapper<Absence, AbsenceListDTO> {
                 .startDate(dto.startDate())
                 .endDate(dto.endDate())
                 .createdAt(dto.createdAt())
-                .typeOfAbsense(dto.typeOfAbsence())
+                .typeOfAbsence(dto.typeOfAbsence())
                 .build();
     }
 }

@@ -75,7 +75,7 @@ public class TestDataUtil {
                 .endDate(LocalDateTime.of(2025, 1, 10, 0, 0))
                 .user(userx)
                 .comment("Simple test comment")
-                .typeOfAbsense(AbsenceType.ILLNESS)
+                .typeOfAbsence(AbsenceType.ILLNESS)
                 .status(AbsenceStatus.APPROVED)
                 .build();
     }

@@ -29,7 +29,7 @@ public class AbsenceCreateMapper implements DTOMapper<Absence, AbsenceCreateDTO>
                 .comment(dto.comment())
                 .startDate(dto.startDate())
                 .endDate(dto.endDate())
-                .typeOfAbsense(dto.reason())
+                .typeOfAbsence(dto.reason())
                 .assignedTo(dto.assignedTo())
                 .build();
     }

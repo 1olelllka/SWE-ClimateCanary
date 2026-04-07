@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class AbsenceMapper implements DTOMapper<Absence, AbsenceDTO> {
     @Override
     public AbsenceDTO mapTo(Absence entity) {
-        return new AbsenceDTO(entity.getId(), entity.getTypeOfAbsense(), entity.getStatus(), entity.getStartDate(),
+        return new AbsenceDTO(entity.getId(), entity.getTypeOfAbsence(), entity.getStatus(), entity.getStartDate(),
                 entity.getEndDate(), entity.getCreatedAt(), entity.getAssignedTo(), entity.getComment());
     }
 

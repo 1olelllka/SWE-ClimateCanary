@@ -18,7 +18,7 @@ public class Absence {
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
     private UUID id;
-    private AbsenceType typeOfAbsense;
+    private AbsenceType typeOfAbsence;
     private AbsenceStatus status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
