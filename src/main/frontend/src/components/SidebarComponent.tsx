@@ -40,49 +40,45 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
 
             <div className="sidebar-menu">
 
-                {/* SYSADMIN */}
-                {isAdmin && (
-                    <>
-                        <div className="menu-category">Sysadmin</div>
-                        {renderMenuItem('Home (Overview)', '/', 'pi pi-home')}
-                        {renderMenuItem('Device Configuration', '/admin/devices', 'pi pi-server')}
-                        {renderMenuItem('User Configuration', '/admin/users', 'pi pi-users')}
-                        {renderMenuItem('Building Configuration', '/admin/building', 'pi pi-building')}
-                    </>
-                )}
-
-                {/* DEPARTMENT HEAD */}
-                {isDepartmentManager && !isAdmin && (
-                    <>
-                        <div className="menu-category">Department Head</div>
-                        {renderMenuItem('Home (Deptartment Overview)', '/', 'pi pi-home')}
-                        {renderMenuItem('Absences', '/absences', 'pi pi-calendar-times')}
-                    </>
-                )}
-
                 {/* EMPLOYEE */}
-                {isEmployee && !isDepartmentManager && !isAdmin && (
-                    <>
+                {isEmployee && !isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
                         <div className="menu-category">Employee</div>
-                        {renderMenuItem('Home (Dashboard)', '/', 'pi pi-home')}
+                        {renderMenuItem('My Office', '/', 'pi pi-home')}
                         {renderMenuItem('My Department', '/department', 'pi pi-sitemap')}
                         {renderMenuItem('My Absences', '/absences', 'pi pi-calendar')}
                     </>
                 )}
 
+                {/* DEPARTMENT HEAD */}
+                {isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
+                        <div className="menu-category">Department Head</div>
+                        {renderMenuItem('Deptartment Overview', '/', 'pi pi-home')}
+                        {renderMenuItem('Absences', '/absences', 'pi pi-calendar-times')}
+                    </>
+                )}
+
                 {/* SENIOR MANAGEMENT */}
-                {isSeniorManager && (
-                    <>
+                {isSeniorManager && !isAdmin && (                    <>
                         <div className="menu-category">Senior Management</div>
-                        {renderMenuItem('Home (Department Overview)', '/', 'pi pi-chart-line')}
+                        {renderMenuItem('Department Overview', '/', 'pi pi-chart-line')}
                     </>
                 )}
 
                 {/* BUILDING MANAGEMENT */}
-                {isBuildingManager && (
-                    <>
+                {isBuildingManager && !isAdmin && (                    <>
                         <div className="menu-category">Building Management</div>
-                        {renderMenuItem('Home (Building Overview)', '/', 'pi pi-map')}
+                        {renderMenuItem('Building Overview', '/', 'pi pi-map')}
+                    </>
+                )}
+
+                {/* SYSADMIN */}
+                {isAdmin && (
+                    <>
+                        <div className="menu-category">Sysadmin</div>
+                        {renderMenuItem('Overview', '/', 'pi pi-home')}
+                        {renderMenuItem('Device Configuration', '/admin/devices', 'pi pi-server')}
+                        {renderMenuItem('User Configuration', '/admin/users', 'pi pi-users')}
+                        {renderMenuItem('Building Configuration', '/admin/building', 'pi pi-building')}
                     </>
                 )}
 
@@ -109,6 +105,7 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
                     </div>
                     <div className="user-info">
                         <span className="user-name">{currentUser?.username || 'Benutzer'}</span>
+                        <span className="user-email">{currentUser?.email || 'keine E-Mail hinterlegt'}</span>
                     </div>
                 </div>
             </div>
