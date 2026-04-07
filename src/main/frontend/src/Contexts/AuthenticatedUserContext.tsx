@@ -30,6 +30,7 @@ interface UserContextType {
     isEmployee: boolean;
     isSeniorManager: boolean;
     isBuildingManager: boolean;
+    isDepartmentManager: boolean;
     userIsAuthenticated: () => Promise<boolean>;
 }
 
@@ -159,6 +160,7 @@ export function UserProvider({children}: { children: React.ReactNode }) {
     const isEmployee = roles.has("EMPLOYEE") || roles.has("ROLE_EMPLOYEE");
     const isSeniorManager = roles.has("SENIOR_MANAGEMENT") || roles.has("ROLE_SENIOR_MANAGEMENT");
     const isBuildingManager = roles.has("BUILDING_MANAGER") || roles.has("ROLE_BUILDING_MANAGER");
+    const isDepartmentManager = roles.has("DEPARTMENT_MANAGER") || roles.has("DEPARTMENT_MANAGER");
 
     return (
         <UserContext.Provider
@@ -170,6 +172,7 @@ export function UserProvider({children}: { children: React.ReactNode }) {
                 isAdmin,
                 isEmployee,
                 isSeniorManager,
+                isDepartmentManager,
                 isBuildingManager,
                 userIsAuthenticated
             }}
