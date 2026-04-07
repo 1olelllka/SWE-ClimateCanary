@@ -4,17 +4,27 @@ import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.mappers.UserPatchMapper;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class UserPatchMapperUnitTests {
 
-    private final UserPatchMapper mapper = new UserPatchMapper();
+    @Mock
+    private RoleRepository roleRepository;
+    @InjectMocks
+    private UserPatchMapper mapper;
 
     @Test
     void testThatMapToShouldIncludeFieldsAndRoleIds() {
@@ -56,7 +66,7 @@ class UserPatchMapperUnitTests {
                 true,
                 Set.of(roleId)
         );
-
+        when(roleRepository.getReferenceById(roleId)).thenReturn(UserRole.builder().id(roleId).build());
         Userx result = mapper.mapFrom(dto);
 
         assertNotNull(result);
