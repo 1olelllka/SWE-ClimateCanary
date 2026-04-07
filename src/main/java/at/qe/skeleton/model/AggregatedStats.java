@@ -12,11 +12,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Data
 @Table(name = "aggregated_stats")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AggregatedStats {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private int id;
 
     @Column(name = "room_id", nullable = false)

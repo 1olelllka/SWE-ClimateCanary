@@ -14,8 +14,10 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Table(name = "room_monitoring")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class RoomMonitoring {
     @Id
+    @EqualsAndHashCode.Include
     private UUID roomId;
     // Devices
     @OneToOne(fetch = FetchType.LAZY)
