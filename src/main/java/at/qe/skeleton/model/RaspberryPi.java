@@ -33,7 +33,7 @@ public class RaspberryPi {
     @Column(nullable = false)
     private DeviceStatus status;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime lastHeartBeat;
 
     @Column(nullable = false)

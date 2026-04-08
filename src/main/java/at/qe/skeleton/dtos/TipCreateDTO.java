@@ -2,7 +2,6 @@ package at.qe.skeleton.dtos;
 
 import at.qe.skeleton.model.ViolatedSensor;
 import at.qe.skeleton.model.ViolationType;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,10 +13,10 @@ public record TipCreateDTO(
         @NotEmpty(message = "Room ID must not be empty.")
         UUID roomID,
 
-        @NotBlank(message = "Violation type must not be blank.")
+        @NotNull(message = "Violation type must not be null.")
         ViolationType violationType,
 
-        @NotBlank(message = "Violation sensor must not be blank.")
+        @NotNull(message = "Violation sensor must not be null.")
         ViolatedSensor violatedSensor,
 
         @NotEmpty(message = "Message must not be empty") //thought can be null meaning it was not set

@@ -19,6 +19,9 @@ public class RoomMonitoring {
     @Id
     @EqualsAndHashCode.Include
     private UUID roomId;
+
+    @Column(nullable = false)
+    private String roomNumber;
     // Devices
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sensor_station_id")

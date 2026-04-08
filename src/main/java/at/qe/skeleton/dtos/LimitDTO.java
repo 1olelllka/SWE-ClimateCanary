@@ -13,6 +13,6 @@ public record LimitDTO(
 
         float humMin,
 
-        int co2Max
+        float co2Max
 ) {
 }

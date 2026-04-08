@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-public record MeasurementCreateDTO(
+public record MeasurementBatchDTO(
 
         @NotNull(message = "Room ID must not be null.")
         UUID roomId,

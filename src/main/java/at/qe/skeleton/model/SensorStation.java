@@ -23,7 +23,7 @@ public class SensorStation {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime lastHeartBeat;
 
     @Column(nullable = false)

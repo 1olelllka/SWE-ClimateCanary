@@ -7,7 +7,6 @@ import java.util.UUID;
 public record SensorStationDTO(
         UUID id,
         String name,
-        String bleHardwareAddress,
         DeviceStatus status,
         UUID roomId,
         UUID connectedToPiId
