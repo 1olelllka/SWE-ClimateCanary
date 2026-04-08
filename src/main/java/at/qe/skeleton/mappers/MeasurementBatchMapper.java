@@ -16,9 +16,9 @@ public class MeasurementBatchMapper {
 
         for (ReadingDTO reading : dto.readings()) {
             switch (reading.type()) {
-                case TEMPERATURE -> builder.tempVal((int) reading.value());
-                case HUMIDITY    -> builder.humVal((int) reading.value());
-                case CO2         -> builder.pollVal((int) reading.value());
+                case TEMPERATURE -> builder.tempVal(reading.value());
+                case HUMIDITY    -> builder.humVal(reading.value());
+                case CO2         -> builder.pollVal(reading.value());
             }
         }
 

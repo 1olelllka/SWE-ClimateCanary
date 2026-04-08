@@ -6,6 +6,6 @@ public record ClimateDataPointDTO(
         LocalDateTime timestamp,
         double temperature,
         double humidity,
-        int airQuality
+        double airQuality
 ) {
 }

@@ -22,13 +22,13 @@ public class ClimateStats {
     private UUID id;
 
     @Column(nullable = false)
-    private int humVal;
+    private double humVal;
 
     @Column(nullable = false)
-    private int pollVal;
+    private double pollVal;
 
     @Column(nullable = false)
-    private int tempVal;
+    private double tempVal;
 
     @Column(nullable = false)
     private LocalDateTime date;
