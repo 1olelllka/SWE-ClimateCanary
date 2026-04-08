@@ -10,7 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
+//@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class HelloRaspberryController {
     private static final Logger logger = LoggerFactory.getLogger(HelloRaspberryController.class);
     private final TestConnectionClient connectionClient;
