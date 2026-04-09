@@ -11,23 +11,23 @@ interface SidebarComponentProps {
 }
 
 const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) => {
-    const { currentUser, isAdmin, isManager, isEmployee } = useUser();
+    const { currentUser, isAdmin, isEmployee, isSeniorManager, isBuildingManager, isDepartmentManager} = useUser();
+
     const navigate = useNavigate();
     const location = useLocation();
     const [isDarkMode, setIsDarkMode] = useState(false);
 
-    // Navigiert zur Seite und schließt danach die Sidebar
     const handleNavigation = (path: string) => {
         navigate(path);
         onHide();
     };
 
-    // Baut Menüpunkt auf und checkt, ob er gerade "aktiv" ist
-    const renderMenuItem = (label: string, path: string) => (
+    const renderMenuItem = (label: string, path: string, icon: string) => (
         <div
             className={`menu-item ${location.pathname === path ? 'active' : ''}`}
             onClick={() => handleNavigation(path)}
         >
+            <i className={`${icon} menu-icon`} style={{ marginRight: '12px', fontSize: '1.2rem' }}></i>
             {label}
         </div>
     );
@@ -40,57 +40,51 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
 
             <div className="sidebar-menu">
 
-                {/* SYSADMIN */}
-                {isAdmin && (
-                    <>
-                        <div className="menu-category">Sysadmin</div>
-                        {renderMenuItem('Home (Overview)', '/')}
-                        {renderMenuItem('Device Configuration', '/admin/devices')}
-                        {renderMenuItem('User Configuration', '/admin/users')}
-                        {renderMenuItem('Building Configuration', '/admin/building')}
+                {/* EMPLOYEE */}
+                {isEmployee && !isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
+                        <div className="menu-category">Employee</div>
+                        {renderMenuItem('My Office', '/', 'pi pi-home')}
+                        {renderMenuItem('My Department', '/department', 'pi pi-sitemap')}
+                        {renderMenuItem('My Absences', '/absences', 'pi pi-calendar')}
                     </>
                 )}
 
                 {/* DEPARTMENT HEAD */}
-                {isManager && !isAdmin && (
-                    <>
+                {isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
                         <div className="menu-category">Department Head</div>
-                        {renderMenuItem('Home (Deptartment Overview)', '/')}
-                        {renderMenuItem('Absences', '/absences')}
+                        {renderMenuItem('Deptartment Overview', '/', 'pi pi-home')}
+                        {renderMenuItem('Absences', '/absences', 'pi pi-calendar-times')}
                     </>
                 )}
 
-                {/* EMPLOYEE */}
-                {isEmployee && !isManager && !isAdmin && (
-                    <>
-                        <div className="menu-category">Employee</div>
-                        {renderMenuItem('Home (Dashboard)', '/')}
-                        {renderMenuItem('My Department', '/department')}
-                        {renderMenuItem('My Absences', '/absences')}
-                    </>
-                )}
-
-                {/* SENIOR MANAGEMENT
-                {isSeniorManagement && (
-                    <>
+                {/* SENIOR MANAGEMENT */}
+                {isSeniorManager && !isAdmin && (                    <>
                         <div className="menu-category">Senior Management</div>
-                        {renderMenuItem('Home (Department Overview)', '/')}
+                        {renderMenuItem('Department Overview', '/', 'pi pi-chart-line')}
                     </>
                 )}
-                */}
 
-                {/* BUILDING MANAGEMENT
-                {isBuildingManagement && (
-                    <>
+                {/* BUILDING MANAGEMENT */}
+                {isBuildingManager && !isAdmin && (                    <>
                         <div className="menu-category">Building Management</div>
-                        {renderMenuItem('Home (Building Overview)', '/')}
+                        {renderMenuItem('Building Overview', '/', 'pi pi-map')}
                     </>
                 )}
-                */}
+
+                {/* SYSADMIN */}
+                {isAdmin && (
+                    <>
+                        <div className="menu-category">Sysadmin</div>
+                        {renderMenuItem('Overview', '/', 'pi pi-home')}
+                        {renderMenuItem('Device Configuration', '/admin/devices', 'pi pi-server')}
+                        {renderMenuItem('User Configuration', '/admin/users', 'pi pi-users')}
+                        {renderMenuItem('Building Configuration', '/admin/building', 'pi pi-building')}
+                    </>
+                )}
 
                 {/* Settings für alle sichtbar */}
-                <div className="mt-auto">
-                    {renderMenuItem('Settings', '/settings')}
+                <div className="mt-auto" style={{ marginTop: '2rem' }}>
+                    {renderMenuItem('Settings', '/settings', 'pi pi-cog')}
                 </div>
             </div>
 
@@ -106,9 +100,12 @@ const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) 
                 </div>
 
                 <div className="user-profile">
-                    <div className="user-avatar"></div>
+                    <div className="user-avatar">
+                        <i className="pi pi-user" style={{ fontSize: '1.5rem' }}></i>
+                    </div>
                     <div className="user-info">
                         <span className="user-name">{currentUser?.username || 'Benutzer'}</span>
+                        <span className="user-email">{currentUser?.email || 'keine E-Mail hinterlegt'}</span>
                     </div>
                 </div>
             </div>

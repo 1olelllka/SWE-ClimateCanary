@@ -240,6 +240,36 @@
                     </excludes>
                 </configuration>
             </plugin>
+
+            <!-- Integrate Openapi -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.20.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/api-docs.json</inputSpec>
+                            <generatorName>typescript-axios</generatorName>
+                            <output>${project.basedir}/src/main/frontend/src/generated-skeleton-api</output>
+                            <configOptions>
+                                <supportsES6>true</supportsES6>
+                                <npmName>skeleton-api</npmName>
+                                <npmVersion>0.1</npmVersion>
+                                <ensureUniqueParams>true</ensureUniqueParams>
+                                <useSingleRequestParameter>true</useSingleRequestParameter>
+                                <typescriptThreePlus>true</typescriptThreePlus>
+                                <enumPropertyNaming>UPPERCASE</enumPropertyNaming>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

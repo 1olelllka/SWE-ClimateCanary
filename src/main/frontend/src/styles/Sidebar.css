@@ -1,10 +1,10 @@
-
 .custom-sidebar.p-sidebar {
-    background-color: #eaf5b0;
+    background-color: #ffffff;
     padding: 0;
     width: 300px;
-    color: black;
+    color: #1A3A4A;
     font-family: Arial, sans-serif;
+    border-right: 1px solid #e0e0e0;
 }
 
 .custom-sidebar .p-sidebar-content {
@@ -14,17 +14,40 @@
     height: 100%;
 }
 
+.custom-sidebar .p-sidebar-header {
+    background-color: #1A3A4A;
+    padding: 15px 15px 0 15px;
+}
+
+.custom-sidebar .p-sidebar-close {
+    color: #ffffff !important;
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none !important;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.custom-sidebar .p-sidebar-close:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
 .sidebar-brand-header {
-    padding: 20px;
+    background-color: #1A3A4A;
+    padding: 5px 20px 30px 20px;
     text-align: center;
-    border-bottom: 1px solid #c2cc93;
+    border-bottom: none;
 }
 
 .brand-title-sidebar {
     font-family: 'Protest Riot', sans-serif;
-    font-size: 28px;
+    font-size: 32px;
     margin: 0;
-    color: black;
+    color: #ffffff;
 }
 
 .sidebar-menu {
@@ -33,21 +56,34 @@
     flex-direction: column;
 }
 
+.menu-category {
+    padding: 20px 25px 5px 25px;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #6c757d;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
 .menu-item {
-    padding: 20px 25px;
-    font-size: 18px;
-    color: black;
-    border-bottom: 1px solid #c2cc93;
+    padding: 18px 25px;
+    font-size: 20px;
+    color: #1A3A4A;
+    border-bottom: 1px solid #e0e0e0;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
 }
 
 .menu-item:hover, .menu-item.active {
-    background-color: #dceb9c;
+    background-color: #f4f6f8;
+    color: #122833;
+    font-weight: 500;
 }
 
 .sidebar-footer {
-    padding: 20px 25px;
+    padding: 30px 25px;
     margin-top: auto;
 }
 
@@ -55,8 +91,9 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 30px;
-    font-size: 16px;
+    margin-bottom: 35px;
+    font-size: 18px;
+    color: #000000;
 }
 
 .user-profile {
@@ -66,10 +103,14 @@
 }
 
 .user-avatar {
-    width: 45px;
-    height: 45px;
+    width: 50px;
+    height: 50px;
     background-color: #d9d9d9;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
 }
 
 .user-info {
@@ -78,18 +119,11 @@
 }
 
 .user-name {
-    font-size: 16px;
+    font-size: 18px;
+    color: #000000;
 }
 
 .user-email {
-    font-size: 13px;
-}
-
-.menu-category {
-    padding: 15px 25px 5px 25px;
-    font-size: 12px;
-    text-transform: uppercase;
-    color: #7a854d;
-    font-weight: bold;
-    letter-spacing: 1px;
+    font-size: 14px;
+    color: #000000;
 }

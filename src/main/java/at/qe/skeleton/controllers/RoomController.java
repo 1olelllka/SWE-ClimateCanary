@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/rooms")
+@CrossOrigin(origins = "*")
 public class RoomController {
 
     private RoomService roomService;
