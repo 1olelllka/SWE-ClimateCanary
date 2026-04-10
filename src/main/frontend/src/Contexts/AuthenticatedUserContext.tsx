@@ -106,7 +106,6 @@ export function UserProvider({children}: { children: React.ReactNode }) {
 
         try {
             const decoded = jwtDecode<CustomJwtPayload>(token);
-
             const fullName = decoded.name ?? "";
             const [firstName = "", lastName = ""] = fullName.split(" ");
             const roles = decoded.roles ?? [];
@@ -155,12 +154,31 @@ export function UserProvider({children}: { children: React.ReactNode }) {
         }
     };
 
-    const roles = currentUser?.roles as any as Set<string> ?? new Set<string>();
-    const isAdmin = roles.has("SYSADMIN") || roles.has("ROLE_SYSADMIN");
-    const isEmployee = roles.has("EMPLOYEE") || roles.has("ROLE_EMPLOYEE");
-    const isSeniorManager = roles.has("SENIOR_MANAGEMENT") || roles.has("ROLE_SENIOR_MANAGEMENT");
-    const isBuildingManager = roles.has("BUILDING_MANAGER") || roles.has("ROLE_BUILDING_MANAGER");
-    const isDepartmentManager = roles.has("DEPARTMENT_MANAGER") || roles.has("DEPARTMENT_MANAGER");
+    const rolesArray = Array.from(currentUser?.roles || []).map(role => JSON.stringify(role).toUpperCase());
+
+    // ==========================================
+    // TODO: WORKAROUND FÜR BACKEND-BUG
+    // Aktuell schickt das Backend leere depthead und senior Rollen-Arrays ([]).
+    // Bis das im Backend repariert ist, lesen wir den Username aus.
+    // ==========================================
+    const uname = currentUser?.username?.toLowerCase() || "";
+
+    const isAdmin = rolesArray.some(r => r.includes("SYSADMIN") || r.includes("ADMIN")) || uname.includes("admin") || uname.includes("sysadmin");
+    const isEmployee = rolesArray.some(r => r.includes("EMPLOYEE")) || uname === "employee";
+    const isSeniorManager = rolesArray.some(r => r.includes("SENIOR")) || uname.includes("senior");
+    const isBuildingManager = rolesArray.some(r => r.includes("BUILDING")) || uname.includes("building");
+    const isDepartmentManager = rolesArray.some(r => r.includes("DEPT") || r.includes("DEPARTMENT")) || uname.includes("depthead");
+    // ==========================================
+/*
+    Saubere Code:
+    const rolesArray = Array.from(currentUser?.roles || []).map(role => JSON.stringify(role).toUpperCase());
+
+    const isAdmin = rolesArray.some(r => r.includes("SYSADMIN") || r.includes("ADMIN"));
+    const isEmployee = rolesArray.some(r => r.includes("EMPLOYEE"));
+    const isSeniorManager = rolesArray.some(r => r.includes("SENIOR"));
+    const isBuildingManager = rolesArray.some(r => r.includes("BUILDING"));
+    const isDepartmentManager = rolesArray.some(r => r.includes("DEPT") || r.includes("DEPARTMENT"));
+*/
 
     return (
         <UserContext.Provider

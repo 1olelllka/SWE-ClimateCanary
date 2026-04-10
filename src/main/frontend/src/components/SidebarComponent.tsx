@@ -1,114 +1,119 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Sidebar } from 'primereact/sidebar';
-import { InputSwitch } from 'primereact/inputswitch';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
 import '../styles/Sidebar.css';
 
-interface SidebarComponentProps {
+interface SidebarProps {
     visible: boolean;
     onHide: () => void;
 }
 
-const SidebarComponent: React.FC<SidebarComponentProps> = ({ visible, onHide }) => {
-    const { currentUser, isAdmin, isEmployee, isSeniorManager, isBuildingManager, isDepartmentManager} = useUser();
-
+const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const [isDarkMode, setIsDarkMode] = useState(false);
 
-    const handleNavigation = (path: string) => {
-        navigate(path);
+    const {
+        currentUser,
+        isAdmin,
+        isEmployee,
+        isSeniorManager,
+        isDepartmentManager,
+        isBuildingManager
+    } = useUser();
+
+    // Exakte Bezeichnungen für die Startseite je nach Rolle
+    const getOverviewLabel = () => {
+        if (isSeniorManager) return 'Departments Overview';
+        if (isDepartmentManager) return 'Overview Department XY';
+        if (isBuildingManager) return 'Building Overview';
+        if (isEmployee) return 'My Office';
+        return 'Overview'; // Für SysAdmin
+    };
+
+    // Konfiguration der Menüpunkte
+    const allMenuItems = [
+        {
+            label: getOverviewLabel(),
+            icon: 'pi-home',
+            route: '/',
+            visible: true // Jeder sieht eigene Startseite
+        },
+        {
+            label: 'My Absences',
+            icon: 'pi-calendar-times',
+            route: '/absences',
+            visible: isEmployee || isSeniorManager || isDepartmentManager
+        },
+        {
+            label: 'Absences',
+            icon: 'pi-list',
+            route: '/department-absences',
+            visible: isDepartmentManager
+        },
+        // --- SYSADMIN MENÜPUNKTE ---
+        {
+            label: 'Device Configuration',
+            icon: 'pi-desktop',
+            route: '/device-configuration',
+            visible: isAdmin
+        },
+        {
+            label: 'User Configuration',
+            icon: 'pi-user-edit',
+            route: '/user-configuration',
+            visible: isAdmin
+        },
+        {
+            label: 'Building Configuration',
+            icon: 'pi-building',
+            route: '/building-configuration',
+            visible: isAdmin
+        },
+        // ---------------------------
+        {
+            label: 'Settings',
+            icon: 'pi-cog',
+            route: '/settings',
+            visible: true
+        }
+    ];
+
+    // Filtert alle Menüpunkte raus, bei denen visible: false ist
+    const allowedMenuItems = allMenuItems.filter(item => item.visible);
+
+    const handleNavigation = (route: string) => {
+        navigate(route);
         onHide();
     };
 
-    const renderMenuItem = (label: string, path: string, icon: string) => (
-        <div
-            className={`menu-item ${location.pathname === path ? 'active' : ''}`}
-            onClick={() => handleNavigation(path)}
-        >
-            <i className={`${icon} menu-icon`} style={{ marginRight: '12px', fontSize: '1.2rem' }}></i>
-            {label}
-        </div>
-    );
-
     return (
         <Sidebar visible={visible} onHide={onHide} className="custom-sidebar">
+
             <div className="sidebar-brand-header">
-                <h2 className="brand-title-sidebar">ClimateCanary</h2>
+                <p className="brand-title-sidebar">ClimateCanary</p>
             </div>
 
             <div className="sidebar-menu">
-
-                {/* EMPLOYEE */}
-                {isEmployee && !isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
-                        <div className="menu-category">Employee</div>
-                        {renderMenuItem('My Office', '/', 'pi pi-home')}
-                        {renderMenuItem('My Department', '/department', 'pi pi-sitemap')}
-                        {renderMenuItem('My Absences', '/absences', 'pi pi-calendar')}
-                    </>
-                )}
-
-                {/* DEPARTMENT HEAD */}
-                {isDepartmentManager && !isSeniorManager && !isBuildingManager && !isAdmin && (                    <>
-                        <div className="menu-category">Department Head</div>
-                        {renderMenuItem('Deptartment Overview', '/', 'pi pi-home')}
-                        {renderMenuItem('Absences', '/absences', 'pi pi-calendar-times')}
-                    </>
-                )}
-
-                {/* SENIOR MANAGEMENT */}
-                {isSeniorManager && !isAdmin && (                    <>
-                        <div className="menu-category">Senior Management</div>
-                        {renderMenuItem('Department Overview', '/', 'pi pi-chart-line')}
-                    </>
-                )}
-
-                {/* BUILDING MANAGEMENT */}
-                {isBuildingManager && !isAdmin && (                    <>
-                        <div className="menu-category">Building Management</div>
-                        {renderMenuItem('Building Overview', '/', 'pi pi-map')}
-                    </>
-                )}
-
-                {/* SYSADMIN */}
-                {isAdmin && (
-                    <>
-                        <div className="menu-category">Sysadmin</div>
-                        {renderMenuItem('Overview', '/', 'pi pi-home')}
-                        {renderMenuItem('Device Configuration', '/admin/devices', 'pi pi-server')}
-                        {renderMenuItem('User Configuration', '/admin/users', 'pi pi-users')}
-                        {renderMenuItem('Building Configuration', '/admin/building', 'pi pi-building')}
-                    </>
-                )}
-
-                {/* Settings für alle sichtbar */}
-                <div className="mt-auto" style={{ marginTop: '2rem' }}>
-                    {renderMenuItem('Settings', '/settings', 'pi pi-cog')}
-                </div>
+                {allowedMenuItems.map((item, index) => (
+                    <div key={index} className="menu-item" onClick={() => handleNavigation(item.route)}>
+                        <i className={`pi ${item.icon}`} style={{ marginRight: '15px' }}></i>
+                        <span>{item.label}</span>
+                    </div>
+                ))}
             </div>
 
-            {/* Footer */}
             <div className="sidebar-footer">
-                <div className="theme-toggle-container">
-                    <span>Light</span>
-                    <InputSwitch
-                        checked={isDarkMode}
-                        onChange={(e) => setIsDarkMode(e.value ?? false)}
-                    />
-                    <span>Dark</span>
-                </div>
-
                 <div className="user-profile">
                     <div className="user-avatar">
                         <i className="pi pi-user" style={{ fontSize: '1.5rem' }}></i>
                     </div>
                     <div className="user-info">
-                        <span className="user-name">{currentUser?.username || 'Benutzer'}</span>
-                        <span className="user-email">{currentUser?.email || 'keine E-Mail hinterlegt'}</span>
+                        <span className="user-name">{currentUser?.username || 'User'}</span>
+                        <span className="user-email">Logged in</span>
                     </div>
                 </div>
             </div>
+
         </Sidebar>
     );
 };

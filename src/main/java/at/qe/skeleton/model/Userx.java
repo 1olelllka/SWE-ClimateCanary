@@ -40,7 +40,7 @@ public class Userx implements Comparable<Userx>, UserDetails {
   private String lastName;
   private LocalDateTime snoozedWarningsUntil;
 
-  @ManyToMany
+  @ManyToMany(cascade = CascadeType.MERGE)
   @JoinTable(name = "User_UserRole",
           inverseJoinColumns = @JoinColumn(name = "role_name", referencedColumnName = "name"),
           joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id")
@@ -48,9 +48,13 @@ public class Userx implements Comparable<Userx>, UserDetails {
   private Set<UserRole> userRoles;
 
   @ManyToOne
+  @JoinColumn(name = "room_id")
   private Room myRoom;
 
-  boolean enabled;
+  Boolean enabled;
+
+  @OneToMany(mappedBy = "user")
+  private Set<Absence> absences;
 
   @Override
   public boolean isAccountNonExpired() {

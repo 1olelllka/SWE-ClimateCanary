@@ -1,6 +1,7 @@
 package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.exceptions.ConflictException;
+import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -56,6 +57,17 @@ public class AdviceController {
                 ex.getMessage()
         );
         problemDetail.setTitle("Authorization denied");
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ProblemDetail forbiddenException(ForbiddenException ex)  {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage()
+        );
+        problemDetail.setTitle("Forbidden");
         problemDetail.setProperty("timestamp", Instant.now());
         return problemDetail;
     }
