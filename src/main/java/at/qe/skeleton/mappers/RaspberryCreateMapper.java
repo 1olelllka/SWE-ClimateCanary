@@ -10,12 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class RaspberryCreateMapper implements DTOMapper<RaspberryPi, RaspberryCreateDTO> {
 
-    private final RoomMonitoringRepository monitoringRepository;
-
-    @Autowired
-    public RaspberryCreateMapper(RoomMonitoringRepository monitoringRepository) {
-        this.monitoringRepository = monitoringRepository;
-    }
 
     @Override
     public RaspberryCreateDTO mapTo(RaspberryPi entity) {
@@ -29,9 +23,8 @@ public class RaspberryCreateMapper implements DTOMapper<RaspberryPi, RaspberryCr
         pi.setName(dto.name());
         pi.setViolationCounter(0);
         pi.setStatus(DeviceStatus.OFFLINE);
-        pi.setFrequency(dto.frequency());
+        pi.setFrequency(dto.frequency() == null ? 100 : dto.frequency());
         pi.setLastHeartBeat(null);
-        pi.setRoomMonitoring(monitoringRepository.getReferenceById(dto.roomId()));
         return pi;
     }
 }

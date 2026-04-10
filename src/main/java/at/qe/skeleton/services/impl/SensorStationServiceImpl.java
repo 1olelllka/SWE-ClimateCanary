@@ -40,8 +40,9 @@ public class SensorStationServiceImpl implements SensorStationService {
 
     @Override
     @Transactional
-    public SensorStation createNewSensorStation(SensorStation sensorStation) {
-        RoomMonitoring desiredRoom = sensorStation.getRoomMonitoring();
+    public SensorStation createNewSensorStation(SensorStation sensorStation, UUID roomId) {
+        RoomMonitoring desiredRoom = monitoringRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
         if (sensorRepository.existsByName(sensorStation.getName())) {
             throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
         }
@@ -58,13 +59,15 @@ public class SensorStationServiceImpl implements SensorStationService {
 
     @Override
     @Transactional
-    public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
+    public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation, UUID roomId) {
         return sensorRepository.findById(id).map(sensor -> {
-                Optional.of(sensorStation.getRoomMonitoring()).ifPresent(r -> {
-                    sensor.setRoomMonitoring(r);
-                    sensor.getRoomMonitoring().setSensorStation(sensor);
-                    monitoringRepository.save(sensor.getRoomMonitoring());
-                });
+                if (!roomId.equals(sensor.getRoomMonitoring().getRoomId())){
+                    RoomMonitoring monitoring = monitoringRepository.findById(roomId)
+                            .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
+                    sensor.setRoomMonitoring(monitoring);
+                    monitoring.setSensorStation(sensor);
+                    monitoringRepository.save(monitoring);
+                }
                 Optional.of(sensorStation.getName()).ifPresent(sensor::setName);
                 // notify raspberry...
                 /*

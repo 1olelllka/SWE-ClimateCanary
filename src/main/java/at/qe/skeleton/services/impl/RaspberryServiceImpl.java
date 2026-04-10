@@ -1,8 +1,6 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.dtos.PiConfigDTO;
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
-import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
@@ -17,7 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,14 +46,15 @@ public class RaspberryServiceImpl implements RaspberryService {
     }
 
     @Override
-    public RaspberryPi createNewRaspberry(RaspberryPi raspberryPi) {
+    public RaspberryPi createNewRaspberry(RaspberryPi raspberryPi, UUID roomId) {
         if (raspberryPiRepository.existsByIp(raspberryPi.getIp())) {
             throw new ConflictException("Raspberry Pi with ip " + raspberryPi.getIp() + " already exists.");
         }
         if (raspberryPiRepository.existsByName(raspberryPi.getName())) {
             throw new ConflictException("Raspberry Pi with name " + raspberryPi.getName() + " already exists.");
         }
-        RoomMonitoring room = raspberryPi.getRoomMonitoring();
+        RoomMonitoring room = monitoringRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
         RaspberryPi toSave = raspberryPiRepository.save(raspberryPi);
         room.setRaspberryPi(raspberryPi);
         monitoringRepository.save(room);
@@ -64,10 +62,9 @@ public class RaspberryServiceImpl implements RaspberryService {
     }
 
     @Override
-    public RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi) {
+    public RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi, UUID roomId) {
         return raspberryPiRepository.findById(id).map(rasp -> {
             Optional.ofNullable(raspberryPi.getFrequency()).ifPresent(rasp::setFrequency);
-            // TODO: Discussion – should ip be unique for raspberry?
             Optional.of(raspberryPi.getName()).ifPresent(name -> {
                 if (!rasp.getName().equals(name) && raspberryPiRepository.existsByName(name)) {
                     throw new ConflictException("Raspberry Pi with this name already exists.");
@@ -80,13 +77,14 @@ public class RaspberryServiceImpl implements RaspberryService {
                 }
                 rasp.setIp(ip);
             });
-            Optional.of(raspberryPi.getRoomMonitoring()).ifPresent(room -> {
-                rasp.setRoomMonitoring(room);
-                room.setRaspberryPi(rasp);
-                monitoringRepository.save(room);
-            });
+            if (!rasp.getRoomMonitoring().getRoomId().equals(roomId)) {
+                RoomMonitoring monitoring = monitoringRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
+                rasp.setRoomMonitoring(monitoring);
+                monitoring.setRaspberryPi(rasp);
+                monitoringRepository.save(monitoring);
+            }
             return raspberryPiRepository.save(rasp);
-                })
+        })
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
 

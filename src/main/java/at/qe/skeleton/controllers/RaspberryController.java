@@ -69,7 +69,7 @@ public class RaspberryController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        RaspberryPi createdPi = raspberryService.createNewRaspberry(raspberryCreateMapper.mapFrom(dto));
+        RaspberryPi createdPi = raspberryService.createNewRaspberry(raspberryCreateMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(raspberryMapper.mapTo(createdPi), HttpStatus.CREATED);
     }
 
@@ -81,7 +81,7 @@ public class RaspberryController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryCreateMapper.mapFrom(dto));
+        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryCreateMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(raspberryMapper.mapTo(patched), HttpStatus.OK);
     }
 

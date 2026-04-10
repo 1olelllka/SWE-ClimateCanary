@@ -50,7 +50,7 @@ public class SensorStationController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        SensorStation created = sensorStationService.createNewSensorStation(sensorStationCreateMapper.mapFrom(dto));
+        SensorStation created = sensorStationService.createNewSensorStation(sensorStationCreateMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(sensorStationMapper.mapTo(created), HttpStatus.CREATED);
     }
 
@@ -62,7 +62,7 @@ public class SensorStationController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        SensorStation sensorStation = sensorStationService.updateExistingSensor(id, sensorStationCreateMapper.mapFrom(dto));
+        SensorStation sensorStation = sensorStationService.updateExistingSensor(id, sensorStationCreateMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(sensorStationMapper.mapTo(sensorStation), HttpStatus.OK);
     }
 
