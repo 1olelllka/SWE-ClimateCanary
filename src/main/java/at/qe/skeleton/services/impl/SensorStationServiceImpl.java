@@ -61,14 +61,21 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation, UUID roomId) {
         return sensorRepository.findById(id).map(sensor -> {
-                if (!roomId.equals(sensor.getRoomMonitoring().getRoomId())){
+                if (sensor.getRoomMonitoring() == null || roomId != null && !roomId.equals(sensor.getRoomMonitoring().getRoomId())){
                     RoomMonitoring monitoring = monitoringRepository.findById(roomId)
                             .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
                     sensor.setRoomMonitoring(monitoring);
                     monitoring.setSensorStation(sensor);
                     monitoringRepository.save(monitoring);
                 }
-                Optional.of(sensorStation.getName()).ifPresent(sensor::setName);
+                Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
+                    if (!name.equals(sensor.getName())) {
+                        if (sensorRepository.existsByName(name)) throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
+                        sensor.setName(name);
+                    }
+                });
+                Optional.ofNullable(sensorStation.getStatus()).ifPresent(sensor::setStatus);
+                Optional.ofNullable(sensorStation.getLastHeartBeat()).ifPresent(sensor::setLastHeartBeat);
                 // notify raspberry...
                 /*
                 StateChangeNotificationDTO raspDto = new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now());
@@ -86,16 +93,12 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Override
     @Transactional
     public void deleteById(UUID id) {
-        if (sensorRepository.existsById(id)) {
-            sensorRepository.deleteById(id);
-            // notify raspberry...
-            /*
-            StateChangeNotificationDTO raspDto = new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now());
-            notificationClient.notifyRaspberryAboutChanges(raspDto);
-             */
-            return;
+        SensorStation station = sensorRepository.findById(id).orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
+        if (station.getRoomMonitoring() != null) {
+            station.getRoomMonitoring().setSensorStation(null);
+            monitoringRepository.save(station.getRoomMonitoring());
         }
-        throw new NotFoundException("Sensor with id " + id + " was not found.");
+        sensorRepository.deleteById(id);
     }
 
 }

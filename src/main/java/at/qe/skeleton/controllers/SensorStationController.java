@@ -2,9 +2,11 @@ package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.dtos.SensorStationCreateDTO;
 import at.qe.skeleton.dtos.SensorStationDTO;
+import at.qe.skeleton.dtos.SensorStationPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.SensorStationCreateMapper;
 import at.qe.skeleton.mappers.SensorStationMapper;
+import at.qe.skeleton.mappers.SensorStationPatchMapper;
 import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.services.SensorStationService;
 import jakarta.validation.Valid;
@@ -26,14 +28,17 @@ public class SensorStationController {
     private SensorStationService sensorStationService;
     private SensorStationMapper sensorStationMapper;
     private SensorStationCreateMapper sensorStationCreateMapper;
+    private SensorStationPatchMapper sensorStationPatchMapper;
 
     @Autowired
     public SensorStationController(SensorStationService sensorStationService,
                                    SensorStationMapper sensorStationMapper,
-                                   SensorStationCreateMapper sensorStationCreateMapper) {
+                                   SensorStationCreateMapper sensorStationCreateMapper,
+                                   SensorStationPatchMapper sensorStationpatchMapper) {
         this.sensorStationService = sensorStationService;
         this.sensorStationMapper = sensorStationMapper;
         this.sensorStationCreateMapper = sensorStationCreateMapper;
+        this.sensorStationPatchMapper = sensorStationpatchMapper;
     }
 
 
@@ -56,13 +61,13 @@ public class SensorStationController {
 
     @PatchMapping("/{sensor_id}")
     public ResponseEntity<SensorStationDTO> patchExistingSensorStation(@PathVariable(name = "sensor_id") UUID id,
-                                                                       @RequestBody @Valid SensorStationCreateDTO dto,
+                                                                       @RequestBody @Valid SensorStationPatchDTO dto,
                                                                        BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        SensorStation sensorStation = sensorStationService.updateExistingSensor(id, sensorStationCreateMapper.mapFrom(dto), dto.roomId());
+        SensorStation sensorStation = sensorStationService.updateExistingSensor(id, sensorStationPatchMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(sensorStationMapper.mapTo(sensorStation), HttpStatus.OK);
     }
 
