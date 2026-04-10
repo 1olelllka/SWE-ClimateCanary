@@ -61,6 +61,7 @@ public class SensorStationServiceUnitTests {
         sampleRoom.setSensorStation(sampleStation);
     }
 
+
     @Test
     void testThatGetAllSensorStationsShouldReturnPage() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -89,11 +90,33 @@ public class SensorStationServiceUnitTests {
     }
 
     @Test
+    void testThatCreateNewSensorStationThrowsNotFoundIfRoomMissing() {
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> sensorService.createNewSensorStation(sampleStation, roomId));
+        verify(sensorRepository, never()).save(any());
+    }
+
+    @Test
     void testThatCreateNewSensorStationThrowsConflictIfNameExists() {
         when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
         when(sensorRepository.existsByName("Station A")).thenReturn(true);
 
-        assertThrows(ConflictException.class, () -> sensorService.createNewSensorStation(sampleStation, roomId));
+        assertThrows(ConflictException.class,
+                () -> sensorService.createNewSensorStation(sampleStation, roomId));
+        verify(sensorRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatUpdateExistingSensorThrowsNotFoundWhenMissing() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
+
+        SensorStation updatedData = new SensorStation();
+        updatedData.setName("Anything");
+
+        assertThrows(NotFoundException.class,
+                () -> sensorService.updateExistingSensor(stationId, updatedData, roomId));
         verify(sensorRepository, never()).save(any());
     }
 
@@ -119,6 +142,45 @@ public class SensorStationServiceUnitTests {
     }
 
     @Test
+    void testThatUpdateExistingSensorSkipsRoomChangeIfRoomIdIsNull() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any(SensorStation.class))).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation updatedData = new SensorStation();
+        updatedData.setName("New Name");
+
+        SensorStation result = sensorService.updateExistingSensor(stationId, updatedData, null);
+
+        // room must remain unchanged
+        assertEquals(sampleRoom, result.getRoomMonitoring());
+        verify(monitoringRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatUpdateExistingSensorSkipsRoomChangeIfRoomIdUnchanged() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any(SensorStation.class))).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation updatedData = new SensorStation();
+        // pass the same roomId that is already linked — no room change expected
+        SensorStation result = sensorService.updateExistingSensor(stationId, updatedData, roomId);
+
+        assertEquals(sampleRoom, result.getRoomMonitoring());
+        verify(monitoringRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatUpdateExistingSensorThrowsNotFoundIfNewRoomMissing() {
+        UUID unknownRoomId = UUID.randomUUID();
+
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(monitoringRepository.findById(unknownRoomId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> sensorService.updateExistingSensor(stationId, new SensorStation(), unknownRoomId));
+    }
+
+    @Test
     void testThatUpdateExistingSensorShouldThrowConflictIfNewNameExists() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
         when(sensorRepository.existsByName("Taken Name")).thenReturn(true);
@@ -126,7 +188,22 @@ public class SensorStationServiceUnitTests {
         SensorStation updatedData = new SensorStation();
         updatedData.setName("Taken Name");
 
-        assertThrows(ConflictException.class, () -> sensorService.updateExistingSensor(stationId, updatedData, roomId));
+        assertThrows(ConflictException.class,
+                () -> sensorService.updateExistingSensor(stationId, updatedData, roomId));
+    }
+
+    @Test
+    void testThatUpdateExistingSensorAllowsSameNameWithoutConflict() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any(SensorStation.class))).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation updatedData = new SensorStation();
+        updatedData.setName("Station A"); // same name — existsByName must NOT be called
+
+        SensorStation result = sensorService.updateExistingSensor(stationId, updatedData, roomId);
+
+        assertEquals("Station A", result.getName());
+        verify(sensorRepository, never()).existsByName(any());
     }
 
     @Test
@@ -146,12 +223,38 @@ public class SensorStationServiceUnitTests {
     }
 
     @Test
+    void testThatUpdateExistingSensorIgnoresNullStatusAndHeartbeat() {
+        sampleStation.setStatus(DeviceStatus.OFFLINE);
+        LocalDateTime original = LocalDateTime.now().minusDays(1);
+        sampleStation.setLastHeartBeat(original);
+
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any(SensorStation.class))).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation updatedData = new SensorStation();
+        // status and lastHeartBeat intentionally left null
+
+        SensorStation result = sensorService.updateExistingSensor(stationId, updatedData, roomId);
+
+        assertEquals(DeviceStatus.OFFLINE, result.getStatus());
+        assertEquals(original, result.getLastHeartBeat());
+    }
+
+    @Test
     void testThatGetSpecificSensorReturnsSensorWhenExists() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
 
         SensorStation result = sensorService.getSpecificSensor(stationId);
 
         assertEquals(sampleStation, result);
+    }
+
+    @Test
+    void testThatGetSpecificSensorThrowsNotFoundWhenMissing() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> sensorService.getSpecificSensor(stationId));
     }
 
     @Test
@@ -162,6 +265,17 @@ public class SensorStationServiceUnitTests {
 
         assertNull(sampleRoom.getSensorStation());
         verify(monitoringRepository).save(sampleRoom);
+        verify(sensorRepository).deleteById(stationId);
+    }
+
+    @Test
+    void testThatDeleteByIdSucceedsWhenNoRoomLinked() {
+        sampleStation.setRoomMonitoring(null);
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+
+        sensorService.deleteById(stationId);
+
+        verify(monitoringRepository, never()).save(any());
         verify(sensorRepository).deleteById(stationId);
     }
 

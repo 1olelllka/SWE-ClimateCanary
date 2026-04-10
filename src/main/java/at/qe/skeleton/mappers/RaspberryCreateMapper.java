@@ -23,7 +23,6 @@ public class RaspberryCreateMapper implements DTOMapper<RaspberryPi, RaspberryCr
         pi.setName(dto.name());
         pi.setViolationCounter(0);
         pi.setStatus(DeviceStatus.OFFLINE);
-        pi.setFrequency(dto.frequency() == null ? 100 : dto.frequency());
         pi.setLastHeartBeat(null);
         return pi;
     }

@@ -1,12 +1,10 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.OccupancyDTO;
-import at.qe.skeleton.dtos.PiConfigDTO;
-import at.qe.skeleton.dtos.RaspberryCreateDTO;
-import at.qe.skeleton.dtos.RaspberryDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.RaspberryCreateMapper;
 import at.qe.skeleton.mappers.RaspberryMapper;
+import at.qe.skeleton.mappers.RaspberryPatchMapper;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.services.RaspberryService;
 import jakarta.validation.Valid;
@@ -28,14 +26,17 @@ public class RaspberryController {
     private final RaspberryService raspberryService;
     private final RaspberryMapper raspberryMapper;
     private final RaspberryCreateMapper raspberryCreateMapper;
+    private final RaspberryPatchMapper raspberryPatchMapper;
 
     @Autowired
     public RaspberryController(RaspberryService raspberryService,
                                RaspberryMapper raspberryMapper,
-                               RaspberryCreateMapper createMapper) {
+                               RaspberryCreateMapper createMapper,
+                               RaspberryPatchMapper raspberryPatchMapper) {
         this.raspberryService = raspberryService;
         this.raspberryMapper = raspberryMapper;
         this.raspberryCreateMapper = createMapper;
+        this.raspberryPatchMapper = raspberryPatchMapper;
     }
 
     @GetMapping("")
@@ -75,13 +76,13 @@ public class RaspberryController {
 
     @PatchMapping("/{raspberry_id}")
     public ResponseEntity<RaspberryDTO> patchSpecificRaspberry(@PathVariable(name = "raspberry_id") UUID id,
-                                                               @RequestBody @Valid RaspberryCreateDTO dto,
+                                                               @RequestBody @Valid RaspberryPatchDTO dto,
                                                                BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryCreateMapper.mapFrom(dto), dto.roomId());
+        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryPatchMapper.mapFrom(dto), dto.roomId());
         return new ResponseEntity<>(raspberryMapper.mapTo(patched), HttpStatus.OK);
     }
 

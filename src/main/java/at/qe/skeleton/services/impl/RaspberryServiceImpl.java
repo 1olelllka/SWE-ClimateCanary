@@ -65,32 +65,36 @@ public class RaspberryServiceImpl implements RaspberryService {
     public RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi, UUID roomId) {
         return raspberryPiRepository.findById(id).map(rasp -> {
             Optional.ofNullable(raspberryPi.getFrequency()).ifPresent(rasp::setFrequency);
-            Optional.of(raspberryPi.getName()).ifPresent(name -> {
+            Optional.ofNullable(raspberryPi.getName()).ifPresent(name -> {
                 if (!rasp.getName().equals(name) && raspberryPiRepository.existsByName(name)) {
                     throw new ConflictException("Raspberry Pi with this name already exists.");
                 }
                 rasp.setName(name);
             });
-            Optional.of(raspberryPi.getIp()).ifPresent(ip -> {
+            Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
                 if (!ip.equals(rasp.getIp()) && raspberryPiRepository.existsByIp(ip)) {
                     throw new ConflictException("Raspberry Pi with IP " + ip + " already exists.");
                 }
                 rasp.setIp(ip);
             });
-            if (!rasp.getRoomMonitoring().getRoomId().equals(roomId)) {
+            if (rasp.getRoomMonitoring() == null && roomId != null || roomId != null && !rasp.getRoomMonitoring().getRoomId().equals(roomId)) {
                 RoomMonitoring monitoring = monitoringRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
                 rasp.setRoomMonitoring(monitoring);
                 monitoring.setRaspberryPi(rasp);
                 monitoringRepository.save(monitoring);
             }
             return raspberryPiRepository.save(rasp);
-        })
-                .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
+        }).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
 
     @Override
     public void deleteRaspberry(UUID id) {
-        raspberryPiRepository.deleteById(id);
+        Optional<RaspberryPi> optional = raspberryPiRepository.findById(id);
+        if (optional.isPresent()) {
+            optional.get().getRoomMonitoring().setRaspberryPi(null);
+            monitoringRepository.save(optional.get().getRoomMonitoring());
+            raspberryPiRepository.deleteById(id);
+        }
     }
 
     @Override

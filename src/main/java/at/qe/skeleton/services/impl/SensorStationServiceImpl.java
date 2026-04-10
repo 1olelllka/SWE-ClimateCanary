@@ -61,7 +61,7 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation, UUID roomId) {
         return sensorRepository.findById(id).map(sensor -> {
-                if (sensor.getRoomMonitoring() == null || roomId != null && !roomId.equals(sensor.getRoomMonitoring().getRoomId())){
+                if (sensor.getRoomMonitoring() == null && roomId != null || roomId != null && !roomId.equals(sensor.getRoomMonitoring().getRoomId())){
                     RoomMonitoring monitoring = monitoringRepository.findById(roomId)
                             .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
                     sensor.setRoomMonitoring(monitoring);

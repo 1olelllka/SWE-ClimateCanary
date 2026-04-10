@@ -16,8 +16,6 @@ public record RaspberryCreateDTO(
 
         @NotNull(message = "Room ID must not be null.")
         @NotEmpty(message = "Room ID must not be empty.")
-        UUID roomId,
-
-        Integer frequency
+        UUID roomId
 ) {
 }
