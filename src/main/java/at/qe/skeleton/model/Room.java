@@ -34,6 +34,6 @@ public class Room {
     @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
-    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToMany(mappedBy = "myRoom", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private Set<Userx> users;
 }

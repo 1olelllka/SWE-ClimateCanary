@@ -47,7 +47,9 @@ public class RoomServiceImpl implements RoomService {
             if (room.getUsers() != null) {
                 Set<Userx> foundUser = new HashSet<>();
                 for (Userx user : room.getUsers()) {
-                    foundUser.add(userxRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException("User with id" + user.getId() + " was not found.")));
+                    Userx u = userxRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException("User with id" + user.getId() + " was not found."));
+                    u.setMyRoom(r);
+                    foundUser.add(u);
                 }
                 r.setUsers(foundUser);
             }

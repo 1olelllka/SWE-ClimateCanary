@@ -32,7 +32,7 @@ public class UserxMapper implements DTOMapper<Userx, UserxDTO>{
                user.getUsername(),
                user.getFirstName(),
                user.getLastName(),
-               user.isEnabled(),
+               user.getEnabled(),
                user.getSnoozedWarningsUntil(),
                user.getUserRoles().stream().map(roleMapper::mapTo).collect(Collectors.toSet()),
                user.getMyRoom() != null
