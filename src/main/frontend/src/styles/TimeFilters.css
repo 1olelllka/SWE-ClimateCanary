@@ -1,0 +1,40 @@
+.time-filters {
+    display: flex;
+    gap: 0.5rem;
+    background-color: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 8px;
+    align-items: center;
+}
+
+.time-filter-btn {
+    background: transparent;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.time-filter-btn.active {
+    background-color: #ffffff;
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.time-filter-btn.icon-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.selected-date-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}

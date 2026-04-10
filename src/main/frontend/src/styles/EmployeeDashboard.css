@@ -1,0 +1,25 @@
+.employee-dashboard-container {
+    padding: 1.5rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.card-grid > :nth-child(3) {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 900px) {
+    .card-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    .card-grid > :nth-child(3) {
+        grid-column: auto;
+    }
+}
