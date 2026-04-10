@@ -3,10 +3,10 @@
  * Engineering" offered by Innsbruck University.
  */
 
-import HomePage from "./views/HomePage";
 import ManageUsers from "./views/ManageUsers";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
+import RoleBasedHome from "./views/RoleBasedHome";
 
 /**
  * Define the routes of the application.
@@ -14,7 +14,7 @@ import Logout from "./views/Logout";
 
 export const HomePageRoute = {
     url: '/',
-    component: HomePage
+    component: RoleBasedHome
 }
 
 export const ManageUsersRoute = {
@@ -29,4 +29,3 @@ export const LogoutsRoute = {
     url: '/logout',
     component: Logout
 }
-
