@@ -106,7 +106,6 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatCreateNewRaspberrySucceedsAndLinksRoom() {
-        when(raspberryPiRepository.existsByIp("192.168.1.100")).thenReturn(false);
         when(raspberryPiRepository.existsByName("Pi-01")).thenReturn(false);
         when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
         when(raspberryPiRepository.save(any(RaspberryPi.class))).thenReturn(samplePi);
@@ -124,7 +123,6 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatCreateNewRaspberryThrowsNotFoundIfRoomWasNotFound() {
-        when(raspberryPiRepository.existsByIp("192.168.1.100")).thenReturn(false);
         when(raspberryPiRepository.existsByName("Pi-01")).thenReturn(false);
         when(monitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
@@ -133,16 +131,7 @@ public class RaspberryServiceUnitTests {
     }
 
     @Test
-    void testThatCreateNewRaspberryThrowsConflictOnDuplicateIp() {
-        when(raspberryPiRepository.existsByIp("192.168.1.100")).thenReturn(true);
-
-        assertThrows(ConflictException.class, () -> raspberryService.createNewRaspberry(samplePi, roomId));
-        verify(raspberryPiRepository, never()).save(any());
-    }
-
-    @Test
     void testThatCreateNewRaspberryThrowsConflictOnDuplicateName() {
-        when(raspberryPiRepository.existsByIp(anyString())).thenReturn(false);
         when(raspberryPiRepository.existsByName("Pi-01")).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> raspberryService.createNewRaspberry(samplePi, roomId));

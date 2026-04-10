@@ -47,9 +47,6 @@ public class RaspberryServiceImpl implements RaspberryService {
 
     @Override
     public RaspberryPi createNewRaspberry(RaspberryPi raspberryPi, UUID roomId) {
-        if (raspberryPiRepository.existsByIp(raspberryPi.getIp())) {
-            throw new ConflictException("Raspberry Pi with ip " + raspberryPi.getIp() + " already exists.");
-        }
         if (raspberryPiRepository.existsByName(raspberryPi.getName())) {
             throw new ConflictException("Raspberry Pi with name " + raspberryPi.getName() + " already exists.");
         }
@@ -71,12 +68,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                 }
                 rasp.setName(name);
             });
-            Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
-                if (!ip.equals(rasp.getIp()) && raspberryPiRepository.existsByIp(ip)) {
-                    throw new ConflictException("Raspberry Pi with IP " + ip + " already exists.");
-                }
-                rasp.setIp(ip);
-            });
+            Optional.ofNullable(raspberryPi.getIp()).ifPresent(rasp::setIp);
             if (rasp.getRoomMonitoring() == null && roomId != null || roomId != null && !rasp.getRoomMonitoring().getRoomId().equals(roomId)) {
                 RoomMonitoring monitoring = monitoringRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
                 rasp.setRoomMonitoring(monitoring);
@@ -111,7 +103,7 @@ public class RaspberryServiceImpl implements RaspberryService {
     @Transactional
     public PiConfigDTO getConfigForRaspberry(UUID id) {
         RaspberryPi pi = raspberryPiRepository.findById(id).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        return new PiConfigDTO(pi.getFrequency(), pi.getRoomMonitoring().getSensorStation().getId());
+        return new PiConfigDTO(pi.getFrequency(), pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStation() != null ? pi.getRoomMonitoring().getSensorStation().getId() : null);
     }
 
     @Override
