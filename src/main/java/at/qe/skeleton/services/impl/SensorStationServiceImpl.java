@@ -5,6 +5,7 @@ import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.SensorStationRepository;
 import at.qe.skeleton.services.SensorStationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +22,15 @@ public class SensorStationServiceImpl implements SensorStationService {
 
     private final SensorStationRepository sensorRepository;
     private final NotificationClient notificationClient;
+    private final RoomMonitoringRepository monitoringRepository;
 
     @Autowired
     public SensorStationServiceImpl(SensorStationRepository sensorRepository,
-                                    NotificationClient notificationClient) {
+                                    NotificationClient notificationClient,
+                                    RoomMonitoringRepository monitoringRepository) {
         this.sensorRepository = sensorRepository;
         this.notificationClient = notificationClient;
+        this.monitoringRepository = monitoringRepository;
     }
 
     @Override
@@ -38,14 +42,12 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation createNewSensorStation(SensorStation sensorStation) {
         RoomMonitoring desiredRoom = sensorStation.getRoomMonitoring();
-        if (desiredRoom.getSensorStation() != null) {
-            throw new ConflictException("The room already has the sensor. Delete the existing sensor in this room before adding a new one.");
-        }
         if (sensorRepository.existsByName(sensorStation.getName())) {
             throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
         }
         SensorStation station = sensorRepository.save(sensorStation);
         desiredRoom.setSensorStation(station);
+        monitoringRepository.save(desiredRoom);
         // notify raspberry
         /*
         StateChangeNotificationDTO raspDto = new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now());
@@ -61,6 +63,7 @@ public class SensorStationServiceImpl implements SensorStationService {
                 Optional.of(sensorStation.getRoomMonitoring()).ifPresent(r -> {
                     sensor.setRoomMonitoring(r);
                     sensor.getRoomMonitoring().setSensorStation(sensor);
+                    monitoringRepository.save(sensor.getRoomMonitoring());
                 });
                 Optional.of(sensorStation.getName()).ifPresent(sensor::setName);
                 // notify raspberry...

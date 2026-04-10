@@ -23,7 +23,7 @@ public class RaspberryPi {
     @Column(nullable = false)
     private String ip;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column(nullable = false)
@@ -38,7 +38,7 @@ public class RaspberryPi {
 
     @Column(nullable = false)
     @Builder.Default
-    private int frequency = 100;
+    private Integer frequency = 100;
 
     @OneToOne(mappedBy = "raspberryPi", fetch = FetchType.LAZY)
     private RoomMonitoring roomMonitoring;

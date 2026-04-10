@@ -92,6 +92,7 @@ public class WebSecurityConfig {
                                                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
                                                         .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
+                                                        .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
                                                         .requestMatchers("/api/**").authenticated()
                                                         .anyRequest().authenticated())
                                         // Add the token authentication filter before the
