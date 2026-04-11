@@ -8,4 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, UUID> {
+    boolean existsByRoomNumber(String roomNumber);
 }

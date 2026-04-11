@@ -13,5 +13,7 @@ import java.util.UUID;
 public interface NotificationClient {
     @PostMapping("/api/notify")
     ResponseEntity<Void> notifyRaspberryAboutChanges(@RequestBody StateChangeNotificationDTO notification,
-                                                     @RequestParam(required = false) UUID sensorId);
+                                                     @RequestParam UUID sensorId);
+    @PostMapping("/api/notify")
+    ResponseEntity<Void> notifyRaspberryAboutChanges(@RequestBody StateChangeNotificationDTO notification);
 }

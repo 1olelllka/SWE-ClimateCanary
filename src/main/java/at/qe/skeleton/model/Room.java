@@ -24,6 +24,9 @@ public class Room {
     @Column(nullable = false)
     private RoomType roomType;
 
+    @Column(nullable = false, unique = true)
+    private String roomNumber;
+
     @Column(nullable = false)
     private Boolean isActive;
 

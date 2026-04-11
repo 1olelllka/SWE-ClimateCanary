@@ -1,10 +1,8 @@
 package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Department;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomType;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.impl.RoomServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
@@ -32,6 +30,9 @@ public class RoomServiceUnitTest {
 
     @Mock
     private RoomRepository roomRepository;
+
+    @Mock
+    private RoomMonitoringRepository monitoringRepository;
 
     @InjectMocks
     private RoomServiceImpl roomService;
@@ -69,11 +70,13 @@ public class RoomServiceUnitTest {
         when(roomRepository.save(any())).thenReturn(sampleRoom);
 
         Room result = roomService.createRoom(sampleRoom);
+        RoomMonitoring monitoring = RoomMonitoring.builder().roomId(result.getId()).roomNumber(result.getRoomNumber()).build();
 
         assertNotNull(result);
         assertEquals(RoomType.OFFICE, result.getRoomType());
         assertEquals(10, result.getDefaultPeopleCnt());
         verify(roomRepository).save(sampleRoom);
+        verify(monitoringRepository).save(monitoring);
     }
 
     @Test

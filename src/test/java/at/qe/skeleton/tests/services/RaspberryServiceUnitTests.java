@@ -1,12 +1,13 @@
 package at.qe.skeleton.tests.services;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.dtos.PiConfigDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.impl.RaspberryServiceImpl;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -39,7 +41,10 @@ public class RaspberryServiceUnitTests {
     private RoomMonitoringRepository monitoringRepository;
 
     @Mock
-    private NotificationClient notificationClient; // Prepared for future client tests
+    private NotifyDeadLetterRepository deadLetterRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private RaspberryServiceImpl raspberryService;
@@ -268,6 +273,8 @@ public class RaspberryServiceUnitTests {
 
         raspberryService.retryConnection(piId);
 
-        // verify(notificationClient).notifyRaspberryAboutChanges(any(), eq(sensorId));
+         verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+         verify(deadLetterRepository, times(1)).findAll();
+         verify(deadLetterRepository, times(1)).deleteAll(anyList());
     }
 }

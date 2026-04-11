@@ -1,10 +1,11 @@
 package at.qe.skeleton.tests.services;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
-import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.SensorStationRepository;
 import at.qe.skeleton.services.impl.SensorStationServiceImpl;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +35,8 @@ public class SensorStationServiceUnitTests {
 
     @Mock
     private SensorStationRepository sensorRepository;
-
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
     @Mock
     private RoomMonitoringRepository monitoringRepository;
 
@@ -87,6 +90,7 @@ public class SensorStationServiceUnitTests {
         assertEquals(sampleStation, sampleRoom.getSensorStation());
         verify(sensorRepository).save(sampleStation);
         verify(monitoringRepository).save(sampleRoom);
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -139,6 +143,7 @@ public class SensorStationServiceUnitTests {
         assertEquals(newRoom, result.getRoomMonitoring());
         assertEquals(result, newRoom.getSensorStation());
         verify(monitoringRepository).save(newRoom);
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -154,6 +159,7 @@ public class SensorStationServiceUnitTests {
         // room must remain unchanged
         assertEquals(sampleRoom, result.getRoomMonitoring());
         verify(monitoringRepository, never()).save(any());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -167,6 +173,7 @@ public class SensorStationServiceUnitTests {
 
         assertEquals(sampleRoom, result.getRoomMonitoring());
         verify(monitoringRepository, never()).save(any());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -204,6 +211,7 @@ public class SensorStationServiceUnitTests {
 
         assertEquals("Station A", result.getName());
         verify(sensorRepository, never()).existsByName(any());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -220,6 +228,7 @@ public class SensorStationServiceUnitTests {
 
         assertEquals(DeviceStatus.ONLINE, result.getStatus());
         assertEquals(now, result.getLastHeartBeat());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -238,6 +247,7 @@ public class SensorStationServiceUnitTests {
 
         assertEquals(DeviceStatus.OFFLINE, result.getStatus());
         assertEquals(original, result.getLastHeartBeat());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -266,6 +276,7 @@ public class SensorStationServiceUnitTests {
         assertNull(sampleRoom.getSensorStation());
         verify(monitoringRepository).save(sampleRoom);
         verify(sensorRepository).deleteById(stationId);
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -277,6 +288,7 @@ public class SensorStationServiceUnitTests {
 
         verify(monitoringRepository, never()).save(any());
         verify(sensorRepository).deleteById(stationId);
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test

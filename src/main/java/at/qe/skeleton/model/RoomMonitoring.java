@@ -20,7 +20,7 @@ public class RoomMonitoring {
     @EqualsAndHashCode.Include
     private UUID roomId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String roomNumber;
     // Devices
     @OneToOne(fetch = FetchType.LAZY)
