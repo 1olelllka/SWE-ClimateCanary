@@ -52,7 +52,6 @@ class SensorStationCreateMapperUnitTests {
         void mapsName() {
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    UUID.randomUUID(),
                     UUID.randomUUID()
             );
 
@@ -66,7 +65,6 @@ class SensorStationCreateMapperUnitTests {
         void setsStatusToOffline() {
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    UUID.randomUUID(),
                     UUID.randomUUID()
             );
 
@@ -80,7 +78,6 @@ class SensorStationCreateMapperUnitTests {
         void setsLastHeartBeatToNull() {
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    UUID.randomUUID(),
                     UUID.randomUUID()
             );
 
@@ -94,7 +91,6 @@ class SensorStationCreateMapperUnitTests {
         void doesNotSetId() {
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    UUID.randomUUID(),
                     UUID.randomUUID()
             );
 
@@ -108,7 +104,6 @@ class SensorStationCreateMapperUnitTests {
         void doesNotSetRoomMonitoring() {
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    UUID.randomUUID(),
                     UUID.randomUUID()
             );
 
@@ -124,8 +119,7 @@ class SensorStationCreateMapperUnitTests {
             UUID piId = UUID.randomUUID();
             SensorStationCreateDTO dto = new SensorStationCreateDTO(
                     "Station Alpha",
-                    roomId,
-                    piId
+                    roomId
             );
 
             SensorStation result = mapper.mapFrom(dto);

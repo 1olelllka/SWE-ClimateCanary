@@ -9,4 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface SensorStationRepository extends JpaRepository<SensorStation, UUID> {
+    boolean existsByName(String name);
 }

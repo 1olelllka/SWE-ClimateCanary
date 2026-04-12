@@ -10,4 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface RaspberryPiRepository extends JpaRepository<RaspberryPi, UUID> {
+    boolean existsByIp(String ip);
+    boolean existsByName(String name);
 }

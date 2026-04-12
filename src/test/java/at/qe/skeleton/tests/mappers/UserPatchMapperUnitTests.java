@@ -1,11 +1,13 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.UserxPatchDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.UserPatchMapper;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.tests.TestDataUtil;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -54,6 +56,21 @@ class UserPatchMapperUnitTests {
         UserxPatchDTO result = mapper.mapTo(entity);
 
         assertNull(result.roles());
+    }
+
+    @Test
+    void testThatMapFromWhenRolesNotFoundThrowsNotFoundException() {
+        UUID roleId = UUID.randomUUID();
+        UserxPatchDTO dto = new UserxPatchDTO(
+                "jsmith",
+                "Jane",
+                "Smith",
+                true,
+                Set.of(roleId)
+        );
+        when(roleRepository.getReferenceById(roleId)).thenReturn(UserRole.builder().id(roleId).build());
+        when(roleRepository.getReferenceById(roleId)).thenThrow(EntityNotFoundException.class);
+        assertThrows(NotFoundException.class, () -> mapper.mapFrom(dto));
     }
 
     @Test

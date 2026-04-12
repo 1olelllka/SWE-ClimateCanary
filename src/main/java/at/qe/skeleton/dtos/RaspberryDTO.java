@@ -7,9 +7,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record RaspberryDTO(
-
         UUID id,
-
         String name,
         String ipAddress,
         DeviceStatus status,

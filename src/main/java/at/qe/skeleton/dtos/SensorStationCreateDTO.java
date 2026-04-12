@@ -12,11 +12,6 @@ public record SensorStationCreateDTO(
         String name,
 
         @NotNull(message = "Room ID must not be null.")
-        @NotEmpty(message = "Room ID must not be empty.")
-        UUID roomId,
-
-        @NotNull(message = "Pi ID must not be null.")
-        @NotEmpty(message = "Pi ID must not be empty.")
-        UUID connectedToPiId
+        UUID roomId
 ) {
 }

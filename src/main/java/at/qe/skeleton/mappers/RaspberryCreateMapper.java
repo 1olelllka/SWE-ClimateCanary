@@ -3,10 +3,13 @@ package at.qe.skeleton.mappers;
 import at.qe.skeleton.dtos.RaspberryCreateDTO;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RaspberryCreateMapper implements DTOMapper<RaspberryPi, RaspberryCreateDTO> {
+
 
     @Override
     public RaspberryCreateDTO mapTo(RaspberryPi entity) {

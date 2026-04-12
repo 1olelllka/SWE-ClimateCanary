@@ -1,11 +1,13 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.AbsenceCreateDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.AbsenceCreateMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.AbsenceType;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.UserxRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -60,6 +62,31 @@ class AbsenceCreateMapperUnitTests {
 
         verify(userxRepository, times(1)).getReferenceById(userId);
     }
+
+    @Test
+    void testThatMapFromShouldThrowNotFoundExceptionIfUserDoesNotExist() {
+        UUID userId = UUID.randomUUID();
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = LocalDateTime.now().plusDays(5);
+
+        AbsenceCreateDTO dto = new AbsenceCreateDTO(
+                userId,
+                start,
+                end,
+                AbsenceType.ILLNESS,
+                "Feeling unwell",
+                UUID.randomUUID()
+        );
+
+        Userx shellUser = new Userx();
+        shellUser.setId(userId);
+        when(userxRepository.getReferenceById(userId)).thenThrow(EntityNotFoundException.class);
+
+        assertThrows(NotFoundException.class, () -> mapper.mapFrom(dto));
+
+        verify(userxRepository, times(1)).getReferenceById(userId);
+    }
+
 
     @Test
     void testThatMapToShouldThrowUnsupportedOperationException() {
