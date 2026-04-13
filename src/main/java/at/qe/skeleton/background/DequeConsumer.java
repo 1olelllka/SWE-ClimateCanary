@@ -1,4 +1,4 @@
-package at.qe.skeleton.backround;
+package at.qe.skeleton.background;
 
 import at.qe.skeleton.commands.Command;
 import at.qe.skeleton.commands.CommandDeque;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Log
 public class DequeConsumer {
 
-    private static final int MAX_ATTEMPTS = 5;
+    public static final int MAX_ATTEMPTS = 5;
 
     private volatile boolean running = true;
     private Thread consumerThread;
@@ -59,7 +59,7 @@ public class DequeConsumer {
         }
     }
 
-    private void processCommand(Command command) {
+    void processCommand(Command command) {
         try {
             ResponseEntity<Void> response = command.execute();
             if (response.getStatusCode().value() >= 300) {
@@ -71,9 +71,9 @@ public class DequeConsumer {
         }
     }
 
-    private void handleFailure(Command command) {
+    public void handleFailure(Command command) {
         int attempts = this.attempts;
-        log.info("Failed attempt " + attempts + " for " + command.getClass().getSimpleName());
+        log.info("Failed attempt " + attempts);
         if (attempts < MAX_ATTEMPTS) {
             CommandDeque.addFirst(command);
             this.attempts += 1;
@@ -83,7 +83,7 @@ public class DequeConsumer {
         }
     }
 
-    private void persistDeadLetter(Command command) {
+    void persistDeadLetter(Command command) {
         if (command instanceof NotifyRaspberryCommand c) {
             log.info("Persisting dead letter...");
             repository.save(NotifyDeadLetter.builder()

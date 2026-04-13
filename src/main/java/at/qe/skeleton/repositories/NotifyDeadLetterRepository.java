@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface NotifyDeadLetterRepository extends JpaRepository<NotifyDeadLetter, UUID> {
-//    List<NotifyDeadLetter> findByRaspberryPi(UUID id);
+    List<NotifyDeadLetter> findByRaspberryPi(UUID id);
 }

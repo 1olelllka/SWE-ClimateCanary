@@ -23,6 +23,9 @@ public class RaspberryPi {
     @Column(nullable = false)
     private String ip;
 
+    @Column(nullable = false)
+    private Integer port;
+
     @Column(nullable = false, unique = true)
     private String name;
 

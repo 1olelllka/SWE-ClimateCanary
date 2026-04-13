@@ -19,7 +19,8 @@ class RaspberryPatchMapperUnitTests {
                 "Pi-Kitchen",
                 "192.168.1.15",
                 UUID.randomUUID(),
-                5000
+                5000,
+                1000
         );
 
         RaspberryPi result = mapper.mapFrom(dto);
@@ -32,7 +33,7 @@ class RaspberryPatchMapperUnitTests {
 
     @Test
     void testThatMapFromWhenDtoHasNullsShouldPreserveNullsInEntity() {
-        RaspberryPatchDTO dto = new RaspberryPatchDTO(null, null, UUID.randomUUID(), 0);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO(null, null, UUID.randomUUID(), 0, 1000);
 
         RaspberryPi result = mapper.mapFrom(dto);
 

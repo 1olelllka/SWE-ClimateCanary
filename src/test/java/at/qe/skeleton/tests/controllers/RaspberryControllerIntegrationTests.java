@@ -67,7 +67,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatGetPageOfRaspberryPisReturnsHttp200AndPage() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -84,7 +84,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatGetSpecificRaspberryReturnsHttp200OkIfSuccessful() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -97,8 +97,24 @@ public class RaspberryControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    public void testThatRetryConnectionReturnsHttp404IfRaspberryNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis/" + UUID.randomUUID() + "/retry-connection"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    public void testThatRetryConnectionSavesDeadLettersAfterFailedRaspberryRetrial() throws Exception {
+        RaspberryPi pi = raspberryService
+                .createNewRaspberry(RaspberryPi.builder().ip("localhost").port(8000).name("Test raspberry").status(DeviceStatus.ONLINE).build(), this.savedRoom.getRoomId());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis/" + pi.getId() + "/retry-connection"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp400IfValidationFails() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null, null);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -108,9 +124,9 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp409IfSuchNameExists() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -120,7 +136,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp404IfRoomNotFound() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -130,7 +146,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp201IfSuccessful() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", this.savedRoom.getRoomId());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -143,7 +159,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatPatchRaspberryReturnsHttp400IfValidationFails() throws Exception {
-        RaspberryPatchDTO dto = new RaspberryPatchDTO("", null, null, null);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO("", null, null,  null,null);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -153,7 +169,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatPatchRaspberryReturnsHttp404IfRaspberryNotExists() throws Exception {
-        RaspberryPatchDTO dto = new RaspberryPatchDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID(), null);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID(), null, 1000);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -163,10 +179,10 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatPatchRaspberryReturnsHttp409IfSuchNameExists() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
-        raspberryService.createNewRaspberry(RaspberryPi.builder().name("Test Raspberry 2").ip("localhost").status(DeviceStatus.OFFLINE).build(), this.savedRoom.getRoomId());
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", UUID.randomUUID());
+        raspberryService.createNewRaspberry(RaspberryPi.builder().name("Test Raspberry 2").ip("localhost").port(1000).status(DeviceStatus.OFFLINE).build(), this.savedRoom.getRoomId());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -176,9 +192,9 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatPatchRaspberryReturnsHttp404IfRoomNotExists() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
-        RaspberryPatchDTO dto = new RaspberryPatchDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID(), null);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO("Test Raspberry", "127.0.0.1", UUID.randomUUID(), null, 1000);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -188,9 +204,9 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatPatchRaspberryReturnsHttp200IfSuccessful() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
-        RaspberryPatchDTO dto = new RaspberryPatchDTO("Updated Raspberry", null, this.savedRoom.getRoomId(), 20);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO("Updated Raspberry", null, this.savedRoom.getRoomId(), 20, 1000);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -205,7 +221,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatDeleteSpecificRaspberryReturnsHttp204NoContentIfSuccessful() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/raspberry-pis/" + pi.getId()))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
@@ -222,7 +238,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatGetRaspberryPiConfigReturnsHttp200OkIfSuccessful() throws Exception {
-        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").status(DeviceStatus.OFFLINE).build();
+        RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId() + "/config"))
                 .andExpect(MockMvcResultMatchers.status().isOk())

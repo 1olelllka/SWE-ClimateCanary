@@ -2,8 +2,10 @@ package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.dtos.PiConfigDTO;
+import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.model.NotifyDeadLetter;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
@@ -23,6 +25,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -231,11 +234,13 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatDeleteRaspberrySucceeds() {
-        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(this.samplePi));
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+
         raspberryService.deleteRaspberry(piId);
-        this.samplePi.getRoomMonitoring().setRaspberryPi(null);
+
+        assertNull(sampleRoom.getRaspberryPi());
+        verify(monitoringRepository).save(sampleRoom);
         verify(raspberryPiRepository).deleteById(piId);
-        verify(monitoringRepository).save(this.samplePi.getRoomMonitoring());
     }
 
     @Test
@@ -274,7 +279,97 @@ public class RaspberryServiceUnitTests {
         raspberryService.retryConnection(piId);
 
          verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
-         verify(deadLetterRepository, times(1)).findAll();
+         verify(deadLetterRepository, times(1)).findByRaspberryPi(piId);
          verify(deadLetterRepository, times(1)).deleteAll(anyList());
+    }
+
+    @Test
+    void testThatRetryConnectionReplaysNonSetupDeadLetters() {
+        NotifyDeadLetter setupLetter = new NotifyDeadLetter();
+        setupLetter.setUpdateType(UpdateType.SETUP);
+        setupLetter.setTriggeredAt(LocalDateTime.now());
+
+        NotifyDeadLetter otherLetter = new NotifyDeadLetter();
+        otherLetter.setUpdateType(UpdateType.SENSORS);
+        otherLetter.setTriggeredAt(LocalDateTime.now());
+
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(deadLetterRepository.findByRaspberryPi(piId)).thenReturn(List.of(setupLetter, otherLetter));
+
+        raspberryService.retryConnection(piId);
+
+        // initial SETUP + one replayed non-SETUP letter = 2 events
+        verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(deadLetterRepository).deleteAll(anyList());
+    }
+
+    @Test
+    void testThatRetryConnectionSkipsSetupDeadLetters() {
+        NotifyDeadLetter setupLetter = new NotifyDeadLetter();
+        setupLetter.setUpdateType(UpdateType.SETUP);
+        setupLetter.setTriggeredAt(LocalDateTime.now());
+
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(deadLetterRepository.findByRaspberryPi(piId)).thenReturn(List.of(setupLetter));
+
+        raspberryService.retryConnection(piId);
+
+        // only the initial SETUP event, the dead letter one is filtered
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatRetryConnectionThrowsNotFoundWhenPiMissing() {
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> raspberryService.retryConnection(piId));
+        verify(eventPublisher, never()).publishEvent(any());
+        verify(deadLetterRepository, never()).findAll();
+    }
+
+    @Test
+    void testThatUpdateRaspberryByIdThrowsConflictOnDuplicateName() {
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(raspberryPiRepository.existsByName("Pi-02")).thenReturn(true);
+
+        RaspberryPi patchData = new RaspberryPi();
+        patchData.setName("Pi-02");
+
+        assertThrows(ConflictException.class, () -> raspberryService.updateRaspberryById(piId, patchData, null));
+        verify(raspberryPiRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatUpdateRaspberryByIdReassignsRoomWhenDifferentRoomIdProvided() {
+        UUID newRoomId = UUID.randomUUID();
+        RoomMonitoring newRoom = new RoomMonitoring();
+        newRoom.setRoomId(newRoomId);
+
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(monitoringRepository.findById(newRoomId)).thenReturn(Optional.of(newRoom));
+        when(raspberryPiRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        RaspberryPi result = raspberryService.updateRaspberryById(piId, new RaspberryPi(), newRoomId);
+
+        assertEquals(newRoom, result.getRoomMonitoring());
+        verify(monitoringRepository).save(newRoom);
+    }
+
+    @Test
+    void testThatGetConfigForRaspberryReturnNullSensorWhenNotLinked() {
+        sampleRoom.setSensorStation(null);
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+
+        PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);
+
+        assertNotNull(config);
+        assertNull(config.sensor());
+    }
+
+    @Test
+    void testThatGetConfigForRaspberryThrowsNotFoundWhenPiMissing() {
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> raspberryService.getConfigForRaspberry(piId));
     }
 }

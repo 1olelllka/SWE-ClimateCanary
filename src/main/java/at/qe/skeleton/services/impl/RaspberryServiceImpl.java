@@ -124,19 +124,26 @@ public class RaspberryServiceImpl implements RaspberryService {
     @Transactional
     public void retryConnection(UUID id) {
         RaspberryPi pi = raspberryPiRepository.findById(id).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        eventPublisher.publishEvent(
-                new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
-                        pi.getRoomMonitoring().getSensorStation().getId(), notificationClient));
-        List<NotifyDeadLetter> letters = deadLetterRepository.findAll();
-        letters.forEach(letter -> {
-                if (letter.getUpdateType() != UpdateType.SETUP) {
-                eventPublisher.publishEvent(
-                        new NotifyRaspberryCommand(
-                                new StateChangeNotificationDTO(letter.getUpdateType(), letter.getTriggeredAt()),
-                                null, notificationClient));
-            }
-        });
-        deadLetterRepository.deleteAll(letters);
+        if (pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStation() != null) {
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
+                            pi.getRoomMonitoring().getSensorStation().getId(), pi, notificationClient));
+            List<NotifyDeadLetter> letters = deadLetterRepository.findByRaspberryPi(pi.getId());
+            letters.forEach(letter -> {
+                    if (letter.getUpdateType() != UpdateType.SETUP) {
+                    eventPublisher.publishEvent(
+                            new NotifyRaspberryCommand(
+                                    new StateChangeNotificationDTO(letter.getUpdateType(), letter.getTriggeredAt()),
+                                    null, pi, notificationClient));
+                }
+            });
+            deadLetterRepository.deleteAll(letters);
+        } else {
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
+                            null, pi, notificationClient));
+        }
     }
 }

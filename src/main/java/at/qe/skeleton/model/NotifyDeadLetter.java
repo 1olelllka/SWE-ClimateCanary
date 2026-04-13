@@ -23,5 +23,5 @@ public class NotifyDeadLetter {
     private UUID id;
     private UpdateType updateType;
     private LocalDateTime triggeredAt;
-//    private UUID raspberryPi;
+    private UUID raspberryPi;
 }

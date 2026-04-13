@@ -1,4 +1,4 @@
-package at.qe.skeleton.backround;
+package at.qe.skeleton.background;
 
 import at.qe.skeleton.commands.Command;
 import at.qe.skeleton.commands.CommandDeque;
