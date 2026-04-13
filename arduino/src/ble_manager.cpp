@@ -1,0 +1,85 @@
+#include "ble_manager.h"
+#include "display_manager.h"
+
+BLEManager* BLEManager::instance = nullptr;
+
+bool BLEManager::begin(DisplayManager* display) {
+  instance = this;
+  displayManager = display;
+
+  if (!BLE.begin()) {
+    return false;
+  }
+
+  BLE.setLocalName(DEVICE_NAME);
+  BLE.setDeviceName(DEVICE_NAME);
+  BLE.setAdvertisedService(service);
+
+  txCharacteristic.writeValue("Hello from Arduino");
+  rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
+
+  service.addCharacteristic(txCharacteristic);
+  service.addCharacteristic(rxCharacteristic);
+  BLE.addService(service);
+
+  BLE.advertise();
+  return true;
+}
+
+void BLEManager::poll() {
+  BLE.poll();
+
+  BLEDevice central = BLE.central();
+
+  if (central && !currentCentral) {
+    currentCentral = central;
+
+    Serial.print("Connected to: ");
+    Serial.println(currentCentral.address());
+
+    if (displayManager != nullptr) {
+      displayManager->showConnected();
+    }
+  }
+
+  if (currentCentral && !currentCentral.connected()) {
+    Serial.print("Disconnected from: ");
+    Serial.println(currentCentral.address());
+
+    currentCentral = BLEDevice();
+
+    if (displayManager != nullptr) {
+      displayManager->showDisconnected();
+    }
+  }
+}
+
+bool BLEManager::isConnected() const {
+  return currentCentral && currentCentral.connected();
+}
+
+void BLEManager::sendMessage(const String& msg) {
+  txCharacteristic.writeValue(msg);
+
+  Serial.print("Sent to Pi: ");
+  Serial.println(msg);
+}
+
+void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic) {
+  (void) characteristic;
+
+  if (instance == nullptr) {
+    return;
+  }
+
+  String received = instance->rxCharacteristic.value();
+
+  Serial.print("Received from Pi (");
+  Serial.print(central.address());
+  Serial.print("): ");
+  Serial.println(received);
+
+  if (instance->displayManager != nullptr) {
+    instance->displayManager->showMessageFromPi(received);
+  }
+}
