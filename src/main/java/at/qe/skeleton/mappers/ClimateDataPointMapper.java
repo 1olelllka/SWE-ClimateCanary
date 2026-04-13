@@ -21,8 +21,8 @@ public class ClimateDataPointMapper implements DTOMapper<ClimateStats, ClimateDa
     public ClimateStats mapFrom(ClimateDataPointDTO dto) {
         return ClimateStats.builder()
                 .date(dto.timestamp())
-                .tempVal((int) dto.temperature())
-                .humVal((int) dto.humidity())
+                .tempVal(dto.temperature())
+                .humVal(dto.humidity())
                 .pollVal(dto.airQuality())
                 .build();
     }
