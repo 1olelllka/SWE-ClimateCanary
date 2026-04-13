@@ -15,7 +15,6 @@ import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.ClimateStatsService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +43,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     @Override
     public ClimateDataPointDTO getCurrentClimate(UUID roomId) {
         return climateStatsRepository
-                .findByRoom(roomId)
+                .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                 .map(climateMapper::mapTo)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "No climate data found for room: " + roomId));
@@ -89,7 +88,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDateTime to   = endDate.atTime(endTime != null ? endTime : LocalTime.MAX);
 
         return climateStatsRepository
-                .findByRoomAndDate(roomId, from, to)
+                .findByRoomMonitoring_RoomIdAndDateBetween(roomId, from, to)
                 .stream()
                 .filter(s -> isWithinTimeWindow(s.getDate().toLocalTime(), startTime, endTime))
                 .map(climateMapper::mapTo)
@@ -121,7 +120,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDate from = resolveFrom(timeframe, to);
 
         List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomAndDate(roomId, from, to);
+                .findByRoomIdAndDateBetween(roomId, from, to);
 
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
@@ -153,7 +152,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                         LocalDate from,
                                                         LocalDate to) {
         return climateStatsRepository
-                .findByRoomAndDate(
+                .findByRoomMonitoring_RoomIdAndDateBetween(
                         roomId, from.atStartOfDay(), to.atTime(LocalTime.MAX))
                 .stream()
                 .collect(Collectors.groupingBy(s ->
@@ -172,7 +171,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                        LocalDate from,
                                                        LocalDate to) {
         return climateStatsRepository
-                .findByRoomAndDate(
+                .findByRoomMonitoring_RoomIdAndDateBetween(
                         roomId, from.atStartOfDay(), to.atTime(LocalTime.MAX))
                 .stream()
                 .collect(Collectors.groupingBy(s -> s.getDate().toLocalDate()))

@@ -14,7 +14,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Warnings {
     @Id
@@ -26,17 +26,24 @@ public class Warnings {
     private String message;
 
     @Column(nullable = false)
-    private int triggeredValue;
+    private double triggeredValue;
 
     @Column(nullable = false)
-    private int activeLimitAtTime;
+    private double activeLimitAtTime;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private LocalDateTime resolvedAt;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private WarningStatus status;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private MeasurementType measurementType;
 
     @OneToMany(mappedBy = "warning", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
@@ -45,4 +52,9 @@ public class Warnings {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_monitoring_id", nullable = false)
     private RoomMonitoring roomMonitoring;
+
+    // active means not yet resolved
+    public boolean isActive() {
+        return resolvedAt == null;
+    }
 }

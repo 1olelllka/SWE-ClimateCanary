@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface ClimateStatsRepository extends JpaRepository<ClimateStats, UUID> {
-    Optional<ClimateStats> findByRoom(UUID roomId);
+    Optional<ClimateStats> findTopByRoomMonitoring_RoomIdOrderByDateDesc(UUID roomId);
 
-    List<ClimateStats> findByRoomAndDate(UUID roomId, LocalDateTime from, LocalDateTime to);
+    List<ClimateStats> findByRoomMonitoring_RoomIdAndDateBetween(UUID roomId, LocalDateTime from, LocalDateTime to);
 }

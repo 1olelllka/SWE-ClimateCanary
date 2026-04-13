@@ -11,5 +11,5 @@ import java.util.UUID;
 
 @Repository
 public interface AggregatedStatsRepository extends JpaRepository<AggregatedStats, Integer> {
-    List<AggregatedStats> findByRoomAndDate(UUID roomId, LocalDate from, LocalDate to);
+    List<AggregatedStats> findByRoomIdAndDateBetween(UUID roomId, LocalDate from, LocalDate to);
 }
