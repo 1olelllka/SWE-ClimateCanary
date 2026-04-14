@@ -3,7 +3,7 @@ import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
 import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
-import '../styles/TimeFilters.css';
+import '../styles/TimeFilter.css';
 import { WarningBanner } from '../components/WarningBanner';
 import { DashboardCalendar } from '../components/Calendar';
 import { PageHeader } from "../components/PageHeader";
