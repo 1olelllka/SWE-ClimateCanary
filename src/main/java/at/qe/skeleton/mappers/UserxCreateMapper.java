@@ -39,7 +39,7 @@ public class UserxCreateMapper implements DTOMapper<Userx, UserxCreateDTO> {
         user.setFirstName(dto.firstName());
         user.setLastName(dto.lastName());
         user.setEnabled(dto.enabled());
-        user.setUserRoles(dto.roles() != null ? dto.roles().stream().map(roleRepository::getReferenceById).collect(Collectors.toSet()) : null);
+        user.setUserRoles(dto.roles().stream().map(roleRepository::getReferenceById).collect(Collectors.toSet()));
         
         return user;
     }

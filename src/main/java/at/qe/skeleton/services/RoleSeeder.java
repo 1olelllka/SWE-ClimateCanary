@@ -27,7 +27,7 @@ public class RoleSeeder implements ApplicationListener<ContextRefreshedEvent> {
     }
 
     @Transactional
-    private void loadRoles() {
+    public void loadRoles() {
         String[] names = {"EMPLOYEE", "SYSADMIN", "HIGHER_MANAGER", "DEPARTMENT_MANAGER", "BUILDING_MANAGER"};
         Map<String, Set<Permission>> rolePermissions = Map.of(
                 "EMPLOYEE", Set.of(Permission.CAN_VIEW_OWN_OFFICE_CLIMATE, Permission.CAN_VIEW_OWN_SHARED_CLIMATE, Permission.CAN_MANAGE_OWN_ABSENCE),
