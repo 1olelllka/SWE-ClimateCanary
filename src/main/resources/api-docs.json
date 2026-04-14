@@ -1,1 +1,2730 @@
-{"openapi":"3.1.0","info":{"title":"SWE Skeleton API","description":"This is the API documentation for the SWE Skeleton project.","contact":{"name":"SWE Skeleton Team"},"version":"0.1"},"servers":[{"url":"http://localhost:8080","description":"Development"}],"paths":{"/test-info":{"get":{"tags":["hello-raspberry-controller"],"operationId":"getRaspberryResponse","responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RaspberryTestDTO"}}}}}},"post":{"tags":["hello-raspberry-controller"],"operationId":"receiveMsg","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RaspberryTestDTO"}}},"required":true},"responses":{"200":{"description":"OK"}}}},"/send-to-raspberry":{"post":{"tags":["hello-raspberry-controller"],"operationId":"sendToPi","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RaspberryCommandDTO"}}},"required":true},"responses":{"200":{"description":"OK"}}}},"/api/users":{"get":{"tags":["userx-controller"],"operationId":"getPageOfUsers","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageUserxListDTO"}}}}}},"post":{"tags":["userx-controller"],"operationId":"createNewUser","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserxCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}}},"/api/sensor-stations":{"get":{"tags":["sensor-station-controller"],"operationId":"getAllSensorStations","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageSensorStationDTO"}}}}}},"post":{"tags":["sensor-station-controller"],"operationId":"createNewSensorStation","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SensorStationCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SensorStationDTO"}}}}}}},"/api/rooms":{"get":{"tags":["room-controller"],"operationId":"getPageOfRooms","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageRoomDTO"}}}}}},"post":{"tags":["room-controller"],"operationId":"createNewRoom","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RoomCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RoomDTO"}}}}}}},"/api/raspberry-pis":{"get":{"tags":["raspberry-controller"],"operationId":"getAllRaspberries","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageRaspberryDTO"}}}}}},"post":{"tags":["raspberry-controller"],"operationId":"createNewRaspberry","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RaspberryCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RaspberryDTO"}}}}}}},"/api/raspberry-pis/{raspberry_id}/retry-connection":{"post":{"tags":["raspberry-controller"],"operationId":"retryDevicesConnection","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}}},"/api/login":{"post":{"tags":["authentication-controller"],"operationId":"authenticateUser","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginRequestDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/LoginResponseDTO"}}}}}}},"/api/departments":{"get":{"tags":["department-controller"],"operationId":"getPageOfDepartments","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageDepartmentListDTO"}}}}}},"post":{"tags":["department-controller"],"operationId":"createNewDepartment","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DepartmentCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/DepartmentDTO"}}}}}}},"/api/buildings":{"get":{"tags":["building-controller"],"operationId":"getPageOfBuildings","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageBuildingListDTO"}}}}}},"post":{"tags":["building-controller"],"operationId":"createNewBuilding","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BuildingCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/BuildingDTO"}}}}}}},"/api/admin":{"get":{"tags":["Admin Controller"],"summary":"Get all Users ","description":"Get all existing Users.","operationId":"getAllUsers","responses":{"200":{"description":"All Users returned.","content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UserxDTO"}}}}},"404":{"description":"No Users found.","content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UserxDTO"}}}}}}},"post":{"tags":["Admin Controller"],"summary":"Create User","description":"Create a new User.","operationId":"createUser","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserxCreateDTO"}}},"required":true},"responses":{"201":{"description":"User created.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}},"409":{"description":"User already exists.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}}},"/api/absences":{"get":{"tags":["absence-controller"],"operationId":"getAllAbsences","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageAbsenceListDTO"}}}}}},"post":{"tags":["absence-controller"],"operationId":"createNewAbsence","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AbsenceCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/AbsenceDTO"}}}}}}},"/api/users/{user_id}":{"get":{"tags":["userx-controller"],"operationId":"getSpecificUser","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}},"delete":{"tags":["userx-controller"],"operationId":"deleteSpecificUser","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["userx-controller"],"operationId":"patchSpecificUser","parameters":[{"name":"user_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserxPatchDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}}},"/api/sensor-stations/{sensor_id}":{"get":{"tags":["sensor-station-controller"],"operationId":"getSpecificSensorById","parameters":[{"name":"sensor_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SensorStationDTO"}}}}}},"delete":{"tags":["sensor-station-controller"],"operationId":"removeSpecificSensor","parameters":[{"name":"sensor_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["sensor-station-controller"],"operationId":"patchExistingSensorStation","parameters":[{"name":"sensor_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SensorStationPatchDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SensorStationDTO"}}}}}}},"/api/rooms/{room_id}":{"delete":{"tags":["room-controller"],"operationId":"deleteSpecificRoom","parameters":[{"name":"room_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["room-controller"],"operationId":"patchSpecificRoom","parameters":[{"name":"room_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RoomPatchDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RoomDTO"}}}}}}},"/api/roles/{role_id}":{"patch":{"tags":["user-role-controller"],"operationId":"updatePermission","parameters":[{"name":"role_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserRoleCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserRoleDTO"}}}}}}},"/api/raspberry-pis/{raspberry_id}":{"get":{"tags":["raspberry-controller"],"operationId":"getSpecificRaspberry","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RaspberryDTO"}}}}}},"delete":{"tags":["raspberry-controller"],"operationId":"deleteSpecificRaspberry","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["raspberry-controller"],"operationId":"patchSpecificRaspberry","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RaspberryPatchDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/RaspberryDTO"}}}}}}},"/api/departments/{department_id}":{"get":{"tags":["department-controller"],"operationId":"getSpecificDepartment","parameters":[{"name":"department_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/DepartmentDTO"}}}}}},"delete":{"tags":["department-controller"],"operationId":"deleteSpecificDepartment","parameters":[{"name":"department_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["department-controller"],"operationId":"patchSpecificDepartment","parameters":[{"name":"department_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DepartmentCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/DepartmentDTO"}}}}}}},"/api/buildings/{building_id}":{"get":{"tags":["building-controller"],"operationId":"getSpecificBuilding","parameters":[{"name":"building_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/BuildingDTO"}}}}}},"delete":{"tags":["building-controller"],"operationId":"deleteSpecificBuilding","parameters":[{"name":"building_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["building-controller"],"operationId":"patchSpecificBuilding","parameters":[{"name":"building_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BuildingCreateDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/BuildingDTO"}}}}}}},"/api/admin/{id}":{"get":{"tags":["Admin Controller"],"summary":"Get a User","description":"Get a User by id.","operationId":"getUser","parameters":[{"name":"id","in":"path","description":"The id of the User to get.","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"The User found.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}},"404":{"description":"No User found.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}},"delete":{"tags":["Admin Controller"],"summary":"Delete User","description":"Delete a User by id.","operationId":"deleteUser","parameters":[{"name":"id","in":"path","description":"The id of the User to delete.","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"204":{"description":"User deleted."},"404":{"description":"User not found."}}},"patch":{"tags":["Admin Controller"],"summary":"Update User","description":"Update a User by id.","operationId":"updateUser","parameters":[{"name":"id","in":"path","description":"The id of the User to update.","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}},"required":true},"responses":{"200":{"description":"The updated User.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}},"404":{"description":"User not found.","content":{"*/*":{"schema":{"$ref":"#/components/schemas/UserxDTO"}}}}}}},"/api/absences/{absence_id}":{"get":{"tags":["absence-controller"],"operationId":"getSpecificAbsence","parameters":[{"name":"absence_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/AbsenceDTO"}}}}}},"delete":{"tags":["absence-controller"],"operationId":"deleteSpecificAbsence","parameters":[{"name":"absence_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK"}}},"patch":{"tags":["absence-controller"],"operationId":"updateStatusOfAbsence","parameters":[{"name":"absence_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AbsencePatchDTO"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/AbsenceDTO"}}}}}}},"/api/users/me/absences":{"get":{"tags":["userx-controller"],"operationId":"getPageOfAbsencesOfAuthenticatedUser","parameters":[{"name":"pageable","in":"query","required":true,"schema":{"$ref":"#/components/schemas/Pageable"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PageAbsenceListDTO"}}}}}}},"/api/roles":{"get":{"tags":["user-role-controller"],"operationId":"getAllPermissions","responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"type":"array","items":{"$ref":"#/components/schemas/UserRoleDTO"}}}}}}}},"/api/raspberry-pis/{raspberry_id}/sync/occupancy":{"get":{"tags":["raspberry-controller"],"operationId":"syncOccupancy","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/OccupancyDTO"}}}}}}},"/api/raspberry-pis/{raspberry_id}/config":{"get":{"tags":["raspberry-controller"],"operationId":"getRaspberryPiConfig","parameters":[{"name":"raspberry_id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PiConfigDTO"}}}}}}}},"components":{"schemas":{"RaspberryTestDTO":{"type":"object","properties":{"message":{"type":"string"}}},"RaspberryCommandDTO":{"type":"object","properties":{"message":{"type":"string"}}},"UserxCreateDTO":{"type":"object","properties":{"username":{"type":"string","minLength":1},"password":{"type":"string","minLength":1},"firstName":{"type":"string"},"lastName":{"type":"string"},"enabled":{"type":"boolean"},"roles":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true}},"required":["password","roles","username"]},"UserRoleDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"permissions":{"type":"array","items":{"type":"string","enum":["CAN_VIEW_OWN_OFFICE_CLIMATE","CAN_VIEW_OWN_SHARED_CLIMATE","CAN_MANAGE_OWN_ABSENCE","CAN_VIEW_OWN_DEPARTMENT_MEASURES","CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION","CAN_VIEW_ABSENCE_VIEW","CAN_MANAGE_ABSENCES","CAN_VIEW_COMPANY_AGGR","CAN_VIEW_VIOLATIONS_PER_DEPARTMENT","CAN_CHANGE_LIMITS","CAN_MANAGE_TIPS","CAN_VIEW_ALL_ROOMS","CAN_MANAGE_USERS","CAN_MANAGE_BUILDING_STRUCTURE","CAN_MANAGE_DEVICES"]},"uniqueItems":true}}},"UserRoom":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"departmentID":{"type":"string","format":"uuid"},"departmentName":{"type":"string"},"roomType":{"type":"string","enum":["OFFICE","SHARED"]}}},"UserxDTO":{"type":"object","description":"The User to update.","properties":{"id":{"type":"string","format":"uuid"},"createDate":{"type":"string","format":"date-time"},"updateDate":{"type":"string","format":"date-time"},"username":{"type":"string"},"firstName":{"type":"string"},"lastName":{"type":"string"},"enabled":{"type":"boolean"},"snoozedWarningsUntil":{"type":"string","format":"date-time"},"roles":{"type":"array","items":{"ref":"#/components/schemas/UserRole"},"uniqueItems":true},"myRoom":{"$ref":"#/components/schemas/UserRoom"}}},"SensorStationCreateDTO":{"type":"object","properties":{"name":{"type":"string","minLength":1},"roomId":{"type":"string","format":"uuid"}},"required":["name","roomId"]},"SensorStationDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"status":{"type":"string","enum":["ONLINE","OFFLINE"]},"roomId":{"type":"string","format":"uuid"},"connectedToPiId":{"type":"string","format":"uuid"}}},"RoomCreateDTO":{"type":"object","properties":{"departmentID":{"type":"string","format":"uuid"},"roomType":{"type":"string","enum":["OFFICE","SHARED"]},"isActive":{"type":"boolean"},"defaultPeopleCount":{"type":"integer","format":"int32","minimum":1},"name":{"type":"string","minLength":1}},"required":["defaultPeopleCount","departmentID","name","roomType"]},"RoomDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"departmentID":{"type":"string","format":"uuid"},"departmentName":{"type":"string"},"isActive":{"type":"boolean"},"roomType":{"type":"string","enum":["OFFICE","SHARED"]},"defaultPeopleCount":{"type":"integer","format":"int32"},"users":{"type":"array","items":{"$ref":"#/components/schemas/UserxListDTO"},"uniqueItems":true},"name":{"type":"string"}}},"UserxListDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"createDate":{"type":"string","format":"date-time"},"username":{"type":"string"},"firstName":{"type":"string"},"lastName":{"type":"string"}}},"RaspberryCreateDTO":{"type":"object","properties":{"name":{"type":"string","minLength":1},"ipAddress":{"type":"string","minLength":1},"port":{"type":"integer","format":"int32","maximum":9999,"minimum":1000},"roomId":{"type":"string","format":"uuid"}},"required":["ipAddress","name","port","roomId"]},"RaspberryDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"ipAddress":{"type":"string"},"port":{"type":"integer","format":"int32"},"status":{"type":"string","enum":["ONLINE","OFFLINE"]},"roomId":{"type":"string","format":"uuid"},"roomNumber":{"type":"string"}}},"LoginRequestDTO":{"type":"object","properties":{"username":{"type":"string"},"password":{"type":"string"}}},"LoginResponseDTO":{"type":"object","properties":{"bearerToken":{"type":"string"}}},"DepartmentCreateDTO":{"type":"object","properties":{"name":{"type":"string","minLength":1},"buildingID":{"type":"string","format":"uuid"}},"required":["buildingID","name"]},"DepartmentDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"buildingID":{"type":"string"},"buildingName":{"type":"string"},"roomNumbers":{"type":"array","items":{"type":"string","format":"uuid"}}}},"BuildingCreateDTO":{"type":"object","properties":{"name":{"type":"string","minLength":1},"address":{"type":"string"}},"required":["name"]},"BuildingDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"address":{"type":"string"},"name":{"type":"string"},"departments":{"type":"array","items":{"$ref":"#/components/schemas/BuildingDepartmentsDTO"}}}},"BuildingDepartmentsDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"}}},"AbsenceCreateDTO":{"type":"object","properties":{"userId":{"type":"string","format":"uuid"},"startDate":{"type":"string","format":"date-time"},"endDate":{"type":"string","format":"date-time"},"reason":{"type":"string","enum":["VACATION","ILLNESS","OTHER"]},"comment":{"type":"string"},"assignedTo":{"type":"string","format":"uuid"}},"required":["assignedTo","endDate","reason","startDate","userId"]},"AbsenceDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"typeOfAbsense":{"type":"string","enum":["VACATION","ILLNESS","OTHER"]},"status":{"type":"string","enum":["PENDING","APPROVED","REJECTED"]},"startDate":{"type":"string","format":"date-time"},"endDate":{"type":"string","format":"date-time"},"createdAt":{"type":"string","format":"date-time"},"assignedTo":{"type":"string","format":"uuid"},"comment":{"type":"string"}}},"UserxPatchDTO":{"type":"object","properties":{"username":{"type":"string"},"firstName":{"type":"string"},"lastName":{"type":"string"},"isEnabled":{"type":"boolean"},"roles":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true}}},"SensorStationPatchDTO":{"type":"object","properties":{"name":{"type":"string","pattern":"^(?!\\s*$).+"},"lastHeartBeat":{"type":"string","format":"date-time"},"status":{"type":"string","enum":["ONLINE","OFFLINE"]},"roomId":{"type":"string","format":"uuid"}}},"RoomPatchDTO":{"type":"object","properties":{"departmentID":{"type":"string","format":"uuid"},"roomType":{"type":"string","enum":["OFFICE","SHARED"]},"isActive":{"type":"boolean"},"defaultPeopleCount":{"type":"integer","format":"int32","minimum":1},"users":{"type":"array","items":{"type":"string","format":"uuid"},"uniqueItems":true},"name":{"type":"string","pattern":"^(?!\\s*$).+"}}},"UserRoleCreateDTO":{"type":"object","properties":{"name":{"type":"string"},"permissions":{"type":"array","items":{"type":"string","enum":["CAN_VIEW_OWN_OFFICE_CLIMATE","CAN_VIEW_OWN_SHARED_CLIMATE","CAN_MANAGE_OWN_ABSENCE","CAN_VIEW_OWN_DEPARTMENT_MEASURES","CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION","CAN_VIEW_ABSENCE_VIEW","CAN_MANAGE_ABSENCES","CAN_VIEW_COMPANY_AGGR","CAN_VIEW_VIOLATIONS_PER_DEPARTMENT","CAN_CHANGE_LIMITS","CAN_MANAGE_TIPS","CAN_VIEW_ALL_ROOMS","CAN_MANAGE_USERS","CAN_MANAGE_BUILDING_STRUCTURE","CAN_MANAGE_DEVICES"]},"uniqueItems":true}}},"RaspberryPatchDTO":{"type":"object","properties":{"name":{"type":"string","pattern":"^(?!\\s*$).+"},"ipAddress":{"type":"string"},"roomId":{"type":"string","format":"uuid"},"frequency":{"type":"integer","format":"int32"},"port":{"type":"integer","format":"int32","maximum":9999,"minimum":1000}}},"AbsencePatchDTO":{"type":"object","properties":{"status":{"type":"string","enum":["PENDING","APPROVED","REJECTED"]}},"required":["status"]},"Pageable":{"type":"object","properties":{"page":{"type":"integer","format":"int32","minimum":0},"size":{"type":"integer","format":"int32","minimum":1},"sort":{"type":"array","items":{"type":"string"}}}},"PageUserxListDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/UserxListDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"PageableObject":{"type":"object","properties":{"paged":{"type":"boolean"},"pageNumber":{"type":"integer","format":"int32"},"pageSize":{"type":"integer","format":"int32"},"unpaged":{"type":"boolean"},"sort":{"$ref":"#/components/schemas/SortObject"},"offset":{"type":"integer","format":"int64"}}},"SortObject":{"type":"object","properties":{"sorted":{"type":"boolean"},"unsorted":{"type":"boolean"},"empty":{"type":"boolean"}}},"AbsenceListDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"userId":{"type":"string","format":"uuid"},"firstName":{"type":"string"},"lastName":{"type":"string"},"room":{"type":"string","format":"uuid"},"startDate":{"type":"string","format":"date-time"},"endDate":{"type":"string","format":"date-time"},"typeOfAbsence":{"type":"string","enum":["VACATION","ILLNESS","OTHER"]},"status":{"type":"string","enum":["PENDING","APPROVED","REJECTED"]},"createdAt":{"type":"string","format":"date-time"}}},"PageAbsenceListDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/AbsenceListDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"PageSensorStationDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/SensorStationDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"PageRoomDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/RoomDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"PageRaspberryDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/RaspberryDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"OccupancyDTO":{"type":"object","properties":{"effectiveOccupancy":{"type":"integer","format":"int32"},"privacyMode":{"type":"boolean"}}},"PiConfigDTO":{"type":"object","properties":{"frequency":{"type":"integer","format":"int32"},"sensor":{"type":"string","format":"uuid"}}},"DepartmentListDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"buildingID":{"type":"string"},"buildingName":{"type":"string"}}},"PageDepartmentListDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/DepartmentListDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}},"BuildingListDTO":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"name":{"type":"string"},"address":{"type":"string"}}},"PageBuildingListDTO":{"type":"object","properties":{"totalPages":{"type":"integer","format":"int32"},"totalElements":{"type":"integer","format":"int64"},"pageable":{"$ref":"#/components/schemas/PageableObject"},"numberOfElements":{"type":"integer","format":"int32"},"sort":{"$ref":"#/components/schemas/SortObject"},"first":{"type":"boolean"},"last":{"type":"boolean"},"size":{"type":"integer","format":"int32"},"content":{"type":"array","items":{"$ref":"#/components/schemas/BuildingListDTO"}},"number":{"type":"integer","format":"int32"},"empty":{"type":"boolean"}}}}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SWE Skeleton API",
+    "description": "This is the API documentation for the SWE Skeleton project.",
+    "contact": {
+      "name": "SWE Skeleton Team"
+    },
+    "version": "0.1"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Development"
+    }
+  ],
+  "paths": {
+    "/test-info": {
+      "get": {
+        "tags": [
+          "hello-raspberry-controller"
+        ],
+        "operationId": "getRaspberryResponse",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaspberryTestDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "hello-raspberry-controller"
+        ],
+        "operationId": "receiveMsg",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaspberryTestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/send-to-raspberry": {
+      "post": {
+        "tags": [
+          "hello-raspberry-controller"
+        ],
+        "operationId": "sendToPi",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaspberryCommandDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getPageOfUsers",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageUserxListDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "createNewUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserxCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sensor-stations": {
+      "get": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "getAllSensorStations",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageSensorStationDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "createNewSensorStation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensorStationCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorStationDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms": {
+      "get": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "getPageOfRooms",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageRoomDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "createNewRoom",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/raspberry-pis": {
+      "get": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "getAllRaspberries",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageRaspberryDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "createNewRaspberry",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaspberryCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaspberryDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/raspberry-pis/{raspberry_id}/retry-connection": {
+      "post": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "retryDevicesConnection",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "tags": [
+          "authentication-controller"
+        ],
+        "operationId": "authenticateUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments": {
+      "get": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "getPageOfDepartments",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageDepartmentListDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "createNewDepartment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/buildings": {
+      "get": {
+        "tags": [
+          "building-controller"
+        ],
+        "operationId": "getPageOfBuildings",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageBuildingListDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "building-controller"
+        ],
+        "operationId": "createNewBuilding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildingCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildingDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "summary": "Get all Users ",
+        "description": "Get all existing Users.",
+        "operationId": "getAllUsers",
+        "responses": {
+          "200": {
+            "description": "All Users returned.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserxDTO"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No Users found.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserxDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "summary": "Create User",
+        "description": "Create a new User.",
+        "operationId": "createUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserxCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "User created.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already exists.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/absences": {
+      "get": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "getAllAbsences",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAbsenceListDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "createNewAbsence",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsenceCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{user_id}": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getSpecificUser",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "deleteSpecificUser",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "patchSpecificUser",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserxPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sensor-stations/{sensor_id}": {
+      "get": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "getSpecificSensorById",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorStationDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "removeSpecificSensor",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "patchExistingSensorStation",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SensorStationPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorStationDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/{room_id}": {
+      "delete": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "deleteSpecificRoom",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "patchSpecificRoom",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/roles/{role_id}": {
+      "patch": {
+        "tags": [
+          "user-role-controller"
+        ],
+        "operationId": "updatePermission",
+        "parameters": [
+          {
+            "name": "role_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserRoleCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRoleDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/raspberry-pis/{raspberry_id}": {
+      "get": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "getSpecificRaspberry",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaspberryDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "deleteSpecificRaspberry",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "patchSpecificRaspberry",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RaspberryPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RaspberryDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/{department_id}": {
+      "get": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "getSpecificDepartment",
+        "parameters": [
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "deleteSpecificDepartment",
+        "parameters": [
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "department-controller"
+        ],
+        "operationId": "patchSpecificDepartment",
+        "parameters": [
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartmentCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepartmentDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/buildings/{building_id}": {
+      "get": {
+        "tags": [
+          "building-controller"
+        ],
+        "operationId": "getSpecificBuilding",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildingDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "building-controller"
+        ],
+        "operationId": "deleteSpecificBuilding",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "building-controller"
+        ],
+        "operationId": "patchSpecificBuilding",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildingCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildingDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/{id}": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "summary": "Get a User",
+        "description": "Get a User by id.",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The id of the User to get.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The User found.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No User found.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "summary": "Delete User",
+        "description": "Delete a User by id.",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The id of the User to delete.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User deleted."
+          },
+          "404": {
+            "description": "User not found."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "summary": "Update User",
+        "description": "Update a User by id.",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The id of the User to update.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserxDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The updated User.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/absences/{absence_id}": {
+      "get": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "getSpecificAbsence",
+        "parameters": [
+          {
+            "name": "absence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "deleteSpecificAbsence",
+        "parameters": [
+          {
+            "name": "absence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "updateStatusOfAbsence",
+        "parameters": [
+          {
+            "name": "absence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbsencePatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me/absences": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getPageOfAbsencesOfAuthenticatedUser",
+        "parameters": [
+          {
+            "name": "pageable",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageAbsenceListDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/roles": {
+      "get": {
+        "tags": [
+          "user-role-controller"
+        ],
+        "operationId": "getAllPermissions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserRoleDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/raspberry-pis/{raspberry_id}/sync/occupancy": {
+      "get": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "syncOccupancy",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/OccupancyDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/raspberry-pis/{raspberry_id}/config": {
+      "get": {
+        "tags": [
+          "raspberry-controller"
+        ],
+        "operationId": "getRaspberryPiConfig",
+        "parameters": [
+          {
+            "name": "raspberry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PiConfigDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RaspberryTestDTO": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "RaspberryCommandDTO": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "UserxCreateDTO": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "password",
+          "roles",
+          "username"
+        ]
+      },
+      "UserRoleDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CAN_VIEW_OWN_OFFICE_CLIMATE",
+                "CAN_VIEW_OWN_SHARED_CLIMATE",
+                "CAN_MANAGE_OWN_ABSENCE",
+                "CAN_VIEW_OWN_DEPARTMENT_MEASURES",
+                "CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION",
+                "CAN_VIEW_ABSENCE_VIEW",
+                "CAN_MANAGE_ABSENCES",
+                "CAN_VIEW_COMPANY_AGGR",
+                "CAN_VIEW_VIOLATIONS_PER_DEPARTMENT",
+                "CAN_CHANGE_LIMITS",
+                "CAN_MANAGE_TIPS",
+                "CAN_VIEW_ALL_ROOMS",
+                "CAN_MANAGE_USERS",
+                "CAN_MANAGE_BUILDING_STRUCTURE",
+                "CAN_MANAGE_DEVICES"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "UserRoom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "OFFICE",
+              "SHARED"
+            ]
+          }
+        }
+      },
+      "UserxDTO": {
+        "type": "object",
+        "description": "The User to update.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "snoozedWarningsUntil": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserxRole"
+            },
+            "uniqueItems": true
+          },
+          "myRoom": {
+            "$ref": "#/components/schemas/UserRoom"
+          }
+        }
+      },
+      "SensorStationCreateDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "name",
+          "roomId"
+        ]
+      },
+      "SensorStationDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "connectedToPiId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RoomCreateDTO": {
+        "type": "object",
+        "properties": {
+          "departmentID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "OFFICE",
+              "SHARED"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "defaultPeopleCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "defaultPeopleCount",
+          "departmentID",
+          "name",
+          "roomType"
+        ]
+      },
+      "RoomDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "OFFICE",
+              "SHARED"
+            ]
+          },
+          "defaultPeopleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserxListDTO"
+            },
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UserxListDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        }
+      },
+      "RaspberryCreateDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ipAddress": {
+            "type": "string",
+            "minLength": 1
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 9999,
+            "minimum": 1000
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "ipAddress",
+          "name",
+          "port",
+          "roomId"
+        ]
+      },
+      "RaspberryDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ipAddress": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginRequestDTO": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginResponseDTO": {
+        "type": "object",
+        "properties": {
+          "bearerToken": {
+            "type": "string"
+          }
+        }
+      },
+      "DepartmentCreateDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "buildingID": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "buildingID",
+          "name"
+        ]
+      },
+      "DepartmentDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "buildingID": {
+            "type": "string"
+          },
+          "buildingName": {
+            "type": "string"
+          },
+          "roomNumbers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "BuildingCreateDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "BuildingDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "address": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuildingDepartmentsDTO"
+            }
+          }
+        }
+      },
+      "BuildingDepartmentsDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "AbsenceCreateDTO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "VACATION",
+              "ILLNESS",
+              "OTHER"
+            ]
+          },
+          "comment": {
+            "type": "string"
+          },
+          "assignedTo": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "assignedTo",
+          "endDate",
+          "reason",
+          "startDate",
+          "userId"
+        ]
+      },
+      "AbsenceDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "typeOfAbsense": {
+            "type": "string",
+            "enum": [
+              "VACATION",
+              "ILLNESS",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assignedTo": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "UserxPatchDTO": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "SensorStationPatchDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^(?!\\s*$).+"
+          },
+          "lastHeartBeat": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ONLINE",
+              "OFFLINE"
+            ]
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RoomPatchDTO": {
+        "type": "object",
+        "properties": {
+          "departmentID": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomType": {
+            "type": "string",
+            "enum": [
+              "OFFICE",
+              "SHARED"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "defaultPeopleCount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^(?!\\s*$).+"
+          }
+        }
+      },
+      "UserRoleCreateDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "CAN_VIEW_OWN_OFFICE_CLIMATE",
+                "CAN_VIEW_OWN_SHARED_CLIMATE",
+                "CAN_MANAGE_OWN_ABSENCE",
+                "CAN_VIEW_OWN_DEPARTMENT_MEASURES",
+                "CAN_VIEW_OWN_DEPARTMENT_LIMITS_VIOLATION",
+                "CAN_VIEW_ABSENCE_VIEW",
+                "CAN_MANAGE_ABSENCES",
+                "CAN_VIEW_COMPANY_AGGR",
+                "CAN_VIEW_VIOLATIONS_PER_DEPARTMENT",
+                "CAN_CHANGE_LIMITS",
+                "CAN_MANAGE_TIPS",
+                "CAN_VIEW_ALL_ROOMS",
+                "CAN_MANAGE_USERS",
+                "CAN_MANAGE_BUILDING_STRUCTURE",
+                "CAN_MANAGE_DEVICES"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      "RaspberryPatchDTO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^(?!\\s*$).+"
+          },
+          "ipAddress": {
+            "type": "string"
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "frequency": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 9999,
+            "minimum": 1000
+          }
+        }
+      },
+      "AbsencePatchDTO": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "Pageable": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "sort": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PageUserxListDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserxListDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "paged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unpaged": {
+            "type": "boolean"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "sorted": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AbsenceListDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "typeOfAbsence": {
+            "type": "string",
+            "enum": [
+              "VACATION",
+              "ILLNESS",
+              "OTHER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PageAbsenceListDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AbsenceListDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageSensorStationDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SensorStationDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageRoomDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoomDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageRaspberryDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RaspberryDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "OccupancyDTO": {
+        "type": "object",
+        "properties": {
+          "effectiveOccupancy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "privacyMode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PiConfigDTO": {
+        "type": "object",
+        "properties": {
+          "frequency": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sensor": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "DepartmentListDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "buildingID": {
+            "type": "string"
+          },
+          "buildingName": {
+            "type": "string"
+          }
+        }
+      },
+      "PageDepartmentListDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentListDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BuildingListDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          }
+        }
+      },
+      "PageBuildingListDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BuildingListDTO"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserxRole": {
+        "type": "string",
+        "description": "Enumeration of available user roles.",
+        "enum": [
+          "EMPLOYEE",
+          "SYSADMIN",
+          "HIGHER_MANAGER",
+          "DEPARTMENT_MANAGER",
+          "BUILDING_MANAGER"
+        ]
+      }
+    }
+  }
+}

@@ -2,10 +2,10 @@
  * This code is part of the skeleton project provided for students of the course "Software
  * Engineering" offered by Innsbruck University.
  */
-import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 import {BEARER_TOKEN_LOCAL_STORAGE_KEY} from "../config/config";
 import {jwtDecode, JwtPayload} from "jwt-decode";
-import {LoginRequestDTO, UserxControllerApi, UserxDTO} from '../generated-skeleton-api';
+import {LoginRequestDTO, UserxDTO, UserxRole} from '../generated-skeleton-api';
 import {AuthApi} from "../utilities/authApi";
 
 /**
@@ -47,7 +47,7 @@ type CustomJwtPayload = JwtPayload & { roles: string[], name: string, username: 
  * @param children The child components of the UserProvider
  * @returns The UserContext.Provider component
  */
-export function UserProvider({children}: { children: React.ReactNode }) {
+export function UserProvider({children}: { readonly children: React.ReactNode }) {
 
     // States the UserProvider manages
     // Docs: https://react.dev/reference/react/useState
@@ -65,36 +65,35 @@ export function UserProvider({children}: { children: React.ReactNode }) {
             }
         };
 
-        window.addEventListener("storage", handler);
-        return () => window.removeEventListener("storage", handler);
+        globalThis.addEventListener("storage", handler);
+        return () => globalThis.removeEventListener("storage", handler);
     }, []);
 
     /**
      * Login the user by setting the bearer token in the state and local storage.
      * @param loginDto the login data
      */
-    const login = async (loginDto: LoginRequestDTO): Promise<void> => {
+    const login = useCallback(async (loginDto: LoginRequestDTO): Promise<void> => {
         const {bearerToken} = await AuthApi.login(loginDto);
         if (!bearerToken || bearerToken.length < 10) {
             setError(new Error('Missing or invalid bearer token in response!'));
-            console.log('Error: missing or invalid bearer token in response');
             return;
         }
 
         localStorage.setItem(BEARER_TOKEN_LOCAL_STORAGE_KEY, bearerToken);
         setToken(bearerToken); // trigger re-render
         setError(null);
-    };
+    }, []);
 
     /**
      * Logout the current user by removing the bearer token from the state and local storage. Note
      * that this does not actually invalidate the token on the server side. It only removes the
      * token from the client side.
      */
-    const logout = async () => {
+    const logout = useCallback(() => {
         localStorage.removeItem(BEARER_TOKEN_LOCAL_STORAGE_KEY);
         setToken(null);
-    };
+    }, []);
 
     /**
      * Get the current user by decoding the bearer token stored in the local storage.
@@ -108,7 +107,7 @@ export function UserProvider({children}: { children: React.ReactNode }) {
             const decoded = jwtDecode<CustomJwtPayload>(token);
             const fullName = decoded.name ?? "";
             const [firstName = "", lastName = ""] = fullName.split(" ");
-            const roles = decoded.roles ?? [];
+            const roles = (decoded.roles ?? []).map(r => r.replace(/^ROLE_/, '') as UserxRole);
             return {
                 username: decoded.username ?? "",
                 firstName,
@@ -116,14 +115,15 @@ export function UserProvider({children}: { children: React.ReactNode }) {
                 email: "",
                 phone: "",
                 enabled: true,
-                roles: new Set(roles) as any,            };
+                roles: new Set(roles),
+            };
         } catch {
             // invalid token -> treat as logged out
             return null;
         }
     }, [token]);
 
-    const userIsAuthenticated = async (): Promise<boolean> => {
+    const userIsAuthenticated = useCallback(async (): Promise<boolean> => {
         if (!token) {
             return false;
         }
@@ -131,70 +131,42 @@ export function UserProvider({children}: { children: React.ReactNode }) {
         try {
             const decodedUser = jwtDecode<CustomJwtPayload>(token);
 
-            if (decodedUser.exp && Date.now() >= decodedUser.exp! * 1000) {
-                console.info("JWT Token expired at " + decodedUser.exp! * 1000);
-                void logout(); // ignore the returned promise; void explicit so ESLint doesn’t complain
+            if (decodedUser.exp && Date.now() >= decodedUser.exp * 1000) {
+                logout();
                 return false;
             }
 
-            const userxControllerApi = new UserxControllerApi();
-            const isAuthenticated = await userxControllerApi.isAuthenticated();
-
-            if (isAuthenticated) {
-                return true;
-            } else {
-                setError(new Error('Authentication failed'));
-                void logout(); // ignore the returned promise; void explicit so ESLint doesn’t complain
-                return false;
-            }
-        } catch (err: any) {
+            return true;
+        } catch (err: unknown) {
             setError(err instanceof Error ? err : new Error("Invalid Token"));
-            void logout(); // ignore the returned promise; void explicit so ESLint doesn’t complain
+            logout();
             return false;
         }
-    };
+    }, [token, logout]);
 
-    const rolesArray = Array.from(currentUser?.roles || []).map(role => JSON.stringify(role).toUpperCase());
+    const rolesArray = Array.from(currentUser?.roles || []).map(role => String(role).toUpperCase());
 
-    // ==========================================
-    // TODO: WORKAROUND FÜR BACKEND-BUG
-    // Aktuell schickt das Backend leere depthead und senior Rollen-Arrays ([]).
-    // Bis das im Backend repariert ist, lesen wir den Username aus.
-    // ==========================================
-    const uname = currentUser?.username?.toLowerCase() || "";
-
-    const isAdmin = rolesArray.some(r => r.includes("SYSADMIN") || r.includes("ADMIN")) || uname.includes("admin") || uname.includes("sysadmin");
-    const isEmployee = rolesArray.some(r => r.includes("EMPLOYEE")) || uname === "employee";
-    const isSeniorManager = rolesArray.some(r => r.includes("SENIOR")) || uname.includes("senior");
-    const isBuildingManager = rolesArray.some(r => r.includes("BUILDING")) || uname.includes("building");
-    const isDepartmentManager = rolesArray.some(r => r.includes("DEPT") || r.includes("DEPARTMENT")) || uname.includes("depthead");
-    // ==========================================
-/*
-    Saubere Code:
-    const rolesArray = Array.from(currentUser?.roles || []).map(role => JSON.stringify(role).toUpperCase());
-
-    const isAdmin = rolesArray.some(r => r.includes("SYSADMIN") || r.includes("ADMIN"));
+    const isAdmin = rolesArray.some(r => r.includes("SYSADMIN"));
     const isEmployee = rolesArray.some(r => r.includes("EMPLOYEE"));
-    const isSeniorManager = rolesArray.some(r => r.includes("SENIOR"));
     const isBuildingManager = rolesArray.some(r => r.includes("BUILDING"));
-    const isDepartmentManager = rolesArray.some(r => r.includes("DEPT") || r.includes("DEPARTMENT"));
-*/
+    const isSeniorManager = rolesArray.some(r => r.includes("HIGHER_MANAGER"));
+    const isDepartmentManager = rolesArray.some(r => r.includes("DEPARTMENT_MANAGER"));
+
+    const contextValue = useMemo(() => ({
+        currentUser,
+        login,
+        logout,
+        error,
+        isAdmin,
+        isEmployee,
+        isSeniorManager,
+        isDepartmentManager,
+        isBuildingManager,
+        userIsAuthenticated,
+    }), [currentUser, login, logout, error, isAdmin, isEmployee, isSeniorManager, isDepartmentManager, isBuildingManager, userIsAuthenticated]);
 
     return (
-        <UserContext.Provider
-            value={{
-                currentUser,
-                login,
-                logout,
-                error,
-                isAdmin,
-                isEmployee,
-                isSeniorManager,
-                isDepartmentManager,
-                isBuildingManager,
-                userIsAuthenticated
-            }}
-        >
+        <UserContext.Provider value={contextValue}>
             {children}
         </UserContext.Provider>
     );

@@ -7,8 +7,9 @@ import { PageHeader } from "../components/PageHeader";
 import {DepartmentHeadDashboard} from "./DepartmentHeadDashboard";
 import {BuildingManagerDashboard} from "./BuildingManagerDashboard";
 import {SeniorManagerDashboard} from "./SeniorManagerDashboard";
+import SysAdminDashboard from "./SysAdminDashboard";
 
-const PlaceholderDashboard: React.FC<{ title: string, content: string }> = ({ title, content }) => {
+const PlaceholderDashboard: React.FC<{ readonly title: string, readonly content: string }> = ({ title, content }) => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     return (
@@ -43,7 +44,7 @@ const RoleBasedHome: React.FC = () => {
     if (!currentUser) return <div style={{ padding: '50px' }}>Lädt Benutzerdaten...</div>;
 
     if (isAdmin) {
-        return <PlaceholderDashboard title="SysAdmin Dashboard" content="Device, User & Building Configuration" />;
+        return <SysAdminDashboard />;
     }
 
     if (isSeniorManager) {
