@@ -2,8 +2,8 @@ import '../styles/WarningBanner.css';
 import React from 'react';
 
 interface WarningBannerProps {
-    boldPart: string;
-    regularPart: string;
+    readonly boldPart: string;
+    readonly regularPart: string;
 }
 
 export const WarningBanner: React.FC<WarningBannerProps> = ({ boldPart, regularPart }) => {

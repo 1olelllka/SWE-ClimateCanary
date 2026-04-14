@@ -6,21 +6,21 @@ import { defaultTableProps } from '../config/tableConfig';
 import '../styles/Tables.css';
 
 export interface RoomData {
-    id: string;
-    department?: string;
-    type: string;
-    people: string;
-    co2: string;
-    temp: string;
-    humidity: string;
-    status: 'red' | 'green' | 'yellow' | 'gray';
+    readonly id: string;
+    readonly department?: string;
+    readonly type: string;
+    readonly people: string;
+    readonly co2: string;
+    readonly temp: string;
+    readonly humidity: string;
+    readonly status: 'red' | 'green' | 'yellow' | 'gray';
 }
 
 interface RoomListTableProps {
-    rooms: RoomData[];
-    showDepartment?: boolean;
-    showSettings?: boolean;
-    onSettingsClick?: (roomId: string) => void;
+    readonly rooms: RoomData[];
+    readonly showDepartment?: boolean;
+    readonly showSettings?: boolean;
+    readonly onSettingsClick?: (roomId: string) => void;
 }
 
 export const RoomListTable: React.FC<RoomListTableProps> = ({

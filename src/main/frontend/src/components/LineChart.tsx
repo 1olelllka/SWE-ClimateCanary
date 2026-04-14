@@ -1,8 +1,8 @@
 import React from 'react';
 
 interface MiniSparklineProps {
-    color: string;
-    points: string;
+    readonly color: string;
+    readonly points: string;
 }
 
 export const LineChart: React.FC<MiniSparklineProps> = ({ color, points }) => {

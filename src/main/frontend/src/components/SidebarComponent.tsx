@@ -5,8 +5,8 @@ import { useUser } from '../Contexts/AuthenticatedUserContext';
 import '../styles/Sidebar.css';
 
 interface SidebarProps {
-    visible: boolean;
-    onHide: () => void;
+    readonly visible: boolean;
+    readonly onHide: () => void;
 }
 
 const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {

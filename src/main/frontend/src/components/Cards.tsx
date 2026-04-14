@@ -3,13 +3,13 @@ import React from 'react';
 import { LineChart } from './LineChart';
 
 interface KpiCardProps {
-    title: string;
-    value: string;
-    unit: string;
-    color: string;
-    points: string;
-    trendText: string;
-    trendIcon: string;
+    readonly title: string;
+    readonly value: string;
+    readonly unit: string;
+    readonly color: string;
+    readonly points: string;
+    readonly trendText: string;
+    readonly trendIcon: string;
 }
 
 export const Cards: React.FC<KpiCardProps> = ({ title, value, unit, color, points, trendText, trendIcon }) => {
