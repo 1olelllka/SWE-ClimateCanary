@@ -3,11 +3,13 @@ package at.qe.skeleton.tests.controllers;
 import at.qe.skeleton.dtos.UserxCreateDTO;
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.mappers.UserxCreateMapper;
+import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.UserRoleService;
 import at.qe.skeleton.services.UserService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +62,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
     public void testThatGetPageOfUsersReturnsHttp200OkAndPage() throws Exception {
-        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(null)));
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.content[0].id").value(user.getId().toString()));
@@ -76,7 +78,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
     public void testThatGetSpecificUserReturnsHttp200OkAndUser() throws Exception {
-        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(null)));
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/" + user.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(user.getId().toString()));
@@ -87,7 +89,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
     public void testThatGetPageOfAbsencesOfAuthenticatedUserReturnsHttp200Ok() throws Exception {
-        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(null)));
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         TestingAuthenticationToken auth = new TestingAuthenticationToken("principal", user, "CAN_MANAGE_OWN_ABSENCE");
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/me/absences")
@@ -120,7 +122,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
     public void testThatPatchSpecificUserReturnsHttp200Ok() throws Exception {
-        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(null)));
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
 
         UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet());
         String json = objectMapper.writeValueAsString(patchDTO);
@@ -149,7 +151,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
     public void testThatDeleteAnUserReturnsHttp204NoContentAndDeletesUser() throws Exception {
-        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(null)));
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/users/" + user.getId()))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
