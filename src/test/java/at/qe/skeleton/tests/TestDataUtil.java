@@ -31,6 +31,7 @@ public class TestDataUtil {
     public static Room createRoomEntity(Department department) {
         return Room.builder()
                 .isActive(true)
+                .roomNumber("A121")
                 .roomType(RoomType.OFFICE)
                 .department(department)
                 .defaultPeopleCnt(10)

@@ -3,6 +3,7 @@ package at.qe.skeleton.tests.controllers;
 import at.qe.skeleton.dtos.AbsenceCreateDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
 import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.*;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -180,7 +181,9 @@ public class AbsenceControllerIntegrationTests {
         Department dep = TestDataUtil.createDepartmentEntity(this.building);
         dep.setName("Another department");
         dep = departmentService.createDepartment(dep);
-        Room newRoom = roomService.createRoom(TestDataUtil.createRoomEntity(dep));
+        Room newRoom = TestDataUtil.createRoomEntity(dep);
+        newRoom.setRoomNumber("Test 2");
+        newRoom = roomService.createRoom(newRoom);
         roomService.patchRoom(newRoom.getId(), Room.builder()
                 .users(Set.of(this.manager)).build());
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),

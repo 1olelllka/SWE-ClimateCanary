@@ -3,10 +3,13 @@ package at.qe.skeleton.tests.controllers;
 import at.qe.skeleton.dtos.SensorStationCreateDTO;
 import at.qe.skeleton.dtos.SensorStationPatchDTO;
 import at.qe.skeleton.model.DeviceStatus;
+import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.SensorStationRepository;
+import at.qe.skeleton.services.RaspberryService;
 import at.qe.skeleton.services.SensorStationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +36,10 @@ public class SensorStationControllerIntegrationTests {
     @Autowired
     private SensorStationService sensorService;
     @Autowired
+    private RaspberryService raspberryService;
+    @Autowired
+    private RaspberryPiRepository raspberryPiRepository;
+    @Autowired
     private SensorStationRepository sensorRepository;
     @Autowired
     private RoomMonitoringRepository monitoringRepository;
@@ -45,8 +52,10 @@ public class SensorStationControllerIntegrationTests {
     void setUp() {
         monitoringRepository.deleteAll();
         sensorRepository.deleteAll();
-
+        raspberryPiRepository.deleteAll();
         this.savedRoom = monitoringRepository.save(RoomMonitoring.builder().roomId(UUID.randomUUID()).roomNumber("A101").build());
+        RaspberryPi pi = RaspberryPi.builder().ip("localhost").port(8000).name("Test Raspberry").status(DeviceStatus.ONLINE).build();
+        raspberryService.createNewRaspberry(pi, this.savedRoom.getRoomId());
     }
 
 

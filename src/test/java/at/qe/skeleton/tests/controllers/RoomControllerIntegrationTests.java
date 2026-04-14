@@ -5,6 +5,7 @@ import at.qe.skeleton.dtos.RoomPatchDTO;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.RoomService;
 import at.qe.skeleton.services.UserxService;
 import at.qe.skeleton.tests.TestDataUtil;
@@ -24,6 +25,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,6 +39,7 @@ public class RoomControllerIntegrationTests {
     private final RoomService roomService;
     private final BuildingRepository buildingRepository;
     private final DepartmentRepository departmentRepository;
+    private final RoomMonitoringRepository monitoringRepository;
     private final UserxService userxService;
     private final ObjectMapper objectMapper;
 
@@ -45,12 +48,14 @@ public class RoomControllerIntegrationTests {
                                           BuildingRepository buildingRepository,
                                           DepartmentRepository departmentRepository,
                                           UserxService userxService,
+                                          RoomMonitoringRepository monitoringRepository,
                                           MockMvc mockMvc) {
         this.roomService = roomService;
         this.buildingRepository = buildingRepository;
         this.departmentRepository = departmentRepository;
         this.mockMvc = mockMvc;
         this.userxService = userxService;
+        this.monitoringRepository = monitoringRepository;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -74,11 +79,27 @@ public class RoomControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
+    public void testThatCreateNewRoomReturnsHttp409ConflictIfSuchNameExists() throws Exception {
+        Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
+        Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
+        roomService.createRoom(Room.builder().roomNumber("Test").roomType(RoomType.OFFICE).department(d).defaultPeopleCnt(10).isActive(true).build());
+        RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5, "Test");
+        String json = objectMapper.writeValueAsString(dto);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/rooms")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict());
+        assertEquals(1, monitoringRepository.findAll().size());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
     public void testThatCreateNewRoomReturnsHttp201Created() throws Exception {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
 
-        RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5);
+        RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5, "Test");
         String json = objectMapper.writeValueAsString(dto);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/rooms")
@@ -87,6 +108,7 @@ public class RoomControllerIntegrationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.roomType").value("OFFICE"))
                 .andExpect(jsonPath("$.defaultPeopleCount").value(5));
+        assertEquals(1, monitoringRepository.findAll().size());
     }
 
     @Test
@@ -98,7 +120,7 @@ public class RoomControllerIntegrationTests {
 
         // Update to SHARED and 20 people
         Userx newUser = userxService.saveUser(Userx.builder().username("Test").password("test").build());
-        RoomPatchDTO patchDto = new RoomPatchDTO(d.getId(), RoomType.SHARED, true, 20, Set.of(newUser.getId()));
+        RoomPatchDTO patchDto = new RoomPatchDTO(d.getId(), RoomType.SHARED, true, 20, Set.of(newUser.getId()), "Test");
         String json = objectMapper.writeValueAsString(patchDto);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/rooms/" + saved.getId())
@@ -115,7 +137,7 @@ public class RoomControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department d = departmentRepository.save(TestDataUtil.createDepartmentEntity(b));
 
-        RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5);
+        RoomCreateDTO dto = new RoomCreateDTO(d.getId(), RoomType.OFFICE, true, 5, "Test");
         String json = objectMapper.writeValueAsString(dto);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/rooms/" + java.util.UUID.randomUUID())

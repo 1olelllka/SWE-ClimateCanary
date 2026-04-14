@@ -12,6 +12,7 @@ public record RoomDTO(
         boolean isActive,
         RoomType roomType,
         Integer defaultPeopleCount,
-        Set<UserxListDTO> users
+        Set<UserxListDTO> users,
+        String name
 ) {
 }

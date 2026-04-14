@@ -54,7 +54,8 @@ public class RoomMapperUnitTests {
                 false,
                 RoomType.OFFICE,
                 4,
-                Set.of(new UserxListDTO(UUID.randomUUID(), LocalDateTime.now(), "", "", ""))
+                Set.of(new UserxListDTO(UUID.randomUUID(), LocalDateTime.now(), "", "", "")),
+                "Test"
         );
 
         Room result = mapper.mapFrom(dto);

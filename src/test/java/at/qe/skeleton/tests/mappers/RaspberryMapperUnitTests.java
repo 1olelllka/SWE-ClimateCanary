@@ -133,7 +133,7 @@ class RaspberryMapperUnitTests {
         @DisplayName("throws UnsupportedOperationException — read DTO is not used for writes")
         void throwsUnsupportedOperationException() {
             RaspberryDTO dto = new RaspberryDTO(
-                    UUID.randomUUID(), "Pi Lab A", "192.168.1.100",
+                    UUID.randomUUID(), "Pi Lab A", "192.168.1.100", 1000,
                     DeviceStatus.OFFLINE, UUID.randomUUID(), "A.101"
             );
 

@@ -19,13 +19,15 @@ public class RoomMapper implements DTOMapper<Room, RoomDTO> {
                 entity.getUsers() != null ?
                         entity.getUsers().stream()
                                 .map(u -> new UserxListDTO(u.getId(), u.getCreateDate(), u.getUsername(), u.getFirstName(), u.getLastName())).collect(Collectors.toSet())
-                :  null);
+                :  null,
+                entity.getRoomNumber());
     }
 
     @Override
     public Room mapFrom(RoomDTO dto) {
         return Room.builder()
                 .id(dto.id())
+                .roomNumber(dto.name())
                 .roomType(dto.roomType())
                 .isActive(dto.isActive())
                 .defaultPeopleCnt(dto.defaultPeopleCount())

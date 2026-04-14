@@ -17,6 +17,7 @@ public class RaspberryPatchMapper implements DTOMapper<RaspberryPi, RaspberryPat
                 .builder()
                 .name(dto.name())
                 .ip(dto.ipAddress())
+                .port(dto.port())
                 .frequency(dto.frequency())
                 .build();
     }

@@ -54,6 +54,7 @@ public class RoomController {
                         .department(Department.builder().id(dto.departmentID()).build())
                         .defaultPeopleCnt(dto.defaultPeopleCount())
                         .isActive(dto.isActive())
+                        .roomNumber(dto.name())
                 .build());
         return new ResponseEntity<>(roomMapper.mapTo(created), HttpStatus.CREATED);
     }
@@ -73,6 +74,7 @@ public class RoomController {
                 .defaultPeopleCnt(dto.defaultPeopleCount())
                 .isActive(dto.isActive())
                 .users(dto.users() != null ? dto.users().stream().map(u -> Userx.builder().id(u).build()).collect(Collectors.toSet()) : null)
+                .roomNumber(dto.name())
                 .build());
         return new ResponseEntity<>(roomMapper.mapTo(patched), HttpStatus.OK);
     }

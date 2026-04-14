@@ -10,6 +10,7 @@ public record RaspberryDTO(
         UUID id,
         String name,
         String ipAddress,
+        Integer port,
         DeviceStatus status,
         UUID roomId,
         String roomNumber

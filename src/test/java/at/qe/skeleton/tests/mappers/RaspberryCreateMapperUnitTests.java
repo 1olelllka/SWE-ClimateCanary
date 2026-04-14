@@ -55,6 +55,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -70,6 +71,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -84,6 +86,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -98,6 +101,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -112,6 +116,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -126,6 +131,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -140,6 +146,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     UUID.randomUUID()
             );
 
@@ -157,6 +164,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
+                    1000,
                     roomId
             );
 

@@ -1,14 +1,18 @@
 package at.qe.skeleton.services.impl;
 
+import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.RoomService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -18,12 +22,15 @@ import java.util.UUID;
 @Service
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
+    private final RoomMonitoringRepository monitoringRepository;
     private final UserxRepository userxRepository;
 
     public RoomServiceImpl(RoomRepository roomRepository,
-                           UserxRepository userxRepository){
+                           UserxRepository userxRepository,
+                           RoomMonitoringRepository monitoringRepository){
         this.roomRepository = roomRepository;
         this.userxRepository = userxRepository;
+        this.monitoringRepository = monitoringRepository;
     }
 
     public Page<Room> getPageOfRooms(Pageable pageable) {return roomRepository.findAll(pageable);}
@@ -33,8 +40,14 @@ public class RoomServiceImpl implements RoomService {
 //                .orElseThrow(() -> new NotFoundException("Room not found with id: " + id));
 //    }
 
+    @Transactional
     public Room createRoom(Room room) {
-        return roomRepository.save(room);
+        if (roomRepository.existsByRoomNumber(room.getRoomNumber())) {
+            throw new ConflictException("Room with such name already exists.");
+        }
+        Room r = roomRepository.save(room);
+        monitoringRepository.save(RoomMonitoring.builder().roomId(r.getId()).roomNumber(r.getRoomNumber()).build());
+        return r;
     }
 
     @Override
