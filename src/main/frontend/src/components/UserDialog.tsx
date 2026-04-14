@@ -14,15 +14,15 @@ import {Message} from "primereact/message";
 import {UserxCreateDTO} from "../generated-skeleton-api";
 
 interface UserDialogProps {
-    visible: boolean;
-    user: UserxCreateDTO | null;
-    isNewUser: boolean;
-    validation: UserxValidationResult;
-    onHide: () => void;
-    onSubmit: () => void;
-    onInputChange: (event: React.ChangeEvent<HTMLInputElement> | InputMaskChangeEvent) => void;
-    onRolesChange: (event: { value: string[] }) => void;
-    onUserEnabledChange: (event: CheckboxChangeEvent) => void;
+    readonly visible: boolean;
+    readonly user: UserxCreateDTO | null;
+    readonly isNewUser: boolean;
+    readonly validation: UserxValidationResult;
+    readonly onHide: () => void;
+    readonly onSubmit: () => void;
+    readonly onInputChange: (event: React.ChangeEvent<HTMLInputElement> | InputMaskChangeEvent) => void;
+    readonly onRolesChange: (event: { value: string[] }) => void;
+    readonly onUserEnabledChange: (event: CheckboxChangeEvent) => void;
 }
 
 /**

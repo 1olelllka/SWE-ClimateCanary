@@ -62,9 +62,20 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>tools.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>3.0.0-rc2</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
             <version>4.1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- JJWT for json web tokens -->
@@ -116,10 +127,18 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>25</release>
-                </configuration>
+                <version>3.13.0</version> <configuration>
+                <release>25</release>
+                <annotationProcessorPaths>
+                    <path>
+                        <groupId>org.projectlombok</groupId>
+                        <artifactId>lombok</artifactId>
+                        <version>${lombok.version}</version>
+                    </path>
+                </annotationProcessorPaths>
+            </configuration>
             </plugin>
 
             <!-- Enable jacoco analysis -->
@@ -212,7 +231,45 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
             </plugin>
+
+            <!-- Integrate Openapi -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>7.20.0</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/main/resources/api-docs.json</inputSpec>
+                            <generatorName>typescript-axios</generatorName>
+                            <output>${project.basedir}/src/main/frontend/src/generated-skeleton-api</output>
+                            <configOptions>
+                                <supportsES6>true</supportsES6>
+                                <npmName>skeleton-api</npmName>
+                                <npmVersion>0.1</npmVersion>
+                                <ensureUniqueParams>true</ensureUniqueParams>
+                                <useSingleRequestParameter>true</useSingleRequestParameter>
+                                <typescriptThreePlus>true</typescriptThreePlus>
+                                <enumPropertyNaming>UPPERCASE</enumPropertyNaming>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

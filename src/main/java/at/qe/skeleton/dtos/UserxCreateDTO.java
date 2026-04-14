@@ -1,12 +1,10 @@
 package at.qe.skeleton.dtos;
 
-import at.qe.skeleton.model.UserxRole;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
 
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Reduced data transfer object for the UserxTypes Entity in the create endpoint.
@@ -21,9 +19,7 @@ public record UserxCreateDTO(
     String password,
     String firstName,
     String lastName,
-    String email,
-    String phone,
     boolean enabled,
-    @ArraySchema(schema = @Schema(implementation = UserxRole.class))
-    Set<UserxRole> roles
+    @NotNull
+    Set<UUID> roles
 ) {}

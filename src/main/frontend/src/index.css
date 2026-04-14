@@ -1,3 +1,15 @@
+:root {
+    --nav-bg: #1a3a4a;
+    --page-bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --card-border: #e8eef4;
+    --muted-blue: #7fb3c8;
+    --red: #e05252;
+
+    --text-primary: #1a3a4a;
+    --text-secondary: #64748b;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

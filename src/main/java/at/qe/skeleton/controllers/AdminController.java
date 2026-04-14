@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * REST controllers for admin users.
@@ -30,6 +31,7 @@ import java.util.Optional;
 @Tag(name = "Admin Controller")
 @RestController
 @RequestMapping("/api/admin")
+@CrossOrigin(origins = "*")
 public class AdminController {
 
   private final UserxCreateMapper userCreateMapper;
@@ -72,7 +74,7 @@ public class AdminController {
   @ApiResponse(responseCode = "404", description = "No User found.")
   @GetMapping("/{id}")
   public ResponseEntity<UserxDTO> getUser(
-      @Parameter(description = "The id of the User to get.") @PathVariable Long id) {
+      @Parameter(description = "The id of the User to get.") @PathVariable UUID id) {
     Optional<Userx> existingUserx = userService.loadUser(id);
     if (existingUserx.isPresent()) {
       return ResponseEntity.ok(userMapper.mapTo(existingUserx.get()));
@@ -113,7 +115,7 @@ public class AdminController {
   @ApiResponse(responseCode = "404", description = "User not found.")
   @PatchMapping("/{id}")
   public ResponseEntity<UserxDTO> updateUser(
-      @Parameter(name = "id", description = "The id of the User to update.") @PathVariable Long id,
+      @Parameter(name = "id", description = "The id of the User to update.") @PathVariable UUID id,
       @Parameter(name = "userxDto", description = "The User to update.") @Valid @RequestBody
       UserxDTO userxDto) {
     Optional<Userx> existingUserx = userService.loadUser(id);
@@ -142,7 +144,7 @@ public class AdminController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteUser(
       @Parameter(name = "id", description = "The id of the User to delete.") @PathVariable
-      Long id) {
+      UUID id) {
     Optional<Userx> existingUserx = userService.loadUser(id);
     if (existingUserx.isPresent()) {
       userService.deleteUser(existingUserx.get());

@@ -12,12 +12,12 @@ import {UserxCreateDTO, UserxRole} from "../generated-skeleton-api";
 
 
 interface UserFormProps {
-    user: UserxCreateDTO,
-    isNewUser: boolean,
-    fieldErrors?: Partial<Record<keyof UserxCreateDTO, string>>,
-    onInputChange: (event: React.ChangeEvent<HTMLInputElement> | InputMaskChangeEvent) => void,
-    onRolesChange: (event: { value: string[] }) => void,
-    onUserEnabledChange: (event: CheckboxChangeEvent) => void
+    readonly user: UserxCreateDTO,
+    readonly isNewUser: boolean,
+    readonly fieldErrors?: Partial<Record<keyof UserxCreateDTO, string>>,
+    readonly onInputChange: (event: React.ChangeEvent<HTMLInputElement> | InputMaskChangeEvent) => void,
+    readonly onRolesChange: (event: { value: string[] }) => void,
+    readonly onUserEnabledChange: (event: CheckboxChangeEvent) => void
 }
 
 /**

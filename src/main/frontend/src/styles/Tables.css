@@ -1,0 +1,73 @@
+.dashboard-content {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card {
+    background-color: #e0e0e0;
+    padding: 1.5rem;
+    text-align: center;
+    border-radius: 4px;
+}
+
+.kpi-card h4 { margin: 0 0 1rem 0; font-weight: normal; }
+.kpi-card h2 { margin: 0; font-size: 2rem; font-weight: normal; }
+
+.table-container {
+    margin-bottom: 2.5rem;
+}
+
+.table-container h3 {
+    margin-bottom: 1rem;
+}
+
+.row-clickable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.row-clickable:hover {
+    background-color: #e9ecef !important;
+}
+
+.row-disabled {
+    color: #888 !important;
+    cursor: not-allowed !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Datenschutz-Filter (unter 5 Personen ausgrauen) */
+.blurred-text {
+    filter: blur(4px);
+    color: gray;
+    user-select: none; /* Verhindert, dass man den geheimen Text mit der Maus markiert */
+}
+
+/* (Ampeln) */
+.status-indicator {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+.status-red { background-color: #f44336; }
+.status-yellow { background-color: #ffeb3b; }
+.status-green { background-color: #4caf50; }
+.status-gray { background-color: #9e9e9e; }
+
+/* BUTTONS & UTILS */
+.btn-right-align { display: flex; justify-content: flex-end; margin-top: 10px; }
+.btn-secondary { padding: 5px 15px; border-radius: 15px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+.btn-primary-small { padding: 5px 15px; border-radius: 15px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: bold;}
+.btn-blue { background-color: #4285f4; color: white; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
+
+.flex-header { display: flex; justify-content: space-between; align-items: center; }
+.mt-1 { margin-top: 1rem; }

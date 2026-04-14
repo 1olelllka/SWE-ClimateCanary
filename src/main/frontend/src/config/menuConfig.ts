@@ -14,9 +14,9 @@ export const menuConfig: MenuItemConfig[] = [
         label: 'Home', icon: 'pi pi-home', route: ROUTES.HOME
     }, {
         label: 'Admin Submenu', icon: 'pi pi-star',
-        roles: [UserxRole.ADMIN],
+        roles: [UserxRole.SYSADMIN],
         items: [{
-            label: 'Manage Users', icon: 'pi pi-star', route: ROUTES.MANAGE_USERS, roles: [UserxRole.ADMIN]
+            label: 'Manage Users', icon: 'pi pi-star', route: ROUTES.MANAGE_USERS, roles: [UserxRole.SYSADMIN]
         }]
     }, {
         label: "Logout", icon: "pi pi-sign-out", route: ROUTES.LOGOUT

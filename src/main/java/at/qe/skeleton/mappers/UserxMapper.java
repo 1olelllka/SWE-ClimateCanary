@@ -1,68 +1,57 @@
 package at.qe.skeleton.mappers;
 
+import at.qe.skeleton.dtos.UserRoom;
 import at.qe.skeleton.dtos.UserxDTO;
+import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.services.UserxService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-/**
- * Mapping between Userx and UserxDTOs.
- *
- * This class is part of the skeleton project provided for students of the course "Software
- * Engineering" offered by Innsbruck University.
- */
+import java.util.stream.Collectors;
+
 @Service
 public class UserxMapper implements DTOMapper<Userx, UserxDTO>{
-    
-    private final UserxService userxService;
-    
+
+    private final UserRoleMapper roleMapper;
+
     @Autowired
-    public UserxMapper(UserxService userxService) {
-        this.userxService = userxService;
+    public UserxMapper(UserRoleMapper roleMapper) {
+        this.roleMapper = roleMapper;
     }
-    
+
    @Override
     public UserxDTO mapTo(Userx user) {
         if (user == null) {
             return null;
         }
-        UserxDTO dto = new UserxDTO(
-                user.getId(), 
-                user.getCreateUser().getId(), 
-                user.getCreateDate(), 
-                user.getUpdateUser() != null ? user.getUpdateUser().getId() : null, 
-                user.getUpdateDate(),
-                user.getUsername(), 
-                user.getFirstName(), 
-                user.getLastName(), 
-                user.getEmail(), 
-                user.getPhone(), 
-                user.isEnabled(), 
-                user.getRoles()
-        );
-        
-        return dto;
+
+       return new UserxDTO(
+               user.getId(),
+               user.getCreateDate(),
+               user.getUpdateDate(),
+               user.getUsername(),
+               user.getFirstName(),
+               user.getLastName(),
+               user.getEnabled(),
+               user.getSnoozedWarningsUntil(),
+               user.getUserRoles().stream().map(roleMapper::mapTo).collect(Collectors.toSet()),
+               user.getMyRoom() != null
+               ?
+               new UserRoom(user.getMyRoom().getId(), user.getMyRoom().getDepartment().getId(),
+                       user.getMyRoom().getDepartment().getName(), user.getMyRoom().getRoomType())
+               : null
+       );
     }
 
     @Override
     public Userx mapFrom(UserxDTO userxDto) {
-        if (null == userxDto) {
-            return null;
-        }
-        Userx user;
-        if (null != userxDto.id()) {
-            user = userxService.loadUser(userxDto.id()).orElse(new Userx());
-        } else {
-            user = new Userx();
-        }
-        user.setFirstName(userxDto.firstName());
-        user.setLastName(userxDto.lastName());
-        user.setEmail(userxDto.email());
-        user.setPhone(userxDto.phone());
-        user.setEnabled(userxDto.enabled());
-        user.setRoles(userxDto.roles());
-
-        return user;
+        return Userx.builder()
+                .id(userxDto.id())
+                .firstName(userxDto.firstName())
+                .lastName(userxDto.lastName())
+                .enabled(userxDto.enabled())
+                .userRoles(userxDto.roles().stream().map(roleMapper::mapFrom).collect(Collectors.toSet()))
+                .myRoom(userxDto.myRoom() != null ? Room.builder().id(userxDto.myRoom().id()).build() : null)
+                .build();
     }
 }

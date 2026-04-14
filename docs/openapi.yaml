@@ -877,7 +877,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AbsenceDTO'
+                  $ref: '#/components/schemas/AbsenceListDTO'
 
     post:
       tags: [Absences]
@@ -909,7 +909,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AbsenceDTO'
+                $ref: '#/components/schemas/AbsenceListDTO'
     patch:
       tags: [Absences]
       summary: Approve or reject an absence. CAN_APPROVE_ABSENCES permission required.
@@ -943,7 +943,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AbsenceDTO'
+                  $ref: '#/components/schemas/AbsenceListDTO'
 
 components:
 

@@ -1,5 +1,7 @@
 package at.qe.skeleton.configs;
 
+import at.qe.skeleton.model.Permission;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.env.Environment;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +36,6 @@ import java.util.List;
  */
 
 @Configuration
-@EnableMethodSecurity
 public class WebSecurityConfig {
 
         private final Environment environment;
@@ -78,16 +79,22 @@ public class WebSecurityConfig {
                                                                                                                          // H2
                                                                                                                          // console
                                         // backend endpoints we want to handle here
-                                        .securityMatcher("/api/**", "/authentication/**", "/h2-console/**")
+                                        .securityMatcher("/api/**", "/h2-console/**")
                                         .authorizeHttpRequests(authorize -> authorize
                                                         .requestMatchers("/h2-console/**").access(devOnly())
-                                                        .requestMatchers("/authentication/**").permitAll()
+                                                        .requestMatchers("/api/login/**").permitAll()
+                                                        .requestMatchers("/api/logout").authenticated()
                                                         .requestMatchers("/api-docs/**")
                                                         .permitAll()
                                                         .requestMatchers("/swagger-ui/**")
                                                         .permitAll()
                                                         .requestMatchers("/test-info", "/test-raspberry").permitAll()
+                                                        .requestMatchers("/api/users/me/absences").hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
+                                                        .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                                         .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
+                                                        .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
+                                                        .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
+                                                        .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
                                                         .requestMatchers("/api/**").authenticated()
                                                         .anyRequest().authenticated())
                                         // Add the token authentication filter before the
@@ -107,7 +114,18 @@ public class WebSecurityConfig {
                                                                         (request, response, authException) -> response
                                                                                         .setStatus(
                                                                                                         HttpStatus.UNAUTHORIZED
-                                                                                                                        .value())));
+                                                                                                                        .value())))
+                                .logout(customizer -> {
+                                        customizer.logoutUrl("/api/logout")
+                                                .clearAuthentication(true)
+                                                .logoutSuccessHandler((request, response, authentication) -> {
+                                                        if (authentication == null) {
+                                                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                                        } else {
+                                                                response.setStatus(HttpServletResponse.SC_OK);
+                                                        }
+                                                });
+                                });
 
                         return http.build();
                 } catch (Exception ex) {
