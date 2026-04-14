@@ -5,6 +5,7 @@ import HomePage from "./HomePage";
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import {DepartmentHeadDashboard} from "./DepartmentHeadDashboard";
+import {BuildingManagerDashboard} from "./BuildingManagerDashboard";
 
 const PlaceholderDashboard: React.FC<{ title: string, content: string }> = ({ title, content }) => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -53,7 +54,7 @@ const RoleBasedHome: React.FC = () => {
     }
 
     if (isBuildingManager) {
-        return <PlaceholderDashboard title="Building Management" content="Welcome to the Building Management Dashboard" />;
+        return <BuildingManagerDashboard />;
     }
 
     if (isEmployee) {
