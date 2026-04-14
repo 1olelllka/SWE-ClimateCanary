@@ -147,8 +147,7 @@ class ClimateDataPointMapperUnitTests {
 
             ClimateStats result = mapper.mapFrom(dto);
 
-            // (int) cast truncates toward zero, 22.9 → 22, NOT 23
-            assertThat(result.getTempVal()).isEqualTo(22);
+            assertThat(result.getTempVal()).isEqualTo(22.9);
         }
 
         @Test
@@ -159,8 +158,7 @@ class ClimateDataPointMapperUnitTests {
 
             ClimateStats result = mapper.mapFrom(dto);
 
-            // (int) cast truncates toward zero, 55.9 → 55, NOT 56
-            assertThat(result.getHumVal()).isEqualTo(55);
+            assertThat(result.getHumVal()).isEqualTo(55.9);
         }
 
         @Test
@@ -171,8 +169,7 @@ class ClimateDataPointMapperUnitTests {
 
             ClimateStats result = mapper.mapFrom(dto);
 
-            // (int) cast truncates toward zero, -10.9 → -10, NOT -11
-            assertThat(result.getTempVal()).isEqualTo(-10);
+            assertThat(result.getTempVal()).isEqualTo(-10.9);
         }
 
         @Test
