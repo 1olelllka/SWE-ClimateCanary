@@ -110,9 +110,9 @@ const Login = () => {
                                 placeholder="Password"
                                 className="password-input"
                             />
-                            <a href="#" className="forgot-link" onClick={(e) => e.preventDefault()}>
+                            <button type="button" className="forgot-link">
                                 Forgot?
-                            </a>
+                            </button>
                         </div>
 
                         <Button

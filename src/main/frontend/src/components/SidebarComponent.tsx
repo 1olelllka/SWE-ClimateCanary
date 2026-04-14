@@ -95,10 +95,10 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
 
             <div className="sidebar-menu">
                 {allowedMenuItems.map((item, index) => (
-                    <div key={index} className="menu-item" onClick={() => handleNavigation(item.route)}>
-                        <i className={`pi ${item.icon}`} style={{ marginRight: '15px' }}></i>
+                    <button key={index} className="menu-item" onClick={() => handleNavigation(item.route)}>
+                        <i className={`pi ${item.icon}`} aria-hidden="true" style={{ marginRight: '15px' }}></i>
                         <span>{item.label}</span>
-                    </div>
+                    </button>
                 ))}
             </div>
 

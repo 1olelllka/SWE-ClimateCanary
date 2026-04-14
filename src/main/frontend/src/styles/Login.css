@@ -104,6 +104,10 @@
     color: #0088cc;
     text-decoration: none;
     font-size: 14px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
 }
 
 .forgot-link:hover {

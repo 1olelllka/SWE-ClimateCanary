@@ -69,7 +69,11 @@
     padding: 18px 25px;
     font-size: 20px;
     color: #1A3A4A;
+    border: none;
     border-bottom: 1px solid #e0e0e0;
+    background: none;
+    width: 100%;
+    text-align: left;
     cursor: pointer;
     transition: background-color 0.2s, color 0.2s;
     display: flex;

@@ -22,7 +22,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             <div className="page-header-top">
                 <div className="header-column-left">
                     <button className="menu-icon-button" onClick={onMenuClick} aria-label="Open menu">
-                        <i className="pi pi-bars menu-icon"></i>
+                        <i className="pi pi-bars menu-icon" aria-hidden="true"></i>
                     </button>
                 </div>
 
