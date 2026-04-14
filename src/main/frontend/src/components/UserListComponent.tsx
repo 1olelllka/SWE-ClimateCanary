@@ -13,9 +13,9 @@ import {rolesBodyTemplate} from "./rolesBodyTemplate";
 import {UserxCreateDTO} from "../generated-skeleton-api";
 
 interface UserListProps {
-    users: UserxCreateDTO[];
-    loading: boolean;
-    onEditUser: (user: UserxCreateDTO) => void;
+    readonly users: UserxCreateDTO[];
+    readonly loading: boolean;
+    readonly onEditUser: (user: UserxCreateDTO) => void;
 }
 
 

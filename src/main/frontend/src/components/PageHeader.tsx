@@ -3,11 +3,11 @@ import { LogoutButton } from './LogoutButton';
 import '../styles/PageHeader.css';
 
 interface PageHeaderProps {
-    title: string;
-    subtitle?: string;       // Optional
-    lastUpdated?: string;    // Optional
-    onMenuClick: () => void;
-    showLogout?: boolean;    // Optional
+    readonly title: string;
+    readonly subtitle?: string;       // Optional
+    readonly lastUpdated?: string;    // Optional
+    readonly onMenuClick: () => void;
+    readonly showLogout?: boolean;    // Optional
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({

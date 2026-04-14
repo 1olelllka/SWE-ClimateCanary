@@ -3,10 +3,10 @@ import { OverlayPanel } from 'primereact/overlaypanel';
 import { Calendar } from 'primereact/calendar';
 
 interface Props {
-    dateRange: Date[] | null;
-    setDateRange: (dates: Date[] | null) => void;
-    isActive: boolean;
-    onActivate: () => void;
+    readonly dateRange: Date[] | null;
+    readonly setDateRange: (dates: Date[] | null) => void;
+    readonly isActive: boolean;
+    readonly onActivate: () => void;
 }
 
 export const DashboardCalendar: React.FC<Props> = ({ dateRange, setDateRange, isActive, onActivate }) => {
