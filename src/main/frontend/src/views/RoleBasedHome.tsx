@@ -6,6 +6,7 @@ import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import {DepartmentHeadDashboard} from "./DepartmentHeadDashboard";
 import {BuildingManagerDashboard} from "./BuildingManagerDashboard";
+import {SeniorManagerDashboard} from "./SeniorManagerDashboard";
 import SysAdminDashboard from "./SysAdminDashboard";
 
 const PlaceholderDashboard: React.FC<{ readonly title: string, readonly content: string }> = ({ title, content }) => {
@@ -47,7 +48,7 @@ const RoleBasedHome: React.FC = () => {
     }
 
     if (isSeniorManager) {
-        return <PlaceholderDashboard title="Departments Overview" content="Welcome to the Senior Management Dashboard" />;
+        return <SeniorManagerDashboard />;
     }
 
     if (isDepartmentManager) {
