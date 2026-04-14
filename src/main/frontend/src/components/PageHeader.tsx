@@ -21,7 +21,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         <div className="page-header">
             <div className="page-header-top">
                 <div className="header-column-left">
-                    <i className="pi pi-bars menu-icon" onClick={onMenuClick}></i>
+                    <button className="menu-icon-button" onClick={onMenuClick} aria-label="Open menu">
+                        <i className="pi pi-bars menu-icon"></i>
+                    </button>
                 </div>
 
                 <div className="header-column-center header-titles">

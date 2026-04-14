@@ -50,10 +50,18 @@
     color: var(--muted-blue);
 }
 
+.menu-icon-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
 .menu-icon {
     font-size: 1.5rem;
     color: var(--muted-blue);
-    cursor: pointer;
 }
 
 .header-bottom {
