@@ -1,21 +1,24 @@
 package at.qe.skeleton.services.impl;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
+import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.AbsenceRepository;
-import at.qe.skeleton.repositories.RoomOccupancyRepository;
-import at.qe.skeleton.repositories.RoomRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AbsenceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -29,6 +32,9 @@ public class AbsenceServiceImpl implements AbsenceService {
     private final UserxRepository userxRepository;
     private final RoomOccupancyRepository roomOccupancyRepository;
     private final RoomRepository roomRepository;
+    private final RoomMonitoringRepository roomMonitoringRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationClient notificationClient;
 
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
@@ -107,10 +113,17 @@ public class AbsenceServiceImpl implements AbsenceService {
     public void clockIn(Userx user) {
         if (user.getMyRoom() != null) {
             if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
             RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
                     .orElse(RoomOccupancy.builder().peopleCnt(0).roomId(user.getMyRoom().getId()).build());
             room.setPeopleCnt(room.getPeopleCnt() + 1);
             roomOccupancyRepository.save(room);
+            eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                    new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
+                    null,
+                    monitoring.getRaspberryPi(),
+                    notificationClient
+            ));
         }
         // ...continue with absences...
     }
@@ -120,12 +133,19 @@ public class AbsenceServiceImpl implements AbsenceService {
     public void clockOut(Userx user) {
         if (user.getMyRoom() != null) {
             if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
             RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
                     .orElse(RoomOccupancy.builder().roomId(user.getMyRoom().getId()).peopleCnt(0).build());
             if (room.getPeopleCnt() > 0) {
                 room.setPeopleCnt(room.getPeopleCnt() - 1);
             }
             roomOccupancyRepository.save(room);
+            eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                    new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
+                    null,
+                    monitoring.getRaspberryPi(),
+                    notificationClient
+            ));
         }
         // ...continue with absences...
     }

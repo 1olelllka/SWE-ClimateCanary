@@ -5,5 +5,7 @@ public enum UpdateType {
     CONFIG,
     SENSORS,
     ABSENCE,
-    SETUP
+    SETUP,
+    CLOCK_IN,
+    CLOCK_OUT
 }
