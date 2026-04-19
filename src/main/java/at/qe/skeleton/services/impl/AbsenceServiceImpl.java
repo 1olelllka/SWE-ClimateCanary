@@ -3,13 +3,13 @@ package at.qe.skeleton.services.impl;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.model.Absence;
-import at.qe.skeleton.model.AbsenceStatus;
-import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.AbsenceRepository;
+import at.qe.skeleton.repositories.RoomOccupancyRepository;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.AbsenceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
@@ -22,17 +22,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AbsenceServiceImpl implements AbsenceService {
 
-    private AbsenceRepository absenceRepository;
-    private UserxRepository userxRepository;
-
-    @Autowired
-    public AbsenceServiceImpl(AbsenceRepository absenceRepository,
-                              UserxRepository userxRepository) {
-        this.absenceRepository = absenceRepository;
-        this.userxRepository = userxRepository;
-    }
+    private final AbsenceRepository absenceRepository;
+    private final UserxRepository userxRepository;
+    private final RoomOccupancyRepository roomOccupancyRepository;
+    private final RoomRepository roomRepository;
 
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
@@ -105,5 +101,32 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Override
     public Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable) {
         return absenceRepository.findByAssignedTo(user.getId(), pageable);
+    }
+
+    @Override
+    public void clockIn(Userx user) {
+        if (user.getMyRoom() != null) {
+            if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
+                    .orElse(RoomOccupancy.builder().peopleCnt(0).roomId(user.getMyRoom().getId()).build());
+            room.setPeopleCnt(room.getPeopleCnt() + 1);
+            roomOccupancyRepository.save(room);
+        }
+        // ...continue with absences...
+    }
+
+    @Override
+    @Transactional
+    public void clockOut(Userx user) {
+        if (user.getMyRoom() != null) {
+            if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
+                    .orElse(RoomOccupancy.builder().roomId(user.getMyRoom().getId()).peopleCnt(0).build());
+            if (room.getPeopleCnt() > 0) {
+                room.setPeopleCnt(room.getPeopleCnt() - 1);
+            }
+            roomOccupancyRepository.save(room);
+        }
+        // ...continue with absences...
     }
 }
