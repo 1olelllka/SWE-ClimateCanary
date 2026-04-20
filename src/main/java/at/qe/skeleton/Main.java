@@ -6,6 +6,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableFeignClients
 @EnableTransactionManagement
 @EnableAsync
+@EnableScheduling
 public class Main extends SpringBootServletInitializer {
 
     public static void main(String[] args) {

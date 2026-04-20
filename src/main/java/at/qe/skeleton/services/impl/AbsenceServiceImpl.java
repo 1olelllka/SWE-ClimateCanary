@@ -3,6 +3,7 @@ package at.qe.skeleton.services.impl;
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import at.qe.skeleton.dtos.UpdateType;
+import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
@@ -35,6 +36,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationClient notificationClient;
+    private final UserClockStatusRepository clockStatusRepository;
 
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
@@ -110,7 +112,10 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
+    @Transactional
     public void clockIn(Userx user) {
+        UserClockStatus status = clockStatusRepository.findById(user.getId().toString()).orElse(UserClockStatus.builder().userId(user.getId()).clockedIn(false).build());
+        if (status.isClockedIn()) throw new ConflictException("You cannot clock in twice.");
         if (user.getMyRoom() != null) {
             if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
             RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
@@ -118,19 +123,24 @@ public class AbsenceServiceImpl implements AbsenceService {
                     .orElse(RoomOccupancy.builder().peopleCnt(0).roomId(user.getMyRoom().getId()).build());
             room.setPeopleCnt(room.getPeopleCnt() + 1);
             roomOccupancyRepository.save(room);
-            eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                    new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
-                    null,
-                    monitoring.getRaspberryPi(),
-                    notificationClient
-            ));
+            if (monitoring.getSensorStation() != null) {
+                eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
+                        monitoring.getSensorStation().getId(),
+                        monitoring.getRaspberryPi(),
+                        notificationClient
+                ));
+            }
         }
-        // ...continue with absences...
+        status.setClockedIn(true);
+        clockStatusRepository.save(status);
     }
 
     @Override
     @Transactional
     public void clockOut(Userx user) {
+        UserClockStatus status = clockStatusRepository.findById(user.getId().toString()).orElseThrow(() -> new ConflictException("You cannot clock out without clocking in."));
+        if (!status.isClockedIn()) throw new ConflictException("You cannot clock out twice.");
         if (user.getMyRoom() != null) {
             if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
             RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
@@ -140,13 +150,16 @@ public class AbsenceServiceImpl implements AbsenceService {
                 room.setPeopleCnt(room.getPeopleCnt() - 1);
             }
             roomOccupancyRepository.save(room);
-            eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                    new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
-                    null,
-                    monitoring.getRaspberryPi(),
-                    notificationClient
-            ));
+            if (monitoring.getSensorStation() != null) {
+                eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
+                        monitoring.getSensorStation().getId(),
+                        monitoring.getRaspberryPi(),
+                        notificationClient
+                ));
+            }
         }
-        // ...continue with absences...
+        status.setClockedIn(false);
+        clockStatusRepository.save(status);
     }
 }
