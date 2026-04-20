@@ -6,13 +6,11 @@ import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
-import at.qe.skeleton.model.NotifyDeadLetter;
-import at.qe.skeleton.model.RaspberryPi;
-import at.qe.skeleton.model.RoomMonitoring;
-import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.repositories.RoomOccupancyRepository;
 import at.qe.skeleton.services.impl.RaspberryServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +25,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,6 +48,9 @@ public class RaspberryServiceUnitTests {
 
     @Mock
     private NotificationClient notificationClient;
+
+    @Mock
+    private RoomOccupancyRepository occupancyRepository;
 
     @InjectMocks
     private RaspberryServiceImpl raspberryService;
@@ -207,11 +204,12 @@ public class RaspberryServiceUnitTests {
     @Test
     void testThatGetOccupancyFromRedisReturnsMockedValue() {
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(occupancyRepository.findAllById(samplePi.getRoomsMonitoring().stream().map(r -> r.getRoomId().toString()).toList())).thenReturn(List.of(RoomOccupancy.builder().roomId(sampleRoom.getRoomId()).build()));
 
         // When Redis logic is added, one will mock the RedisTemplate here
-        int occupancy = raspberryService.getOccupancyFromRedis(piId);
+        List<RoomOccupancy> occupancy = raspberryService.getOccupancyFromRedis(piId);
 
-        assertEquals(10, occupancy);
+        assertEquals(1, occupancy.size());
     }
 
     @Test

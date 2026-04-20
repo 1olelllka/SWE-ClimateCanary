@@ -6,6 +6,7 @@ import at.qe.skeleton.mappers.RaspberryCreateMapper;
 import at.qe.skeleton.mappers.RaspberryMapper;
 import at.qe.skeleton.mappers.RaspberryPatchMapper;
 import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.model.RoomOccupancy;
 import at.qe.skeleton.services.RaspberryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -52,9 +54,9 @@ public class RaspberryController {
     }
 
     @GetMapping("/{raspberry_id}/sync/occupancy")
-    public ResponseEntity<OccupancyDTO> syncOccupancy(@PathVariable(name="raspberry_id") UUID id) {
-        int occupancy = raspberryService.getOccupancyFromRedis(id);
-        return new ResponseEntity<>(new OccupancyDTO(occupancy, occupancy < 5), HttpStatus.OK);
+    public ResponseEntity<List<OccupancyDTO>> syncOccupancy(@PathVariable(name="raspberry_id") UUID id) {
+        List<RoomOccupancy> occupancy = raspberryService.getOccupancyFromRedis(id);
+        return new ResponseEntity<>(occupancy.stream().map(r -> new OccupancyDTO(r.getPeopleCnt(), r.getRoomId(), r.getPeopleCnt() < 5)).toList(), HttpStatus.OK);
     }
 
     @PostMapping("/{raspberry_id}/retry-connection")
@@ -86,14 +88,14 @@ public class RaspberryController {
         return new ResponseEntity<>(raspberryMapper.mapTo(patched), HttpStatus.OK);
     }
 
-    @PostMapping("/{raspberry_id}/{room_id}")
+    @PostMapping("/{raspberry_id}/rooms/{room_id}")
     public ResponseEntity<RaspberryDTO> addTheRoomToRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
                                                       @PathVariable(name="room_id") UUID room_id) {
         RaspberryPi pi = raspberryService.addNewRoom(raspberry_id, room_id);
         return new ResponseEntity<>(raspberryMapper.mapTo(pi), HttpStatus.OK);
     }
 
-    @DeleteMapping("/{raspberry_id}/{room_id}")
+    @DeleteMapping("/{raspberry_id}/rooms/{room_id}")
     public ResponseEntity<RaspberryDTO> removeTheRoomFromRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
                                                               @PathVariable(name="room_id") UUID room_id) {
         RaspberryPi pi = raspberryService.removeRoomFromRaspberry(raspberry_id, room_id);

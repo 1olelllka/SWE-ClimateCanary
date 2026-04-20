@@ -1,6 +1,7 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.SensorStationPatchDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.SensorStationPatchMapper;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RoomMonitoring;
@@ -84,15 +85,22 @@ class SensorStationPatchMapperUnitTests {
         }
 
         @Test
-        @DisplayName("sets roomMonitoring to null when roomId not found")
+        @DisplayName("sets roomMonitoring to null when roomId is null")
         void setsRoomToNullWhenNotFound() {
-            UUID unknownId = UUID.randomUUID();
-            when(repository.findById(unknownId)).thenReturn(Optional.empty());
 
             SensorStation result = mapper.mapFrom(
-                    new SensorStationPatchDTO("Station", null, null, unknownId));
+                    new SensorStationPatchDTO("Station", null, null, null));
 
             assertThat(result.getRoomMonitoring()).isNull();
+        }
+
+        @Test
+        @DisplayName("throws NotFoundException if roomMonitoring was not found")
+        void throwsNotFoundExceptionIfRoomNotFound() {
+            UUID id = UUID.randomUUID();
+            when(repository.findById(id)).thenReturn(Optional.empty());
+            assertThrows(NotFoundException.class, () -> mapper.mapFrom(
+                    new SensorStationPatchDTO("Station", null, null, id)));
         }
 
         @Test

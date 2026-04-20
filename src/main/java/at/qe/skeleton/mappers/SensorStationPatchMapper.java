@@ -1,6 +1,7 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.SensorStationPatchDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class SensorStationPatchMapper implements DTOMapper<SensorStation, Sensor
                 .name(dto.name())
                 .status(dto.status())
                 .lastHeartBeat(dto.lastHeartBeat())
-                .roomMonitoring(repository.findById(dto.roomId()).orElse(null))
+                .roomMonitoring(dto.roomId() != null ? repository.findById(dto.roomId()).orElseThrow(() -> new NotFoundException("Room with id " + dto.roomId() + " was not found.")) : null)
                 .build();
     }
 }

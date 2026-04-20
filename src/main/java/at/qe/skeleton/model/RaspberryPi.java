@@ -54,4 +54,8 @@ public class RaspberryPi {
     public void removeRoom(RoomMonitoring monitoring) {
         this.roomsMonitoring.remove(monitoring);
     }
+
+    public boolean containsRoom(RoomMonitoring roomMonitoring) {
+        return this.roomsMonitoring.contains(roomMonitoring);
+    }
 }

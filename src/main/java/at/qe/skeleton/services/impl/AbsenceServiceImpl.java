@@ -12,6 +12,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AbsenceService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,19 +1,23 @@
 package at.qe.skeleton.tests.services;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
+import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
+import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.AbsenceRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.impl.AbsenceServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -22,27 +26,36 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class AbsenceServiceUnitTests {
 
     @Mock private AbsenceRepository absenceRepository;
     @Mock private UserxRepository userxRepository;
+    @Mock private RoomOccupancyRepository roomOccupancyRepository;
+    @Mock private RoomRepository roomRepository;
+    @Mock private RoomMonitoringRepository roomMonitoringRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private NotificationClient notificationClient;
+    @Mock private UserClockStatusRepository clockStatusRepository;
     @InjectMocks private AbsenceServiceImpl absenceService;
 
     private Userx user;
     private Userx manager;
     private Absence absence;
     private Department dept;
+    private Room room;
+    private RoomMonitoring monitoringWithSensor;
+    private RoomMonitoring monitoringWithoutSensor;
 
     @BeforeEach
     void setUp() {
         dept = TestDataUtil.createDepartmentEntity(TestDataUtil.createBuildingEntity());
         dept.setId(UUID.randomUUID());
 
-        Room room = TestDataUtil.createRoomEntity(dept);
+        room = TestDataUtil.createRoomEntity(dept);
+        room.setId(UUID.randomUUID());
 
         user = TestDataUtil.createUserxEntity(null, room);
         user.setId(UUID.randomUUID());
@@ -55,6 +68,20 @@ public class AbsenceServiceUnitTests {
         absence = TestDataUtil.createAbsence(user);
         absence.setId(UUID.randomUUID());
         absence.setAssignedTo(manager.getId());
+
+        SensorStation sensorStation = new SensorStation();
+        sensorStation.setId(UUID.randomUUID());
+
+        RaspberryPi raspberry = new RaspberryPi();
+
+        monitoringWithSensor = RoomMonitoring.builder()
+                .sensorStation(sensorStation)
+                .raspberryPi(raspberry)
+                .build();
+
+        monitoringWithoutSensor = RoomMonitoring.builder()
+                .sensorStation(null)
+                .build();
     }
 
     @Test
@@ -225,5 +252,261 @@ public class AbsenceServiceUnitTests {
         when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         assertThrows(ForbiddenException.class, () -> absenceService.updateAbsenceStatus(absence.getId(), AbsenceStatus.APPROVED));
+    }
+
+    @Test
+    void testThatClockInSucceedsWhenUserHasNoRoom() {
+        user.setMyRoom(null);
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+
+        absenceService.clockIn(user);
+
+        ArgumentCaptor<UserClockStatus> captor = ArgumentCaptor.forClass(UserClockStatus.class);
+        verify(clockStatusRepository).save(captor.capture());
+        assertTrue(captor.getValue().isClockedIn());
+        verifyNoInteractions(roomRepository, roomOccupancyRepository, roomMonitoringRepository, eventPublisher);
+    }
+
+    @Test
+    void testThatClockInCreatesNewStatusWhenNoneExists() {
+        user.setMyRoom(null);
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.empty());
+
+        absenceService.clockIn(user);
+
+        ArgumentCaptor<UserClockStatus> captor = ArgumentCaptor.forClass(UserClockStatus.class);
+        verify(clockStatusRepository).save(captor.capture());
+        assertTrue(captor.getValue().isClockedIn());
+    }
+
+    @Test
+    void testThatClockInThrowsConflictWhenAlreadyClockedIn() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+
+        assertThrows(ConflictException.class, () -> absenceService.clockIn(user));
+
+        verify(clockStatusRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatClockInThrowsNotFoundWhenRoomDoesNotExist() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(false);
+
+        assertThrows(NotFoundException.class, () -> absenceService.clockIn(user));
+
+        verify(clockStatusRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatClockInIncrementsRoomOccupancyWhenRoomExists() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(2).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockIn(user);
+
+        ArgumentCaptor<RoomOccupancy> captor = ArgumentCaptor.forClass(RoomOccupancy.class);
+        verify(roomOccupancyRepository).save(captor.capture());
+        assertEquals(3, captor.getValue().getPeopleCnt());
+    }
+
+    @Test
+    void testThatClockInCreatesOccupancyRecordWhenNoneExists() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.empty());
+
+        absenceService.clockIn(user);
+
+        ArgumentCaptor<RoomOccupancy> captor = ArgumentCaptor.forClass(RoomOccupancy.class);
+        verify(roomOccupancyRepository).save(captor.capture());
+        assertEquals(1, captor.getValue().getPeopleCnt());
+    }
+
+    @Test
+    void testThatClockInPublishesEventWhenSensorStationExists() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(0).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockIn(user);
+
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatClockInDoesNotPublishEventWhenNoSensorStation() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(0).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockIn(user);
+
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void testThatClockOutSucceedsWhenUserHasNoRoom() {
+        user.setMyRoom(null);
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+
+        absenceService.clockOut(user);
+
+        ArgumentCaptor<UserClockStatus> captor = ArgumentCaptor.forClass(UserClockStatus.class);
+        verify(clockStatusRepository).save(captor.capture());
+        assertFalse(captor.getValue().isClockedIn());
+        verifyNoInteractions(roomRepository, roomOccupancyRepository, roomMonitoringRepository, eventPublisher);
+    }
+
+    @Test
+    void testThatClockOutThrowsConflictWhenNeverClockedIn() {
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.empty());
+
+        assertThrows(ConflictException.class, () -> absenceService.clockOut(user));
+
+        verify(clockStatusRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatClockOutThrowsConflictWhenAlreadyClockedOut() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(false).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+
+        assertThrows(ConflictException.class, () -> absenceService.clockOut(user));
+
+        verify(clockStatusRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatClockOutThrowsNotFoundWhenRoomDoesNotExist() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(false);
+
+        assertThrows(NotFoundException.class, () -> absenceService.clockOut(user));
+
+        verify(clockStatusRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatClockOutDecrementsRoomOccupancyWhenCountIsPositive() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(3).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockOut(user);
+
+        ArgumentCaptor<RoomOccupancy> captor = ArgumentCaptor.forClass(RoomOccupancy.class);
+        verify(roomOccupancyRepository).save(captor.capture());
+        assertEquals(2, captor.getValue().getPeopleCnt());
+    }
+
+    @Test
+    void testThatClockOutDoesNotDecrementBelowZero() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(0).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockOut(user);
+
+        ArgumentCaptor<RoomOccupancy> captor = ArgumentCaptor.forClass(RoomOccupancy.class);
+        verify(roomOccupancyRepository).save(captor.capture());
+        assertEquals(0, captor.getValue().getPeopleCnt());
+    }
+
+    @Test
+    void testThatClockOutCreatesOccupancyRecordWhenNoneExists() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.empty());
+
+        absenceService.clockOut(user);
+
+        ArgumentCaptor<RoomOccupancy> captor = ArgumentCaptor.forClass(RoomOccupancy.class);
+        verify(roomOccupancyRepository).save(captor.capture());
+        assertEquals(0, captor.getValue().getPeopleCnt());
+    }
+
+    @Test
+    void testThatClockOutPublishesEventWhenSensorStationExists() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(1).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockOut(user);
+
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatClockOutDoesNotPublishEventWhenNoSensorStation() {
+        UserClockStatus status = UserClockStatus.builder()
+                .userId(user.getId()).clockedIn(true).build();
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(room.getId()).peopleCnt(1).build();
+
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
+        when(roomRepository.existsById(room.getId())).thenReturn(true);
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
+
+        absenceService.clockOut(user);
+
+        verifyNoInteractions(eventPublisher);
     }
 }
