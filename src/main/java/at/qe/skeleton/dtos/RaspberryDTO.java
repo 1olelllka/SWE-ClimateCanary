@@ -4,6 +4,7 @@ import at.qe.skeleton.model.DeviceStatus;
 import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 public record RaspberryDTO(
@@ -12,7 +13,7 @@ public record RaspberryDTO(
         String ipAddress,
         Integer port,
         DeviceStatus status,
-        UUID roomId,
-        String roomNumber
+        Set<RoomRaspberry> rooms
 ) {
 }
+

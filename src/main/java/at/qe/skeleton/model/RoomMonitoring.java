@@ -27,7 +27,7 @@ public class RoomMonitoring {
     @JoinColumn(name = "sensor_station_id")
     private SensorStation sensorStation;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "raspberry_pi_id")
     private RaspberryPi raspberryPi;
 

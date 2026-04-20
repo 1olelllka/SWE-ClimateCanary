@@ -2,8 +2,6 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.dtos.PiConfigDTO;
 import at.qe.skeleton.model.RaspberryPi;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -14,9 +12,9 @@ public interface RaspberryService {
 
     RaspberryPi getSpecificRaspberry(UUID id);
 
-    RaspberryPi createNewRaspberry(RaspberryPi raspberryPi, @NotNull @NotEmpty UUID uuid);
+    RaspberryPi createNewRaspberry(RaspberryPi raspberryPi);
 
-    RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi, @NotNull @NotEmpty UUID roomId);
+    RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi);
 
     void deleteRaspberry(UUID id);
 
@@ -25,4 +23,8 @@ public interface RaspberryService {
     PiConfigDTO getConfigForRaspberry(UUID id);
 
     void retryConnection(UUID id);
+
+    RaspberryPi addNewRoom(UUID raspberryId, UUID roomId);
+
+    RaspberryPi removeRoomFromRaspberry(UUID raspberryId, UUID roomId);
 }

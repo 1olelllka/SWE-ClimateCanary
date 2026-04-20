@@ -70,7 +70,7 @@ public class RaspberryController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        RaspberryPi createdPi = raspberryService.createNewRaspberry(raspberryCreateMapper.mapFrom(dto), dto.roomId());
+        RaspberryPi createdPi = raspberryService.createNewRaspberry(raspberryCreateMapper.mapFrom(dto));
         return new ResponseEntity<>(raspberryMapper.mapTo(createdPi), HttpStatus.CREATED);
     }
 
@@ -82,8 +82,22 @@ public class RaspberryController {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryPatchMapper.mapFrom(dto), dto.roomId());
+        RaspberryPi patched = raspberryService.updateRaspberryById(id, raspberryPatchMapper.mapFrom(dto));
         return new ResponseEntity<>(raspberryMapper.mapTo(patched), HttpStatus.OK);
+    }
+
+    @PostMapping("/{raspberry_id}/{room_id}")
+    public ResponseEntity<RaspberryDTO> addTheRoomToRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
+                                                      @PathVariable(name="room_id") UUID room_id) {
+        RaspberryPi pi = raspberryService.addNewRoom(raspberry_id, room_id);
+        return new ResponseEntity<>(raspberryMapper.mapTo(pi), HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{raspberry_id}/{room_id}")
+    public ResponseEntity<RaspberryDTO> removeTheRoomFromRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
+                                                              @PathVariable(name="room_id") UUID room_id) {
+        RaspberryPi pi = raspberryService.removeRoomFromRaspberry(raspberry_id, room_id);
+        return new ResponseEntity<>(raspberryMapper.mapTo(pi), HttpStatus.OK);
     }
 
     @DeleteMapping("/{raspberry_id}")

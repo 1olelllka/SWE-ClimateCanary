@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableFeignClients
 @EnableTransactionManagement
 @EnableAsync
-@EnableRedisRepositories
 public class Main extends SpringBootServletInitializer {
 
     public static void main(String[] args) {

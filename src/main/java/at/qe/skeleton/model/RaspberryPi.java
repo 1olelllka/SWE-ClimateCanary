@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -43,6 +44,14 @@ public class RaspberryPi {
     @Builder.Default
     private Integer frequency = 100;
 
-    @OneToOne(mappedBy = "raspberryPi", fetch = FetchType.LAZY)
-    private RoomMonitoring roomMonitoring;
+    @OneToMany(mappedBy = "raspberryPi", fetch = FetchType.LAZY)
+    private Set<RoomMonitoring> roomsMonitoring;
+
+    public void addNewRoom(RoomMonitoring monitoring) {
+        this.roomsMonitoring.add(monitoring);
+    }
+
+    public void removeRoom(RoomMonitoring monitoring) {
+        this.roomsMonitoring.remove(monitoring);
+    }
 }
