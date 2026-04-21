@@ -3,7 +3,7 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primeicons/primeicons.css";
 import React, { Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { HomePageRoute, LoginsRoute, LogoutsRoute, ManageUsersRoute, DeviceConfigurationRoute } from "./routes";
+import { HomePageRoute, LoginsRoute, LogoutsRoute, ManageUsersRoute, DeviceConfigurationRoute, UserConfigurationRoute } from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
 
@@ -19,6 +19,7 @@ const App: React.FC = () => {
                             <Route path={ManageUsersRoute.url} Component={ManageUsersRoute.component}/>
                             <Route path={LogoutsRoute.url} Component={LogoutsRoute.component}/>
                             <Route path={DeviceConfigurationRoute.url} Component={DeviceConfigurationRoute.component}/>
+                            <Route path={UserConfigurationRoute.url} Component={UserConfigurationRoute.component}/>
                         </Route>
                     </Routes>
                 </BrowserRouter>

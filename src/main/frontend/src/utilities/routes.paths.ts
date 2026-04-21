@@ -5,4 +5,5 @@ export const ROUTES = {
     LOGOUT: '/logout',
     EMPLOYEE_DASHBOARD: '/employee-dashboard',
     DEVICE_CONFIGURATION: '/device-configuration',
+    USER_CONFIGURATION: '/user-configuration',
 } as const;
