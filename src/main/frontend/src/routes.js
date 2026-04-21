@@ -9,6 +9,7 @@ import Logout from "./views/Logout";
 import RoleBasedHome from "./views/RoleBasedHome";
 import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
 import UserConfigurationPage from "./views/UserConfigurationPage";
+import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
 
 /**
  * Define the routes of the application.
@@ -40,4 +41,9 @@ export const DeviceConfigurationRoute = {
 export const UserConfigurationRoute = {
     url: '/user-configuration',
     component: UserConfigurationPage
+}
+
+export const BuildingConfigurationRoute = {
+    url: '/building-configuration',
+    component: BuildingConfigurationPage
 }
