@@ -1,3 +1,13 @@
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#     "aiosqlite>=0.20.0",
+#     "pyyaml>=6.0",
+#     "bleak>=0.21.0",
+#     "aiohttp>=3.9.0"
+# ]
+# ///
+
 import asyncio
 import json
 import random

@@ -11,5 +11,5 @@ ble:
   write_uuid: "19B10002-E8F2-537E-4F6C-D104768A1214"
 
 webapp:
-  api_url: "http://172.20.10.4:8080/api/sensor-data"
+  api_url: "http://192.168.178.33:8080/measurements"
   local_listen_port: 8080
