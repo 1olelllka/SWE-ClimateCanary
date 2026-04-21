@@ -32,10 +32,11 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
+        URI piUri = URI.create("http://" + pi.getIp() + ":" + pi.getPort());
         if (sensorId == null) {
-            response = client.notifyRaspberryAboutChanges(URI.create(pi.getPort() + ":" + pi.getPort()), dto);
+            response = client.notifyRaspberryAboutChanges(piUri, dto);
         } else {
-            response = client.notifyRaspberryAboutChanges(URI.create(pi.getPort() + ":" + pi.getPort()), dto, sensorId);
+            response = client.notifyRaspberryAboutChanges(piUri, dto, sensorId);
         }
         return response;
     }
