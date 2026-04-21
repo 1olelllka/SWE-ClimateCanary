@@ -32,7 +32,7 @@ async def main(config):
     web_out_queue = asyncio.Queue()
     ble_inbox = asyncio.Queue()
     
-    processor = DataProcessor(db, config, processing_queue, web_out_queue)
+    processor = DataProcessor(db, config, processing_queue, web_out_queue, ble_inbox)
     web_manager = WebManager(config, db, web_out_queue)
     ble_manager = BLEManager(config, db, processing_queue, ble_inbox)
     mock_gen = MockDataGenerator(config, processing_queue)
