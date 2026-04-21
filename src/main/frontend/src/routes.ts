@@ -10,6 +10,7 @@ import Logout from "./views/Logout";
 import {ROUTES} from "./utilities/routes.paths";
 import EmployeeDashboard from "./views/EmployeeDashboard";
 import RoleBasedHome from "./views/RoleBasedHome";
+import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
 
 /**
  * Define the routes of the application.
@@ -31,4 +32,9 @@ export const LoginsRoute = {
 export const LogoutsRoute = {
     url: ROUTES.LOGOUT,
     component: Logout
+}
+
+export const DeviceConfigurationRoute = {
+    url: ROUTES.DEVICE_CONFIGURATION,
+    component: DeviceConfigurationPage
 }
