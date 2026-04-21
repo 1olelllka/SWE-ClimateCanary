@@ -129,7 +129,7 @@ class RaspberryCreateMapperUnitTests {
 
             RaspberryPi result = mapper.mapFrom(dto);
 
-            assertThat(result.getRoomsMonitoring()).isNull();
+            assertThat(result.getRoomMonitoring()).isNull();
         }
 
         @Test

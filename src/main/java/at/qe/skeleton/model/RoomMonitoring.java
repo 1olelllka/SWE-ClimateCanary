@@ -22,12 +22,13 @@ public class RoomMonitoring {
 
     @Column(nullable = false, unique = true)
     private String roomNumber;
-    // Devices
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sensor_station_id")
-    private SensorStation sensorStation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // Devices
+    @OneToMany(mappedBy = "roomMonitoring", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<SensorStation> sensorStations = new ArrayList<>();
+
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "raspberry_pi_id")
     private RaspberryPi raspberryPi;
 

@@ -45,16 +45,15 @@ public class SensorStationServiceImpl implements SensorStationService {
             throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
         }
         SensorStation station = sensorRepository.save(sensorStation);
-        station.getRoomMonitoring().setSensorStation(station);
-        RoomMonitoring monitoring = monitoringRepository.save(station.getRoomMonitoring());
-        eventPublisher.publishEvent(
-                new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.SENSORS,
-                                                        LocalDateTime.now()),
-                        station.getId(),
-                        monitoring.getRaspberryPi(),
-                        notificationClient
-                        ));
+        RoomMonitoring monitoring = station.getRoomMonitoring();
+        if (monitoring != null && monitoring.getRaspberryPi() != null) {
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
+                            station.getId(),
+                            monitoring.getRaspberryPi(),
+                            notificationClient));
+        }
         return station;
     }
 
@@ -62,27 +61,28 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
         return sensorRepository.findById(id).map(sensor -> {
-                if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().equals(sensor.getRoomMonitoring())){
-                    sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
-                    sensor.getRoomMonitoring().setSensorStation(sensor);
-                    monitoringRepository.save(sensor.getRoomMonitoring());
+            if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().equals(sensor.getRoomMonitoring())) {
+                sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
+            }
+            Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
+                if (!name.equals(sensor.getName())) {
+                    if (sensorRepository.existsByName(name))
+                        throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
+                    sensor.setName(name);
                 }
-                Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
-                    if (!name.equals(sensor.getName())) {
-                        if (sensorRepository.existsByName(name)) throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
-                        sensor.setName(name);
-                    }
-                });
-                Optional.ofNullable(sensorStation.getStatus()).ifPresent(sensor::setStatus);
-                Optional.ofNullable(sensorStation.getLastHeartBeat()).ifPresent(sensor::setLastHeartBeat);
+            });
+            Optional.ofNullable(sensorStation.getStatus()).ifPresent(sensor::setStatus);
+            Optional.ofNullable(sensorStation.getLastHeartBeat()).ifPresent(sensor::setLastHeartBeat);
+            SensorStation saved = sensorRepository.save(sensor);
+            if (saved.getRoomMonitoring() != null && saved.getRoomMonitoring().getRaspberryPi() != null) {
                 eventPublisher.publishEvent(
                         new NotifyRaspberryCommand(
-                                new StateChangeNotificationDTO(UpdateType.SENSORS,
-                                        LocalDateTime.now()),
-                                        id,
-                                        sensor.getRoomMonitoring().getRaspberryPi(),
-                                        notificationClient));
-                return sensorRepository.save(sensor);
+                                new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
+                                id,
+                                saved.getRoomMonitoring().getRaspberryPi(),
+                                notificationClient));
+            }
+            return saved;
         }).orElseThrow(() -> new NotFoundException("Sensor station with id " + id + " was not found."));
     }
 
@@ -94,16 +94,17 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Override
     @Transactional
     public void deleteById(UUID id) {
-        SensorStation station = sensorRepository.findById(id).orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
+        SensorStation station = sensorRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
         RoomMonitoring monitoring = station.getRoomMonitoring();
-        if (monitoring != null) {
-                monitoring.setSensorStation(null);
-                monitoringRepository.save(monitoring);
-                eventPublisher.publishEvent(
-                        new NotifyRaspberryCommand(
-                                new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()), null, monitoring.getRaspberryPi(), notificationClient));
-        }
         sensorRepository.deleteById(id);
+        if (monitoring != null && monitoring.getRaspberryPi() != null) {
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
+                            null,
+                            monitoring.getRaspberryPi(),
+                            notificationClient));
+        }
     }
-
 }

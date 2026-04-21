@@ -73,18 +73,16 @@ public class RaspberryServiceUnitTests {
 
         sampleRoom = new RoomMonitoring();
         sampleRoom.setRoomId(roomId);
-        sampleRoom.setSensorStation(sampleSensor);
+        sampleRoom.setSensorStations(new ArrayList<>(List.of(sampleSensor)));
 
         samplePi = new RaspberryPi();
         samplePi.setId(piId);
         samplePi.setName("Pi-01");
         samplePi.setIp("192.168.1.100");
         samplePi.setFrequency(5000);
-
-        Set<RoomMonitoring> rooms = new HashSet<>();
-        rooms.add(sampleRoom);
-        samplePi.setRoomsMonitoring(rooms);
+        samplePi.setRoomMonitoring(sampleRoom);
         sampleRoom.setRaspberryPi(samplePi);
+        sampleSensor.setRoomMonitoring(sampleRoom);
     }
 
     @Test
@@ -188,7 +186,7 @@ public class RaspberryServiceUnitTests {
         raspberryService.deleteRaspberry(piId);
 
         assertNull(sampleRoom.getRaspberryPi());
-        verify(monitoringRepository).saveAll(anyCollection());
+        verify(monitoringRepository).save(any(RoomMonitoring.class));
         verify(raspberryPiRepository).deleteById(piId);
     }
 
@@ -204,12 +202,22 @@ public class RaspberryServiceUnitTests {
     @Test
     void testThatGetOccupancyFromRedisReturnsMockedValue() {
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
-        when(occupancyRepository.findAllById(samplePi.getRoomsMonitoring().stream().map(r -> r.getRoomId().toString()).toList())).thenReturn(List.of(RoomOccupancy.builder().roomId(sampleRoom.getRoomId()).build()));
+        when(occupancyRepository.findAllById(List.of(sampleRoom.getRoomId().toString())))
+                .thenReturn(List.of(RoomOccupancy.builder().roomId(sampleRoom.getRoomId()).build()));
 
-        // When Redis logic is added, one will mock the RedisTemplate here
         List<RoomOccupancy> occupancy = raspberryService.getOccupancyFromRedis(piId);
 
         assertEquals(1, occupancy.size());
+    }
+
+    @Test
+    void testThatGetOccupancyFromRedisReturnsEmptyWhenNoRoomAssigned() {
+        samplePi.setRoomMonitoring(null);
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+
+        List<RoomOccupancy> occupancy = raspberryService.getOccupancyFromRedis(piId);
+
+        assertTrue(occupancy.isEmpty());
     }
 
     @Test
@@ -225,7 +233,7 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatGetConfigForRaspberryReturnEmptySensorsWhenNotLinked() {
-        sampleRoom.setSensorStation(null);
+        sampleRoom.setSensorStations(new ArrayList<>());
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
 
         PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);
@@ -253,13 +261,12 @@ public class RaspberryServiceUnitTests {
     }
 
     @Test
-    void testThatRetryConnectionWorksWhenRoomsMonitoringIsNull() {
-        samplePi.setRoomsMonitoring(null);
+    void testThatRetryConnectionWorksWhenRoomMonitoringIsNull() {
+        samplePi.setRoomMonitoring(null);
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
 
         raspberryService.retryConnection(piId);
 
-        // Uses the alternative `else` block to notify setup without iterating over rooms
         verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
         verify(deadLetterRepository, never()).findByRaspberryPi(any(UUID.class));
     }
@@ -279,7 +286,7 @@ public class RaspberryServiceUnitTests {
 
         raspberryService.retryConnection(piId);
 
-        // Initial SETUP + one replayed non-SETUP letter = 2 events
+        // Initial SETUP per sensor (1) + one replayed non-SETUP letter = 2 events
         verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
         verify(deadLetterRepository).deleteAll(anyList());
     }
@@ -295,7 +302,7 @@ public class RaspberryServiceUnitTests {
 
         raspberryService.retryConnection(piId);
 
-        // Only the initial SETUP event is sent, the dead letter one is filtered out
+        // Only the initial SETUP event per sensor, dead letter is filtered out
         verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
@@ -310,20 +317,38 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatAddNewRoomSucceeds() {
+        RaspberryPi piWithNoRoom = new RaspberryPi();
+        piWithNoRoom.setId(UUID.randomUUID());
+        piWithNoRoom.setName("Pi-02");
+        piWithNoRoom.setRoomMonitoring(null);
+
         RoomMonitoring unassignedRoom = new RoomMonitoring();
         unassignedRoom.setRoomId(UUID.randomUUID());
 
-        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(raspberryPiRepository.findById(piWithNoRoom.getId())).thenReturn(Optional.of(piWithNoRoom));
         when(monitoringRepository.findById(unassignedRoom.getRoomId())).thenReturn(Optional.of(unassignedRoom));
         when(monitoringRepository.save(any(RoomMonitoring.class))).thenAnswer(i -> i.getArgument(0));
         when(raspberryPiRepository.save(any(RaspberryPi.class))).thenAnswer(i -> i.getArgument(0));
 
-        RaspberryPi result = raspberryService.addNewRoom(piId, unassignedRoom.getRoomId());
+        RaspberryPi result = raspberryService.addNewRoom(piWithNoRoom.getId(), unassignedRoom.getRoomId());
 
         assertNotNull(result);
-        assertEquals(samplePi, unassignedRoom.getRaspberryPi());
+        assertEquals(piWithNoRoom, unassignedRoom.getRaspberryPi());
         verify(monitoringRepository).save(unassignedRoom);
-        verify(raspberryPiRepository).save(samplePi);
+        verify(raspberryPiRepository).save(piWithNoRoom);
+    }
+
+    @Test
+    void testThatAddNewRoomThrowsConflictWhenPiAlreadyHasRoom() {
+        RoomMonitoring anotherRoom = new RoomMonitoring();
+        anotherRoom.setRoomId(UUID.randomUUID());
+
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(monitoringRepository.findById(anotherRoom.getRoomId())).thenReturn(Optional.of(anotherRoom));
+
+        assertThrows(ConflictException.class, () -> raspberryService.addNewRoom(piId, anotherRoom.getRoomId()));
+        verify(monitoringRepository, never()).save(any());
+        verify(raspberryPiRepository, never()).save(any());
     }
 
     @Test
@@ -345,12 +370,16 @@ public class RaspberryServiceUnitTests {
     void testThatAddNewRoomThrowsConflictWhenRoomAlreadyAssigned() {
         RoomMonitoring assignedRoom = new RoomMonitoring();
         assignedRoom.setRoomId(UUID.randomUUID());
-        assignedRoom.setRaspberryPi(new RaspberryPi()); // Already assigned to another Pi
+        assignedRoom.setRaspberryPi(new RaspberryPi());
 
-        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        RaspberryPi piWithNoRoom = new RaspberryPi();
+        piWithNoRoom.setId(UUID.randomUUID());
+        piWithNoRoom.setRoomMonitoring(null);
+
+        when(raspberryPiRepository.findById(piWithNoRoom.getId())).thenReturn(Optional.of(piWithNoRoom));
         when(monitoringRepository.findById(assignedRoom.getRoomId())).thenReturn(Optional.of(assignedRoom));
 
-        assertThrows(ConflictException.class, () -> raspberryService.addNewRoom(piId, assignedRoom.getRoomId()));
+        assertThrows(ConflictException.class, () -> raspberryService.addNewRoom(piWithNoRoom.getId(), assignedRoom.getRoomId()));
         verify(monitoringRepository, never()).save(any());
         verify(raspberryPiRepository, never()).save(any());
     }

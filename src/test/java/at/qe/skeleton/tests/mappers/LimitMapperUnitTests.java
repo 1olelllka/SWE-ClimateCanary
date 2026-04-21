@@ -214,7 +214,7 @@ class LimitMapperUnitTests {
             RoomMonitoring result = mapper.mapFrom(dto);
 
             assertThat(result.getRaspberryPi()).isNull();
-            assertThat(result.getSensorStation()).isNull();
+            assertThat(result.getSensorStations()).isNullOrEmpty();
         }
 
         @Test
