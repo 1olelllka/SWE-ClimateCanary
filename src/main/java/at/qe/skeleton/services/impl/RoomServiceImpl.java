@@ -2,13 +2,13 @@ package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomMonitoring;
-import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.repositories.RoomOccupancyRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.RoomService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,18 +20,11 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomMonitoringRepository monitoringRepository;
     private final UserxRepository userxRepository;
-
-    public RoomServiceImpl(RoomRepository roomRepository,
-                           UserxRepository userxRepository,
-                           RoomMonitoringRepository monitoringRepository){
-        this.roomRepository = roomRepository;
-        this.userxRepository = userxRepository;
-        this.monitoringRepository = monitoringRepository;
-    }
 
     public Page<Room> getPageOfRooms(Pageable pageable) {return roomRepository.findAll(pageable);}
 
@@ -72,6 +65,7 @@ public class RoomServiceImpl implements RoomService {
 
     public void deleteRoom(UUID id) {
         roomRepository.deleteById(id);
+//        roomOccupancyRepository.deleteById(id);
     }
 //
 //    public Department getDepartmentOfRoom(UUID roomId) {

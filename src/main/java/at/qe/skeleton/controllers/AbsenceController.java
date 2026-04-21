@@ -113,4 +113,18 @@ public class AbsenceController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @PostMapping("/clock-in")
+    public ResponseEntity<Void> clockInForSpecificRoom() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        absenceService.clockIn(user);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @DeleteMapping("/clock-out")
+    public ResponseEntity<Void> clockOutForSpecificRoom() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        absenceService.clockOut(user);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
 }

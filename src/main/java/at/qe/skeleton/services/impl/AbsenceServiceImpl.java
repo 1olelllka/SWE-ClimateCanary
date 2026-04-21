@@ -1,38 +1,43 @@
 package at.qe.skeleton.services.impl;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.UpdateType;
+import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.exceptions.ValidationException;
-import at.qe.skeleton.model.Absence;
-import at.qe.skeleton.model.AbsenceStatus;
-import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.repositories.AbsenceRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.feign.NotificationClient;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AbsenceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AbsenceServiceImpl implements AbsenceService {
 
-    private AbsenceRepository absenceRepository;
-    private UserxRepository userxRepository;
-
-    @Autowired
-    public AbsenceServiceImpl(AbsenceRepository absenceRepository,
-                              UserxRepository userxRepository) {
-        this.absenceRepository = absenceRepository;
-        this.userxRepository = userxRepository;
-    }
+    private final AbsenceRepository absenceRepository;
+    private final UserxRepository userxRepository;
+    private final RoomOccupancyRepository roomOccupancyRepository;
+    private final RoomRepository roomRepository;
+    private final RoomMonitoringRepository roomMonitoringRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationClient notificationClient;
+    private final UserClockStatusRepository clockStatusRepository;
 
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
@@ -105,5 +110,57 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Override
     public Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable) {
         return absenceRepository.findByAssignedTo(user.getId(), pageable);
+    }
+
+    @Override
+    @Transactional
+    public void clockIn(Userx user) {
+        UserClockStatus status = clockStatusRepository.findById(user.getId().toString()).orElse(UserClockStatus.builder().userId(user.getId()).clockedIn(false).build());
+        if (status.isClockedIn()) throw new ConflictException("You cannot clock in twice.");
+        if (user.getMyRoom() != null) {
+            if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
+            RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
+                    .orElse(RoomOccupancy.builder().peopleCnt(0).roomId(user.getMyRoom().getId()).build());
+            room.setPeopleCnt(room.getPeopleCnt() + 1);
+            roomOccupancyRepository.save(room);
+            if (monitoring.getSensorStation() != null) {
+                eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
+                        monitoring.getSensorStation().getId(),
+                        monitoring.getRaspberryPi(),
+                        notificationClient
+                ));
+            }
+        }
+        status.setClockedIn(true);
+        clockStatusRepository.save(status);
+    }
+
+    @Override
+    @Transactional
+    public void clockOut(Userx user) {
+        UserClockStatus status = clockStatusRepository.findById(user.getId().toString()).orElseThrow(() -> new ConflictException("You cannot clock out without clocking in."));
+        if (!status.isClockedIn()) throw new ConflictException("You cannot clock out twice.");
+        if (user.getMyRoom() != null) {
+            if (!roomRepository.existsById(user.getMyRoom().getId())) throw new NotFoundException("Room with id " + user.getMyRoom().getId() + " was not found.");
+            RoomMonitoring monitoring = roomMonitoringRepository.findById(user.getMyRoom().getId()).get(); // monitoring should exist
+            RoomOccupancy room = roomOccupancyRepository.findById(user.getMyRoom().getId().toString())
+                    .orElse(RoomOccupancy.builder().roomId(user.getMyRoom().getId()).peopleCnt(0).build());
+            if (room.getPeopleCnt() > 0) {
+                room.setPeopleCnt(room.getPeopleCnt() - 1);
+            }
+            roomOccupancyRepository.save(room);
+            if (monitoring.getSensorStation() != null) {
+                eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
+                        monitoring.getSensorStation().getId(),
+                        monitoring.getRaspberryPi(),
+                        notificationClient
+                ));
+            }
+        }
+        status.setClockedIn(false);
+        clockStatusRepository.save(status);
     }
 }

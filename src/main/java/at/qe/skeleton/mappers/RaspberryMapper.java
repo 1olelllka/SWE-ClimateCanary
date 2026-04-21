@@ -1,8 +1,12 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.RaspberryDTO;
+import at.qe.skeleton.dtos.RoomRaspberry;
 import at.qe.skeleton.model.RaspberryPi;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class RaspberryMapper implements DTOMapper<RaspberryPi, RaspberryDTO> {
@@ -15,9 +19,9 @@ public class RaspberryMapper implements DTOMapper<RaspberryPi, RaspberryDTO> {
                 entity.getIp(),
                 entity.getPort(),
                 entity.getStatus(),
-                entity.getRoomMonitoring() != null ? entity.getRoomMonitoring().getRoomId() : null,
-                entity.getRoomMonitoring() != null ? entity.getRoomMonitoring().getRoomNumber() : null
-        );
+                entity.getRoomsMonitoring() != null ?
+                        entity.getRoomsMonitoring().stream().map(r -> new RoomRaspberry(r.getRoomId(), r.getRoomNumber())).collect(Collectors.toSet())
+                : Set.of());
     }
 
     @Override

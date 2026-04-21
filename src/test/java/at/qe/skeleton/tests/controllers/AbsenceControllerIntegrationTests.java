@@ -3,10 +3,11 @@ package at.qe.skeleton.tests.controllers;
 import at.qe.skeleton.dtos.AbsenceCreateDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.*;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -25,13 +27,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class AbsenceControllerIntegrationTests {
 
     @Autowired private MockMvc mockMvc;
@@ -41,6 +45,16 @@ public class AbsenceControllerIntegrationTests {
     @Autowired private RoomService roomService;
     @Autowired private DepartmentService departmentService;
     @Autowired private BuildingService buildingService;
+    @Autowired private UserxRepository userxRepository;
+    @Autowired private RoomRepository roomRepository;
+    @Autowired private DepartmentRepository departmentRepository;
+    @Autowired private BuildingRepository buildingRepository;
+    @Autowired private AbsenceRepository absenceRepository;
+    @Autowired private RoomMonitoringRepository monitoringRepository;
+    @MockitoBean
+    private UserClockStatusRepository clockRepository;
+    @MockitoBean
+    private RoomOccupancyRepository roomOccupancyRepository;
     @Autowired private ObjectMapper objectMapper;
 
     private Absence mockedAbsence;
@@ -66,6 +80,18 @@ public class AbsenceControllerIntegrationTests {
         this.mockedAbsence = TestDataUtil.createAbsence(user);
         this.mockedAbsence.setAssignedTo(this.manager.getId());
         this.mockedAbsence = absenceService.createNewAbsenceForUser(this.mockedAbsence);
+    }
+
+    @AfterEach
+    void tearDown() {
+        monitoringRepository.deleteAll();
+        absenceRepository.deleteAll();
+        userxRepository.deleteAll();
+        roomRepository.deleteAll();
+        departmentRepository.deleteAll();
+        buildingRepository.deleteAll();
+        clockRepository.deleteAll();
+        roomOccupancyRepository.deleteAll();
     }
 
     @Test
@@ -301,6 +327,150 @@ public class AbsenceControllerIntegrationTests {
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.mockedAbsence.getId().toString()));
+    }
+
+    @Test
+    public void testThatClockInReturnsHttp409ConflictIfUserHasAlreadyClockedIn() throws Exception {
+
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-in").with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isConflict());
+    }
+
+    @Test
+    public void testThatClockInReturnsHttp200OkIfUserDoesNotHaveRoomAndTheStatusIsUpdated() throws Exception {
+        Userx sampleUser = TestDataUtil.createUserxEntity(userRoleService.getListOfPermissions().stream().filter(u -> u.getName().equals("EMPLOYEE")).toList().getFirst(), null);
+        sampleUser.setUsername("sample username");
+        sampleUser.setPassword("passwd");
+        sampleUser = userService.createNewUser(sampleUser);
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(sampleUser.getUsername(), sampleUser, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-in").with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    public void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsNotInRedis() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
+        when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString())).thenReturn(Optional.empty());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-in").with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    public void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsInRedis() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
+        when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString())).thenReturn(Optional.of(new RoomOccupancy(this.user.getMyRoom().getId(), 10)));
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-in").with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    public void testThatClockOutEndpointIsSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-out"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    public void testThatClockOutReturnsHttp409ConflictIfUserNeverClockedIn() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.empty());
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isConflict());
+    }
+
+    @Test
+    public void testThatClockOutReturnsHttp409ConflictIfUserAlreadyClockedOut() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString()))
+                .thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isConflict());
+    }
+
+    @Test
+    public void testThatClockOutReturnsHttp200OkIfUserHasNoRoom() throws Exception {
+        Userx userWithoutRoom = TestDataUtil.createUserxEntity(
+                userRoleService.getListOfPermissions().stream().filter(u -> u.getName().equals("EMPLOYEE")).toList().getFirst(), null);
+        userWithoutRoom.setUsername("clockout-noroomuser");
+        userWithoutRoom.setPassword("passwd");
+        userWithoutRoom = userService.createNewUser(userWithoutRoom);
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                userWithoutRoom.getUsername(), userWithoutRoom, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(userWithoutRoom.getId().toString()))
+                .thenReturn(Optional.of(new UserClockStatus(userWithoutRoom.getId(), true)));
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+        verifyNoInteractions(roomOccupancyRepository);
+    }
+
+    @Test
+    public void testThatClockOutReturnsHttp200OkAndDecrementsOccupancyWhenRecordExists() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString()))
+                .thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
+        when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString()))
+                .thenReturn(Optional.of(new RoomOccupancy(this.user.getMyRoom().getId(), 5)));
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    public void testThatClockOutReturnsHttp200OkAndCreatesOccupancyRecordWhenNoneExists() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString()))
+                .thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
+        when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString()))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    public void testThatClockOutDoesNotDecrementOccupancyBelowZero() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        when(clockRepository.findById(this.user.getId().toString()))
+                .thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
+        when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString()))
+                .thenReturn(Optional.of(new RoomOccupancy(this.user.getMyRoom().getId(), 0)));
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/clock-out")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
+        verify(clockRepository, times(1)).save(any(UserClockStatus.class));
     }
 
 }

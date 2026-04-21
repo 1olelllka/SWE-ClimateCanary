@@ -9,8 +9,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -55,8 +53,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -71,8 +68,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -86,8 +82,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -101,8 +96,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -116,8 +110,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -131,13 +124,12 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
 
-            assertThat(result.getRoomMonitoring()).isNull();
+            assertThat(result.getRoomsMonitoring()).isNull();
         }
 
         @Test
@@ -146,8 +138,7 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
+                    1000
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -155,24 +146,6 @@ class RaspberryCreateMapperUnitTests {
             // RaspberryPi uses new RaspberryPi() not builder, so @Builder.Default
             // does not apply — frequency will be 0 until set by service layer
             assertThat(result.getFrequency()).isEqualTo(100);//default value
-        }
-
-        @Test
-        @DisplayName("roomId in DTO is not mapped — resolved by service layer")
-        void roomIdNotMapped() {
-            UUID roomId = UUID.randomUUID();
-            RaspberryCreateDTO dto = new RaspberryCreateDTO(
-                    "Pi Lab A",
-                    "192.168.1.100",
-                    1000,
-                    roomId
-            );
-
-            RaspberryPi result = mapper.mapFrom(dto);
-
-            // roomId is intentionally not set on RaspberryPi directly —
-            // the service resolves RoomMonitoring by roomId and links it
-            assertThat(result.getRoomMonitoring()).isNull();
         }
 
         @Test
