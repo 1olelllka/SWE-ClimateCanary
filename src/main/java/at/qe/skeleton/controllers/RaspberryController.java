@@ -73,6 +73,7 @@ public class RaspberryController {
             throw new ValidationException(msg);
         }
         RaspberryPi createdPi = raspberryService.createNewRaspberry(raspberryCreateMapper.mapFrom(dto));
+        createdPi = raspberryService.addNewRoom(createdPi.getId(), dto.roomId());
         return new ResponseEntity<>(raspberryMapper.mapTo(createdPi), HttpStatus.CREATED);
     }
 

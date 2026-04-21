@@ -142,7 +142,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp400IfValidationFails() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null, null);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -154,7 +154,7 @@ public class RaspberryControllerIntegrationTests {
     public void testThatCreateNewRaspberryReturnsHttp409IfSuchNameExists() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi);
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -166,7 +166,7 @@ public class RaspberryControllerIntegrationTests {
     public void testThatCreateNewRaspberryReturnsHttp409IfSuchConnectionCredentialsExist() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi);
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -176,7 +176,7 @@ public class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     public void testThatCreateNewRaspberryReturnsHttp201IfSuccessful() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, this.savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -212,7 +212,7 @@ public class RaspberryControllerIntegrationTests {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);
         raspberryService.createNewRaspberry(RaspberryPi.builder().name("Test Raspberry 2").ip("localhost").port(1000).status(DeviceStatus.OFFLINE).build());
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
