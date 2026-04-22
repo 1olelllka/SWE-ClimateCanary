@@ -8,16 +8,17 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Order(3)
-@ConditionalOnProperty(name = "app.seeder.building.enabled", havingValue = "true", matchIfMissing = true)
-public class BuildingSeeder implements ApplicationListener<ContextRefreshedEvent> {
+@Order(2)
+@ConditionalOnProperty(name = "app.seeder.user.enabled", havingValue = "true", matchIfMissing = true)
+public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
 
-    private final BuildingSeederService service;
+    private UserSeederService service;
 
     @Autowired
-    public BuildingSeeder(BuildingSeederService service) {
+    public UserSeeder(UserSeederService service) {
         this.service = service;
     }
+
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {

@@ -61,10 +61,18 @@ public class BuildingSeederService {
                 );
                 // Assign demo employee to first Engineering office for dashboard demo
                 if ("Engineering".equals(deptName) && i == 1) {
-                    userxRepository.findFirstByUsername("employee").ifPresent(user -> {
-                        user.setMyRoom(room);
-                        userxRepository.save(user);
-                    });
+                    userxRepository.findFirstByUsername("employee").ifPresentOrElse(
+                            user -> {
+                                System.out.println("✅ Employee found: " + user.getUsername());
+                                System.out.println("➡ Assigning room: " + room.getRoomNumber());
+
+                                user.setMyRoom(room);
+                                userxRepository.save(user);
+                            },
+                            () -> {
+                                System.out.println("❌ Employee NOT FOUND during seeding");
+                            }
+                    );
                 }
             }
         }

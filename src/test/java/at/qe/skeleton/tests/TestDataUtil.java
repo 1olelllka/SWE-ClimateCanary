@@ -66,7 +66,8 @@ public class TestDataUtil {
                 "John",
                 "Doe",
                 true,
-                roles
+                roles,
+                null
         );
     }
 
