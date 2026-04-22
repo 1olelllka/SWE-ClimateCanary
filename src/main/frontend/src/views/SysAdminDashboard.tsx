@@ -7,7 +7,6 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import {
-    AdminControllerApi,
     RaspberryControllerApi,
     SensorStationControllerApi,
     RoomControllerApi,
@@ -15,12 +14,14 @@ import {
     DepartmentControllerApi,
     RaspberryDTO,
     SensorStationDTO,
-    UserxDTO,
     RoomDTO,
     BuildingListDTO,
     DepartmentListDTO,
 } from '../generated-skeleton-api';
+import globalAxios from 'axios';
 import '../styles/Tables.css';
+
+interface UserPreview { id?: string; username?: string; firstName?: string; lastName?: string; enabled?: boolean; }
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
 const PREVIEW_ROWS = 3;
@@ -86,7 +87,7 @@ const SysAdminDashboard: React.FC = () => {
     // --- Data ---
     const [raspberries, setRaspberries] = useState<RaspberryDTO[]>([]);
     const [sensors, setSensors] = useState<SensorStationDTO[]>([]);
-    const [users, setUsers] = useState<UserxDTO[]>([]);
+    const [users, setUsers] = useState<UserPreview[]>([]);
     const [rooms, setRooms] = useState<RoomDTO[]>([]);
     const [buildings, setBuildings] = useState<BuildingListDTO[]>([]);
     const [departments, setDepartments] = useState<DepartmentListDTO[]>([]);
@@ -117,9 +118,8 @@ const SysAdminDashboard: React.FC = () => {
             .then(res => setSensors(res.data.content ?? []))
             .catch(() => {});
 
-        new AdminControllerApi()
-            .getAllUsers()
-            .then(res => setUsers(res.data ?? []))
+        globalAxios.get<{ content: UserPreview[] }>('/api/users?size=100')
+            .then(res => setUsers(res.data.content ?? []))
             .catch(() => {});
 
         new RoomControllerApi()
