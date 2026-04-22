@@ -109,9 +109,6 @@ class DataProcessor:
                         "value": data['co2']
                     })
 
-                formatted_payload = json.dumps(webapp_payload, indent=2)
-                logger.info(f"[Processor] Sending payload to webapp:\n{formatted_payload}")
-                
                 await self.web_out_queue.put(webapp_payload)
                 
             except json.JSONDecodeError:
