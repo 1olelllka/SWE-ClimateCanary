@@ -6,6 +6,7 @@ import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.repositories.UserxRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class BuildingSeederService {
     private final BuildingRepository buildingRepository;
     private final DepartmentRepository departmentRepository;
     private final RoomService roomService;
+    private final UserxRepository userxRepository;
 
     @Transactional
     public void seed() {
@@ -48,7 +50,7 @@ public class BuildingSeederService {
             String prefix = deptName.substring(0, 3).toUpperCase();
             for (int i = 1; i <= 3; i++) {
                 RoomType type = (i == 3) ? RoomType.SHARED : RoomType.OFFICE;
-                roomService.createRoom(
+                Room room = roomService.createRoom(
                         Room.builder()
                                 .roomNumber(prefix + "-10" + i)
                                 .roomType(type)
@@ -57,6 +59,13 @@ public class BuildingSeederService {
                                 .department(dept)
                                 .build()
                 );
+                // Assign demo employee to first Engineering office for dashboard demo
+                if ("Engineering".equals(deptName) && i == 1) {
+                    userxRepository.findFirstByUsername("employee").ifPresent(user -> {
+                        user.setMyRoom(room);
+                        userxRepository.save(user);
+                    });
+                }
             }
         }
     }
