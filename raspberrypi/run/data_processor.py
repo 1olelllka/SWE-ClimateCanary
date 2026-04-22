@@ -84,8 +84,35 @@ class DataProcessor:
                     co2=data.get('co2'),
                     timestamp=timestamp
                 )
+
+                webapp_payload = {
+                    "roomId": self.config.get('room_id', '8f3edc14-7cb4-4c57-8db2-ed33802078be'),
+                    "timestamp": timestamp,
+                    "readings": []
+                }
                 
-                await self.web_out_queue.put(data)
+                if data.get('temperature') is not None:
+                    webapp_payload["readings"].append({
+                        "type": "TEMPERATURE",
+                        "value": data['temperature']
+                    })
+                    
+                if data.get('moisture') is not None:
+                    webapp_payload["readings"].append({
+                        "type": "HUMIDITY",
+                        "value": data['moisture']
+                    })
+                    
+                if data.get('co2') is not None:
+                    webapp_payload["readings"].append({
+                        "type": "CO2",
+                        "value": data['co2']
+                    })
+
+                formatted_payload = json.dumps(webapp_payload, indent=2)
+                logger.info(f"[Processor] Sending payload to webapp:\n{formatted_payload}")
+                
+                await self.web_out_queue.put(webapp_payload)
                 
             except json.JSONDecodeError:
                 logger.error(f"[Processor] Received malformed JSON from Arduino: {raw_data}")

@@ -24,12 +24,12 @@ class MockDataGenerator:
         while current_time <= end_time:
             # Mimic Arduino JSON format
             data = {
-                "temperature": round(random.uniform(18.0, 26.0), 2),
-                "moisture": round(random.uniform(30.0, 60.0), 2),
-                "co2": round(random.uniform(400.0, 1200.0), 2),
-                "timestamp": current_time.isoformat()
-            }
-            
+                    "temperature": round(random.uniform(18.0, 26.0), 2),
+                    "moisture": round(random.uniform(30.0, 60.0), 2),
+                    "co2": round(random.uniform(400.0, 1200.0), 2),
+                    "timestamp": current_time.isoformat()
+                    }
+
             message = json.dumps(data)
             await self.processing_queue.put(message)
             
