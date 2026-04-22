@@ -35,7 +35,7 @@ async def main(config):
     processor = DataProcessor(db, config, processing_queue, web_out_queue, ble_inbox)
     web_manager = WebManager(config, db, web_out_queue)
     ble_manager = BLEManager(config, db, processing_queue, ble_inbox)
-    mock_gen = MockDataGenerator(config, processing_queue)
+    # mock_gen = MockDataGenerator(config, processing_queue)
 
     tasks = [
         asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
@@ -43,7 +43,7 @@ async def main(config):
         asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
         asyncio.create_task(processor.run(), name="DataProcessor"),
         asyncio.create_task(ble_manager.run(), name="BLEConnection"),
-        asyncio.create_task(mock_gen.run(), name="MockDataGenerator")
+        # asyncio.create_task(mock_gen.run(), name="MockDataGenerator")
     ]
 
     try:

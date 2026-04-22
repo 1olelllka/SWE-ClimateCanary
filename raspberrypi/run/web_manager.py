@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import aiohttp
+import json
 from aiohttp import web
 
 logger = logging.getLogger(__name__)
@@ -81,21 +82,23 @@ class WebManager:
         logger.info("[WebManager] Outgoing worker started.")
         headers = {"Content-Type": "application/json"}
         timeout = aiohttp.ClientTimeout(total=10)
-
+        
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
                 payload = await self.web_out_queue.get()
                 
                 try:
+                    logger.info(f"[WebManager] Sending sensor payload to Webapp...")
+                    logger.debug(f"[WebManager] Payload details:\n{json.dumps(payload, indent=2)}")
+
                     async with session.post(self.api_url, json=payload, headers=headers) as response:
-                        if response.status not in (200, 201):
+                        if response.status in (200, 201):
+                            logger.info(f"[WebManager] Payload accepted by Webapp (HTTP {response.status})")
+                        else:
                             logger.warning(f"[WebManager] Webapp rejected data (HTTP {response.status}).")
                             
-                            if response.status >= 500:
-                                await asyncio.sleep(5)
-                                await self.web_out_queue.put(payload)
-                            else:
-                                logger.error(f"[WebManager] Payload permanently rejected. Dropping: {payload}")
+                            await asyncio.sleep(5)
+                            await self.web_out_queue.put(payload)
                 
                 except Exception as e:
                     logger.error(f"[WebManager] Network error reaching Webapp: {e}")
@@ -126,6 +129,6 @@ class WebManager:
                             if response.status in (200, 201):
                                 await self.db.mark_log_synced(log_entry["id"])
                                 logger.info(f"[WebManager] Successfully synced offline log ID {log_entry['id']}")
-                except Exception:
+                except Exception as e:
                     logger.info(f"[WebManager] Offline sync cycle failed, will retry: {e}")
                     pass

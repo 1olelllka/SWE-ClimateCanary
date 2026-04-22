@@ -86,7 +86,7 @@ class DataProcessor:
                 )
 
                 webapp_payload = {
-                    "roomId": self.config.get('room_id', '8f3edc14-7cb4-4c57-8db2-ed33802078be'),
+                    "roomId": self.config.get('room_id', '3aae450a-3206-4ca7-8f4a-1981c388b1f5'),
                     "timestamp": timestamp,
                     "readings": []
                 }
