@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserxController {
  
     private final UserxMapper userMapper;
@@ -68,16 +67,14 @@ public class UserxController {
 
     @GetMapping("/me")
     public ResponseEntity<UserxDTO> getAuthenticatedUser(Authentication authentication) {
-        Userx user = (Userx) authentication.getCredentials();
+        Userx user = userService.getByUsername(authentication.getName());
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
     }
 
     @GetMapping("/me/absences")
     public ResponseEntity<Page<AbsenceListDTO>> getPageOfAbsencesOfAuthenticatedUser(Authentication authentication,
                                                                                      Pageable pageable) {
-        // authentication.isAuthenticated() check is redundant here, as the endpoint requires specific permission
-        // which cannot be achieved if user is anonymous
-        Userx authenticated = (Userx) authentication.getCredentials();
+        Userx authenticated = userService.getByUsername(authentication.getName());
         Page<Absence> absences = absenceService.getAllAbsencesById(authenticated.getId(), pageable);
         return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
     }

@@ -54,7 +54,7 @@ export const EmployeeDashboard: React.FC = () => {
     const fetchLiveData = useCallback(() => {
         if (!roomId) return;
         Promise.all([
-            globalAxios.get<ClimateData>(`/rooms/${roomId}/current-climate`)
+            globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
                 .then(r => r.data).catch(() => null),
             globalAxios.get<ActiveWarning[]>(`/warnings?roomId=${roomId}`)
                 .then(r => r.data).catch(() => []),

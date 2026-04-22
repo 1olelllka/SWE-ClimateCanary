@@ -90,7 +90,7 @@ public class UserxControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
     public void testThatGetPageOfAbsencesOfAuthenticatedUserReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
-        TestingAuthenticationToken auth = new TestingAuthenticationToken("principal", user, "CAN_MANAGE_OWN_ABSENCE");
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(user, null, "CAN_MANAGE_OWN_ABSENCE");
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/me/absences")
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))

@@ -65,4 +65,10 @@ public class UserServiceImpl implements UserService {
         userxRepository.deleteById(id);
     }
 
+    @Override
+    public Userx getByUsername(String username) {
+        return userxRepository.findByUsernameWithRoles(username)
+                .orElseThrow(() -> new NotFoundException("User " + username + " was not found."));
+    }
+
 }

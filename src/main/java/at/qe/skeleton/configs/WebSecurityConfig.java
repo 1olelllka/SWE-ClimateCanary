@@ -92,6 +92,8 @@ public class WebSecurityConfig {
                                                         .requestMatchers("/api/users/me").authenticated()
                                                         .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                                         .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
+                                                        .requestMatchers("/api/rooms/*/current-climate", "/api/rooms/*/overtime", "/api/rooms/*/climate-history").authenticated()
+                                                        .requestMatchers("/api/measurements").authenticated()
                                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                                         .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
                                                         .requestMatchers("/api/**").authenticated()
