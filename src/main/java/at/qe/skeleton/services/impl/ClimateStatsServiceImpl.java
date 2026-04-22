@@ -4,6 +4,7 @@ import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
 import at.qe.skeleton.dtos.ReadingDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.model.AggregatedStats;
@@ -13,7 +14,6 @@ import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.ClimateStatsService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +45,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         return climateStatsRepository
                 .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                 .map(climateMapper::mapTo)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "No climate data found for room: " + roomId));
     }
 
@@ -54,7 +54,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     @Transactional
     public void saveMeasurementBatch(MeasurementBatchDTO batch) {
         RoomMonitoring room = roomMonitoringRepository.findById(batch.roomId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "RoomMonitoring not found: " + batch.roomId()));
 
         double temp = 0;
