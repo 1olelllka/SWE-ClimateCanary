@@ -131,6 +131,7 @@ const UserConfigurationPage: React.FC = () => {
                     enabled: form.enabled,
                     roles: form.roleIds,
                     password: form.password,
+                    roomId: form.roomId || null,
                 });
                 setUsers(prev => [...prev, res.data]);
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'User created successfully.', life: 3000 });
