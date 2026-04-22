@@ -8,21 +8,25 @@ import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import { Divider } from 'primereact/divider';
 import { Toast } from 'primereact/toast';
-import {
-    AdminControllerApi,
-    UserRoleControllerApi,
-    RoomControllerApi,
-    UserxDTO,
-    UserxRole,
-    UserRoleDTO,
-    RoomDTO,
-} from '../generated-skeleton-api';
+import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO } from '../generated-skeleton-api';
+import globalAxios from 'axios';
 import RoleManagement from '../components/RoleManagement';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
-const ALL_ROLES = Object.values(UserxRole);
+
+interface UserRoleSummary { id: string; name: string; }
+interface UserRoomSummary { id: string; departmentName: string; roomNumber: string; }
+interface FullUser {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    enabled: boolean;
+    roles: UserRoleSummary[];
+    myRoom: UserRoomSummary | null;
+}
 
 const VALIDATION_MESSAGES = {
     required: 'Required',
@@ -34,7 +38,7 @@ const UserConfigurationPage: React.FC = () => {
     const toast = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
-    const [users, setUsers] = useState<UserxDTO[]>([]);
+    const [users, setUsers] = useState<FullUser[]>([]);
     const [roleDTOs, setRoleDTOs] = useState<UserRoleDTO[]>([]);
     const [rooms, setRooms] = useState<RoomDTO[]>([]);
     const [loading, setLoading] = useState(false);
@@ -52,11 +56,11 @@ const UserConfigurationPage: React.FC = () => {
     const fetchData = () => {
         setLoading(true);
         Promise.all([
-            new AdminControllerApi().getAllUsers(),
+            globalAxios.get<{ content: FullUser[] }>('/api/users?size=1000'),
             new UserRoleControllerApi().getAllPermissions(),
             new RoomControllerApi().getPageOfRooms({ pageable: PAGEABLE }),
         ]).then(([usersRes, rolesRes, roomsRes]) => {
-            setUsers(usersRes.data ?? []);
+            setUsers(usersRes.data.content ?? []);
             setRoleDTOs(rolesRes.data ?? []);
             setRooms(roomsRes.data.content ?? []);
         }).catch(() => {
@@ -67,12 +71,12 @@ const UserConfigurationPage: React.FC = () => {
     useEffect(() => { fetchData(); }, []);
 
     const roomOptions = rooms.map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }));
-    const roleOptions = ALL_ROLES.map(r => ({ label: r, value: r }));
-    const getRoomName = (roomId?: string) => rooms.find(r => r.id === roomId)?.name ?? null;
+    const roleOptions = roleDTOs.map(r => ({ label: r.name ?? '', value: r.id ?? '' }));
+    const roleFilterOptions = roleDTOs.map(r => ({ label: r.name ?? '', value: r.name ?? '' }));
 
     const filteredUsers = users.filter(u => {
         if (lastNameSearch && !(u.lastName ?? '').toLowerCase().includes(lastNameSearch.toLowerCase())) return false;
-        if (roleFilter && !(u.roles ?? new Set<UserxRole>()).has(roleFilter as UserxRole)) return false;
+        if (roleFilter && !u.roles.some(r => r.name === roleFilter)) return false;
         return true;
     });
 
@@ -84,13 +88,13 @@ const UserConfigurationPage: React.FC = () => {
         setShowDialog(true);
     };
 
-    const openEdit = (user: UserxDTO) => {
+    const openEdit = (user: FullUser) => {
         setForm({
             firstName: user.firstName ?? '',
             lastName: user.lastName ?? '',
             username: user.username ?? '',
             roomId: user.myRoom?.id ?? '',
-            roles: Array.from(user.roles ?? []) as UserxRole[],
+            roleIds: user.roles.map(r => r.id),
             password: '',
             repeatPassword: '',
             enabled: user.enabled ?? true,
@@ -107,12 +111,10 @@ const UserConfigurationPage: React.FC = () => {
         if (!form.lastName.trim()) errors.lastName = VALIDATION_MESSAGES.required;
         if (!form.username.trim()) errors.username = VALIDATION_MESSAGES.required;
         if (isNewUser) {
-            const passwordEmpty = !form.password.trim();
-            const passwordMismatch = form.password !== form.repeatPassword;
-            if (passwordEmpty) errors.password = VALIDATION_MESSAGES.required;
-            if (passwordMismatch) errors.repeatPassword = VALIDATION_MESSAGES.confirmationMismatch;
+            if (!form.password.trim()) errors.password = VALIDATION_MESSAGES.required;
+            if (form.password !== form.repeatPassword) errors.repeatPassword = VALIDATION_MESSAGES.confirmationMismatch;
         }
-        if (form.roles.length === 0) errors.roles = VALIDATION_MESSAGES.roleRequired;
+        if (form.roleIds.length === 0) errors.roleIds = VALIDATION_MESSAGES.roleRequired;
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -122,29 +124,24 @@ const UserConfigurationPage: React.FC = () => {
         setDialogLoading(true);
         try {
             if (isNewUser) {
-                const res = await new AdminControllerApi().createUser({
-                    userxCreateDTO: {
-                        firstName: form.firstName,
-                        lastName: form.lastName,
-                        username: form.username,
-                        enabled: form.enabled,
-                        roles: new Set(form.roles),
-                        password: form.password,
-                    },
+                const res = await globalAxios.post<FullUser>('/api/users', {
+                    firstName: form.firstName,
+                    lastName: form.lastName,
+                    username: form.username,
+                    enabled: form.enabled,
+                    roles: form.roleIds,
+                    password: form.password,
                 });
                 setUsers(prev => [...prev, res.data]);
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'User created successfully.', life: 3000 });
             } else {
-                const res = await new AdminControllerApi().updateUser({
-                    id: editingUserId!,
-                    userxDTO: {
-                        id: editingUserId,
-                        firstName: form.firstName,
-                        lastName: form.lastName,
-                        username: form.username,
-                        enabled: form.enabled,
-                        roles: new Set(form.roles),
-                    },
+                const res = await globalAxios.patch<FullUser>(`/api/users/${editingUserId}`, {
+                    firstName: form.firstName,
+                    lastName: form.lastName,
+                    username: form.username,
+                    isEnabled: form.enabled,
+                    roles: form.roleIds,
+                    roomId: form.roomId || null,
                 });
                 setUsers(prev => prev.map(u => u.id === res.data.id ? res.data : u));
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'User updated successfully.', life: 3000 });
@@ -157,9 +154,9 @@ const UserConfigurationPage: React.FC = () => {
         }
     };
 
-    const handleDelete = (user: UserxDTO) => {
+    const handleDelete = (user: FullUser) => {
         if (!user.id || !globalThis.confirm(`Delete user "${user.username}"?`)) return;
-        new AdminControllerApi().deleteUser({ id: user.id })
+        globalAxios.delete(`/api/users/${user.id}`)
             .then(() => {
                 setUsers(prev => prev.filter(u => u.id !== user.id));
                 toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000 });
@@ -167,15 +164,15 @@ const UserConfigurationPage: React.FC = () => {
             .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete user.', life: 3000 }));
     };
 
-    const actionsTemplate = (user: UserxDTO) => (
+    const actionsTemplate = (user: FullUser) => (
         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
             <Button icon="pi pi-pencil" rounded text severity="secondary" onClick={() => openEdit(user)} title="Edit user" />
             <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => handleDelete(user)} title="Delete user" />
         </div>
     );
 
-    const rolesTemplate = (user: UserxDTO) => (
-        <span>{Array.from(user.roles ?? new Set()).join(', ') || '—'}</span>
+    const rolesTemplate = (user: FullUser) => (
+        <span>{user.roles.map(r => r.name).join(', ') || '—'}</span>
     );
 
     return (
@@ -204,7 +201,7 @@ const UserConfigurationPage: React.FC = () => {
                         </span>
                         <Dropdown
                             value={roleFilter}
-                            options={roleOptions}
+                            options={roleFilterOptions}
                             onChange={e => setRoleFilter(e.value)}
                             placeholder="Role Filter ▼"
                             showClear
@@ -218,10 +215,10 @@ const UserConfigurationPage: React.FC = () => {
                         <Column field="lastName" header="Last Name" sortable />
                         <Column
                             header="Room"
-                            body={(u: UserxDTO) => {
-                                const name = getRoomName(u.myRoom?.id);
-                                return name ? <span>{name}</span> : <span style={{ color: '#9e9e9e' }}>N/A</span>;
-                            }}
+                            body={(u: FullUser) => u.myRoom
+                                ? <span>{u.myRoom.roomNumber} ({u.myRoom.departmentName})</span>
+                                : <span style={{ color: '#9e9e9e' }}>N/A</span>
+                            }
                         />
                         <Column header="Roles" body={rolesTemplate} />
                         <Column header="" body={actionsTemplate} style={{ width: '6rem' }} exportable={false} />
@@ -239,6 +236,7 @@ const UserConfigurationPage: React.FC = () => {
                 form={form}
                 formErrors={formErrors}
                 roomOptions={roomOptions}
+                roleOptions={roleOptions}
                 loading={dialogLoading}
                 onHide={() => setShowDialog(false)}
                 onSave={handleSave}

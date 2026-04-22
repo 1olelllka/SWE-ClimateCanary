@@ -5,14 +5,13 @@ import { Password } from 'primereact/password';
 import { Dropdown } from 'primereact/dropdown';
 import { MultiSelect } from 'primereact/multiselect';
 import { Dialog } from 'primereact/dialog';
-import { UserxRole } from '../generated-skeleton-api';
 
 export interface UserFormState {
     firstName: string;
     lastName: string;
     username: string;
     roomId: string;
-    roles: UserxRole[];
+    roleIds: string[];
     password: string;
     repeatPassword: string;
     enabled: boolean;
@@ -20,10 +19,8 @@ export interface UserFormState {
 
 export const emptyForm = (): UserFormState => ({
     firstName: '', lastName: '', username: '',
-    roomId: '', roles: [], password: '', repeatPassword: '', enabled: true,
+    roomId: '', roleIds: [], password: '', repeatPassword: '', enabled: true,
 });
-
-const ALL_ROLES = Object.values(UserxRole);
 
 const labelStyle: React.CSSProperties = {
     display: 'block',
@@ -38,6 +35,7 @@ interface Props {
     readonly form: UserFormState;
     readonly formErrors: Partial<Record<keyof UserFormState, string>>;
     readonly roomOptions: { label: string; value: string }[];
+    readonly roleOptions: { label: string; value: string }[];
     readonly loading: boolean;
     readonly onHide: () => void;
     readonly onSave: () => void;
@@ -45,10 +43,8 @@ interface Props {
 }
 
 const UserFormDialog: React.FC<Props> = ({
-    visible, isNewUser, form, formErrors, roomOptions, loading, onHide, onSave, onChange,
+    visible, isNewUser, form, formErrors, roomOptions, roleOptions, loading, onHide, onSave, onChange,
 }) => {
-    const roleOptions = ALL_ROLES.map(r => ({ label: r, value: r }));
-
     const footer = (
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
             <Button label="Cancel" severity="secondary" outlined onClick={onHide} />
@@ -116,7 +112,7 @@ const UserFormDialog: React.FC<Props> = ({
                         inputId="uf-room"
                         value={form.roomId}
                         options={roomOptions}
-                        onChange={e => onChange({ roomId: e.value })}
+                        onChange={e => onChange({ roomId: e.value ?? '' })}
                         placeholder="Select room"
                         style={{ width: '100%' }}
                         showClear
@@ -128,15 +124,15 @@ const UserFormDialog: React.FC<Props> = ({
                     <label htmlFor="uf-roles" style={labelStyle}>Role *</label>
                     <MultiSelect
                         inputId="uf-roles"
-                        value={form.roles}
+                        value={form.roleIds}
                         options={roleOptions}
-                        onChange={e => onChange({ roles: e.value })}
+                        onChange={e => onChange({ roleIds: e.value })}
                         placeholder="Select roles"
                         style={{ width: '100%' }}
-                        className={formErrors.roles ? 'p-invalid' : ''}
+                        className={formErrors.roleIds ? 'p-invalid' : ''}
                         display="chip"
                     />
-                    {formErrors.roles && <small className="p-error">{formErrors.roles}</small>}
+                    {formErrors.roleIds && <small className="p-error">{formErrors.roleIds}</small>}
                 </div>
 
                 {isNewUser && (
