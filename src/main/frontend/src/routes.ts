@@ -4,7 +4,7 @@
  */
 
 import HomePage from "./views/HomePage";
-import ManageUsers from "./views/ManageUsers";
+import UserConfigurationPage from "./views/UserConfigurationPage";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
 import {ROUTES} from "./utilities/routes.paths";
@@ -25,7 +25,7 @@ export const HomePageRoute = {
 
 export const ManageUsersRoute = {
     url: ROUTES.MANAGE_USERS,
-    component: ManageUsers
+    component: UserConfigurationPage
 }
 export const LoginsRoute = {
     url: ROUTES.LOGIN,

@@ -3,7 +3,6 @@
  * Engineering" offered by Innsbruck University.
  */
 
-import ManageUsers from "./views/ManageUsers";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
 import RoleBasedHome from "./views/RoleBasedHome";
@@ -22,7 +21,7 @@ export const HomePageRoute = {
 
 export const ManageUsersRoute = {
     url: '/manage-users',
-    component: ManageUsers
+    component: UserConfigurationPage
 }
 export const LoginsRoute = {
     url: '/login',
