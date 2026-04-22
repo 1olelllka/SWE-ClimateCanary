@@ -7,6 +7,7 @@ import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,7 +35,6 @@ public class UserxController {
     private final UserxMapper userMapper;
     private final UserxCreateMapper userxCreateMapper;
     private final UserPatchMapper userPatchMapper;
-    private final UserListMapper userListMapper;
     private final UserService userService;
     private final AbsenceService absenceService;
     private final AbsenceListMapper absenceListMapper;
@@ -44,27 +44,31 @@ public class UserxController {
                            UserService userService,
                            UserxCreateMapper userxCreateMapper,
                            UserPatchMapper userPatchMapper,
-                           UserListMapper userListMapper,
                            AbsenceService absenceService,
                            AbsenceListMapper absenceListMapper) {
         this.userMapper = userMapper;
         this.userService = userService;
         this.userxCreateMapper = userxCreateMapper;
-        this.userListMapper = userListMapper;
         this.userPatchMapper = userPatchMapper;
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
     }
 
     @GetMapping("")
-    public ResponseEntity<Page<UserxListDTO>> getPageOfUsers(Pageable pageable) {
+    public ResponseEntity<Page<UserxDTO>> getPageOfUsers(Pageable pageable) {
         Page<Userx> page = userService.getPageOfUsers(pageable);
-        return new ResponseEntity<>(page.map(userListMapper::mapTo), HttpStatus.OK);
+        return new ResponseEntity<>(page.map(userMapper::mapTo), HttpStatus.OK);
     }
 
     @GetMapping("/{user_id}")
     public ResponseEntity<UserxDTO> getSpecificUser(@PathVariable(name = "user_id") UUID id) {
         Userx user = userService.getSpecificUser(id);
+        return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserxDTO> getAuthenticatedUser(Authentication authentication) {
+        Userx user = (Userx) authentication.getCredentials();
         return new ResponseEntity<>(userMapper.mapTo(user), HttpStatus.OK);
     }
 
