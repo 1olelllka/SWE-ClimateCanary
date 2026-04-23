@@ -16,6 +16,6 @@ public record RoomPatchDTO(
         Integer defaultPeopleCount,
         Set<UUID> users,
         @Pattern(regexp = "^(?!\\s*$).+", message = "Name must not be blank.")
-        String name
+        String roomNumber
 ) {
 }

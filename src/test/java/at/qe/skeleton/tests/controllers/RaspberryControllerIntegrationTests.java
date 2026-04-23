@@ -224,7 +224,7 @@ public class RaspberryControllerIntegrationTests {
     public void testThatPatchRaspberryReturnsHttp200IfSuccessful() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);
-        RaspberryPatchDTO dto = new RaspberryPatchDTO("Updated Raspberry", null,20, 1000);
+        RaspberryPatchDTO dto = new RaspberryPatchDTO("Updated Raspberry", null,20, 1001);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))

@@ -44,12 +44,22 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
+    @Transactional
     public Room patchRoom(UUID id, Room room) {
         return roomRepository.findById(id).map(r -> {
             Optional.ofNullable(room.getRoomType()).ifPresent(r::setRoomType);
             Optional.ofNullable(room.getDepartment()).ifPresent(r::setDepartment);
             Optional.ofNullable(room.getIsActive()).ifPresent(r::setIsActive);
             Optional.ofNullable(room.getDefaultPeopleCnt()).ifPresent(r::setDefaultPeopleCnt);
+            Optional.ofNullable(room.getRoomNumber()).ifPresent(number -> {
+                if (roomRepository.existsByRoomNumber(room.getRoomNumber())) {
+                    throw new ConflictException("Room with such name already exists.");
+                }
+                RoomMonitoring m = monitoringRepository.findById(r.getId()).get(); // it should exist
+                m.setRoomNumber(number);
+                monitoringRepository.save(m);
+                r.setRoomNumber(number);
+            });
             if (room.getUsers() != null) {
                 Set<Userx> foundUser = new HashSet<>();
                 for (Userx user : room.getUsers()) {

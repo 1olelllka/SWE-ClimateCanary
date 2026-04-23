@@ -8,7 +8,6 @@ import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.SensorStationRepository;
 import at.qe.skeleton.services.SensorStationService;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +29,6 @@ public class SensorStationServiceImpl implements SensorStationService {
 
     private final SensorStationRepository sensorRepository;
     private final NotificationClient notificationClient;
-    private final RoomMonitoringRepository monitoringRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override

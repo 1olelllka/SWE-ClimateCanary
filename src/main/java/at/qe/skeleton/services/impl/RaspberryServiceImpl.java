@@ -7,11 +7,7 @@ import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
-import at.qe.skeleton.model.NotifyDeadLetter;
-import at.qe.skeleton.model.RaspberryPi;
-import at.qe.skeleton.model.RoomMonitoring;
-import at.qe.skeleton.model.RoomOccupancy;
-import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
@@ -74,7 +70,18 @@ public class RaspberryServiceImpl implements RaspberryService {
                 }
                 rasp.setName(name);
             });
-            Optional.ofNullable(raspberryPi.getIp()).ifPresent(rasp::setIp);
+            Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
+                if (raspberryPiRepository.existsByIpAndPort(ip, rasp.getPort())) {
+                    throw new ConflictException("Raspberry Pi with this ip and port already exists.");
+                }
+                rasp.setIp(ip);
+            });
+            Optional.ofNullable(raspberryPi.getPort()).ifPresent(port -> {
+                if (raspberryPiRepository.existsByIpAndPort(rasp.getIp(), port)) {
+                    throw new ConflictException("Raspberry Pi with this ip and port already exists.");
+                }
+                rasp.setPort(port);
+            });
             return raspberryPiRepository.save(rasp);
         }).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
