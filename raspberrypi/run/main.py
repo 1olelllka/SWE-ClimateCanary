@@ -4,7 +4,8 @@
 #     "aiosqlite>=0.20.0",
 #     "pyyaml>=6.0",
 #     "bleak>=0.21.0",
-#     "aiohttp>=3.9.0"
+#     "aiohttp>=3.9.0",
+#     "requests>=2.31.0"
 # ]
 # ///
 
@@ -56,16 +57,20 @@ async def main(config):
 
 if __name__ == "__main__":
     try:
-        config = ConfigManager.load("/home/pi/run/config.yaml")
+        config = ConfigManager.load()
     except Exception as e:
         print(f"Failed to load config: {e}")
         sys.exit(1)
         
+    # Ensure log directory exists
+    log_file = config['paths'].get('log_file', 'logs/gateway.log')
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(config['paths']['log_file']),
+            logging.FileHandler(log_file),
             logging.StreamHandler(sys.stdout)
         ]
     )
@@ -74,3 +79,6 @@ if __name__ == "__main__":
         asyncio.run(main(config))
     except KeyboardInterrupt:
         logging.info("Gateway shutdown requested by user via terminal.")
+    except Exception as e:
+        logging.critical(f"Unexpected crash in main loop: {e}", exc_info=True)
+        sys.exit(1)

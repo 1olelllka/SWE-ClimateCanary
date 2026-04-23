@@ -2,7 +2,10 @@ import asyncio
 import logging
 import aiohttp
 import json
+import os
+import sys
 from aiohttp import web
+from config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +17,37 @@ class WebManager:
         
         self.api_url = self.config['webapp']['api_url']
         self.local_port = self.config['webapp']['local_listen_port']
+
+    async def handle_config_update(self, request):
+        """Webapp sends new full configuration here.
+           If received, we save it and EXIT the process so Docker restarts us.
+        """
+        try:
+            new_config_data = await request.json()
+            logger.info("[Web -> Pi] Received remote config update request.")
+            
+            for section, values in new_config_data.items():
+                if section in self.config and isinstance(values, dict):
+                    self.config[section].update(values)
+                else:
+                    self.config[section] = values
+            
+            ConfigManager.save(self.config)
+            
+            logger.warning("[WebManager] Config updated. Restarting gateway in 3 seconds...")
+            
+            async def shutdown_soon():
+                await asyncio.sleep(3)
+                logger.info("[WebManager] Exiting for restart (Exit Code 42)")
+                os._exit(42) # hard exit to ensure all threads stop immediately
+
+            asyncio.create_task(shutdown_soon())
+            
+            return web.json_response({"status": "success", "message": "Config updated. Restarting..."})
+            
+        except Exception as e:
+            logger.error(f"[WebManager] Error updating config: {e}")
+            return web.json_response({"status": "error", "message": str(e)}, status=500)
 
     async def handle_limit_update(self, request):
         """Webapp sends new limits here (e.g., {"key": "max_temp", "value": 26.5})"""
@@ -67,6 +101,7 @@ class WebManager:
         app = web.Application()
         app.router.add_post('/api/limits', self.handle_limit_update)
         app.router.add_post('/api/occupancy', self.handle_occupancy_update)
+        app.router.add_post('/api/config/update', self.handle_config_update)
         
         runner = web.AppRunner(app)
         await runner.setup()

@@ -1,0 +1,16 @@
+system:
+  room_id: "" # Will be filled by bootstrap
+
+paths:
+  # These are the paths INSIDE the container
+  database: "/app/data/production.sqlite"
+  log_file: "/app/logs/gateway.log"
+
+ble:
+  target_name: "" # Will be filled by bootstrap
+  char_uuid: ""
+  write_uuid: ""
+
+webapp:
+  api_url: "" # Will be filled by .env
+  local_listen_port: 8080
