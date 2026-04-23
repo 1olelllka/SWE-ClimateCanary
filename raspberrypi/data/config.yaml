@@ -13,4 +13,5 @@ ble:
 
 webapp:
   api_url: "" # Will be filled by .env
+  alerts_url: "" # Will be filled by bootstrap
   local_listen_port: 8080

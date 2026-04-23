@@ -64,7 +64,7 @@ class DataProcessor:
                             "actual_value": val,
                             "threshold": limit
                         }
-                        await self.web_out_queue.put(violation_report)
+                        await self.violation_out_queue.put(violation_report)
                         
                         await self.ble_inbox.put(f"ALERT:{sensor_key.upper()}")
                         
@@ -117,4 +117,6 @@ class DataProcessor:
                 logger.error(f"[Processor] Unexpected processing error: {e}", exc_info=True)
                 
             finally:
+                self.processing_queue.task_done()
+           finally:
                 self.processing_queue.task_done()

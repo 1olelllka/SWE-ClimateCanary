@@ -10,13 +10,49 @@ from config_manager import ConfigManager
 logger = logging.getLogger(__name__)
 
 class WebManager:
-    def __init__(self, config, db, web_out_queue):
+    def __init__(self, config, db, web_out_queue, violation_out_queue):
         self.config = config
         self.db = db
         self.web_out_queue = web_out_queue
+        self.violation_out_queue = violation_out_queue
         
-        self.api_url = self.config['webapp']['api_url']
-        self.local_port = self.config['webapp']['local_listen_port']
+        self.api_url = self.config['webapp'].get('api_url')
+        self.alerts_url = self.config['webapp'].get('alerts_url')
+        self.local_port = self.config['webapp'].get('local_listen_port', 8080)
+...
+    async def run_violation_worker(self):
+        """Pushes violation alerts from the queue to the Webapp."""
+        if not self.alerts_url:
+            logger.warning("[WebManager] No alerts_url configured. Violation alerts will be dropped.")
+            while True:
+                await self.violation_out_queue.get()
+                self.violation_out_queue.task_done()
+
+        logger.info(f"[WebManager] Violation alert worker started (Target: {self.alerts_url})")
+        headers = {"Content-Type": "application/json"}
+        timeout = aiohttp.ClientTimeout(total=10)
+        
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            while True:
+                payload = await self.violation_out_queue.get()
+                
+                try:
+                    logger.info(f"[WebManager] Sending violation alert to {self.alerts_url}...")
+                    async with session.post(self.alerts_url, json=payload, headers=headers) as response:
+                        if response.status in (200, 201):
+                            logger.info(f"[WebManager] Violation alert accepted (HTTP {response.status})")
+                        else:
+                            logger.error(f"[WebManager] Webapp rejected alert (HTTP {response.status}).")
+                            await asyncio.sleep(5)
+                            await self.violation_out_queue.put(payload)
+                
+                except Exception as e:
+                    logger.error(f"[WebManager] Network error sending alert: {e}")
+                    await asyncio.sleep(10)
+                    await self.violation_out_queue.put(payload) 
+                    
+                finally:
+                    self.violation_out_queue.task_done()
 
     async def handle_config_update(self, request):
         """Webapp sends new full configuration here.

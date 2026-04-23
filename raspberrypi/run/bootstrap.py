@@ -61,6 +61,8 @@ def bootstrap():
                     config['ble'].update(remote_data['ble'])
                 if 'system' in remote_data:
                     config['system'].update(remote_data['system'])
+                if 'webapp' in remote_data:
+                    config['webapp'].update(remote_data['webapp'])
                 
                 ConfigManager.save(config)
                 logger.info("Successfully provisioned from Webapp.")

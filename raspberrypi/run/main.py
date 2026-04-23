@@ -31,16 +31,18 @@ async def main(config):
     
     processing_queue = asyncio.Queue()
     web_out_queue = asyncio.Queue()
+    violation_out_queue = asyncio.Queue() # New queue for urgent alerts
     ble_inbox = asyncio.Queue()
     
-    processor = DataProcessor(db, config, processing_queue, web_out_queue, ble_inbox)
-    web_manager = WebManager(config, db, web_out_queue)
+    processor = DataProcessor(db, config, processing_queue, web_out_queue, violation_out_queue, ble_inbox)
+    web_manager = WebManager(config, db, web_out_queue, violation_out_queue)
     ble_manager = BLEManager(config, db, processing_queue, ble_inbox)
     # mock_gen = MockDataGenerator(config, processing_queue)
 
     tasks = [
         asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
         asyncio.create_task(web_manager.run_outgoing_worker(), name="WebOutgoing"),
+        asyncio.create_task(web_manager.run_violation_worker(), name="WebViolation"),
         asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
         asyncio.create_task(processor.run(), name="DataProcessor"),
         asyncio.create_task(ble_manager.run(), name="BLEConnection"),
