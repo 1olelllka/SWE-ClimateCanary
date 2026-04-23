@@ -38,7 +38,8 @@ public class UserxMapper implements DTOMapper<Userx, UserxDTO>{
                user.getMyRoom() != null
                ?
                new UserRoom(user.getMyRoom().getId(), user.getMyRoom().getDepartment().getId(),
-                       user.getMyRoom().getDepartment().getName(), user.getMyRoom().getRoomType())
+                       user.getMyRoom().getDepartment().getName(), user.getMyRoom().getRoomType(),
+                       user.getMyRoom().getRoomNumber())
                : null
        );
     }

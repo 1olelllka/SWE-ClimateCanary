@@ -46,8 +46,8 @@ public class AbsenceServiceUnitTests {
     private Absence absence;
     private Department dept;
     private Room room;
-    private RoomMonitoring monitoringWithSensor;
-    private RoomMonitoring monitoringWithoutSensor;
+    private RoomMonitoring monitoringWithPi;
+    private RoomMonitoring monitoringWithoutPi;
 
     @BeforeEach
     void setUp() {
@@ -69,18 +69,14 @@ public class AbsenceServiceUnitTests {
         absence.setId(UUID.randomUUID());
         absence.setAssignedTo(manager.getId());
 
-        SensorStation sensorStation = new SensorStation();
-        sensorStation.setId(UUID.randomUUID());
-
         RaspberryPi raspberry = new RaspberryPi();
+        raspberry.setId(UUID.randomUUID());
 
-        monitoringWithSensor = RoomMonitoring.builder()
-                .sensorStation(sensorStation)
+        monitoringWithPi = RoomMonitoring.builder()
                 .raspberryPi(raspberry)
                 .build();
 
-        monitoringWithoutSensor = RoomMonitoring.builder()
-                .sensorStation(null)
+        monitoringWithoutPi = RoomMonitoring.builder()
                 .build();
     }
 
@@ -313,7 +309,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockIn(user);
@@ -330,7 +326,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.empty());
 
         absenceService.clockIn(user);
@@ -341,7 +337,7 @@ public class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatClockInPublishesEventWhenSensorStationExists() {
+    void testThatClockInPublishesEventWhenPiIsLinked() {
         UserClockStatus status = UserClockStatus.builder()
                 .userId(user.getId()).clockedIn(false).build();
         RoomOccupancy occupancy = RoomOccupancy.builder()
@@ -349,7 +345,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockIn(user);
@@ -358,7 +354,7 @@ public class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatClockInDoesNotPublishEventWhenNoSensorStation() {
+    void testThatClockInDoesNotPublishEventWhenNoPiLinked() {
         UserClockStatus status = UserClockStatus.builder()
                 .userId(user.getId()).clockedIn(false).build();
         RoomOccupancy occupancy = RoomOccupancy.builder()
@@ -366,7 +362,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockIn(user);
@@ -430,7 +426,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockOut(user);
@@ -449,7 +445,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockOut(user);
@@ -466,7 +462,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.empty());
 
         absenceService.clockOut(user);
@@ -477,7 +473,7 @@ public class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatClockOutPublishesEventWhenSensorStationExists() {
+    void testThatClockOutPublishesEventWhenPiIsLinked() {
         UserClockStatus status = UserClockStatus.builder()
                 .userId(user.getId()).clockedIn(true).build();
         RoomOccupancy occupancy = RoomOccupancy.builder()
@@ -485,7 +481,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockOut(user);
@@ -494,7 +490,7 @@ public class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatClockOutDoesNotPublishEventWhenNoSensorStation() {
+    void testThatClockOutDoesNotPublishEventWhenNoPiLinked() {
         UserClockStatus status = UserClockStatus.builder()
                 .userId(user.getId()).clockedIn(true).build();
         RoomOccupancy occupancy = RoomOccupancy.builder()
@@ -502,7 +498,7 @@ public class AbsenceServiceUnitTests {
 
         when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(status));
         when(roomRepository.existsById(room.getId())).thenReturn(true);
-        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutSensor));
+        when(roomMonitoringRepository.findById(room.getId())).thenReturn(Optional.of(monitoringWithoutPi));
         when(roomOccupancyRepository.findById(room.getId().toString())).thenReturn(Optional.of(occupancy));
 
         absenceService.clockOut(user);

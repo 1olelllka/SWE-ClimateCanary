@@ -11,13 +11,13 @@ import at.qe.skeleton.model.NotifyDeadLetter;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.RoomOccupancy;
+import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
 import at.qe.skeleton.services.RaspberryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -83,8 +84,11 @@ public class RaspberryServiceImpl implements RaspberryService {
     public void deleteRaspberry(UUID id) {
         Optional<RaspberryPi> optional = raspberryPiRepository.findById(id);
         if (optional.isPresent()) {
-            optional.get().getRoomsMonitoring().forEach(r -> r.setRaspberryPi(null));
-            monitoringRepository.saveAll(optional.get().getRoomsMonitoring());
+            RaspberryPi pi = optional.get();
+            if (pi.getRoomMonitoring() != null) {
+                pi.getRoomMonitoring().setRaspberryPi(null);
+                monitoringRepository.save(pi.getRoomMonitoring());
+            }
             raspberryPiRepository.deleteById(id);
         }
     }
@@ -94,39 +98,42 @@ public class RaspberryServiceImpl implements RaspberryService {
     public List<RoomOccupancy> getOccupancyFromRedis(UUID id) {
         RaspberryPi pi = raspberryPiRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        List<UUID> roomIds = pi.getRoomsMonitoring().stream().map(RoomMonitoring::getRoomId).toList();
-        return (List<RoomOccupancy>) occupancyRepository.findAllById(roomIds.stream().map(UUID::toString).collect(Collectors.toList()));
+        if (pi.getRoomMonitoring() == null) return List.of();
+        return (List<RoomOccupancy>) occupancyRepository.findAllById(
+                List.of(pi.getRoomMonitoring().getRoomId().toString()));
     }
 
     @Override
     @Transactional
     public PiConfigDTO getConfigForRaspberry(UUID id) {
-        RaspberryPi pi = raspberryPiRepository.findById(id).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        return new PiConfigDTO(pi.getFrequency(),
-                pi.getRoomsMonitoring() != null
-                        ? pi.getRoomsMonitoring().stream()
-                                .filter(r -> r.getSensorStation() != null)
-                                .map(r -> r.getSensorStation().getId()).collect(Collectors.toSet())
-                        : null);
+        RaspberryPi pi = raspberryPiRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
+        Set<UUID> sensors = pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStations() != null
+                ? pi.getRoomMonitoring().getSensorStations().stream()
+                        .map(SensorStation::getId)
+                        .collect(Collectors.toSet())
+                : Set.of();
+        return new PiConfigDTO(pi.getFrequency(), sensors);
     }
 
     @Override
     @Transactional
     public void retryConnection(UUID raspberry_id) {
-        RaspberryPi pi = raspberryPiRepository.findById(raspberry_id).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberry_id + " was not found."));
-        if (pi.getRoomsMonitoring() != null) {
-            for (RoomMonitoring monitoring : pi.getRoomsMonitoring()) {
-                if (monitoring.getSensorStation() != null) {
+        RaspberryPi pi = raspberryPiRepository.findById(raspberry_id)
+                .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberry_id + " was not found."));
+        RoomMonitoring monitoring = pi.getRoomMonitoring();
+        if (monitoring != null) {
+            if (monitoring.getSensorStations() != null) {
+                for (SensorStation station : monitoring.getSensorStations()) {
                     eventPublisher.publishEvent(
                             new NotifyRaspberryCommand(
                                     new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
-                                    monitoring.getSensorStation().getId(),
-                                    pi, notificationClient));
+                                    station.getId(), pi, notificationClient));
                 }
             }
             List<NotifyDeadLetter> letters = deadLetterRepository.findByRaspberryPi(pi.getId());
             letters.forEach(letter -> {
-                    if (letter.getUpdateType() != UpdateType.SETUP) {
+                if (letter.getUpdateType() != UpdateType.SETUP) {
                     eventPublisher.publishEvent(
                             new NotifyRaspberryCommand(
                                     new StateChangeNotificationDTO(letter.getUpdateType(), letter.getTriggeredAt()),
@@ -149,10 +156,13 @@ public class RaspberryServiceImpl implements RaspberryService {
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberryId + " was not found."));
         RoomMonitoring monitoring = monitoringRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
+        if (pi.getRoomMonitoring() != null) {
+            throw new ConflictException("Raspberry Pi already has a room assigned. Remove the current room first.");
+        }
         if (monitoring.getRaspberryPi() != null) {
             throw new ConflictException("Room is already assigned to a Raspberry Pi.");
         }
-        pi.addNewRoom(monitoring);
+        pi.setRoomMonitoring(monitoring);
         monitoring.setRaspberryPi(pi);
         monitoringRepository.save(monitoring);
         return raspberryPiRepository.save(pi);
@@ -165,8 +175,10 @@ public class RaspberryServiceImpl implements RaspberryService {
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberryId + " was not found."));
         RoomMonitoring monitoring = monitoringRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
-        if (!pi.containsRoom(monitoring)) throw new NotFoundException("Cannot find this room inside of raspberry pi with id " + raspberryId);
-        pi.removeRoom(monitoring);
+        if (pi.getRoomMonitoring() == null || !pi.getRoomMonitoring().equals(monitoring)) {
+            throw new NotFoundException("Cannot find this room inside of raspberry pi with id " + raspberryId);
+        }
+        pi.setRoomMonitoring(null);
         monitoring.setRaspberryPi(null);
         monitoringRepository.save(monitoring);
         return raspberryPiRepository.save(pi);

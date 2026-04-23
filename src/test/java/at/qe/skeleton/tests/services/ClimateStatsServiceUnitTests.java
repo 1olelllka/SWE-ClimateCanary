@@ -5,8 +5,8 @@ import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -70,14 +70,14 @@ class ClimateStatsServiceUnitTests {
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when no data exists")
+        @DisplayName("throws NotFoundException when no data exists")
         void throwsWhenEmpty() {
             when(climateStatsRepository
                     .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.getCurrentClimate(roomId))
-                    .isInstanceOf(EntityNotFoundException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining(roomId.toString());
         }
     }
@@ -157,7 +157,7 @@ class ClimateStatsServiceUnitTests {
         }
 
         @Test
-        @DisplayName("throws EntityNotFoundException when room does not exist")
+        @DisplayName("throws NotFoundException when room does not exist")
         void throwsWhenRoomNotFound() {
             MeasurementBatchDTO batch = new MeasurementBatchDTO(
                     roomId, base,
@@ -166,7 +166,7 @@ class ClimateStatsServiceUnitTests {
             when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.saveMeasurementBatch(batch))
-                    .isInstanceOf(EntityNotFoundException.class)
+                    .isInstanceOf(NotFoundException.class)
                     .hasMessageContaining(roomId.toString());
 
             verify(climateStatsRepository, never()).save(any());

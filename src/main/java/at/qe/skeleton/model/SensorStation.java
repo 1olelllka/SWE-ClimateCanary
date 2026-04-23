@@ -30,6 +30,7 @@ public class SensorStation {
     @Enumerated(EnumType.STRING)
     private DeviceStatus status;
 
-    @OneToOne(mappedBy = "sensorStation", fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_monitoring_id")
     private RoomMonitoring roomMonitoring;
 }

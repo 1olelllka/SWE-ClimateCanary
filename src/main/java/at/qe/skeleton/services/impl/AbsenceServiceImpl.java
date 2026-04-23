@@ -124,10 +124,10 @@ public class AbsenceServiceImpl implements AbsenceService {
                     .orElse(RoomOccupancy.builder().peopleCnt(0).roomId(user.getMyRoom().getId()).build());
             room.setPeopleCnt(room.getPeopleCnt() + 1);
             roomOccupancyRepository.save(room);
-            if (monitoring.getSensorStation() != null) {
+            if (monitoring.getRaspberryPi() != null) {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
-                        monitoring.getSensorStation().getId(),
+                        null,
                         monitoring.getRaspberryPi(),
                         notificationClient
                 ));
@@ -151,10 +151,10 @@ public class AbsenceServiceImpl implements AbsenceService {
                 room.setPeopleCnt(room.getPeopleCnt() - 1);
             }
             roomOccupancyRepository.save(room);
-            if (monitoring.getSensorStation() != null) {
+            if (monitoring.getRaspberryPi() != null) {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
-                        monitoring.getSensorStation().getId(),
+                        null,
                         monitoring.getRaspberryPi(),
                         notificationClient
                 ));

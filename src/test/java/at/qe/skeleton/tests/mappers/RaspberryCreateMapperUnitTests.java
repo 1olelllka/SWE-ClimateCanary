@@ -4,6 +4,7 @@ import at.qe.skeleton.dtos.RaspberryCreateDTO;
 import at.qe.skeleton.mappers.RaspberryCreateMapper;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RaspberryPi;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -53,7 +54,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -68,7 +70,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -82,7 +85,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -96,7 +100,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -110,7 +115,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -124,12 +130,13 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
 
-            assertThat(result.getRoomsMonitoring()).isNull();
+            assertThat(result.getRoomMonitoring()).isNull();
         }
 
         @Test
@@ -138,7 +145,8 @@ class RaspberryCreateMapperUnitTests {
             RaspberryCreateDTO dto = new RaspberryCreateDTO(
                     "Pi Lab A",
                     "192.168.1.100",
-                    1000
+                    1000,
+                    UUID.randomUUID()
             );
 
             RaspberryPi result = mapper.mapFrom(dto);

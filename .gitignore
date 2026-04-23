@@ -1,3 +1,4 @@
+
 ### Java template
 # Compiled class file
 *.class
@@ -286,28 +287,7 @@ sketch
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 
-/src/main/frontend/build/static/css/main.c151e0b5.css
-/src/main/frontend/build/static/css/main.c151e0b5.css.map
-/src/main/frontend/build/static/js/453.8ab44547.chunk.js
-/src/main/frontend/build/static/js/453.8ab44547.chunk.js.map
-/src/main/frontend/build/static/js/main.8a13c4c6.js
-/src/main/frontend/build/static/js/main.8a13c4c6.js.LICENSE.txt
-/src/main/frontend/build/static/js/main.8a13c4c6.js.map
-/src/main/frontend/build/static/media/InterVariable.a0e477f2f1f9d2376fde.woff2
-/src/main/frontend/build/static/media/InterVariable-Italic.e295f70fe3e2df296c7b.woff2
-/src/main/frontend/build/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg
-/src/main/frontend/build/static/media/primeicons.6ed59f962963a4a73af2.svg
-/src/main/frontend/build/static/media/primeicons.024b32cc7bf399b1a847.woff2
-/src/main/frontend/build/static/media/primeicons.8931fda1930c3bd21e96.woff
-/src/main/frontend/build/static/media/primeicons.a5c2a53d1ff7a9ff5933.ttf
-/src/main/frontend/build/static/media/primeicons.ff0c4cd79b2ffca2de54.eot
-/src/main/frontend/build/asset-manifest.json
-/src/main/frontend/build/favicon.ico
-/src/main/frontend/build/index.html
-/src/main/frontend/build/logo192.png
-/src/main/frontend/build/logo512.png
-/src/main/frontend/build/manifest.json
-/src/main/frontend/build/robots.txt
+/src/main/frontend/build/
 
 # other
 .sdkmanrc

@@ -60,6 +60,18 @@ public class UserxService implements UserDetailsService {
     }
 
     @PreAuthorize("hasAuthority('ADMIN')")
+    public Userx updateUser(UUID id, Userx patch) {
+        Userx existing = userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User with id " + id + " not found"));
+        if (patch.getFirstName() != null) existing.setFirstName(patch.getFirstName());
+        if (patch.getLastName() != null) existing.setLastName(patch.getLastName());
+        if (patch.getEnabled() != null) existing.setEnabled(patch.getEnabled());
+        if (patch.getUserRoles() != null) existing.setUserRoles(patch.getUserRoles());
+        existing.setMyRoom(patch.getMyRoom());
+        return userRepository.save(existing);
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN')")
     public void deleteUser(Userx user) {
         Optional<Userx> userOpt = userRepository.findById(user.getId());
         userOpt.ifPresent(userRepository::delete);

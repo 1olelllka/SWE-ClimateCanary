@@ -11,7 +11,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,10 +25,10 @@ class RaspberryMapperUnitTests {
     void setUp() { mapper = new RaspberryMapper(); }
 
     private RaspberryPi buildPi(UUID id, String name, String ip,
-                                DeviceStatus status, Set<RoomMonitoring> rooms) {
+                                DeviceStatus status, RoomMonitoring room) {
         return RaspberryPi.builder()
                 .id(id).name(name).ip(ip).status(status)
-                .roomsMonitoring(rooms)
+                .roomMonitoring(room)
                 .build();
     }
 
@@ -45,16 +44,12 @@ class RaspberryMapperUnitTests {
     class MapTo {
 
         @Test
-        @DisplayName("maps all fields correctly with multiple rooms")
-        void mapsAllFieldsWithRooms() {
+        @DisplayName("maps all fields correctly with assigned room")
+        void mapsAllFieldsWithRoom() {
             UUID piId = UUID.randomUUID();
-            UUID roomId1 = UUID.randomUUID();
-            UUID roomId2 = UUID.randomUUID();
-            Set<RoomMonitoring> rooms = Set.of(
-                    buildRoom(roomId1, "A.101"),
-                    buildRoom(roomId2, "B.202")
-            );
-            RaspberryPi pi = buildPi(piId, "Pi Lab A", "192.168.1.100", DeviceStatus.ONLINE, rooms);
+            UUID roomId = UUID.randomUUID();
+            RoomMonitoring room = buildRoom(roomId, "A.101");
+            RaspberryPi pi = buildPi(piId, "Pi Lab A", "192.168.1.100", DeviceStatus.ONLINE, room);
 
             RaspberryDTO result = mapper.mapTo(pi);
 
@@ -62,35 +57,20 @@ class RaspberryMapperUnitTests {
             assertThat(result.name()).isEqualTo("Pi Lab A");
             assertThat(result.ipAddress()).isEqualTo("192.168.1.100");
             assertThat(result.status()).isEqualTo(DeviceStatus.ONLINE);
-            assertThat(result.rooms()).hasSize(2);
-            assertThat(result.rooms())
-                    .extracting(RoomRaspberry::roomId)
-                    .containsExactlyInAnyOrder(roomId1, roomId2);
-            assertThat(result.rooms())
-                    .extracting(RoomRaspberry::roomName)
-                    .containsExactlyInAnyOrder("A.101", "B.202");
+            assertThat(result.room()).isNotNull();
+            assertThat(result.room().roomId()).isEqualTo(roomId);
+            assertThat(result.room().roomName()).isEqualTo("A.101");
         }
 
         @Test
-        @DisplayName("maps rooms to empty set when roomsMonitoring is empty")
-        void mapsEmptyRooms() {
-            RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
-                    DeviceStatus.OFFLINE, Set.of());
-
-            RaspberryDTO result = mapper.mapTo(pi);
-
-            assertThat(result.rooms()).isEmpty();
-        }
-
-        @Test
-        @DisplayName("maps rooms to empty set when roomsMonitoring is null")
-        void mapsNullRoomsToEmpty() {
+        @DisplayName("maps room to null when no room assigned")
+        void mapsNullWhenNoRoom() {
             RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
                     DeviceStatus.OFFLINE, null);
 
             RaspberryDTO result = mapper.mapTo(pi);
 
-            assertThat(result.rooms()).isEmpty();
+            assertThat(result.room()).isNull();
         }
 
         @Test
@@ -98,19 +78,20 @@ class RaspberryMapperUnitTests {
         void mapsRoomWithNullRoomNumber() {
             UUID roomId = UUID.randomUUID();
             RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
-                    DeviceStatus.ONLINE, Set.of(buildRoom(roomId, null)));
+                    DeviceStatus.ONLINE, buildRoom(roomId, null));
 
             RaspberryDTO result = mapper.mapTo(pi);
 
-            assertThat(result.rooms()).hasSize(1);
-            assertThat(result.rooms().iterator().next().roomName()).isNull();
+            assertThat(result.room()).isNotNull();
+            assertThat(result.room().roomId()).isEqualTo(roomId);
+            assertThat(result.room().roomName()).isNull();
         }
 
         @Test
         @DisplayName("maps OFFLINE status correctly")
         void mapsOfflineStatus() {
             RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
-                    DeviceStatus.OFFLINE, Set.of());
+                    DeviceStatus.OFFLINE, null);
 
             assertThat(mapper.mapTo(pi).status()).isEqualTo(DeviceStatus.OFFLINE);
         }
@@ -131,7 +112,7 @@ class RaspberryMapperUnitTests {
         void throwsUnsupportedOperationException() {
             RaspberryDTO dto = new RaspberryDTO(
                     UUID.randomUUID(), "Pi Lab A", "192.168.1.100", 1000,
-                    DeviceStatus.OFFLINE, Set.of()
+                    DeviceStatus.OFFLINE, null
             );
             assertThrows(UnsupportedOperationException.class, () -> mapper.mapFrom(dto));
         }

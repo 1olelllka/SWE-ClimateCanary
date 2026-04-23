@@ -11,6 +11,8 @@ public interface UserService {
 
     Userx getSpecificUser(UUID id);
 
+    Userx getByUsername(String username);
+
     void deleteUser(UUID id);
 
     Userx updateUser(UUID id, Userx dto);
