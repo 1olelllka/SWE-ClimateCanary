@@ -1,12 +1,7 @@
 package at.qe.skeleton.services;
 
-import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Department;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomType;
-import at.qe.skeleton.repositories.BuildingRepository;
-import at.qe.skeleton.repositories.DepartmentRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +14,8 @@ public class BuildingSeederService {
 
     private final BuildingRepository buildingRepository;
     private final DepartmentRepository departmentRepository;
-    private final RoomService roomService;
+    private final RoomRepository roomRepository;
+    private final RoomMonitoringRepository monitoringRepository;
     private final UserxRepository userxRepository;
 
     @Transactional
@@ -50,7 +46,7 @@ public class BuildingSeederService {
             String prefix = deptName.substring(0, 3).toUpperCase();
             for (int i = 1; i <= 3; i++) {
                 RoomType type = (i == 3) ? RoomType.SHARED : RoomType.OFFICE;
-                Room room = roomService.createRoom(
+                Room room = roomRepository.save(
                         Room.builder()
                                 .roomNumber(prefix + "-10" + i)
                                 .roomType(type)
@@ -59,6 +55,7 @@ public class BuildingSeederService {
                                 .department(dept)
                                 .build()
                 );
+                monitoringRepository.save(RoomMonitoring.builder().roomId(room.getId()).roomNumber(room.getRoomNumber()).build());
                 // Assign demo employee to first Engineering office for dashboard demo
                 if ("Engineering".equals(deptName) && i == 1) {
                     userxRepository.findFirstByUsername("employee").ifPresentOrElse(
