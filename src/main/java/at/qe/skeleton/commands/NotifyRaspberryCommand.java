@@ -1,6 +1,7 @@
 package at.qe.skeleton.commands;
 
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import lombok.Getter;
@@ -37,9 +38,13 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         ResponseEntity<Void> response;
         URI piUri = URI.create("http://" + pi.getIp() + ":" + pi.getPort());
         if (writeId == null || readId == null) {
-            response = client.notifyRaspberryAboutChanges(piUri, dto);
+            if (this.dto.updateType() == UpdateType.CONFIG) {
+                response = client.notifyRaspberryAboutChanges(piUri, dto, null, pi.getId());
+            } else {
+                response = client.notifyRaspberryAboutChanges(piUri, dto);
+            }
         } else {
-            response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId});
+            response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId}, null);
         }
         return response;
     }

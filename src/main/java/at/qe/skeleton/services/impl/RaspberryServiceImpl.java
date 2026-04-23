@@ -16,6 +16,7 @@ import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
 import at.qe.skeleton.services.RaspberryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Log
 public class RaspberryServiceImpl implements RaspberryService {
 
     private final RaspberryPiRepository raspberryPiRepository;
@@ -58,6 +60,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         if (raspberryPiRepository.existsByIpAndPort(raspberryPi.getIp(), raspberryPi.getPort())) {
             throw new ConflictException("Raspberry Pi with this ip and port already exists.");
         }
+        log.info("Added new Raspberry Pi");
         return raspberryPiRepository.save(raspberryPi);
     }
 
@@ -69,20 +72,24 @@ public class RaspberryServiceImpl implements RaspberryService {
                 if (!rasp.getName().equals(name) && raspberryPiRepository.existsByName(name)) {
                     throw new ConflictException("Raspberry Pi with this name already exists.");
                 }
+                log.info("Changed name of Raspberry Pi.");
                 rasp.setName(name);
             });
             Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
                 if (raspberryPiRepository.existsByIpAndPort(ip, rasp.getPort())) {
                     throw new ConflictException("Raspberry Pi with this ip and port already exists.");
                 }
+                log.info("Changed IP of Raspberry Pi.");
                 rasp.setIp(ip);
             });
             Optional.ofNullable(raspberryPi.getPort()).ifPresent(port -> {
                 if (raspberryPiRepository.existsByIpAndPort(rasp.getIp(), port)) {
                     throw new ConflictException("Raspberry Pi with this ip and port already exists.");
                 }
+                log.info("Changed port of Raspberry Pi.");
                 rasp.setPort(port);
             });
+            log.info("Updated Raspberry Pi.");
             return raspberryPiRepository.save(rasp);
         }).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
@@ -94,10 +101,12 @@ public class RaspberryServiceImpl implements RaspberryService {
         if (optional.isPresent()) {
             RaspberryPi pi = optional.get();
             if (pi.getRoomMonitoring() != null) {
+                log.info("Deleting Raspberry Pi from the room...");
                 pi.getRoomMonitoring().setRaspberryPi(null);
                 monitoringRepository.save(pi.getRoomMonitoring());
             }
             raspberryPiRepository.deleteById(id);
+            log.info("Raspberry Pi deleted.");
         }
     }
 
@@ -129,6 +138,7 @@ public class RaspberryServiceImpl implements RaspberryService {
     public void retryConnection(UUID raspberry_id) {
         RaspberryPi pi = raspberryPiRepository.findById(raspberry_id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberry_id + " was not found."));
+        log.info("Retrying connection with Raspberry Pi.");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
@@ -148,6 +158,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         pi.setRoomMonitoring(monitoring);
         monitoring.setRaspberryPi(pi);
         monitoringRepository.save(monitoring);
+        log.info("Making Raspberry Pi to check new config...");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
@@ -155,6 +166,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                         null,
                         pi,
                         notificationClient));
+        log.info("Added new room for Raspberry Pi.");
         return raspberryPiRepository.save(pi);
     }
 
@@ -171,6 +183,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         pi.setRoomMonitoring(null);
         monitoring.setRaspberryPi(null);
         monitoringRepository.save(monitoring);
+        log.info("Making Raspberry Pi to check new config...");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
@@ -178,6 +191,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                         null,
                         pi,
                         notificationClient));
+        log.info("Removed room from Raspberry Pi.");
         return raspberryPiRepository.save(pi);
     }
 }

@@ -45,6 +45,7 @@ public class SensorStationServiceImpl implements SensorStationService {
         SensorStation station = sensorRepository.save(sensorStation);
         RoomMonitoring monitoring = station.getRoomMonitoring();
         if (monitoring != null && monitoring.getRaspberryPi() != null) {
+            log.info("Notifying Raspberry Pi with new sensor being added...");
             eventPublisher.publishEvent(
                     new NotifyRaspberryCommand(
                             new StateChangeNotificationDTO(UpdateType.SENSOR_ADD, LocalDateTime.now()),
@@ -53,6 +54,7 @@ public class SensorStationServiceImpl implements SensorStationService {
                             monitoring.getRaspberryPi(),
                             notificationClient));
         }
+        log.info("Added sensor into the system.");
         return station;
     }
 
@@ -63,6 +65,7 @@ public class SensorStationServiceImpl implements SensorStationService {
             boolean notifyRasp = false;
             if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().equals(sensor.getRoomMonitoring())) {
                 sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
+                log.info("Changing the room of sensor...");
                 notifyRasp = true;
             }
             Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
@@ -78,6 +81,7 @@ public class SensorStationServiceImpl implements SensorStationService {
             SensorStation saved = sensorRepository.save(sensor);
             if (notifyRasp) {
                 if (saved.getRoomMonitoring().getRaspberryPi() != null) {
+                    log.info("Notifying new Raspberry Pi of new sensor...");
                     eventPublisher.publishEvent(
                             new NotifyRaspberryCommand(
                                     new StateChangeNotificationDTO(UpdateType.SENSOR_ADD, LocalDateTime.now()),
@@ -87,6 +91,7 @@ public class SensorStationServiceImpl implements SensorStationService {
                                     notificationClient));
                 }
                 if (prevMonitoring != null && prevMonitoring.getRaspberryPi() != null) {
+                    log.info("Notifying old Raspberry Pi of sensor removal...");
                     eventPublisher.publishEvent(
                             new NotifyRaspberryCommand(
                                     new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
@@ -96,6 +101,7 @@ public class SensorStationServiceImpl implements SensorStationService {
                                     notificationClient));
                 }
             }
+            log.info("Sensor updated.");
             return saved;
         }).orElseThrow(() -> new NotFoundException("Sensor station with id " + id + " was not found."));
     }
@@ -112,7 +118,9 @@ public class SensorStationServiceImpl implements SensorStationService {
                 .orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
         RoomMonitoring monitoring = station.getRoomMonitoring();
         sensorRepository.deleteById(id);
+        log.info("Sensor is deleted.");
         if (monitoring != null && monitoring.getRaspberryPi() != null) {
+            log.info("Notifying Raspberry of deleted sensor...");
             eventPublisher.publishEvent(
                     new NotifyRaspberryCommand(
                             new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
