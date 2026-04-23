@@ -15,7 +15,7 @@ public interface NotificationClient {
     @PostMapping("/api/notify")
     ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
                                                      @RequestBody StateChangeNotificationDTO notification,
-                                                     @RequestParam UUID sensorId);
+                                                     @RequestParam UUID[] sensorIds);
     @PostMapping("/api/notify")
     ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
                                                      @RequestBody StateChangeNotificationDTO notification);

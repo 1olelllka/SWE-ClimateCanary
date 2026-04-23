@@ -7,5 +7,8 @@ public enum UpdateType {
     ABSENCE,
     SETUP,
     CLOCK_IN,
-    CLOCK_OUT
+    CLOCK_OUT,
+    SENSOR_DELETE,
+    SENSOR_ADD,
+    FLUSH
 }

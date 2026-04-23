@@ -47,8 +47,9 @@ public class SensorStationServiceImpl implements SensorStationService {
         if (monitoring != null && monitoring.getRaspberryPi() != null) {
             eventPublisher.publishEvent(
                     new NotifyRaspberryCommand(
-                            new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
-                            station.getId(),
+                            new StateChangeNotificationDTO(UpdateType.SENSOR_ADD, LocalDateTime.now()),
+                            station.getReadId(),
+                            station.getWriteId(),
                             monitoring.getRaspberryPi(),
                             notificationClient));
         }
@@ -59,8 +60,10 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
         return sensorRepository.findById(id).map(sensor -> {
+            boolean notifyRasp = false;
             if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().equals(sensor.getRoomMonitoring())) {
                 sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
+                notifyRasp = true;
             }
             Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
                 if (!name.equals(sensor.getName())) {
@@ -71,14 +74,27 @@ public class SensorStationServiceImpl implements SensorStationService {
             });
             Optional.ofNullable(sensorStation.getStatus()).ifPresent(sensor::setStatus);
             Optional.ofNullable(sensorStation.getLastHeartBeat()).ifPresent(sensor::setLastHeartBeat);
+            RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             SensorStation saved = sensorRepository.save(sensor);
-            if (saved.getRoomMonitoring() != null && saved.getRoomMonitoring().getRaspberryPi() != null) {
-                eventPublisher.publishEvent(
-                        new NotifyRaspberryCommand(
-                                new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
-                                id,
-                                saved.getRoomMonitoring().getRaspberryPi(),
-                                notificationClient));
+            if (notifyRasp) {
+                if (saved.getRoomMonitoring().getRaspberryPi() != null) {
+                    eventPublisher.publishEvent(
+                            new NotifyRaspberryCommand(
+                                    new StateChangeNotificationDTO(UpdateType.SENSOR_ADD, LocalDateTime.now()),
+                                    id,
+                                    sensor.getWriteId(),
+                                    saved.getRoomMonitoring().getRaspberryPi(),
+                                    notificationClient));
+                }
+                if (prevMonitoring != null && prevMonitoring.getRaspberryPi() != null) {
+                    eventPublisher.publishEvent(
+                            new NotifyRaspberryCommand(
+                                    new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
+                                    id,
+                                    sensor.getWriteId(),
+                                    prevMonitoring.getRaspberryPi(),
+                                    notificationClient));
+                }
             }
             return saved;
         }).orElseThrow(() -> new NotFoundException("Sensor station with id " + id + " was not found."));
@@ -99,8 +115,9 @@ public class SensorStationServiceImpl implements SensorStationService {
         if (monitoring != null && monitoring.getRaspberryPi() != null) {
             eventPublisher.publishEvent(
                     new NotifyRaspberryCommand(
-                            new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now()),
-                            null,
+                            new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
+                            id,
+                            station.getWriteId(),
                             monitoring.getRaspberryPi(),
                             notificationClient));
         }
