@@ -50,19 +50,41 @@ public class AbsenceServiceImpl implements AbsenceService {
         if (absence.getAssignedTo().equals(absence.getUser().getId())) {
             throw new ValidationException("Assigned person must not be the same as you.");
         }
+
         Optional<Userx> manager = userxRepository.findById(absence.getAssignedTo());
         if (manager.isEmpty()) {
             throw new NotFoundException("Manager with id " + absence.getAssignedTo() + " was not found.");
         }
-        Set<String> authorities = manager.get().getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+
+        Set<String> authorities = manager.get().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
+
         if (!authorities.contains("CAN_MANAGE_ABSENCES")) {
             throw new ForbiddenException("Assigned person does not have manager rights.");
         }
+
         UUID id = absence.getUser().getId();
-        Userx user = userxRepository.findById(id).orElseThrow(() -> new NotFoundException("User with id " + id + " was not found"));
-        if (!user.getMyRoom().getDepartment().getId().equals(manager.get().getMyRoom().getDepartment().getId())) {
+        Userx user = userxRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("User with id " + id + " was not found"));
+
+        Userx managerUser = manager.get();
+
+        if (user.getMyRoom() == null || user.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("User has no assigned room or department.");
+        }
+
+        if (managerUser.getMyRoom() == null || managerUser.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("Manager has no assigned room or department.");
+        }
+
+        if (!user.getMyRoom().getDepartment().getId()
+                .equals(managerUser.getMyRoom().getDepartment().getId())) {
             throw new ForbiddenException("You cannot apply for absence to this manager.");
         }
+
+        absence.setStatus(AbsenceStatus.PENDING);
+
         return absenceRepository.save(absence);
     }
 

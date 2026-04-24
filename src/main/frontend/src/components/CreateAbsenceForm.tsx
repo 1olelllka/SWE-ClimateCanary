@@ -138,7 +138,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({ currentUse
                 >
                     <option value="" disabled>Select a manager...</option>
                     {/*UUID im Moment noch hardgecodet*/}
-                    <option value="6dafcb35-9ca2-4eed-a3ae-2118b0ab5694">
+                    <option value="ef119529-90b3-4db7-b4b5-bc00fcc4dd31">
                         David Depthead
                     </option>
                 </select>

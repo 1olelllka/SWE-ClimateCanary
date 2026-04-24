@@ -25,7 +25,9 @@ public class AbsenceListMapper implements DTOMapper<Absence, AbsenceListDTO> {
                 entity.getUser().getId(),
                 entity.getUser().getFirstName(),
                 entity.getUser().getLastName(),
-                entity.getUser().getMyRoom() != null ? entity.getUser().getMyRoom().getId() : null,
+                entity.getUser().getMyRoom() != null
+                        ? entity.getUser().getMyRoom().getRoomNumber()
+                        : null,
                 entity.getStartDate(),
                 entity.getEndDate(),
                 entity.getTypeOfAbsence(),
