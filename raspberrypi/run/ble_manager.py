@@ -37,8 +37,7 @@ class BLEManager:
         
         while self.client and self.client.is_connected:
             try:
-                # We use wait_for so the loop can wake up every 1 second to check 
-                # if the Arduino is still connected, rather than blocking forever.
+                # we use wait_for so the loop can wake up every 1 second to check 
                 command = await asyncio.wait_for(self.ble_inbox.get(), timeout=1.0)
                 
                 logger.info(f"[Pi -> Arduino] Transmitting: {command}")
@@ -48,11 +47,10 @@ class BLEManager:
                 self.ble_inbox.task_done()
                 
             except asyncio.TimeoutError:
-                # Normal behavior: No commands in the inbox this second. Loop again.
                 continue
             except Exception as e:
                 logger.error(f"[BLE] Failed to send command to Arduino: {e}")
-                self.disconnect_event.set() # Force a reconnect
+                self.disconnect_event.set() 
                 break
 
     async def run(self):
@@ -63,7 +61,6 @@ class BLEManager:
             try:
                 self.disconnect_event.clear()
                 
-                # 1. Scan for the specific Arduino
                 device = await BleakScanner.find_device_by_filter(
                     lambda d, _: d.name and self.target_name in d.name,
                     timeout=15.0
@@ -76,22 +73,20 @@ class BLEManager:
 
                 logger.info(f"[BLE] Found '{self.target_name}'. Connecting...")
                 
-                # 2. Connect and register the disconnect callback
                 async with BleakClient(device, timeout=20.0, disconnected_callback=self.disconnected_callback) as client:
+                    
+                    self.disconnect_event.clear()
+
                     self.client = client
                     logger.info("[BLE] Successfully connected to Arduino!")
                     await self.db.log_event("BLE", f"Connected to {self.target_name}", "INFO")
 
-                    # 3. Start listening for incoming sensor data
                     await client.start_notify(self.char_uuid, self.notification_handler)
 
-                    # 4. Start the background sender task to handle outbound messages
                     sender_task = asyncio.create_task(self._sender_task())
 
-                    # 5. Keep the connection alive until a disconnect occurs
                     await self.disconnect_event.wait()
                     
-                    # CLEANUP (If we reach here, connection was lost)
                     sender_task.cancel()
                     self.client = None
 

@@ -57,9 +57,9 @@ class DatabaseManager:
             await db.commit()
             logger.info("Database initialized successfully with all tables.")
 
-    async def insert_measurement(self, temp: float, moisture: float, co2: float):
+    async def insert_measurement(self, temp: float, moisture: float, co2: float, timestamp: str = None):
         """ Insert current measurements into the corresponding table """
-        now = datetime.now().isoformat()
+        now = timestamp if timestamp else datetime.now().isoformat()
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
