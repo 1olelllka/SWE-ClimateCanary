@@ -4,10 +4,9 @@ import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
 import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
-import '../styles/TimeFilter.css';
 import { WarningBanner } from '../components/WarningBanner';
-import { DashboardCalendar } from '../components/Calendar';
 import { PageHeader } from "../components/PageHeader";
+import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
 
 interface ClimateData {
     timestamp: string;
@@ -24,9 +23,7 @@ interface ActiveWarning {
 }
 
 export const EmployeeDashboard: React.FC = () => {
-    const [timeFilter, setTimeFilter] = useState('Week');
     const [sidebarVisible, setSidebarVisible] = useState(false);
-    const [dateRange, setDateRange] = useState<Date[] | null>(null);
 
     const [roomId, setRoomId] = useState<string | null>(null);
     const [roomLabel, setRoomLabel] = useState('My Office');
@@ -137,31 +134,7 @@ export const EmployeeDashboard: React.FC = () => {
                             />
                         )}
 
-                        <div className="chart-card">
-                            <div className="chart-header">
-                                <div className="time-filters">
-                                    {['Day', 'Week', 'Month'].map(f => (
-                                        <button
-                                            key={f}
-                                            className={`time-filter-btn ${timeFilter === f ? 'active' : ''}`}
-                                            onClick={() => { setTimeFilter(f); setDateRange(null); }}
-                                        >
-                                            {f}
-                                        </button>
-                                    ))}
-                                    <DashboardCalendar
-                                        dateRange={dateRange}
-                                        setDateRange={setDateRange}
-                                        isActive={timeFilter === 'Custom'}
-                                        onActivate={() => setTimeFilter('Custom')}
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ height: '250px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px dashed #dde4ec', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                PrimeReact Line Chart Placeholder
-                            </div>
-                        </div>
+                        {roomId && <ClimateHistoryChart roomId={roomId} />}
                     </>
                 )}
             </div>
