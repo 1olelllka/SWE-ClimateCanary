@@ -69,6 +69,6 @@ void DisplayManager::showReading(const SensorReading& reading) {
   lcd.print(reading.humidityPct, 0);
 
   lcd.setCursor(0, 1);
-  lcd.print("P:");
-  lcd.print(reading.pressurehPa, 0);
+  lcd.print("CO2:");
+  lcd.print(reading.airQualityIndex, 0);
 }

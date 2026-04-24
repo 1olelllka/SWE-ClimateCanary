@@ -11,6 +11,7 @@ bool BLEManager::begin(DisplayManager* display) {
     return false;
   }
 
+  BLE.setAdvertisingInterval(32);
   BLE.setLocalName(DEVICE_NAME);
   BLE.setDeviceName(DEVICE_NAME);
   BLE.setAdvertisedService(service);
@@ -22,7 +23,7 @@ bool BLEManager::begin(DisplayManager* display) {
   service.addCharacteristic(rxCharacteristic);
   BLE.addService(service);
 
-  BLE.advertise();
+  //BLE.advertise();
   return true;
 }
 
@@ -58,11 +59,32 @@ bool BLEManager::isConnected() const {
   return currentCentral && currentCentral.connected();
 }
 
-void BLEManager::sendMessage(const String& msg) {
-  txCharacteristic.writeValue(msg);
+String BLEManager::serializeReading(const SensorReading& r) const {
+  if (!r.valid) {
+    return "{\"valid\":false}";
+  }
+
+  String json;
+  json.reserve(64);
+
+  json += "{";
+  json += "\"temperature\":";
+  json += String(r.temperatureC, 2);
+  json += ",\"moisture\":";
+  json += String(r.humidityPct, 2);
+  json += ",\"co2\":";
+  json += String(r.airQualityIndex, 2);
+  json += "}";
+
+  return json;
+}
+
+void BLEManager::sendReading(const SensorReading& reading) {
+  String payload = serializeReading(reading);
+  txCharacteristic.writeValue(payload);
 
   Serial.print("Sent to Pi: ");
-  Serial.println(msg);
+  Serial.println(payload);
 }
 
 void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic) {
