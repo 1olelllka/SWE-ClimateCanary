@@ -12,13 +12,16 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
 
     @Override
     public LimitDTO mapTo(RoomMonitoring entity) {
+        TemperatureLimit temp = entity.getTempLimit();
+        HumidityLimit    hum  = entity.getHumLimit();
+        PollutionLimit   pol  = entity.getPolLimit();
         return new LimitDTO(
                 entity.getRoomId(),
-                entity.getTempLimit().getMinVal(),
-                entity.getTempLimit().getMaxVal(),
-                entity.getHumLimit().getMaxVal(),
-                entity.getHumLimit().getMinVal(),
-                entity.getPolLimit().getMaxVal()
+                temp != null && temp.getMinVal() != null ? temp.getMinVal() : 18f,
+                temp != null ? temp.getMaxVal() : 26f,
+                hum  != null ? hum.getMaxVal()  : 70f,
+                hum  != null && hum.getMinVal()  != null ? hum.getMinVal()  : 30f,
+                pol  != null ? pol.getMaxVal()  : 800f
         );
     }
 

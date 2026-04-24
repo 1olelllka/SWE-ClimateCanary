@@ -115,8 +115,8 @@ class LimitMapperUnitTests {
         }
 
         @Test
-        @DisplayName("throws NullPointerException when tempLimit is null")
-        void throwsWhenTempLimitIsNull() {
+        @DisplayName("returns temperature defaults when tempLimit is null")
+        void returnsDefaultsWhenTempLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(null)
@@ -124,12 +124,18 @@ class LimitMapperUnitTests {
                     .polLimit(PollutionLimit.builder().maxVal(1000).build())
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(1000f);
         }
 
         @Test
-        @DisplayName("throws NullPointerException when humLimit is null")
-        void throwsWhenHumLimitIsNull() {
+        @DisplayName("returns humidity defaults when humLimit is null")
+        void returnsDefaultsWhenHumLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
@@ -137,12 +143,18 @@ class LimitMapperUnitTests {
                     .polLimit(PollutionLimit.builder().maxVal(1000).build())
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(1000f);
         }
 
         @Test
-        @DisplayName("throws NullPointerException when polLimit is null")
-        void throwsWhenPolLimitIsNull() {
+        @DisplayName("returns CO2 default when polLimit is null")
+        void returnsDefaultWhenPolLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
@@ -150,7 +162,29 @@ class LimitMapperUnitTests {
                     .polLimit(null)
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
+        }
+
+        @Test
+        @DisplayName("returns all defaults when all limits are null")
+        void returnsAllDefaultsWhenAllLimitsNull() {
+            RoomMonitoring entity = RoomMonitoring.builder()
+                    .roomId(UUID.randomUUID())
+                    .build();
+
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
         }
     }
 
