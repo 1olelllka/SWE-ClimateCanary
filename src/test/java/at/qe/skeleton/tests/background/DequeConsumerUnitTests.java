@@ -3,10 +3,10 @@ package at.qe.skeleton.tests.background;
 import at.qe.skeleton.background.DequeConsumer;
 import at.qe.skeleton.commands.CommandDeque;
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
-import at.qe.skeleton.dtos.UpdateType;
-import at.qe.skeleton.model.NotifyDeadLetter;
-import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
+import at.qe.skeleton.model.DeviceStatus;
+import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.repositories.RaspberryPiRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,8 +14,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -23,11 +22,17 @@ import static org.mockito.Mockito.*;
 public class DequeConsumerUnitTests {
 
     @Mock
-    private NotifyDeadLetterRepository repository;
+    RaspberryPiRepository piRepository;
 
     @InjectMocks
     private DequeConsumer dequeConsumer;
+
     private NotifyRaspberryCommand notifyCommand;
+
+    @BeforeEach
+    void setUp() {
+        notifyCommand = mock(NotifyRaspberryCommand.class);
+    }
 
     @Test
     void testThatHandleFailureRequeuesCommandWhenUnderMaxAttempts() {
@@ -35,36 +40,42 @@ public class DequeConsumerUnitTests {
             dequeConsumer.handleFailure(notifyCommand);
 
             deque.verify(() -> CommandDeque.addFirst(notifyCommand));
-            verify(repository, never()).save(any());
+            verify(piRepository, never()).save(any());
         }
     }
 
     @Test
-    void testThatHandleFailurePersistsDeadLetterAfterMaxAttempts() {
-        StateChangeNotificationDTO dto = new StateChangeNotificationDTO(UpdateType.SENSORS, LocalDateTime.now());
-        notifyCommand = mock(NotifyRaspberryCommand.class);
-        when(notifyCommand.getDto()).thenReturn(dto);
+    void testThatHandleFailureMarksRaspberryOfflineAfterMaxAttempts() {
+        RaspberryPi pi = new RaspberryPi();
+        when(notifyCommand.getRaspberry()).thenReturn(pi);
+
         try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
-            // exhaust all attempts
+            // first MAX_ATTEMPTS calls re-queue, the next one triggers offline
             for (int i = 0; i <= DequeConsumer.MAX_ATTEMPTS; i++) {
                 dequeConsumer.handleFailure(notifyCommand);
             }
-            verify(repository, atLeastOnce()).save(any(NotifyDeadLetter.class));
+
+            verify(piRepository, atLeastOnce()).save(pi);
+            assertEquals(DeviceStatus.OFFLINE, pi.getStatus());
         }
     }
 
     @Test
-    void testThatHandleFailureResetsAttemptsAfterDeadLetter() {
+    void testThatHandleFailureResetsAttemptsAfterMaxAttempts() {
+        RaspberryPi pi = new RaspberryPi();
+        when(notifyCommand.getRaspberry()).thenReturn(pi);
+
         try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
-            // exhaust attempts to trigger dead letter + reset
-            for (int i = 1; i <= DequeConsumer.MAX_ATTEMPTS; i++) {
+            // exhaust attempts to trigger offline + reset
+            for (int i = 0; i <= DequeConsumer.MAX_ATTEMPTS; i++) {
                 dequeConsumer.handleFailure(notifyCommand);
             }
 
-            // after reset, next failure should re-queue instead of persisting again
+            // after reset, next failure should re-queue again, not persist
             dequeConsumer.handleFailure(notifyCommand);
 
-            deque.verify(() -> CommandDeque.addFirst(notifyCommand), times(5));
+            // MAX_ATTEMPTS re-queues before offline, plus 1 after reset
+            deque.verify(() -> CommandDeque.addFirst(notifyCommand), times(DequeConsumer.MAX_ATTEMPTS + 1));
         }
     }
 }

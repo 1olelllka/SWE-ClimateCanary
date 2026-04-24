@@ -1,19 +1,22 @@
 package at.qe.skeleton.services.impl;
 
+import at.qe.skeleton.commands.NotifyRaspberryCommand;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
-import at.qe.skeleton.repositories.RoomOccupancyRepository;
-import at.qe.skeleton.repositories.RoomRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.RoomService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -25,6 +28,9 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomMonitoringRepository monitoringRepository;
     private final UserxRepository userxRepository;
+    private final RaspberryPiRepository raspberryPiRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final NotificationClient notificationClient;
 
     public Page<Room> getPageOfRooms(Pageable pageable) {return roomRepository.findAll(pageable);}
 
@@ -73,9 +79,24 @@ public class RoomServiceImpl implements RoomService {
         }).orElseThrow(() -> new NotFoundException("Room not found with id: " + id));
     }
 
+    @Override
+    @Transactional
     public void deleteRoom(UUID id) {
         roomRepository.deleteById(id);
-//        roomOccupancyRepository.deleteById(id);
+        RoomMonitoring monitoring = monitoringRepository.findById(id).orElse(null);
+        if (monitoring != null && monitoring.getRaspberryPi() != null) {
+            monitoring.getRaspberryPi().setRoomMonitoring(null);
+            raspberryPiRepository.save(monitoring.getRaspberryPi());
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.FLUSH, LocalDateTime.now()),
+                            null,
+                            null,
+                            monitoring.getRaspberryPi(),
+                            notificationClient)
+            );
+        }
+        monitoringRepository.deleteById(id);
     }
 //
 //    public Department getDepartmentOfRoom(UUID roomId) {

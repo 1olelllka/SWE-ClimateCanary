@@ -18,7 +18,9 @@ public class SensorStation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
-    private UUID id;
+    private UUID readId;
+    @Builder.Default
+    private UUID writeId = UUID.randomUUID();
 
     @Column(nullable = false)
     private String name;

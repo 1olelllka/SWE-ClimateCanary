@@ -7,8 +7,10 @@ import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
-import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
+import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.RoomOccupancy;
+import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
@@ -35,7 +37,6 @@ public class RaspberryServiceImpl implements RaspberryService {
     private final RoomMonitoringRepository monitoringRepository;
     private final NotificationClient notificationClient;
     private final ApplicationEventPublisher eventPublisher;
-    private final NotifyDeadLetterRepository deadLetterRepository;
     private final RoomOccupancyRepository occupancyRepository;
 
     @Override
@@ -117,7 +118,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
         Set<UUID> sensors = pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStations() != null
                 ? pi.getRoomMonitoring().getSensorStations().stream()
-                        .map(SensorStation::getId)
+                        .map(SensorStation::getReadId)
                         .collect(Collectors.toSet())
                 : Set.of();
         return new PiConfigDTO(pi.getFrequency(), sensors);
@@ -128,32 +129,10 @@ public class RaspberryServiceImpl implements RaspberryService {
     public void retryConnection(UUID raspberry_id) {
         RaspberryPi pi = raspberryPiRepository.findById(raspberry_id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberry_id + " was not found."));
-        RoomMonitoring monitoring = pi.getRoomMonitoring();
-        if (monitoring != null) {
-            if (monitoring.getSensorStations() != null) {
-                for (SensorStation station : monitoring.getSensorStations()) {
-                    eventPublisher.publishEvent(
-                            new NotifyRaspberryCommand(
-                                    new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
-                                    station.getId(), pi, notificationClient));
-                }
-            }
-            List<NotifyDeadLetter> letters = deadLetterRepository.findByRaspberryPi(pi.getId());
-            letters.forEach(letter -> {
-                if (letter.getUpdateType() != UpdateType.SETUP) {
-                    eventPublisher.publishEvent(
-                            new NotifyRaspberryCommand(
-                                    new StateChangeNotificationDTO(letter.getUpdateType(), letter.getTriggeredAt()),
-                                    null, pi, notificationClient));
-                }
-            });
-            deadLetterRepository.deleteAll(letters);
-        } else {
-            eventPublisher.publishEvent(
-                    new NotifyRaspberryCommand(
-                            new StateChangeNotificationDTO(UpdateType.SETUP, LocalDateTime.now()),
-                            null, pi, notificationClient));
-        }
+        eventPublisher.publishEvent(
+                new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
+                        null, null, pi, notificationClient));
     }
 
     @Override
@@ -166,12 +145,16 @@ public class RaspberryServiceImpl implements RaspberryService {
         if (pi.getRoomMonitoring() != null) {
             throw new ConflictException("Raspberry Pi already has a room assigned. Remove the current room first.");
         }
-        if (monitoring.getRaspberryPi() != null) {
-            throw new ConflictException("Room is already assigned to a Raspberry Pi.");
-        }
         pi.setRoomMonitoring(monitoring);
         monitoring.setRaspberryPi(pi);
         monitoringRepository.save(monitoring);
+        eventPublisher.publishEvent(
+                new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
+                        null,
+                        null,
+                        pi,
+                        notificationClient));
         return raspberryPiRepository.save(pi);
     }
 
@@ -188,6 +171,13 @@ public class RaspberryServiceImpl implements RaspberryService {
         pi.setRoomMonitoring(null);
         monitoring.setRaspberryPi(null);
         monitoringRepository.save(monitoring);
+        eventPublisher.publishEvent(
+                new NotifyRaspberryCommand(
+                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
+                        null,
+                        null,
+                        pi,
+                        notificationClient));
         return raspberryPiRepository.save(pi);
     }
 }

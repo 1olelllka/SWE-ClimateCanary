@@ -128,6 +128,7 @@ public class AbsenceServiceImpl implements AbsenceService {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
                         null,
+                        null,
                         monitoring.getRaspberryPi(),
                         notificationClient
                 ));
@@ -154,6 +155,7 @@ public class AbsenceServiceImpl implements AbsenceService {
             if (monitoring.getRaspberryPi() != null) {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
                         new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
+                        null,
                         null,
                         monitoring.getRaspberryPi(),
                         notificationClient

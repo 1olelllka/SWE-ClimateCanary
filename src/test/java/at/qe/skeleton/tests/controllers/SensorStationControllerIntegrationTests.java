@@ -116,7 +116,8 @@ public class SensorStationControllerIntegrationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.readId").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.writeId").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Hallway-Sensor"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("OFFLINE"));
     }
@@ -147,7 +148,7 @@ public class SensorStationControllerIntegrationTests {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor", null, null, UUID.randomUUID());
-        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getReadId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
@@ -162,7 +163,7 @@ public class SensorStationControllerIntegrationTests {
         sensorService.createNewSensorStation(SensorStation.builder().name("Hallway-Sensor 2").status(DeviceStatus.OFFLINE).roomMonitoring(room2).build()
         );
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor 2", null, null, savedRoom.getRoomId());
-        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getReadId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isConflict());
@@ -174,11 +175,12 @@ public class SensorStationControllerIntegrationTests {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor 2", null, DeviceStatus.ONLINE, null);
-        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getId())
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + station.getReadId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.readId").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.writeId").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Hallway-Sensor 2"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("ONLINE"));
     }
@@ -195,9 +197,10 @@ public class SensorStationControllerIntegrationTests {
     public void testThatGetSpecificStationReturnsHttp200IfSuccessful() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/sensor-stations/" + station.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/sensor-stations/" + station.getReadId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(station.getId().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.readId").value(station.getReadId().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.writeId").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("OFFLINE"));
     }
 
@@ -213,7 +216,7 @@ public class SensorStationControllerIntegrationTests {
     public void testThatDeleteSensorReturnsHttp204IfSuccessful() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/" + station.getId()))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/" + station.getReadId()))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
     }
 

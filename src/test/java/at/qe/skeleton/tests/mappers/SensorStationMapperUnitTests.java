@@ -26,10 +26,11 @@ class SensorStationMapperUnitTests {
         mapper = new SensorStationMapper();
     }
 
-    private SensorStation buildStation(UUID id, String name, DeviceStatus status,
+    private SensorStation buildStation(UUID readId, UUID writeId, String name, DeviceStatus status,
                                        RoomMonitoring roomMonitoring) {
         SensorStation station = new SensorStation();
-        station.setId(id);
+        station.setReadId(readId);
+        station.setWriteId(writeId);
         station.setName(name);
         station.setStatus(status);
         station.setRoomMonitoring(roomMonitoring);
@@ -56,17 +57,19 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("maps all fields correctly when roomMonitoring and raspberryPi are present")
         void mapsAllFieldsWithRoomAndPi() {
-            UUID stationId = UUID.randomUUID();
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
             UUID roomId = UUID.randomUUID();
             UUID piId = UUID.randomUUID();
             RaspberryPi pi = buildPi(piId);
             RoomMonitoring room = buildRoom(roomId, pi);
-            SensorStation station = buildStation(stationId, "Station Alpha", DeviceStatus.ONLINE, room);
+            SensorStation station = buildStation(readId, writeId,"Station Alpha", DeviceStatus.ONLINE, room);
 
             SensorStationDTO result = mapper.mapTo(station);
 
             assertThat(result).isNotNull();
-            assertThat(result.id()).isEqualTo(stationId);
+            assertThat(result.readId()).isEqualTo(readId);
+            assertThat(result.writeId()).isEqualTo(writeId);
             assertThat(result.name()).isEqualTo("Station Alpha");
             assertThat(result.status()).isEqualTo(DeviceStatus.ONLINE);
             assertThat(result.roomId()).isEqualTo(roomId);
@@ -76,12 +79,14 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("maps roomId and connectedToPiId to null when roomMonitoring is null")
         void mapsNullWhenNoRoom() {
-            UUID stationId = UUID.randomUUID();
-            SensorStation station = buildStation(stationId, "Station Alpha", DeviceStatus.OFFLINE, null);
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
+            SensorStation station = buildStation(readId, writeId, "Station Alpha", DeviceStatus.OFFLINE, null);
 
             SensorStationDTO result = mapper.mapTo(station);
 
-            assertThat(result.id()).isEqualTo(stationId);
+            assertThat(result.readId()).isEqualTo(readId);
+            assertThat(result.writeId()).isEqualTo(writeId);
             assertThat(result.name()).isEqualTo("Station Alpha");
             assertThat(result.status()).isEqualTo(DeviceStatus.OFFLINE);
             assertThat(result.roomId()).isNull();
@@ -91,10 +96,11 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("maps connectedToPiId to null when roomMonitoring exists but raspberryPi is null")
         void mapsNullPiWhenRoomHasNoPi() {
-            UUID stationId = UUID.randomUUID();
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
             UUID roomId = UUID.randomUUID();
             RoomMonitoring room = buildRoom(roomId, null);
-            SensorStation station = buildStation(stationId, "Station Alpha", DeviceStatus.ONLINE, room);
+            SensorStation station = buildStation(readId, writeId, "Station Alpha", DeviceStatus.ONLINE, room);
 
             SensorStationDTO result = mapper.mapTo(station);
 
@@ -105,7 +111,9 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("maps OFFLINE status correctly")
         void mapsOfflineStatus() {
-            SensorStation station = buildStation(UUID.randomUUID(), "Station", DeviceStatus.OFFLINE, null);
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
+            SensorStation station = buildStation(readId, writeId, "Station", DeviceStatus.OFFLINE, null);
 
             SensorStationDTO result = mapper.mapTo(station);
 
@@ -115,7 +123,9 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("maps ONLINE status correctly")
         void mapsOnlineStatus() {
-            SensorStation station = buildStation(UUID.randomUUID(), "Station", DeviceStatus.ONLINE, null);
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
+            SensorStation station = buildStation(readId, writeId, "Station", DeviceStatus.ONLINE, null);
 
             SensorStationDTO result = mapper.mapTo(station);
 
@@ -136,8 +146,11 @@ class SensorStationMapperUnitTests {
         @Test
         @DisplayName("throws UnsupportedOperationException — read DTO is not used for writes")
         void throwsUnsupportedOperationException() {
+            UUID readId = UUID.randomUUID();
+            UUID writeId = UUID.randomUUID();
             SensorStationDTO dto = new SensorStationDTO(
-                    UUID.randomUUID(),
+                    readId,
+                    writeId,
                     "Station Alpha",
                     DeviceStatus.OFFLINE,
                     UUID.randomUUID(),

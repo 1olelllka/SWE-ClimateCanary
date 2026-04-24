@@ -99,7 +99,7 @@ class SensorStationCreateMapperUnitTests {
         void doesNotSetId() {
             SensorStation result = mapper.mapFrom(buildDto("Station Alpha", roomId));
 
-            assertThat(result.getId()).isNull();
+            assertThat(result.getReadId()).isNull();
         }
 
         @Test
