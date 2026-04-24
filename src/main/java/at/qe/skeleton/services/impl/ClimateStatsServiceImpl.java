@@ -10,6 +10,7 @@ import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.model.AggregatedStats;
 import at.qe.skeleton.model.ClimateStats;
 import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.Granularity;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
@@ -120,7 +121,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDate from = resolveFrom(timeframe, to);
 
         List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomIdAndDateBetween(roomId, from, to);
+                .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
 
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
