@@ -1,13 +1,16 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.dtos.RoomCreateDTO;
 import at.qe.skeleton.dtos.RoomDTO;
 import at.qe.skeleton.dtos.RoomPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
+import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.mappers.RoomMapper;
 import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.RoomService;
 import jakarta.validation.Valid;
@@ -27,11 +30,14 @@ public class RoomController {
 
     private RoomService roomService;
     private RoomMapper roomMapper;
+    private LimitMapper limitMapper;
 
     public RoomController(RoomService roomService,
-                          RoomMapper roomMapper) {
+                          RoomMapper roomMapper,
+                          LimitMapper mapper) {
         this.roomService = roomService;
         this.roomMapper = roomMapper;
+        this.limitMapper = mapper;
     }
 
     @GetMapping("")
@@ -82,6 +88,19 @@ public class RoomController {
     public ResponseEntity<Void> deleteSpecificRoom(@PathVariable(name = "room_id") UUID id) {
         roomService.deleteRoom(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/{room_id}/limits")
+    public ResponseEntity<LimitDTO> getAllLimitsForTheRoom(@PathVariable(name = "room_id") UUID roomId) {
+        RoomMonitoring monitoring = roomService.getRoomMonitoring(roomId);
+        return new ResponseEntity<>(limitMapper.mapTo(monitoring), HttpStatus.OK);
+    }
+
+    @PatchMapping("/{room_id}/limits")
+    public ResponseEntity<LimitDTO> updateLimitsForTheRoom(@PathVariable(name = "room_id") UUID roomId,
+                                                           @RequestBody LimitDTO dto) {
+        RoomMonitoring monitoring = roomService.updateLimits(roomId, dto);
+        return new ResponseEntity<>(limitMapper.mapTo(monitoring), HttpStatus.OK);
     }
 
 }

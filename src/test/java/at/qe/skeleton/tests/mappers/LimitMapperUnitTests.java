@@ -162,7 +162,7 @@ class LimitMapperUnitTests {
         @DisplayName("maps all fields correctly")
         void mapsAllFields() {
             UUID roomId = UUID.randomUUID();
-            LimitDTO dto = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -184,7 +184,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("maps zero limit values correctly")
         void mapsZeroValues() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 0f, 0f, 0f, 0f, 0);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 0f, 0f, 0f, 0f, 0f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -198,7 +198,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("maps negative temperature limits correctly")
         void mapsNegativeTemperatureLimits() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), -20.0f, -5.0f, 60.0f, 20.0f, 800);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), -20.0f, -5.0f, 60.0f, 20.0f, 800f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -209,7 +209,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("does not set devices — left for service layer")
         void doesNotSetDevices() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -220,7 +220,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("does not set climate stats — left for service layer")
         void doesNotSetClimateStats() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -230,7 +230,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("does not set warnings — left for service layer")
         void doesNotSetWarnings() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -268,7 +268,7 @@ class LimitMapperUnitTests {
         @DisplayName("mapFrom then mapTo preserves all limit values")
         void dtoToEntityToDto() {
             UUID roomId = UUID.randomUUID();
-            LimitDTO original = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO original = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             LimitDTO result = mapper.mapTo(mapper.mapFrom(original));
 

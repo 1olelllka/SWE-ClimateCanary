@@ -2,11 +2,13 @@ package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.dtos.PiConfigDTO;
+import at.qe.skeleton.dtos.ReducedSensorDTO;
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
+import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.RoomOccupancy;
@@ -39,6 +41,7 @@ public class RaspberryServiceImpl implements RaspberryService {
     private final RoomMonitoringRepository monitoringRepository;
     private final NotificationClient notificationClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final LimitMapper limitMapper;
     private final RoomOccupancyRepository occupancyRepository;
 
     @Override
@@ -125,12 +128,12 @@ public class RaspberryServiceImpl implements RaspberryService {
     public PiConfigDTO getConfigForRaspberry(UUID id) {
         RaspberryPi pi = raspberryPiRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        Set<UUID> sensors = pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStations() != null
+        Set<ReducedSensorDTO> sensors = pi.getRoomMonitoring() != null && pi.getRoomMonitoring().getSensorStations() != null
                 ? pi.getRoomMonitoring().getSensorStations().stream()
-                        .map(SensorStation::getReadId)
+                        .map(sensor -> new ReducedSensorDTO(sensor.getName(), sensor.getReadId(), sensor.getWriteId()))
                         .collect(Collectors.toSet())
                 : Set.of();
-        return new PiConfigDTO(pi.getFrequency(), sensors);
+        return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(), id, pi.getFrequency(), limitMapper.mapTo(pi.getRoomMonitoring()), sensors);
     }
 
     @Override

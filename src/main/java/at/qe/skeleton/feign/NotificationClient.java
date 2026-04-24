@@ -1,5 +1,6 @@
 package at.qe.skeleton.feign;
 
+import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -19,4 +20,8 @@ public interface NotificationClient {
     @PostMapping("/api/notify")
     ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
                                                      @RequestBody StateChangeNotificationDTO notification);
+
+    @PostMapping("/api/notify/limits")
+    ResponseEntity<Void> notifyRaspberryAboutLimitsChange(URI baseUrl,
+                                                          @RequestBody LimitChangeNotificationDTO dto);
 }

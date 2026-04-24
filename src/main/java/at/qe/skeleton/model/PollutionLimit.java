@@ -24,4 +24,9 @@ public class PollutionLimit extends LimitValues {
 
     @OneToOne(mappedBy = "polLimit", fetch = FetchType.LAZY)
     private RoomMonitoring roomMonitoring;
+
+    @PrePersist
+    void prePersist() {
+        setMaxVal(70);
+    }
 }
