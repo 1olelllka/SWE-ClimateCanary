@@ -16,15 +16,20 @@ class AbsenceListMapperUnitTests {
     private final AbsenceListMapper mapper = new AbsenceListMapper();
 
     @Test
-    void testThatMapToShouldIncludeUserInfoAndRoomId() {
+    void testThatMapToShouldIncludeUserInfoAndRoomNumber() {
         // Arrange
         UUID absenceId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID roomId = UUID.randomUUID();
+        String roomNumber = "ENG-101";
         LocalDateTime start = LocalDateTime.now().plusDays(1);
         LocalDateTime end = LocalDateTime.now().plusDays(2);
 
-        Room room = Room.builder().id(roomId).build();
+        Room room = Room.builder()
+                .id(roomId)
+                .roomNumber(roomNumber)
+                .build();
+
         Userx user = TestDataUtil.createUserxEntity(null, room);
         user.setId(userId);
 
@@ -43,7 +48,7 @@ class AbsenceListMapperUnitTests {
         assertEquals(absenceId, result.id());
         assertEquals(userId, result.userId());
         assertEquals("John", result.firstName());
-        assertEquals(roomId, result.room());
+        assertEquals(roomNumber, result.roomNumber());
         assertEquals(entity.getTypeOfAbsence(), result.typeOfAbsence());
     }
 
@@ -58,12 +63,13 @@ class AbsenceListMapperUnitTests {
 
         assertNull(result.userId());
         assertNull(result.firstName());
-        assertNull(result.room());
+        assertNull(result.roomNumber());
 
         entity.setUser(Userx.builder().id(UUID.randomUUID()).myRoom(null).build());
         AbsenceListDTO resultWithUserNoRoom = mapper.mapTo(entity);
+
         assertNotNull(resultWithUserNoRoom.userId());
-        assertNull(resultWithUserNoRoom.room());
+        assertNull(resultWithUserNoRoom.roomNumber());
     }
 
     @Test
@@ -78,7 +84,7 @@ class AbsenceListMapperUnitTests {
                 userId,
                 "John",
                 "Doe",
-                UUID.randomUUID(),
+                "ENG-101",
                 now,
                 now.plusDays(1),
                 AbsenceType.ILLNESS,

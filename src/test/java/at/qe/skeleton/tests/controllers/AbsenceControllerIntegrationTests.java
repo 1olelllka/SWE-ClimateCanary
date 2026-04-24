@@ -269,7 +269,7 @@ public class AbsenceControllerIntegrationTests {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.mockedAbsence.getId().toString()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(this.mockedAbsence.getStatus().name()));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(dto.status().name()));
     }
 
     @Test
