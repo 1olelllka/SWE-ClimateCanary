@@ -2,11 +2,13 @@ package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
+import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
 import at.qe.skeleton.dtos.ReadingDTO;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
+import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.AggregatedStats;
 import at.qe.skeleton.model.ClimateStats;
 import at.qe.skeleton.model.RoomMonitoring;
@@ -38,7 +40,8 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final ClimateDataPointMapper climateMapper;
-    private final AggregatedStatsMapper aggregatedMapper;
+    private final AggregatedStatsMapper  aggregatedMapper;
+    private final LimitMapper            limitMapper;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -129,6 +132,13 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
 
         // this is just a fallback for now — should be removed once background job is running
         return groupRawByDay(roomId, from, to);
+    }
+
+    @Override
+    public LimitDTO getLimits(UUID roomId) {
+        RoomMonitoring room = roomMonitoringRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
+        return limitMapper.mapTo(room);
     }
 
     private boolean isWithinTimeWindow(LocalTime time, LocalTime start, LocalTime end) {

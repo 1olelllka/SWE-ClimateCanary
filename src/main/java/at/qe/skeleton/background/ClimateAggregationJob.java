@@ -7,8 +7,10 @@ import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +31,18 @@ public class ClimateAggregationJob {
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Value("${app.aggregation.run-on-startup:false}")
+    private boolean runOnStartup;
+
+    @PostConstruct
+    void init() {
+        if (runOnStartup) {
+            aggregateDaily();
+            aggregateWeekly();
+        }
+    }
+
+    @Scheduled(cron = "${app.aggregation.daily.cron:0 0 0 * * *}")
     @Transactional
     public void aggregateDaily() {
         log.info("Running daily climate aggregation...");
@@ -37,7 +50,7 @@ public class ClimateAggregationJob {
     }
 
     // Averages the 7 DAILY rows from the past week into a single WEEKLY summary
-    @Scheduled(cron = "0 0 0 * * SUN")
+    @Scheduled(cron = "${app.aggregation.weekly.cron:0 0 0 * * SUN}")
     @Transactional
     public void aggregateWeekly() {
         log.info("Running weekly climate aggregation...");
