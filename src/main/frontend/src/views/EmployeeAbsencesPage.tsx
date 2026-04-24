@@ -43,7 +43,22 @@ export const EmployeeAbsencesPage: React.FC = () => {
     }, [fetchAbsences]);
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        return new Date(dateString).toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
+    const formatDateRange = (startDate: string, endDate: string) => {
+        const start = formatDate(startDate);
+        const end = formatDate(endDate);
+
+        if (start === end) {
+            return start;
+        }
+
+        return `${start} - ${end}`;
     };
 
     const KpiCard = ({ title, value, max }: { title: string, value: number, max: number }) => {
@@ -62,6 +77,22 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const formatEnum = (value?: string | null) => {
         if (!value) return '-';
         return value.charAt(0) + value.slice(1).toLowerCase();
+    };
+
+    const calculateAbsenceHours = (startDate: string, endDate: string) => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const startDay = new Date(start);
+        startDay.setHours(0, 0, 0, 0);
+
+        const endDay = new Date(end);
+        endDay.setHours(0, 0, 0, 0);
+
+        const dayDiff =
+            Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+        return Math.max(dayDiff, 1) * 8;
     };
 
     return (
@@ -150,8 +181,11 @@ export const EmployeeAbsencesPage: React.FC = () => {
                                 <tr key={abs.id} style={{ backgroundColor: index % 2 !== 0 ? '#94a3b8' : 'transparent', color: index % 2 !== 0 ? 'white' : 'inherit' }}>
                                     <td style={{ padding: '0.75rem 0.5rem' }}>
                                         {formatEnum(abs.typeOfAbsence)}                                    </td>
-                                    <td style={{ padding: '0.75rem 0.5rem' }}>{formatDate(abs.startDate)}</td>
-                                    <td style={{ padding: '0.75rem 0.5rem' }}>8 h</td> {/* API liefert aktuell keine Stunden */}
+                                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                                        {formatDateRange(abs.startDate, abs.endDate)}
+                                    </td>                                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                                        {calculateAbsenceHours(abs.startDate, abs.endDate)} h
+                                    </td>
                                     <td style={{ padding: '0.75rem 0.5rem' }}>
                                         {formatEnum(abs.status)}                                    </td>
                                     <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
