@@ -174,8 +174,8 @@ class LimitMapperUnitTests {
             assertThat(result.getTempLimit().getMaxVal()).isEqualTo(26.0f);
 
             assertThat(result.getHumLimit()).isNotNull();
-            assertThat(result.getHumLimit().getMinVal()).isEqualTo(30.0f);
-            assertThat(result.getHumLimit().getMaxVal()).isEqualTo(70.0f);
+            assertThat(result.getHumLimit().getMaxVal()).isEqualTo(30.0f);
+            assertThat(result.getHumLimit().getMinVal()).isEqualTo(70.0f);
 
             assertThat(result.getPolLimit()).isNotNull();
             assertThat(result.getPolLimit().getMaxVal()).isEqualTo(1000);

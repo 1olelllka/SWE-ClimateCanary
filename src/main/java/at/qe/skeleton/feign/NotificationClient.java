@@ -1,6 +1,8 @@
 package at.qe.skeleton.feign;
 
+import at.qe.skeleton.dtos.ConfigRequestDTO;
 import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +18,17 @@ public interface NotificationClient {
     @PostMapping("/api/notify")
     ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
                                                      @RequestBody StateChangeNotificationDTO notification,
-                                                     @RequestParam(required = false) UUID[] sensorIds, @RequestParam(required = false) UUID raspberryPi);
-    @PostMapping("/api/notify")
-    ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
-                                                     @RequestBody StateChangeNotificationDTO notification);
+                                                     @RequestParam(required = false) UUID[] sensorIds);
 
-    @PostMapping("/api/notify/limits")
+    @PostMapping("/api/config")
+    ResponseEntity<Void> requestRaspberryToCheckConfig(URI baseUrl,
+                                                       @RequestBody ConfigRequestDTO configRequestDTO);
+
+    @PostMapping("/api/limits")
     ResponseEntity<Void> notifyRaspberryAboutLimitsChange(URI baseUrl,
                                                           @RequestBody LimitChangeNotificationDTO dto);
+
+    @PostMapping("/api/occupancy")
+    ResponseEntity<Void> notifyAboutOccupancyChanges(URI baseUrl,
+                                                     @RequestBody OccupancyDTO dto);
 }

@@ -1,10 +1,7 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.PiConfigDTO;
-import at.qe.skeleton.dtos.ReducedSensorDTO;
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
-import at.qe.skeleton.dtos.UpdateType;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
@@ -133,7 +130,11 @@ public class RaspberryServiceImpl implements RaspberryService {
                         .map(sensor -> new ReducedSensorDTO(sensor.getName(), sensor.getReadId(), sensor.getWriteId()))
                         .collect(Collectors.toSet())
                 : Set.of();
-        return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(), id, pi.getFrequency(), limitMapper.mapTo(pi.getRoomMonitoring()), sensors);
+        if (pi.getRoomMonitoring() != null) {
+            return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(), id, pi.getFrequency(), limitMapper.mapTo(pi.getRoomMonitoring()), sensors);
+        } else {
+            return new PiConfigDTO(null, id, pi.getFrequency(), null, null);
+        }
     }
 
     @Override
@@ -144,8 +145,9 @@ public class RaspberryServiceImpl implements RaspberryService {
         log.info("Retrying connection with Raspberry Pi.");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
-                        null, null, pi, notificationClient));
+                        new ConfigRequestDTO(pi.getId(), LocalDateTime.now()),
+                        pi,
+                        notificationClient));
     }
 
     @Override
@@ -164,9 +166,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         log.info("Making Raspberry Pi to check new config...");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
-                        null,
-                        null,
+                        new ConfigRequestDTO(pi.getId(), LocalDateTime.now()),
                         pi,
                         notificationClient));
         log.info("Added new room for Raspberry Pi.");
@@ -189,9 +189,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         log.info("Making Raspberry Pi to check new config...");
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.CONFIG, LocalDateTime.now()),
-                        null,
-                        null,
+                        new ConfigRequestDTO(pi.getId(), LocalDateTime.now()),
                         pi,
                         notificationClient));
         log.info("Removed room from Raspberry Pi.");

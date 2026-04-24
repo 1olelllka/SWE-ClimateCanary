@@ -1,8 +1,6 @@
 package at.qe.skeleton.commands;
 
-import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
-import at.qe.skeleton.dtos.UpdateType;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import lombok.Getter;
@@ -20,7 +18,9 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     private UUID readId;
     private UUID writeId;
     private final RaspberryPi pi;
-    private LimitChangeNotificationDTO limitDto;
+    private LimitChangeNotificationDTO limitDto = null;
+    private OccupancyDTO occupancyDTO = null;
+    private ConfigRequestDTO configRequestDTO = null;
 
 
     public NotifyRaspberryCommand(StateChangeNotificationDTO dto,
@@ -43,6 +43,22 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         this.client = client;
     }
 
+    public NotifyRaspberryCommand(OccupancyDTO occupancyDTO,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.occupancyDTO = occupancyDTO;
+        this.pi = pi;
+        this.client = client;
+    }
+
+    public NotifyRaspberryCommand(ConfigRequestDTO requestDTO,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.configRequestDTO = requestDTO;
+        this.pi = pi;
+        this.client = client;
+    }
+
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
@@ -51,14 +67,18 @@ public class NotifyRaspberryCommand implements Command, Serializable {
             response = client.notifyRaspberryAboutLimitsChange(piUri, this.limitDto);
             return response;
         }
+        if (occupancyDTO != null) {
+            response = client.notifyAboutOccupancyChanges(piUri, occupancyDTO);
+            return response;
+        }
+        if (configRequestDTO != null) {
+            response = client.requestRaspberryToCheckConfig(piUri, configRequestDTO);
+            return response;
+        }
         if (writeId == null || readId == null) {
-            if (this.dto.updateType() == UpdateType.CONFIG) {
-                response = client.notifyRaspberryAboutChanges(piUri, dto, null, pi.getId());
-            } else {
-                response = client.notifyRaspberryAboutChanges(piUri, dto);
-            }
+            response = client.notifyRaspberryAboutChanges(piUri, dto, null);
         } else {
-            response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId}, null);
+            response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId});
         }
         return response;
     }
