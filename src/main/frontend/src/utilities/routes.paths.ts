@@ -7,4 +7,5 @@ export const ROUTES = {
     DEVICE_CONFIGURATION: '/device-configuration',
     USER_CONFIGURATION: '/user-configuration',
     BUILDING_CONFIGURATION: '/building-configuration',
+    EMPLOYEE_ABSENCES: '/employee-absences',
 } as const;

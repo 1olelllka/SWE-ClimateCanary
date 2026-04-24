@@ -13,7 +13,7 @@ import RoleBasedHome from "./views/RoleBasedHome";
 import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
 import UserConfigurationPage from "./views/UserConfigurationPage";
 import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
-
+import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 /**
  * Define the routes of the application.
  */
@@ -49,4 +49,9 @@ export const UserConfigurationRoute = {
 export const BuildingConfigurationRoute = {
     url: ROUTES.BUILDING_CONFIGURATION,
     component: BuildingConfigurationPage
+}
+
+export const EmployeeAbsencesRoute = {
+    url: ROUTES.EMPLOYEE_ABSENCES,
+    component: EmployeeAbsencesPage
 }
