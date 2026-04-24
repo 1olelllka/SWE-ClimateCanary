@@ -5,6 +5,7 @@ import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.model.Granularity;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
 import org.junit.jupiter.api.*;
@@ -325,11 +326,11 @@ class ClimateStatsServiceUnitTests {
         @DisplayName("returns aggregated stats when pre-aggregated data exists")
         void usesAggregatedData() {
             AggregatedStats agg = AggregatedStats.builder()
-                    .roomId(roomId).date(today)
+                    .roomId(roomId).date(today).granularity(Granularity.DAILY)
                     .avgTemp(21).avgHumidity(53).avgCO2(350)
                     .build();
-            when(aggregatedStatsRepository.findByRoomIdAndDateBetween(
-                    eq(roomId), any(), any()))
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
                     .thenReturn(List.of(agg));
 
             List<AggregatedDataPointDTO> result =
@@ -344,8 +345,8 @@ class ClimateStatsServiceUnitTests {
         @Test
         @DisplayName("falls back to raw grouping when no aggregated data exists")
         void fallsBackToRaw() {
-            when(aggregatedStatsRepository.findByRoomIdAndDateBetween(
-                    eq(roomId), any(), any()))
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
                     .thenReturn(List.of());
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     eq(roomId), any(), any()))
