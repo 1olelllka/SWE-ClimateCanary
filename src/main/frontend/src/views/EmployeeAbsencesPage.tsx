@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import globalAxios from 'axios';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -21,6 +21,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const navigate = useNavigate();
+    const [sortAscending, setSortAscending] = useState(false);
 
     const fetchAbsences = useCallback(() => {
         setLoading(true);
@@ -95,6 +96,15 @@ export const EmployeeAbsencesPage: React.FC = () => {
         return Math.max(dayDiff, 1) * 8;
     };
 
+    const sortedAbsences = useMemo(() => {
+        return [...absences].sort((a, b) => {
+            const dateA = new Date(a.startDate).getTime();
+            const dateB = new Date(b.startDate).getTime();
+
+            return sortAscending ? dateA - dateB : dateB - dateA;
+        });
+    }, [absences, sortAscending]);
+
     return (
         <div style={{ minHeight: '100vh', backgroundColor: '#f1f5f9', display: 'flex', flexDirection: 'column' }}>
             <PageHeader title="My Absences" onMenuClick={() => setSidebarVisible(true)} />
@@ -122,9 +132,13 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
                 {/* Controls */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <select style={{ padding: '0.5rem', background: '#e2e8f0', border: 'none', borderRadius: '4px' }}>
-                        <option>Sort by date ▼</option>
-                    </select>
+                    <button
+                        type="button"
+                        onClick={() => setSortAscending(prev => !prev)}
+                        style={{ padding: '0.5rem 1rem', background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    >
+                        Sort by date {sortAscending ? '↑' : '↓'}
+                    </button>
                     <button
                         onClick={() => setShowRequestForm(!showRequestForm)}
                         style={{ padding: '0.5rem 1rem', background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
@@ -177,8 +191,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                             </tr>
                             </thead>
                             <tbody>
-                            {absences.map((abs, index) => (
-                                <tr key={abs.id} style={{ backgroundColor: index % 2 !== 0 ? '#94a3b8' : 'transparent', color: index % 2 !== 0 ? 'white' : 'inherit' }}>
+                            {sortedAbsences.map((abs, index) => (                                <tr key={abs.id} style={{ backgroundColor: index % 2 !== 0 ? '#94a3b8' : 'transparent', color: index % 2 !== 0 ? 'white' : 'inherit' }}>
                                     <td style={{ padding: '0.75rem 0.5rem' }}>
                                         {formatEnum(abs.typeOfAbsence)}                                    </td>
                                     <td style={{ padding: '0.75rem 0.5rem' }}>
