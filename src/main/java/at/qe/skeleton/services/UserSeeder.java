@@ -8,7 +8,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Order(2)
+@Order(4)
 @ConditionalOnProperty(name = "app.seeder.user.enabled", havingValue = "true", matchIfMissing = true)
 public class UserSeeder implements ApplicationListener<ContextRefreshedEvent> {
 

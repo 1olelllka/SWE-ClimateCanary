@@ -3,7 +3,17 @@ import "primereact/resources/themes/lara-light-cyan/theme.css";
 import "primeicons/primeicons.css";
 import React, { Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { HomePageRoute, LoginsRoute, LogoutsRoute, ManageUsersRoute, DeviceConfigurationRoute, UserConfigurationRoute, BuildingConfigurationRoute } from "./routes";
+import {
+    HomePageRoute,
+    LoginsRoute,
+    LogoutsRoute,
+    ManageUsersRoute,
+    DeviceConfigurationRoute,
+    UserConfigurationRoute,
+    BuildingConfigurationRoute,
+    EmployeeAbsencesRoute,
+    DepartmentAbsencesRoute
+} from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
 
@@ -16,11 +26,13 @@ const App: React.FC = () => {
                         <Route path={LoginsRoute.url} Component={LoginsRoute.component}/>
                         <Route element={<PrivateRoute/>}>
                             <Route path={HomePageRoute.url} Component={HomePageRoute.component}/>
+                            <Route path={EmployeeAbsencesRoute.url} Component={EmployeeAbsencesRoute.component}/>
                             <Route path={ManageUsersRoute.url} Component={ManageUsersRoute.component}/>
                             <Route path={LogoutsRoute.url} Component={LogoutsRoute.component}/>
                             <Route path={DeviceConfigurationRoute.url} Component={DeviceConfigurationRoute.component}/>
                             <Route path={UserConfigurationRoute.url} Component={UserConfigurationRoute.component}/>
                             <Route path={BuildingConfigurationRoute.url} Component={BuildingConfigurationRoute.component}/>
+                            <Route path={DepartmentAbsencesRoute.url} Component={DepartmentAbsencesRoute.component}/>
                         </Route>
                     </Routes>
                 </BrowserRouter>

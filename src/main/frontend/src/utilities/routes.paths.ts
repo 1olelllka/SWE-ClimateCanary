@@ -7,4 +7,6 @@ export const ROUTES = {
     DEVICE_CONFIGURATION: '/device-configuration',
     USER_CONFIGURATION: '/user-configuration',
     BUILDING_CONFIGURATION: '/building-configuration',
+    EMPLOYEE_ABSENCES: '/employee-absences',
+    DEPARTMENT_ABSENCES: '/department-absences',
 } as const;

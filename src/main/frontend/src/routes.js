@@ -9,6 +9,8 @@ import RoleBasedHome from "./views/RoleBasedHome";
 import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
 import UserConfigurationPage from "./views/UserConfigurationPage";
 import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
+import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
+import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 
 /**
  * Define the routes of the application.
@@ -45,4 +47,14 @@ export const UserConfigurationRoute = {
 export const BuildingConfigurationRoute = {
     url: '/building-configuration',
     component: BuildingConfigurationPage
+}
+
+export const EmployeeAbsencesRoute = {
+    url: '/absences',
+    component: EmployeeAbsencesPage
+}
+
+export const DepartmentAbsencesRoute = {
+    url: '/department-absences',
+    component: DepartmentAbsencesPage
 }

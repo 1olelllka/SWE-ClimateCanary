@@ -1,6 +1,8 @@
 package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.dtos.AbsenceCreateDTO;
+import at.qe.skeleton.dtos.AbsenceManagerDTO;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.dtos.AbsenceDTO;
 import at.qe.skeleton.dtos.AbsenceListDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/absences")
@@ -37,18 +40,21 @@ public class AbsenceController {
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
     private AuthenticatedUserService authenticatedUserService;
+    private final UserxRepository userxRepository;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
                              AbsenceMapper absenceMapper,
-                             AuthenticatedUserService authenticatedUserService) {
+                             AuthenticatedUserService authenticatedUserService,
+                             UserxRepository userxRepository) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
         this.authenticatedUserService = authenticatedUserService;
+        this.userxRepository = userxRepository;
     }
 
     @GetMapping("")
@@ -66,6 +72,34 @@ public class AbsenceController {
         } else {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
+    }
+
+    @GetMapping("/managers")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<List<AbsenceManagerDTO>> getAbsenceManagers() {
+        Userx currentUser = authenticatedUserService.getAuthenticatedUser();
+
+        if (currentUser.getMyRoom() == null || currentUser.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("User has no assigned room or department.");
+        }
+
+        UUID departmentId = currentUser.getMyRoom().getDepartment().getId();
+
+        List<AbsenceManagerDTO> managers = userxRepository.findAll().stream()
+                .filter(candidate -> candidate.getAuthorities().stream()
+                        .anyMatch(authority -> authority.getAuthority().equals("CAN_MANAGE_ABSENCES")))
+                .filter(candidate -> candidate.getMyRoom() != null
+                        && candidate.getMyRoom().getDepartment() != null
+                        && candidate.getMyRoom().getDepartment().getId().equals(departmentId))
+                .map(candidate -> new AbsenceManagerDTO(
+                        candidate.getId(),
+                        candidate.getFirstName(),
+                        candidate.getLastName(),
+                        candidate.getUsername()
+                ))
+                .toList();
+
+        return new ResponseEntity<>(managers, HttpStatus.OK);
     }
 
     @PostMapping("")
