@@ -89,6 +89,7 @@ public class WebSecurityConfig {
                                                         .requestMatchers("/swagger-ui/**")
                                                         .permitAll()
                                                         .requestMatchers("/api/users/me/absences").hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
+                                                        .requestMatchers("/api/users/me/department/rooms").hasAuthority(Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name())
                                                         .requestMatchers("/api/users/me").authenticated()
                                                         .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                                         .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())

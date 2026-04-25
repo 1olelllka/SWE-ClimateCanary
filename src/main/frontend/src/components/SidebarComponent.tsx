@@ -3,6 +3,7 @@ import { Sidebar } from 'primereact/sidebar';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
 import '../styles/Sidebar.css';
+import { ROUTES } from '../utilities/routes.paths';
 
 interface SidebarProps {
     readonly visible: boolean;
@@ -37,6 +38,12 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             icon: 'pi-home',
             route: '/',
             visible: true // Jeder sieht eigene Startseite
+        },
+        {
+            label: 'My Department',
+            icon: 'pi-sitemap',
+            route: ROUTES.EMPLOYEE_DEPARTMENT,
+            visible: isEmployee
         },
         {
             label: 'My Absences',
