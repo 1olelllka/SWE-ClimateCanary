@@ -1,6 +1,6 @@
 package at.qe.skeleton.commands;
 
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import lombok.Getter;
@@ -14,10 +14,13 @@ public class NotifyRaspberryCommand implements Command, Serializable {
 
     private final NotificationClient client;
     @Getter
-    private final StateChangeNotificationDTO dto;
-    private final UUID readId;
-    private final UUID writeId;
+    private StateChangeNotificationDTO dto;
+    private UUID readId;
+    private UUID writeId;
     private final RaspberryPi pi;
+    private LimitChangeNotificationDTO limitDto = null;
+    private OccupancyDTO occupancyDTO = null;
+    private ConfigRequestDTO configRequestDTO = null;
 
 
     public NotifyRaspberryCommand(StateChangeNotificationDTO dto,
@@ -32,12 +35,48 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         this.client = client;
     }
 
+    public NotifyRaspberryCommand(LimitChangeNotificationDTO limitDto,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.limitDto = limitDto;
+        this.pi = pi;
+        this.client = client;
+    }
+
+    public NotifyRaspberryCommand(OccupancyDTO occupancyDTO,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.occupancyDTO = occupancyDTO;
+        this.pi = pi;
+        this.client = client;
+    }
+
+    public NotifyRaspberryCommand(ConfigRequestDTO requestDTO,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.configRequestDTO = requestDTO;
+        this.pi = pi;
+        this.client = client;
+    }
+
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
         URI piUri = URI.create("http://" + pi.getIp() + ":" + pi.getPort());
+        if (limitDto != null) {
+            response = client.notifyRaspberryAboutLimitsChange(piUri, this.limitDto);
+            return response;
+        }
+        if (occupancyDTO != null) {
+            response = client.notifyAboutOccupancyChanges(piUri, occupancyDTO);
+            return response;
+        }
+        if (configRequestDTO != null) {
+            response = client.requestRaspberryToCheckConfig(piUri, configRequestDTO);
+            return response;
+        }
         if (writeId == null || readId == null) {
-            response = client.notifyRaspberryAboutChanges(piUri, dto);
+            response = client.notifyRaspberryAboutChanges(piUri, dto, null);
         } else {
             response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId});
         }

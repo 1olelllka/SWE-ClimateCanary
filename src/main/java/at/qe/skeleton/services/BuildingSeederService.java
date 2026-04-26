@@ -55,7 +55,14 @@ public class BuildingSeederService {
                                 .department(dept)
                                 .build()
                 );
-                monitoringRepository.save(RoomMonitoring.builder().roomId(room.getId()).roomNumber(room.getRoomNumber()).build());
+                monitoringRepository.save(RoomMonitoring
+                        .builder()
+                        .roomId(room.getId())
+                        .roomNumber(room.getRoomNumber())
+                        .polLimit(PollutionLimit.builder().build())
+                        .tempLimit(TemperatureLimit.builder().build())
+                        .humLimit(HumidityLimit.builder().build())
+                        .build());
                 // Assign demo employee to first Engineering office for dashboard demo
                 if ("Engineering".equals(deptName) && i == 1) {
                     userxRepository.findFirstByUsername("employee").ifPresentOrElse(

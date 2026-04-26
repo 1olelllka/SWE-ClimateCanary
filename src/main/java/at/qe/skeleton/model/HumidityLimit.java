@@ -24,4 +24,9 @@ public class HumidityLimit extends LimitValues {
 
     @OneToOne(mappedBy = "humLimit", fetch = FetchType.LAZY)
     private RoomMonitoring roomMonitoring;
+
+    @PrePersist
+    protected void prePersist() {
+        setMaxVal(60);
+    }
 }
