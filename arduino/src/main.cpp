@@ -3,13 +3,24 @@
 #include "ble_manager.h"
 #include "display_manager.h"
 #include "config.h"
+#include "button_manager.h"
+
+#define MODE_BUTTON_PIN D2
+#define NEXT_PAGE_BUTTON_PIN D3
+#define PREVIOUS_PAGE_BUTTON_PIN D4
 
 SensorManager sensorManager;
 BLEManager bleManager;
 DisplayManager displayManager;
+ButtonManager modeButton;
+ButtonManager nextPageButton;
+ButtonManager previousPageButton;
+
 
 unsigned long lastSensorRead = 0;
 unsigned long lastBleSend = 0;
+
+bool isAdvertising = false;
 
 void setup() {
   Serial.begin(9600);
@@ -17,6 +28,9 @@ void setup() {
     ;
   }
 
+  modeButton.begin(MODE_BUTTON_PIN);
+  nextPageButton.begin(NEXT_PAGE_BUTTON_PIN);
+  previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
   displayManager.begin();
   displayManager.showStartup();
 
@@ -33,38 +47,54 @@ void setup() {
   }
 
   Serial.println("System ready");
-  displayManager.showWaiting();
 }
 
 void loop() {
   bleManager.poll();
+
+  modeButton.update();
+  nextPageButton.update();
+  previousPageButton.update();
+
+  if (modeButton.wasPressed()) { 
+    displayManager.nextMode();
+    displayManager.showReading(sensorManager.getReading());
+  }
+
+  if (nextPageButton.wasPressed()) {
+    displayManager.nextPage();
+    displayManager.showReading(sensorManager.getReading());
+  }
+
+  if (previousPageButton.wasPressed()) {
+    displayManager.previousPage();
+    displayManager.showReading(sensorManager.getReading());
+  }
 
   const unsigned long now = millis();
 
   if (now - lastSensorRead >= SENSOR_INTERVAL_MS) {
     lastSensorRead = now;
 
-    if (sensorManager.update()) {
+    if (now < 30000) {
+      Serial.println("Still in gas sensor warm-up period, skipping sensor read");
+    }
+    else if (sensorManager.update()) {
       const SensorReading reading = sensorManager.getReading();
+      if (reading.valid) {
+        displayManager.showReading(reading);
 
-      Serial.print("Temperature: ");
-      Serial.print(reading.temperatureC);
-      Serial.println(" C");
-
-      Serial.print("Humidity: ");
-      Serial.print(reading.humidityPct);
-      Serial.println(" %");
-
-      Serial.print("Pressure: ");
-      Serial.print(reading.pressurehPa);
-      Serial.println(" hPa");
-
-      Serial.print("Gas: ");
-      Serial.print(reading.gasResistanceKOhm);
-      Serial.println(" kOhm");
-
-      displayManager.showReading(reading);
-    } else {
+        if (!isAdvertising) {
+          BLE.advertise();
+          Serial.println("Advertising...");          
+          isAdvertising = true;
+        }
+      }
+      else {
+        Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
+      }
+    } 
+    else {
       Serial.println("Sensor read failed");
     }
   }
@@ -75,13 +105,10 @@ void loop() {
     const SensorReading reading = sensorManager.getReading();
 
     if (reading.valid) {
-      String payload = String("{\"temperatureC\":") + String(reading.temperatureC, 2) +
-                       ",\"humidityPct\":" + String(reading.humidityPct, 2) +
-                       ",\"pressurehPa\":" + String(reading.pressurehPa, 2) +
-                       ",\"gasResistanceKOhm\":" + String(reading.gasResistanceKOhm, 2) +
-                       "}";
-
-      bleManager.sendMessage(payload);
+      bleManager.sendReading(reading);
+    } 
+    else {
+      Serial.println("Skipping BLE send: invalid sensor reading");
     }
   }
 }

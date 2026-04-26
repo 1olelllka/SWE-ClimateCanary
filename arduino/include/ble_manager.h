@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <ArduinoBLE.h>
 #include "config.h"
+#include "sensor_manager.h"
 
 class DisplayManager;
 
@@ -11,10 +12,11 @@ public:
   bool begin(DisplayManager* display);
   void poll();
   bool isConnected() const;
-  void sendMessage(const String& msg);
+  void sendReading(const SensorReading& reading);
 
 private:
   static void onRxWritten(BLEDevice central, BLECharacteristic characteristic);
+  String serializeReading(const SensorReading& reading) const;
 
   BLEService service{BLE_SERVICE_UUID};
   BLEStringCharacteristic txCharacteristic{
@@ -22,6 +24,7 @@ private:
     BLERead | BLENotify,
     64
   };
+  
   BLEStringCharacteristic rxCharacteristic{
     BLE_RX_UUID,
     BLEWriteWithoutResponse,
