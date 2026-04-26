@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/absences")
@@ -112,6 +113,13 @@ public class AbsenceController {
         }
         if (dto.startDate().isAfter(dto.endDate())) {
             throw new ValidationException("Start date must not be after end date.");
+        }
+        if (dto.startDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Starting date must be in present or future.");
+        }
+
+        if (dto.endDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Ending date must be in present or future.");
         }
         Absence absence = absenceService.createNewAbsenceForUser(absenceCreateMapper.mapFrom(dto));
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.CREATED);
