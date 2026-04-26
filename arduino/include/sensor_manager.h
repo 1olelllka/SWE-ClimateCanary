@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_BME680.h>
+#include <ctime>
 
 struct SensorReading {
   float temperatureC;

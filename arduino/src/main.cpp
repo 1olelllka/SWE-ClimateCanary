@@ -3,10 +3,19 @@
 #include "ble_manager.h"
 #include "display_manager.h"
 #include "config.h"
+#include "button_manager.h"
+
+#define MODE_BUTTON_PIN D2
+#define NEXT_PAGE_BUTTON_PIN D3
+#define PREVIOUS_PAGE_BUTTON_PIN D4
 
 SensorManager sensorManager;
 BLEManager bleManager;
 DisplayManager displayManager;
+ButtonManager modeButton;
+ButtonManager nextPageButton;
+ButtonManager previousPageButton;
+
 
 unsigned long lastSensorRead = 0;
 unsigned long lastBleSend = 0;
@@ -19,6 +28,9 @@ void setup() {
     ;
   }
 
+  modeButton.begin(MODE_BUTTON_PIN);
+  nextPageButton.begin(NEXT_PAGE_BUTTON_PIN);
+  previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
   displayManager.begin();
   displayManager.showStartup();
 
@@ -35,11 +47,29 @@ void setup() {
   }
 
   Serial.println("System ready");
-  displayManager.showWaiting();
 }
 
 void loop() {
   bleManager.poll();
+
+  modeButton.update();
+  nextPageButton.update();
+  previousPageButton.update();
+
+  if (modeButton.wasPressed()) { 
+    displayManager.nextMode();
+    displayManager.showReading(sensorManager.getReading());
+  }
+
+  if (nextPageButton.wasPressed()) {
+    displayManager.nextPage();
+    displayManager.showReading(sensorManager.getReading());
+  }
+
+  if (previousPageButton.wasPressed()) {
+    displayManager.previousPage();
+    displayManager.showReading(sensorManager.getReading());
+  }
 
   const unsigned long now = millis();
 
