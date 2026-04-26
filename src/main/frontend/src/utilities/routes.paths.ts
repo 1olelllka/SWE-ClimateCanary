@@ -9,4 +9,5 @@ export const ROUTES = {
     BUILDING_CONFIGURATION: '/building-configuration',
     EMPLOYEE_ABSENCES: '/employee-absences',
     DEPARTMENT_ABSENCES: '/department-absences',
+    EMPLOYEE_DEPARTMENT: '/my-department',
 } as const;

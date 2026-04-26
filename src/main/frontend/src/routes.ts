@@ -15,6 +15,7 @@ import UserConfigurationPage from "./views/UserConfigurationPage";
 import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
 import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
+import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 /**
  * Define the routes of the application.
  */
@@ -60,4 +61,9 @@ export const EmployeeAbsencesRoute = {
 export const DepartmentAbsencesRoute = {
     url: ROUTES.DEPARTMENT_ABSENCES,
     component: DepartmentAbsencesPage
+};
+
+export const EmployeeDepartmentRoute = {
+    url: ROUTES.EMPLOYEE_DEPARTMENT,
+    component: EmployeeDepartmentPage
 };

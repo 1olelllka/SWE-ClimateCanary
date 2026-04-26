@@ -1,0 +1,222 @@
+.employee-department-page {
+    min-height: 100vh;
+    background-color: #f1f5f9;
+    display: flex;
+    flex-direction: column;
+}
+
+.employee-department-content {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.employee-department-back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    padding: 0;
+    color: #0f172a;
+}
+
+.employee-department-back-button i {
+    font-size: 2.2rem;
+}
+
+.employee-department-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.employee-department-last-updated {
+    color: #0f172a;
+    font-size: 1rem;
+}
+
+.employee-department-search {
+    width: min(100%, 300px);
+    border: none;
+    background-color: #ffffff;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 2px;
+}
+
+.employee-department-info-text {
+    color: #475569;
+}
+
+.employee-department-error-text {
+    color: #b91c1c;
+}
+
+/* Room overview */
+
+.department-room-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.department-room-empty {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 12px;
+    color: #64748b;
+    text-align: center;
+}
+
+.department-room-card {
+    width: 100%;
+    border: none;
+    background-color: #ffffff;
+    border-radius: 12px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    padding: 1rem 1.25rem;
+    color: #0f172a;
+}
+
+.department-room-card.selected {
+    background-color: #d9d9d9;
+    border: 2px solid #2563eb;
+}
+
+.department-room-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.department-room-title {
+    font-size: 1.2rem;
+    color: #64748b;
+}
+
+.department-room-card.selected .department-room-title {
+    color: #0f172a;
+}
+
+.department-room-header i {
+    font-size: 1.1rem;
+    color: #0f172a;
+}
+
+.department-room-details {
+    margin-top: 1rem;
+}
+
+.department-room-loading {
+    margin: 0;
+    color: #475569;
+}
+
+.department-room-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.department-room-values div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.department-room-values span {
+    font-size: 1rem;
+}
+
+.department-room-values strong {
+    font-size: 1.3rem;
+    font-weight: 500;
+}
+
+/* Chart section */
+
+.department-chart-section {
+    margin-top: 2rem;
+}
+
+.department-chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.department-chart-controls label {
+    font-size: 1rem;
+}
+
+.department-chart-controls select {
+    border: none;
+    background-color: #d9d9d9;
+    padding: 0.4rem 1rem;
+    border-radius: 16px;
+}
+
+.department-time-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    background-color: #d9d9d9;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.department-time-tabs button {
+    border: none;
+    background: transparent;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+}
+
+.department-time-tabs button.active {
+    background-color: #ffffff;
+    border-radius: 18px;
+}
+
+.department-chart-wrapper {
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(15, 23, 42, 0.2);
+    padding: 1rem;
+    min-height: 320px;
+}
+
+.department-selected-room-note {
+    color: #64748b;
+    margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+    .employee-department-content {
+        padding: 1rem;
+    }
+
+    .employee-department-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .employee-department-search {
+        width: 100%;
+    }
+
+    .department-room-values {
+        grid-template-columns: 1fr;
+    }
+
+    .department-chart-wrapper {
+        min-height: 260px;
+    }
+}
