@@ -22,4 +22,9 @@ public class TemperatureLimit extends LimitValues{
 
     @OneToOne(mappedBy = "tempLimit", fetch = FetchType.LAZY)
     private RoomMonitoring roomMonitoring;
+
+    @PrePersist
+    void prePersist() {
+        setMaxVal(26);
+    }
 }

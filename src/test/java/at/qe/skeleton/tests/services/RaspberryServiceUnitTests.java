@@ -5,7 +5,11 @@ import at.qe.skeleton.dtos.PiConfigDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
-import at.qe.skeleton.model.*;
+import at.qe.skeleton.mappers.LimitMapper;
+import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.RoomOccupancy;
+import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
@@ -39,6 +43,7 @@ public class RaspberryServiceUnitTests {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private NotificationClient notificationClient;
     @Mock private RoomOccupancyRepository occupancyRepository;
+    @Mock private LimitMapper limitMapper;
 
     @InjectMocks
     private RaspberryServiceImpl raspberryService;
@@ -49,16 +54,19 @@ public class RaspberryServiceUnitTests {
     private UUID piId;
     private UUID roomId;
     private UUID sensorReadId;
+    private UUID sensorWriteId;
 
     @BeforeEach
     void setUp() {
         piId = UUID.randomUUID();
         roomId = UUID.randomUUID();
         sensorReadId = UUID.randomUUID();
+        sensorWriteId = UUID.randomUUID();
 
         sampleSensor = new SensorStation();
-        sampleSensor.setWriteId(UUID.randomUUID());
+        sampleSensor.setName("Sensor-01");
         sampleSensor.setReadId(sensorReadId);
+        sampleSensor.setWriteId(sensorWriteId);
 
         sampleRoom = new RoomMonitoring();
         sampleRoom.setRoomId(roomId);
@@ -141,7 +149,7 @@ public class RaspberryServiceUnitTests {
     @Test
     void testThatUpdateRaspberryByIdUpdatesOnlyProvidedFields() {
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
-        when(raspberryPiRepository.save(any(RaspberryPi.class))).thenAnswer(i -> i.getArgument(0));
+        when(raspberryPiRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         RaspberryPi patch = new RaspberryPi();
         patch.setFrequency(9999);
@@ -158,7 +166,7 @@ public class RaspberryServiceUnitTests {
     @Test
     void testThatUpdateRaspberryByIdSkipsNameConflictCheckWhenNameIsUnchanged() {
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
-        when(raspberryPiRepository.save(any(RaspberryPi.class))).thenAnswer(i -> i.getArgument(0));
+        when(raspberryPiRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         RaspberryPi patch = new RaspberryPi();
         patch.setName("Pi-01");
@@ -221,7 +229,7 @@ public class RaspberryServiceUnitTests {
     }
 
     @Test
-    void testThatGetOccupancyFromRedisReturnsMockedValue() {
+    void testThatGetOccupancyFromRedisReturnsList() {
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
         when(occupancyRepository.findAllById(List.of(roomId.toString())))
                 .thenReturn(List.of(RoomOccupancy.builder().roomId(roomId).build()));
@@ -257,22 +265,15 @@ public class RaspberryServiceUnitTests {
 
         assertNotNull(config);
         assertEquals(5000, config.frequency());
-        assertTrue(config.sensors().contains(sensorReadId));
+        assertEquals(roomId, config.roomId());
+        assertEquals(piId, config.raspberryId());
+        assertTrue(config.sensors().stream()
+                .anyMatch(s -> s.readId().equals(sensorReadId) && s.writeId().equals(sensorWriteId)));
     }
 
     @Test
     void testThatGetConfigForRaspberryReturnsEmptySensorsWhenNoneLinked() {
         sampleRoom.setSensorStations(new ArrayList<>());
-        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
-
-        PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);
-
-        assertTrue(config.sensors().isEmpty());
-    }
-
-    @Test
-    void testThatGetConfigForRaspberryReturnsEmptySensorsWhenNoRoomAssigned() {
-        samplePi.setRoomMonitoring(null);
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
 
         PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);

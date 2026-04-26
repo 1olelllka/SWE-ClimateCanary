@@ -5,14 +5,14 @@ import java.util.UUID;
 public record LimitDTO(
         UUID roomId,
 
-        float tempMin,
+        Float tempMin,
 
-        float tempMax,
+        Float tempMax,
 
-        float humMax,
+        Float humMin,
 
-        float humMin,
+        Float humMax,
 
-        float co2Max
+        Float co2Max
 ) {
 }

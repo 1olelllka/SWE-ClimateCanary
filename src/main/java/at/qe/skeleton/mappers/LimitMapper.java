@@ -16,8 +16,8 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
                 entity.getRoomId(),
                 entity.getTempLimit().getMinVal(),
                 entity.getTempLimit().getMaxVal(),
-                entity.getHumLimit().getMaxVal(),
                 entity.getHumLimit().getMinVal(),
+                entity.getHumLimit().getMaxVal(),
                 entity.getPolLimit().getMaxVal()
         );
     }

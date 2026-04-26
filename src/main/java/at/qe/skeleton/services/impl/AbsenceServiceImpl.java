@@ -1,6 +1,7 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
+import at.qe.skeleton.dtos.OccupancyDTO;
 import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
@@ -148,9 +149,7 @@ public class AbsenceServiceImpl implements AbsenceService {
             roomOccupancyRepository.save(room);
             if (monitoring.getRaspberryPi() != null) {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.CLOCK_IN, LocalDateTime.now()),
-                        null,
-                        null,
+                        new OccupancyDTO(room.getPeopleCnt(), room.getRoomId(), room.getPeopleCnt() < 5),
                         monitoring.getRaspberryPi(),
                         notificationClient
                 ));
@@ -176,9 +175,7 @@ public class AbsenceServiceImpl implements AbsenceService {
             roomOccupancyRepository.save(room);
             if (monitoring.getRaspberryPi() != null) {
                 eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                        new StateChangeNotificationDTO(UpdateType.CLOCK_OUT, LocalDateTime.now()),
-                        null,
-                        null,
+                        new OccupancyDTO(room.getPeopleCnt(), room.getRoomId(), room.getPeopleCnt() < 5),
                         monitoring.getRaspberryPi(),
                         notificationClient
                 ));
