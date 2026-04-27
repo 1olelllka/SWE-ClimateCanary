@@ -10,4 +10,5 @@ export const ROUTES = {
     EMPLOYEE_ABSENCES: '/employee-absences',
     DEPARTMENT_ABSENCES: '/department-absences',
     EMPLOYEE_DEPARTMENT: '/my-department',
+    SETTINGS: '/settings',
 } as const;

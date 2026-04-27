@@ -12,6 +12,7 @@ import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
 import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
+import SettingsPage from "./views/SettingsPage";
 
 /**
  * Define the routes of the application.
@@ -63,4 +64,9 @@ export const DepartmentAbsencesRoute = {
 export const EmployeeDepartmentRoute = {
     url: '/my-department',
     component: EmployeeDepartmentPage
+}
+
+export const SettingsRoute = {
+    url: '/settings',
+    component: SettingsPage
 }

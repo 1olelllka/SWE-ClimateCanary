@@ -76,11 +76,10 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             route: '/building-configuration',
             visible: isAdmin
         },
-        // ---------------------------
         {
             label: 'Settings',
             icon: 'pi-cog',
-            route: '/settings',
+            route: ROUTES.SETTINGS,
             visible: true
         }
     ];
