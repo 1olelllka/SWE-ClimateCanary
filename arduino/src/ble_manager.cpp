@@ -16,14 +16,16 @@ bool BLEManager::begin(DisplayManager* display) {
   BLE.setDeviceName(DEVICE_NAME);
   BLE.setAdvertisedService(service);
 
-  txCharacteristic.writeValue("Hello from Arduino");
-  rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
-
   service.addCharacteristic(txCharacteristic);
   service.addCharacteristic(rxCharacteristic);
   BLE.addService(service);
 
-  //BLE.advertise();
+  txCharacteristic.writeValue("Hello from Arduino");
+  rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
+
+  BLE.advertise();
+  Serial.println("BLE advertising started");
+
   return true;
 }
 
@@ -38,6 +40,12 @@ void BLEManager::poll() {
     Serial.print("Connected to: ");
     Serial.println(currentCentral.address());
 
+    timeReceived = false;
+    receivedUnixTime = 0;
+
+    txCharacteristic.writeValue("TIME_REQUEST");
+    Serial.println("Requested time from Pi");
+
     if (displayManager != nullptr) {
       displayManager->showConnected();
     }
@@ -48,6 +56,11 @@ void BLEManager::poll() {
     Serial.println(currentCentral.address());
 
     currentCentral = BLEDevice();
+    timeReceived = false;
+    receivedUnixTime = 0;
+
+    BLE.advertise();
+    Serial.println("BLE advertising restarted");
 
     if (displayManager != nullptr) {
       displayManager->showDisconnected();
@@ -80,6 +93,10 @@ String BLEManager::serializeReading(const SensorReading& r) const {
 }
 
 void BLEManager::sendReading(const SensorReading& reading) {
+  if (!isConnected()) {
+    return;
+  }
+
   String payload = serializeReading(reading);
   txCharacteristic.writeValue(payload);
 
@@ -101,7 +118,21 @@ void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic
   Serial.print("): ");
   Serial.println(received);
 
-  if (instance->displayManager != nullptr) {
-    instance->displayManager->showMessageFromPi(received);
+  if (received.startsWith("TIME:")) {
+    String timeString = received.substring(5);
+
+    instance->receivedUnixTime = timeString.toInt();
+    instance->timeReceived = true;
+
+    Serial.print("Time received from Pi: ");
+    Serial.println(instance->receivedUnixTime);
   }
+}
+
+bool BLEManager::hasReceivedTime() const {
+  return timeReceived;
+}
+
+unsigned long BLEManager::getReceivedTime() const {
+  return receivedUnixTime;
 }
