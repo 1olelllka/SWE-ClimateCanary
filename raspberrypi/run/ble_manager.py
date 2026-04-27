@@ -89,7 +89,7 @@ class BLEManager:
                     await client.start_notify(self.char_uuid, self.notification_handler)
 
                     # send current timestamp to Arduino immediately after connection
-                    unix_ts = int(datetime.now().timestamp())  # local time (CEST)
+                    unix_ts = datetime.now()
                     time_command = f"TIME:{unix_ts}"
                     logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
                     await client.write_gatt_char(self.write_uuid, time_command.encode('utf-8'), response=False)
