@@ -36,7 +36,9 @@ class DataProcessor:
                 timestamp = datetime.now().isoformat()
                 device_name = self.config['ble']['target_name']
                 
-                data['timestamp'] = timestamp
+                if data['timestamp'] is None:
+                    data['timestamp'] = timestamp
+
                 data['device'] = device_name
                 
                 sensor_limit_map = {
@@ -82,7 +84,7 @@ class DataProcessor:
                     temp=data.get('temperature'),
                     moisture=data.get('moisture'),
                     co2=data.get('co2'),
-                    timestamp=timestamp
+                    timestamp=data.get('timestamp')
                 )
 
                 webapp_payload = {
@@ -117,6 +119,4 @@ class DataProcessor:
                 logger.error(f"[Processor] Unexpected processing error: {e}", exc_info=True)
                 
             finally:
-                self.processing_queue.task_done()
-           finally:
                 self.processing_queue.task_done()
