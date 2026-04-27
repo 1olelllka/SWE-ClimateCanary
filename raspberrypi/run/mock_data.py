@@ -11,7 +11,7 @@ class MockDataGenerator:
         self.config = config
         self.processing_queue = processing_queue
 
-    async def generate_history(self, days=30, interval_minutes=60):
+    async def generate_history(self, days=30, interval_minutes=10):
         """Generates historical mock data and puts it into the processing queue."""
         logger.info(f"[Mock Data] Starting generation of {days} days of historical data...")
         
@@ -39,4 +39,4 @@ class MockDataGenerator:
         logger.info(f"[Mock Data] Successfully added {count} mock data points to the processing queue.")
 
     async def run(self):
-        await self.generate_history(days=30, interval_minutes=60)
+        await self.generate_history(days=30, interval_minutes=10)
