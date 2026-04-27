@@ -6,6 +6,7 @@ import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.dtos.AbsenceDTO;
 import at.qe.skeleton.dtos.AbsenceListDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
+import at.qe.skeleton.dtos.ClockStatusDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AbsenceCreateMapper;
 import at.qe.skeleton.mappers.AbsenceListMapper;
@@ -123,6 +124,13 @@ public class AbsenceController {
         }
         Absence absence = absenceService.createNewAbsenceForUser(absenceCreateMapper.mapFrom(dto));
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/clock-status")
+    public ResponseEntity<ClockStatusDTO> getClockStatus() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        boolean clockedIn = absenceService.isClockedIn(user);
+        return new ResponseEntity<>(new ClockStatusDTO(clockedIn), HttpStatus.OK);
     }
 
     @GetMapping("{absence_id}")

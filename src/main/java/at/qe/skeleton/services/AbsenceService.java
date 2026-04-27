@@ -25,4 +25,6 @@ public interface AbsenceService {
     void clockIn(Userx user);
 
     void clockOut(Userx user);
+
+    boolean isClockedIn(Userx user);
 }
