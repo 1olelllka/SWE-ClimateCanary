@@ -2,6 +2,7 @@ import asyncio
 import logging
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
+from datetime import datetime 
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class BLEManager:
         self.client = None
         self.disconnect_event = asyncio.Event()
 
-    def disconnected_callback(self, client):
+    def disconnected_callback(self):
         """Fired instantly by Bleak if the Arduino loses power or drops connection."""
         logger.warning("[BLE] Arduino disconnected unexpectedly!")
         self.disconnect_event.set()
@@ -29,7 +30,10 @@ class BLEManager:
         message = data.decode('utf-8').strip()
         logger.debug(f"[Arduino -> Pi] Received: {message}")
         
-        asyncio.create_task(self.processing_queue.put(message))
+        # thread-safe, works regardless of which thread Bleak calls this from
+        asyncio.get_event_loop().call_soon_threadsafe(
+            self.processing_queue.put_nowait, message
+        )
 
     async def _sender_task(self):
         """Background task that exclusively handles sending data TO the Arduino."""
@@ -37,7 +41,6 @@ class BLEManager:
         
         while self.client and self.client.is_connected:
             try:
-                # we use wait_for so the loop can wake up every 1 second to check 
                 command = await asyncio.wait_for(self.ble_inbox.get(), timeout=1.0)
                 
                 logger.info(f"[Pi -> Arduino] Transmitting: {command}")
@@ -50,17 +53,15 @@ class BLEManager:
                 continue
             except Exception as e:
                 logger.error(f"[BLE] Failed to send command to Arduino: {e}")
-                self.disconnect_event.set() 
+                self.disconnect_event.set()
                 break
 
     async def run(self):
         """Main orchestrator for the BLE connection"""
         logger.info(f"[BLE] Starting manager. Looking for '{self.target_name}'...")
-        
+
         while True:
             try:
-                self.disconnect_event.clear()
-                
                 device = await BleakScanner.find_device_by_filter(
                     lambda d, _: d.name and self.target_name in d.name,
                     timeout=15.0
@@ -73,15 +74,25 @@ class BLEManager:
 
                 logger.info(f"[BLE] Found '{self.target_name}'. Connecting...")
                 
-                async with BleakClient(device, timeout=20.0, disconnected_callback=self.disconnected_callback) as client:
+                async with BleakClient(
+                    device,
+                    timeout=20.0,
+                    disconnected_callback=lambda _: self.disconnected_callback()
+                ) as client:
                     
-                    self.disconnect_event.clear()
-
                     self.client = client
+                    self.disconnect_event.clear()
+                    
                     logger.info("[BLE] Successfully connected to Arduino!")
                     await self.db.log_event("BLE", f"Connected to {self.target_name}", "INFO")
 
                     await client.start_notify(self.char_uuid, self.notification_handler)
+
+                    # send current timestamp to Arduino immediately after connection
+                    unix_ts = datetime.now()
+                    time_command = f"TIME:{unix_ts}"
+                    logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
+                    await client.write_gatt_char(self.write_uuid, time_command.encode('utf-8'), response=False)
 
                     sender_task = asyncio.create_task(self._sender_task())
 
@@ -91,7 +102,7 @@ class BLEManager:
                     self.client = None
 
             except BleakError as e:
-                logger.error(f"[BLE] Connection error: {e}")
+                logger.error(f"[BLE] Connection error: {e!r}")
                 await self.db.log_event("BLE", f"Connection error: {e}", "ERROR")
                 await asyncio.sleep(5)
                 
