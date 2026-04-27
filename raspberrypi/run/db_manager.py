@@ -54,6 +54,13 @@ class DatabaseManager:
                 )
             ''')
 
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS config (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            """)
+
             await db.commit()
             logger.info("Database initialized successfully with all tables.")
 
@@ -153,3 +160,23 @@ class DatabaseManager:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute("UPDATE system_logs SET synced_to_web=1 WHERE id=?", (log_id,))
             await db.commit()
+
+    async def get_config(self, key: str):
+        async with self.conn.execute(
+            "SELECT value FROM config WHERE key = ?", (key,)
+        ) as cursor:
+        row = await cursor.fetchone()
+        return row['value'] if row else None
+
+    async def set_config(self, key: str, value: str):
+        await self.conn.execute(
+            "INSERT INTO config (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, str(value))
+        )
+        await self.conn.commit()
+
+    async def get_all_config(self) -> dict:
+        async with self.conn.execute("SELECT key, value FROM config") as cursor:
+            rows = await cursor.fetchall()
+            return {row['key']: row['value'] for row in rows}
