@@ -184,4 +184,11 @@ public class AbsenceServiceImpl implements AbsenceService {
         status.setClockedIn(false);
         clockStatusRepository.save(status);
     }
+
+    @Override
+    public boolean isClockedIn(Userx user) {
+        return clockStatusRepository.findById(user.getId().toString())
+                .map(UserClockStatus::isClockedIn)
+                .orElse(false);
+    }
 }

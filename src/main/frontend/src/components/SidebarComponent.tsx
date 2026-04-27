@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
 import '../styles/Sidebar.css';
 import { ROUTES } from '../utilities/routes.paths';
+import ClockInOutButton from './ClockInOutButton';
 
 interface SidebarProps {
     readonly visible: boolean;
@@ -109,6 +110,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             </div>
 
             <div className="sidebar-footer">
+                <ClockInOutButton />
                 <div className="user-profile">
                     <div className="user-avatar">
                         <i className="pi pi-user" style={{ fontSize: '1.5rem' }}></i>
