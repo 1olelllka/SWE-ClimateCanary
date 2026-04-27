@@ -17,6 +17,8 @@ public:
   bool hasReceivedTime() const;
   unsigned long getReceivedTime() const;
 
+  String getCurrentTimestamp() const;
+
 private:
   static void onRxWritten(BLEDevice central, BLECharacteristic characteristic);
 
@@ -41,4 +43,6 @@ private:
 
   unsigned long receivedUnixTime = 0;
   bool timeReceived = false;
+  String receivedTimestamp = "";
+  unsigned long timeSyncMillis = 0;
 };

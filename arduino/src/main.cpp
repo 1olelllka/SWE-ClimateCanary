@@ -36,13 +36,11 @@ void setup() {
 
   if (!sensorManager.begin()) {
     Serial.println("BME680 init failed");
-    displayManager.showDisconnected();
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
     Serial.println("BLE init failed");
-    displayManager.showDisconnected();
     return;
   }
 

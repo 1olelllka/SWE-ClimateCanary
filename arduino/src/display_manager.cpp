@@ -15,36 +15,7 @@ void DisplayManager::showStartup() {
   lcd.setCursor(0, 0);
   lcd.print("Starting...");
   lcd.setCursor(0, 1);
-  lcd.print("Collecting data...");
-}
-
-void DisplayManager::showConnected() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Connected");
-  lcd.setCursor(0, 1);
-  lcd.print("Pi joined");
-}
-
-void DisplayManager::showDisconnected() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Disconnected");
-  lcd.setCursor(0, 1);
-  lcd.print("Waiting...");
-}
-
-void DisplayManager::showMessageFromPi(const String& msg) {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("From Pi:");
-  lcd.setCursor(0, 1);
-
-  if (msg.length() <= 16) {
-    lcd.print(msg);
-  } else {
-    lcd.print(msg.substring(0, 16));
-  }
+  lcd.print("Collecting data");
 }
 
 void DisplayManager::showReading(const SensorReading& reading) {
