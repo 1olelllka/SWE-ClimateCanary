@@ -1,6 +1,9 @@
 #include "ble_manager.h"
 #include "display_manager.h"
 
+#define JSON_BUFFER_SIZE 128
+#define ADVERTISING_INTERVAL 32
+
 BLEManager* BLEManager::instance = nullptr;
 
 bool BLEManager::begin(DisplayManager* display) {
@@ -11,19 +14,21 @@ bool BLEManager::begin(DisplayManager* display) {
     return false;
   }
 
-  BLE.setAdvertisingInterval(32);
+  BLE.setAdvertisingInterval(ADVERTISING_INTERVAL);
   BLE.setLocalName(DEVICE_NAME);
   BLE.setDeviceName(DEVICE_NAME);
   BLE.setAdvertisedService(service);
-
-  txCharacteristic.writeValue("Hello from Arduino");
-  rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
 
   service.addCharacteristic(txCharacteristic);
   service.addCharacteristic(rxCharacteristic);
   BLE.addService(service);
 
-  //BLE.advertise();
+  txCharacteristic.writeValue("Hello from Arduino");
+  rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
+
+  BLE.advertise();
+  Serial.println("BLE advertising started");
+
   return true;
 }
 
@@ -38,9 +43,10 @@ void BLEManager::poll() {
     Serial.print("Connected to: ");
     Serial.println(currentCentral.address());
 
-    if (displayManager != nullptr) {
-      displayManager->showConnected();
-    }
+    timeReceived = false;
+
+    txCharacteristic.writeValue("TIME_REQUEST");
+    Serial.println("Requested time from Pi");
   }
 
   if (currentCentral && !currentCentral.connected()) {
@@ -48,10 +54,10 @@ void BLEManager::poll() {
     Serial.println(currentCentral.address());
 
     currentCentral = BLEDevice();
+    timeReceived = false;
 
-    if (displayManager != nullptr) {
-      displayManager->showDisconnected();
-    }
+    BLE.advertise();
+    Serial.println("BLE advertising restarted");
   }
 }
 
@@ -65,21 +71,33 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   }
 
   String json;
-  json.reserve(64);
+  json.reserve(JSON_BUFFER_SIZE);
 
   json += "{";
-  json += "\"temperature\":";
+
+  json += "\"timestamp\":\"";
+  json += getCurrentTimestamp();
+  json += "\"";
+
+  json += ",\"temperature\":";
   json += String(r.temperatureC, 2);
+
   json += ",\"moisture\":";
   json += String(r.humidityPct, 2);
+
   json += ",\"co2\":";
   json += String(r.airQualityIndex, 2);
+
   json += "}";
 
   return json;
 }
 
 void BLEManager::sendReading(const SensorReading& reading) {
+  if (!isConnected()) {
+    return;
+  }
+
   String payload = serializeReading(reading);
   txCharacteristic.writeValue(payload);
 
@@ -101,7 +119,58 @@ void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic
   Serial.print("): ");
   Serial.println(received);
 
-  if (instance->displayManager != nullptr) {
-    instance->displayManager->showMessageFromPi(received);
+  if (received.startsWith("TIME:")) {
+    instance->receivedTimestamp = received.substring(5);
+    instance->timeSyncMillis = millis();
+    instance->timeReceived = true;
+
+    Serial.print("Time Format: ");
+    Serial.println(instance->receivedTimestamp);
   }
+}
+
+String BLEManager::getCurrentTimestamp() const {
+  if (!timeReceived || receivedTimestamp.length() < 19) {
+    return "0";
+  }
+
+  int year   = receivedTimestamp.substring(0, 4).toInt();
+  int month  = receivedTimestamp.substring(5, 7).toInt();
+  int day    = receivedTimestamp.substring(8, 10).toInt();
+  int hour   = receivedTimestamp.substring(11, 13).toInt();
+  int minute = receivedTimestamp.substring(14, 16).toInt();
+  int second = receivedTimestamp.substring(17, 19).toInt();
+
+  unsigned long elapsedSeconds = (millis() - timeSyncMillis) / 1000;
+  second += elapsedSeconds;
+
+  while (second >= 60) {
+    second -= 60;
+    minute++;
+  }
+
+  while (minute >= 60) {
+    minute -= 60;
+    hour++;
+  }
+
+  while (hour >= 24) {
+    hour -= 24;
+    day++;
+  }
+
+  char buffer[24];
+  snprintf(
+    buffer,
+    sizeof(buffer),
+    "%04d-%02d-%02d %02d:%02d:%02d",
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second
+  );
+
+  return String(buffer);
 }

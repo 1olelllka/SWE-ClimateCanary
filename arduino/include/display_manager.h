@@ -31,10 +31,6 @@ public:
 
   void begin(); 
   void showStartup();
-  void showWaiting();
-  void showConnected();
-  void showDisconnected();
-  void showMessageFromPi(const String& msg);
   void showReading(const SensorReading& reading);
 
   void nextMode();
@@ -45,5 +41,5 @@ public:
   void clearFault();
 
 private:
-  rgb_lcd lcd;   
+  rgb_lcd lcd;
 };
