@@ -24,7 +24,7 @@ export const SettingsPage: React.FC = () => {
 
     const [notifications, setNotifications] = useState({
         warnings: false,
-        tipps: false,
+        tips: false,
         absences: false,
         problemRooms: false
     });
@@ -196,10 +196,10 @@ export const SettingsPage: React.FC = () => {
                     <label className="settings-checkbox-row">
                         <input
                             type="checkbox"
-                            checked={notifications.tipps}
-                            onChange={() => handleNotificationChange('tipps')}
+                            checked={notifications.tips}
+                            onChange={() => handleNotificationChange('tips')}
                         />
-                        <span>Tipps</span>
+                        <span>Tips</span>
                     </label>
 
                     <label className="settings-checkbox-row">
