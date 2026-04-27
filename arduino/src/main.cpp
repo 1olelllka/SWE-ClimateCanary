@@ -8,6 +8,7 @@
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
 #define PREVIOUS_PAGE_BUTTON_PIN D4
+#define SENSOR_WARMUP_TIME_MS 30000
 
 SensorManager sensorManager;
 BLEManager bleManager;
@@ -74,7 +75,7 @@ void loop() {
   if (now - lastSensorRead >= SENSOR_INTERVAL_MS) {
     lastSensorRead = now;
 
-    if (now < 30000) {
+    if (now < SENSOR_WARMUP_TIME_MS) {
       Serial.println("Still in gas sensor warm-up period, skipping sensor read");
     }
     else if (sensorManager.update()) {

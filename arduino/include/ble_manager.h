@@ -14,9 +14,6 @@ public:
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
 
-  bool hasReceivedTime() const;
-  unsigned long getReceivedTime() const;
-
   String getCurrentTimestamp() const;
 
 private:
@@ -41,7 +38,6 @@ private:
   DisplayManager* displayManager = nullptr;
   BLEDevice currentCentral;
 
-  unsigned long receivedUnixTime = 0;
   bool timeReceived = false;
   String receivedTimestamp = "";
   unsigned long timeSyncMillis = 0;

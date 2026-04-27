@@ -2,6 +2,7 @@
 #include "display_manager.h"
 
 #define JSON_BUFFER_SIZE 128
+#define ADVERTISING_INTERVAL 32
 
 BLEManager* BLEManager::instance = nullptr;
 
@@ -13,7 +14,7 @@ bool BLEManager::begin(DisplayManager* display) {
     return false;
   }
 
-  BLE.setAdvertisingInterval(32);
+  BLE.setAdvertisingInterval(ADVERTISING_INTERVAL);
   BLE.setLocalName(DEVICE_NAME);
   BLE.setDeviceName(DEVICE_NAME);
   BLE.setAdvertisedService(service);
@@ -43,14 +44,9 @@ void BLEManager::poll() {
     Serial.println(currentCentral.address());
 
     timeReceived = false;
-    receivedUnixTime = 0;
 
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
-
-    if (displayManager != nullptr) {
-      displayManager->showConnected();
-    }
   }
 
   if (currentCentral && !currentCentral.connected()) {
@@ -59,14 +55,9 @@ void BLEManager::poll() {
 
     currentCentral = BLEDevice();
     timeReceived = false;
-    receivedUnixTime = 0;
 
     BLE.advertise();
     Serial.println("BLE advertising restarted");
-
-    if (displayManager != nullptr) {
-      displayManager->showDisconnected();
-    }
   }
 }
 
@@ -136,14 +127,6 @@ void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic
     Serial.print("Time Format: ");
     Serial.println(instance->receivedTimestamp);
   }
-}
-
-bool BLEManager::hasReceivedTime() const {
-  return timeReceived;
-}
-
-unsigned long BLEManager::getReceivedTime() const {
-  return receivedUnixTime;
 }
 
 String BLEManager::getCurrentTimestamp() const {
