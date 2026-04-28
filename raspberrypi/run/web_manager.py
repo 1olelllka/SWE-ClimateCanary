@@ -2,125 +2,141 @@ import asyncio
 import logging
 import aiohttp
 from aiohttp import web
+from config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
 
+NOTIFY_HANDLERS = {
+    "LIMIT_CHANGE":     ConfigManager.handle_limit_change,
+    "SENSOR_CHANGE":    ConfigManager.handle_sensor_change,
+    "OCCUPANCY_CHANGE": ConfigManager.handle_occupancy_change,
+    "CONFIG_CHANGE":    ConfigManager.handle_config_change,
+}
+
 class WebManager:
-    def __init__(self, config, db, web_out_queue):
-        self.config = config
-        self.db = db
+    def __init__(self, static_config, db, web_out_queue, auth):
+        self.static_config = static_config
+        self.db            = db
         self.web_out_queue = web_out_queue
-        
-        self.api_url = self.config['webapp']['api_url']
-        self.local_port = self.config['webapp']['local_listen_port']
+        self.auth          = auth
+        self.local_port    = static_config['webapp']['local_listen_port']
+        self.server_url    = static_config['webapp']['server_url']
 
-    async def handle_limit_update(self, request):
-        """Webapp sends new limits here (e.g., {"key": "max_temp", "value": 26.5})"""
-        try:
-            data = await request.json()
-            key = data.get("key")
-            value = data.get("value")
-            
-            if key and value is not None:
-                # Instantly save to database so the DataProcessor uses it on the next reading
-                await self.db.set_limit(key, float(value))
-                logger.info(f"[Web -> Pi] Dynamically updated limit: {key} = {value}")
-                return web.json_response({"status": "success", "message": f"Limit {key} updated"})
-            
-            return web.json_response({"status": "error", "message": "Missing 'key' or 'value'"}, status=400)
-        except Exception as e:
-            logger.error(f"[WebManager] Error updating limit: {e}")
-            return web.json_response({"status": "error", "message": str(e)}, status=500)
+# Inbound endpoints (Webapp -> Pi)
 
-    async def handle_occupancy_update(self, request):
-        """Webapp frequently updates current or max occupancy here.
-           Expects JSON like: {"current": 12, "max": 20} or just one of them.
+    async def handle_notify(self, request):
+        """Single entry point for all webapp-initiated updates.
+
+        Webapp sends: {"type": "LIMIT_CHANGE"} (or SENSOR_CHANGE, etc.)
+        Pi looks up the handler, fetches the updated data, and updates DB.
+
+        This is fire-and-forget from the webapp's perspective — Pi always
+        pulls the source of truth itself rather than trusting push payloads.
         """
         try:
-            data = await request.json()
-            current_occ = data.get("current")
-            max_occ = data.get("max")
-            
-            updated = []
-            
-            if current_occ is not None:
-                await self.db.set_limit("current_occupancy", float(current_occ))
-                updated.append(f"current={current_occ}")
-                
-            if max_occ is not None:
-                await self.db.set_limit("max_occupancy", float(max_occ))
-                updated.append(f"max={max_occ}")
-                
-            if updated:
-                logger.info(f"[Web -> Pi] Occupancy updated: {', '.join(updated)}")
-                return web.json_response({"status": "success", "message": f"Updated: {', '.join(updated)}"})
-                
-            return web.json_response({"status": "error", "message": "Missing 'current' or 'max'"}, status=400)
-            
+            data         = await request.json()
+            notify_type  = data.get("type", "").upper()
+            handler      = NOTIFY_HANDLERS.get(notify_type)
+
+            if not handler:
+                logger.warning(f"[Web -> Pi] Unknown notify type: '{notify_type}'")
+                return web.json_response(
+                    {"status": "error", "message": f"Unknown notify type: {notify_type}"},
+                    status=400
+                )
+
+            logger.info(f"[Web -> Pi] Notify received: {notify_type}")
+
+            asyncio.create_task(self._handle_notify_task(notify_type, handler))
+
+            return web.json_response({"status": "accepted", "type": notify_type})
+
         except Exception as e:
-            logger.error(f"[WebManager] Error updating occupancy: {e}")
+            logger.error(f"[WebManager] Error handling notify: {e}")
             return web.json_response({"status": "error", "message": str(e)}, status=500)
 
+    async def _handle_notify_task(self, notify_type: str, handler):
+        """Background task that calls the config handler and logs the result."""
+        try:
+            await handler(self.db, self.auth)
+        except Exception as e:
+            logger.error(f"[WebManager] Failed to handle notify '{notify_type}': {e}")
+            await self.db.log_event("CONFIG", f"Failed to handle notify {notify_type}: {e}", "ERROR")
+
     async def run_local_server(self):
-        """Runs the background API listening for the Webapp."""
+        """Runs the local REST API that the webapp calls."""
         app = web.Application()
-        app.router.add_post('/api/limits', self.handle_limit_update)
-        app.router.add_post('/api/occupancy', self.handle_occupancy_update)
-        
+        app.router.add_post('/notify', self.handle_notify)
+
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, '0.0.0.0', self.local_port)
         await site.start()
-        
+
         logger.info(f"[WebManager] Local API listening on port {self.local_port}")
         while True:
-            await asyncio.sleep(3600) # Keep server running safely
+            await asyncio.sleep(3600)
+
+# Outbound workers (Pi -> Webapp)
+
+    async def _post_with_auth(self, session, url: str, payload: dict) -> bool:
+        """POST with automatic token refresh on 401. Returns True on success."""
+        async with session.post(url, json=payload, headers=self.auth.get_headers()) as response:
+            if response.status == 401:
+                await self.auth.refresh_if_needed()
+                async with session.post(url, json=payload, headers=self.auth.get_headers()) as retry:
+                    return retry.status in (200, 201)
+            return response.status in (200, 201)
 
     async def run_outgoing_worker(self):
-        """Pushes real-time sensor data from the queue to the Webapp."""
+        """Pushes sensor data and violation reports from the queue to the Webapp."""
         logger.info("[WebManager] Outgoing worker started.")
-        headers = {"Content-Type": "application/json"}
         timeout = aiohttp.ClientTimeout(total=10)
-        
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
                 payload = await self.web_out_queue.get()
-                
+
                 try:
-                    async with session.post(self.api_url, json=payload, headers=headers) as response:
-                        if response.status not in (200, 201):
-                            logger.warning(f"[WebManager] Webapp rejected data (HTTP {response.status}).")
-                            await asyncio.sleep(5)
-                            await self.web_out_queue.put(payload)
-                
+                    api_url = f"{self.server_url}/api/sensor-data"
+
+                    success = await self._post_with_auth(session, api_url, payload)
+
+                    if not success:
+                        logger.warning("[WebManager] Webapp rejected payload. Requeueing in 5s...")
+                        await asyncio.sleep(5)
+                        await self.web_out_queue.put(payload)
+
                 except Exception as e:
-                    logger.error(f"[WebManager] Network error reaching Webapp: {e}")
+                    logger.error(f"[WebManager] Network error: {e}")
                     await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
                     await asyncio.sleep(10)
-                    await self.web_out_queue.put(payload) 
-                    
+                    await self.web_out_queue.put(payload)
+
                 finally:
                     self.web_out_queue.task_done()
 
     async def run_offline_sync_worker(self):
-        """Periodically pushes unsynced system errors to the Webapp."""
+        """Periodically pushes unsynced system logs to the Webapp."""
         logger.info("[WebManager] Offline sync worker started.")
-        headers = {"Content-Type": "application/json"}
-        timeout = aiohttp.ClientTimeout(total=10)
-        log_api_url = self.api_url.replace("/sensor-data", "/logs") 
-        
+        timeout     = aiohttp.ClientTimeout(total=10)
+        log_api_url = f"{self.server_url}/api/logs"
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
                 await asyncio.sleep(30)
                 try:
+                    device_name   = await self.db.get_config('ble.target_name')
                     unsynced_logs = await self.db.get_unsynced_logs()
+
                     for log_entry in unsynced_logs:
-                        payload = dict(log_entry)
-                        payload["device"] = self.config['ble']['target_name']
-                        
-                        async with session.post(log_api_url, json=payload, headers=headers) as response:
-                            if response.status in (200, 201):
-                                await self.db.mark_log_synced(log_entry["id"])
-                                logger.info(f"[WebManager] Successfully synced offline log ID {log_entry['id']}")
+                        payload           = dict(log_entry)
+                        payload["device"] = device_name
+
+                        success = await self._post_with_auth(session, log_api_url, payload)
+                        if success:
+                            await self.db.mark_log_synced(log_entry["id"])
+                            logger.info(f"[WebManager] Synced offline log ID {log_entry['id']}")
+
                 except Exception:
-                    pass
+                    pass  # Offline sync is best-effort, never crash the worker
