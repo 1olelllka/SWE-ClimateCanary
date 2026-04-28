@@ -99,31 +99,50 @@ class WebManager:
             return response.status in (200, 201)
 
     async def run_outgoing_data_worker(self):
-        """Pushes sensor data from the queue to the Webapp."""
         logger.info("[WebManager] Outgoing data worker started.")
         timeout = aiohttp.ClientTimeout(total=10)
-
+        
+        failure_streak = 0
+        OFFLINE_THRESHOLD = 3
+        is_webapp_offline = False
+    
+        async def _broadcast_to_arduinos(command: str):
+            for ble in self.ble_managers.values():
+                await ble.ble_inbox.put(command)
+    
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
                 payload = await self.web_out_queue.get()
-
+    
                 try:
                     api_url = f"{self.server_url}/api/sensor-data"
-
                     success = await self._post_with_auth(session, api_url, payload)
-
-                    if not success:
-                        logger.warning("[WebManager] Webapp rejected payload. Requeueing in 5s...")
+    
+                    if success:
+                        failure_streak = 0
+                        if is_webapp_offline:
+                            is_webapp_offline = False
+                            logger.info("[WebManager] Webapp back online — notifying Arduinos.")
+                            await _broadcast_to_arduinos("WEBAPP:ONLINE")
+                    else:
+                        failure_streak += 1
+                        logger.warning(f"[WebManager] Webapp rejected payload (streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 5s...")
                         await asyncio.sleep(5)
                         await self.web_out_queue.put(payload)
-
+    
                 except Exception as e:
-                    logger.error(f"[WebManager] Network error: {e}")
+                    failure_streak += 1
+                    logger.error(f"[WebManager] Network error (streak {failure_streak}/{OFFLINE_THRESHOLD}): {e}")
                     await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
                     await asyncio.sleep(10)
                     await self.web_out_queue.put(payload)
-
+    
                 finally:
+                    if failure_streak >= OFFLINE_THRESHOLD and not is_webapp_offline:
+                        is_webapp_offline = True
+                        logger.warning("[WebManager] Webapp confirmed offline — notifying Arduinos.")
+                        await _broadcast_to_arduinos("WEBAPP:OFFLINE")
+    
                     self.web_out_queue.task_done()
 
     async def run_outgoing_violation_worker(self):
