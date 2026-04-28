@@ -10,7 +10,6 @@
 
 import asyncio
 import logging
-import signal
 import sys
 
 from config_manager import ConfigManager
@@ -18,6 +17,7 @@ from db_manager import DatabaseManager
 from data_processor import DataProcessor
 from web_manager import WebManager
 from ble_manager import BLEManager
+from auth_manager import AuthManager 
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,28 @@ async def main(config):
     
     db = DatabaseManager(config['paths']['database'])
     await db.init_db()
+
+    auth = AuthManager(
+        server_url=config['web_app']['server_url'],
+        username=config['auth']['username'],
+        password=config['auth']['password']
+            )
+    try:
+        await auth.login()
+    except Exception as e:
+        logger.error(f"[Auth] Login failed: {e}.")
+        sys.exit(1)
+
+    try:
+        await ConfigManager.fetch_and_seed(config, db, auth)
+    except Exception as e:
+        logger.error(f"[Config] Could not reach WebApp on startup: {e}. Using existing db config.")
     
     processing_queue = asyncio.Queue()
     web_out_queue = asyncio.Queue()
     ble_inbox = asyncio.Queue()
     
-    processor = DataProcessor(db, config, processing_queue, web_out_queue, ble_inbox)
+    processor = DataProcessor(db, processing_queue, web_out_queue, ble_inbox)
     web_manager = WebManager(config, db, web_out_queue)
     ble_manager = BLEManager(config, db, processing_queue, ble_inbox)
 

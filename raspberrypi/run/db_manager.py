@@ -161,22 +161,30 @@ class DatabaseManager:
             await db.execute("UPDATE system_logs SET synced_to_web=1 WHERE id=?", (log_id,))
             await db.commit()
 
-    async def get_config(self, key: str):
-        async with self.conn.execute(
-            "SELECT value FROM config WHERE key = ?", (key,)
-        ) as cursor:
-        row = await cursor.fetchone()
-        return row['value'] if row else None
-
+    async def get_config(self, key: str) -> str | None:
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute(
+                "SELECT value FROM config WHERE key = ?", (key,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else None
+    
     async def set_config(self, key: str, value: str):
-        await self.conn.execute(
-            "INSERT INTO config (key, value) VALUES (?, ?) "
-            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            (key, str(value))
-        )
-        await self.conn.commit()
-
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """
+                INSERT INTO config (key, value, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value,
+                updated_at = excluded.updated_at
+                """,
+                (key, str(value), datetime.now().isoformat())
+            )
+            await db.commit()
+    
     async def get_all_config(self) -> dict:
-        async with self.conn.execute("SELECT key, value FROM config") as cursor:
-            rows = await cursor.fetchall()
-            return {row['key']: row['value'] for row in rows}
+        async with aiosqlite.connect(self.db_path) as db:
+            async with db.execute("SELECT key, value FROM config") as cursor:
+                rows = await cursor.fetchall()
+                return {row[0]: row[1] for row in rows}

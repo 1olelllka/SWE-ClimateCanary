@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import json
 from datetime import datetime
@@ -6,9 +5,8 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class DataProcessor:
-    def __init__(self, db, config, processing_queue, web_out_queue, ble_inbox):
+    def __init__(self, db, processing_queue, web_out_queue, ble_inbox):
         self.db = db
-        self.config = config
         self.processing_queue = processing_queue
         self.web_out_queue = web_out_queue
         self.ble_inbox = ble_inbox
@@ -34,7 +32,7 @@ class DataProcessor:
                     continue
 
                 timestamp = datetime.now().isoformat()
-                device_name = self.config['ble']['target_name']
+                device_name = await self.db.get_config('ble.target_name')
                 
                 if data['timestamp'] is None:
                     data['timestamp'] = timestamp
@@ -57,16 +55,16 @@ class DataProcessor:
                         
                         await self.db.register_violation(sensor_key, limit, val)
                         
-                        violation_report = {
-                            "type": "violation_warning",
-                            "device": device_name,
-                            "timestamp": timestamp,
-                            "limit_reached": sensor_key,
-                            "violation_delta": round(val - limit, 2),
-                            "actual_value": val,
-                            "threshold": limit
-                        }
-                        await self.violation_out_queue.put(violation_report)
+                     #   violation_report = {
+                     #        "type": "violation_warning",
+                     #        "device": device_name,
+                     #        "timestamp": timestamp,
+                     #        "limit_reached": sensor_key,
+                     #        "violation_delta": round(val - limit, 2),
+                     #        "actual_value": val,
+                     #        "threshold": limit
+                     #    }
+                     #   await self.violation_out_queue.put(violation_report)
                         
                         await self.ble_inbox.put(f"ALERT:{sensor_key.upper()}")
                         
@@ -88,7 +86,7 @@ class DataProcessor:
                 )
 
                 webapp_payload = {
-                    "roomId": self.config.get('room_id', '3aae450a-3206-4ca7-8f4a-1981c388b1f5'),
+                    "roomId": await self.db.get_config('room_id'),
                     "timestamp": timestamp,
                     "readings": []
                 }
