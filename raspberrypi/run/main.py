@@ -102,6 +102,7 @@ async def main(static_config: dict):
     except asyncio.CancelledError:
         logger.info("All tasks cancelled. Exiting cleanly.")
     finally:
+        await db.close()
         logger.info("Gateway stopped.")
 
 
