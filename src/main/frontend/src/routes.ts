@@ -7,69 +7,76 @@ import HomePage from "./views/HomePage";
 import UserConfigurationPage from "./views/UserConfigurationPage";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
-import {ROUTES} from "./utilities/routes.paths";
+import { ROUTES } from "./utilities/routes.paths";
 import EmployeeDashboard from "./views/EmployeeDashboard";
 import RoleBasedHome from "./views/RoleBasedHome";
 import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
-import UserConfigurationPage from "./views/UserConfigurationPage";
 import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
 import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 import SettingsPage from "./views/SettingsPage";
-/**
- * Define the routes of the application.
- */
+import DepartmentDetailPage from "./views/DepartmentDetailPage";
 
 export const HomePageRoute = {
     url: ROUTES.HOME,
-    component: RoleBasedHome
-}
+    component: RoleBasedHome,
+};
 
 export const ManageUsersRoute = {
     url: ROUTES.MANAGE_USERS,
-    component: UserConfigurationPage
-}
+    component: UserConfigurationPage,
+};
+
 export const LoginsRoute = {
     url: ROUTES.LOGIN,
-    component: Login
-}
+    component: Login,
+};
+
 export const LogoutsRoute = {
     url: ROUTES.LOGOUT,
-    component: Logout
-}
+    component: Logout,
+};
 
 export const DeviceConfigurationRoute = {
     url: ROUTES.DEVICE_CONFIGURATION,
-    component: DeviceConfigurationPage
-}
+    component: DeviceConfigurationPage,
+};
 
 export const UserConfigurationRoute = {
     url: ROUTES.USER_CONFIGURATION,
-    component: UserConfigurationPage
-}
+    component: UserConfigurationPage,
+};
 
 export const BuildingConfigurationRoute = {
     url: ROUTES.BUILDING_CONFIGURATION,
-    component: BuildingConfigurationPage
-}
+    component: BuildingConfigurationPage,
+};
 
 export const EmployeeAbsencesRoute = {
     url: ROUTES.EMPLOYEE_ABSENCES,
-    component: EmployeeAbsencesPage
-}
+    component: EmployeeAbsencesPage,
+};
 
 export const DepartmentAbsencesRoute = {
     url: ROUTES.DEPARTMENT_ABSENCES,
-    component: DepartmentAbsencesPage
+    component: DepartmentAbsencesPage,
 };
 
 export const EmployeeDepartmentRoute = {
     url: ROUTES.EMPLOYEE_DEPARTMENT,
-    component: EmployeeDepartmentPage
+    component: EmployeeDepartmentPage,
 };
 
 export const SettingsRoute = {
     url: ROUTES.SETTINGS,
-    component: SettingsPage
+    component: SettingsPage,
 };
+
+export const DepartmentDetailRoute = {
+    url: ROUTES.DEPARTMENT_DETAIL,
+    component: DepartmentDetailPage,
+};
+
+// referenced but not yet routed — kept to avoid unused-import warnings
+const _unused = [HomePage, EmployeeDashboard];
