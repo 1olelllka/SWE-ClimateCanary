@@ -32,39 +32,39 @@ class ConfigManager:
         On subsequent boots: skips keys already in DB so live updates win.
         If webapp is unreachable: logs a warning and continues with existing DB.
         """
-        pi_id      = static_config['identity']['raspberry_id']
+        pi_id = static_config['identity']['raspberry_id']
         server_url = static_config['webapp']['server_url']
 
         await db.set_config('raspberry_id', pi_id)
         await db.set_config('server_url', server_url)
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/config", auth
-        )
+                f"{server_url}/api/raspberry/{pi_id}/config", auth
+                )
 
         sensors = remote.get('sensors', [])
-        limits  = remote.get('limits', {})
+        limits = remote.get('limits', {})
 
         sensor_list = [
-            {
-                'name':       s.get('name'),
-                'char_uuid':  s['readId'],
-                'write_uuid': s['writeId'],
-            }
-            for s in sensors if s.get('name')
-        ]
+                {
+                    'name':       s.get('name'),
+                    'char_uuid':  s['readId'],
+                    'write_uuid': s['writeId'],
+                    }
+                for s in sensors if s.get('name')
+                ]
 
         candidates = {
-            'room_id':         remote.get('roomId'),
-            'raspberry_id':    pi_id,
-            'server_url':      server_url,
-            'frequency':       str(remote.get('frequency', 10000)),
-            'max_temp':        limits.get('tempMax'),
-            'min_temp':        limits.get('tempMin'),
-            'max_moisture':    limits.get('humMax'),
-            'min_moisture':    limits.get('humMin'),
-            'max_co2':         limits.get('co2Max'),
-        }
+                'room_id':         remote.get('roomId'),
+                'raspberry_id':    pi_id,
+                'server_url':      server_url,
+                'frequency':       str(remote.get('frequency', 10000)),
+                'max_temp':        limits.get('tempMax'),
+                'min_temp':        limits.get('tempMin'),
+                'max_moisture':    limits.get('humMax'),
+                'min_moisture':    limits.get('humMin'),
+                'max_co2':         limits.get('co2Max'),
+                }
 
         seeded = 0
         for key, value in candidates.items():
@@ -87,16 +87,16 @@ class ConfigManager:
         pi_id, server_url = await ConfigManager._identity(db)
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/limits", auth
-        )
+                f"{server_url}/api/raspberry/{pi_id}/limits", auth
+                )
 
         mapping = {
-            'max_temp':     remote.get('tempMax'),
-            'min_temp':     remote.get('tempMin'),
-            'max_moisture': remote.get('humMax'),
-            'min_moisture': remote.get('humMin'),
-            'max_co2':      remote.get('co2Max'),
-        }
+                'max_temp':     remote.get('tempMax'),
+                'min_temp':     remote.get('tempMin'),
+                'max_moisture': remote.get('humMax'),
+                'min_moisture': remote.get('humMin'),
+                'max_co2':      remote.get('co2Max'),
+                }
         for key, value in mapping.items():
             if value is not None:
                 await db.set_limit(key, float(value))
@@ -107,19 +107,19 @@ class ConfigManager:
     async def handle_sensor_change(db, auth) -> None:
         """Re-fetch and overwrite BLE sensor list. """
         pi_id, server_url = await ConfigManager._identity(db)
- 
+
         remote  = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/sensors", auth
-        )
+                f"{server_url}/api/raspberry/{pi_id}/sensors", auth
+                )
         sensors = remote.get('sensors', [])
- 
+
         sensor_list = [
-            {'name': s.get('name'), 'char_uuid': s['readId'], 'write_uuid': s['writeId']}
-            for s in sensors if s.get('name')
-        ]
+                {'name': s.get('name'), 'char_uuid': s['readId'], 'write_uuid': s['writeId']}
+                for s in sensors if s.get('name')
+                ]
         if sensor_list:
             await db.set_sensors(sensor_list)
- 
+
         logger.info(f"[Config] Sensor list updated: {[s['name'] for s in sensor_list]}")
 
     @staticmethod
@@ -128,8 +128,8 @@ class ConfigManager:
         pi_id, server_url = await ConfigManager._identity(db)
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/occupancy", auth
-        )
+                f"{server_url}/api/raspberry/{pi_id}/occupancy", auth
+                )
 
         if remote.get('current') is not None:
             await db.set_limit('current_occupancy', float(remote['current']))
@@ -145,13 +145,13 @@ class ConfigManager:
         pi_id, server_url = await ConfigManager._identity(db)
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/config", auth
-        )
+                f"{server_url}/api/raspberry/{pi_id}/config", auth
+                )
 
         updates = {
-            'room_id':   remote.get('roomId'),
-            'frequency': str(remote['frequency']) if remote.get('frequency') else None,
-        }
+                'room_id':   remote.get('roomId'),
+                'frequency': str(remote['frequency']) if remote.get('frequency') else None,
+                }
         for key, value in updates.items():
             if value is not None:
                 await db.set_config(key, value)

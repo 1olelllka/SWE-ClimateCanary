@@ -33,8 +33,8 @@ class BLEManager:
 
         # thread-safe, works regardless of which thread Bleak calls this from
         asyncio.get_event_loop().call_soon_threadsafe(
-            self.processing_queue.put_nowait, message
-        )
+                self.processing_queue.put_nowait, message
+                )
 
     async def _sender_task(self, write_uuid: str):
         """Background task that exclusively handles sending data TO the Arduino."""
@@ -65,7 +65,7 @@ class BLEManager:
             try:
                 sensors = await self.db.get_sensors()
                 sensor_cfg = next((s for s in sensors if s['name'] == self.name), None)
- 
+
                 if not sensor_cfg:
                     logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                     return
@@ -79,9 +79,9 @@ class BLEManager:
                 self.disconnect_event.clear()
 
                 device = await BleakScanner.find_device_by_filter(
-                    lambda d, _: d.name and target_name in d.name,
-                    timeout=15.0
-                )
+                        lambda d, _: d.name and target_name in d.name,
+                        timeout=15.0
+                        )
 
                 if not device:
                     logger.warning(f"[BLE] '{target_name}' not found. Retrying in 10s...")
@@ -91,10 +91,10 @@ class BLEManager:
                 logger.info(f"[BLE] Found '{target_name}'. Connecting...")
 
                 async with BleakClient(
-                    device,
-                    timeout=30.0,
-                    disconnected_callback=lambda _: self.disconnected_callback()
-                ) as client:
+                        device,
+                        timeout=30.0,
+                        disconnected_callback=lambda _: self.disconnected_callback()
+                        ) as client:
 
                     self.client = client
                     self.disconnect_event.clear()
@@ -105,7 +105,6 @@ class BLEManager:
                     await client.start_notify(char_uuid, self.notification_handler)
 
                     # Send current timestamp to Arduino immediately after connection
-                    # TODO send frequency, should each arduino have individual frequency ?
                     unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
                     time_command = f"TIME:{unix_ts}"
                     logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")

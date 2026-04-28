@@ -19,7 +19,7 @@ class AuthManager:
             async with session.post(url, json={
                 "username": self.username,
                 "password": self.password
-            }) as response:
+                }) as response:
                 response.raise_for_status()
                 data = await response.json()
                 self.token = data["token"]
@@ -30,9 +30,9 @@ class AuthManager:
         if not self.token:
             raise RuntimeError("Not authenticated. Call login() first.")
         return {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
-        }
+                "Authorization": f"Bearer {self.token}",
+                "Content-Type": "application/json"
+                }
 
     async def refresh_if_needed(self):
         """If a request returns 401 — re-login and retry."""

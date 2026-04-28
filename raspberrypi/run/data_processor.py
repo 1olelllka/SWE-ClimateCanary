@@ -48,10 +48,10 @@ class DataProcessor:
                     data['timestamp'] = timestamp
 
                 sensor_limit_map = {
-                    "temperature": "max_temp",
-                    "moisture":    "max_moisture",
-                    "co2":         "max_co2"
-                }
+                        "temperature": "max_temp",
+                        "moisture":    "max_moisture",
+                        "co2":         "max_co2"
+                        }
 
                 any_violation = False
                 for sensor_key, limit_key in sensor_limit_map.items():
@@ -64,15 +64,15 @@ class DataProcessor:
                         await self.db.register_violation(sensor_name, sensor_key, limit, val)
 
                         violation_report = {
-                            "type":            "violation_warning",
-                            "device":          sensor_name,
-                            "roomId":          room_id,
-                            "timestamp":       timestamp,
-                            "limit_reached":   sensor_key,
-                            "violation_delta": round(val - limit, 2),
-                            "actual_value":    val,
-                            "threshold":       limit
-                        }
+                                "type":            "violation_warning",
+                                "device":          sensor_name,
+                                "roomId":          room_id,
+                                "timestamp":       timestamp,
+                                "limit_reached":   sensor_key,
+                                "violation_delta": round(val - limit, 2),
+                                "actual_value":    val,
+                                "threshold":       limit
+                                }
                         await self.web_violation_queue.put(violation_report)
                         await ble_inbox.put(f"ALERT:{sensor_key.upper()}")
                         logger.warning(f"[Processor:{sensor_name}] {sensor_key} violation: {val} > {limit}")
@@ -86,19 +86,19 @@ class DataProcessor:
                         logger.info(f"[Processor:{sensor_name}] All violations resolved.")
 
                 await self.db.insert_measurement(
-                    sensor_name=sensor_name,
-                    temp=data.get('temperature'),
-                    moisture=data.get('moisture'),
-                    co2=data.get('co2'),
-                    timestamp=data.get('timestamp')
-                )
+                        sensor_name=sensor_name,
+                        temp=data.get('temperature'),
+                        moisture=data.get('moisture'),
+                        co2=data.get('co2'),
+                        timestamp=data.get('timestamp')
+                        )
 
                 webapp_payload = {
-                    "roomId":    room_id,
-                    "device":    sensor_name,
-                    "timestamp": timestamp,
-                    "readings":  []
-                }
+                        "roomId":    room_id,
+                        "device":    sensor_name,
+                        "timestamp": timestamp,
+                        "readings":  []
+                        }
 
                 if data.get('temperature') is not None:
                     webapp_payload["readings"].append({"type": "TEMPERATURE", "value": data['temperature']})

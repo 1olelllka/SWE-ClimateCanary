@@ -7,21 +7,21 @@ from config_manager import ConfigManager
 logger = logging.getLogger(__name__)
 
 NOTIFY_HANDLERS = {
-    "LIMIT_CHANGE":     ConfigManager.handle_limit_change,
-    "SENSOR_CHANGE":    ConfigManager.handle_sensor_change,
-    "OCCUPANCY_CHANGE": ConfigManager.handle_occupancy_change,
-    "CONFIG_CHANGE":    ConfigManager.handle_config_change,
-}
+        "LIMIT_CHANGE": ConfigManager.handle_limit_change,
+        "SENSOR_CHANGE": ConfigManager.handle_sensor_change,
+        "OCCUPANCY_CHANGE": ConfigManager.handle_occupancy_change,
+        "CONFIG_CHANGE": ConfigManager.handle_config_change,
+        }
 
 class WebManager:
     def __init__(self, static_config, db, web_out_queue, web_violation_queue, auth):
         self.static_config = static_config
-        self.db            = db
+        self.db = db
         self.web_out_queue = web_out_queue
         self.web_violation_queue = web_violation_queue
-        self.auth          = auth
-        self.local_port    = static_config['webapp']['local_listen_port']
-        self.server_url    = static_config['webapp']['server_url']
+        self.auth = auth
+        self.local_port = static_config['webapp']['local_listen_port']
+        self.server_url = static_config['webapp']['server_url']
 
 # Inbound endpoints (Webapp -> Pi)
 
@@ -31,16 +31,16 @@ class WebManager:
         Pi looks up the handler, fetches the updated data, and updates DB.
         """
         try:
-            data         = await request.json()
-            notify_type  = data.get("type", "").upper()
-            handler      = NOTIFY_HANDLERS.get(notify_type)
+            data = await request.json()
+            notify_type = data.get("type", "").upper()
+            handler = NOTIFY_HANDLERS.get(notify_type)
 
             if not handler:
                 logger.warning(f"[Web -> Pi] Unknown notify type: '{notify_type}'")
                 return web.json_response(
-                    {"status": "error", "message": f"Unknown notify type: {notify_type}"},
-                    status=400
-                )
+                        {"status": "error", "message": f"Unknown notify type: {notify_type}"},
+                        status=400
+                        )
 
             logger.info(f"[Web -> Pi] Notify received: {notify_type}")
 
@@ -112,7 +112,7 @@ class WebManager:
 
                 finally:
                     self.web_out_queue.task_done()
-    
+
     async def run_outgoing_violation_worker(self):
         """Pushes violation reports from the queue to the webapp."""
         logger.info("[WebManager] Outgoing violation report worker started.")
@@ -151,11 +151,11 @@ class WebManager:
             while True:
                 await asyncio.sleep(30)
                 try:
-                    device_name   = await self.db.get_config('ble.target_name')
+                    device_name = await self.db.get_config('ble.target_name')
                     unsynced_logs = await self.db.get_unsynced_logs()
 
                     for log_entry in unsynced_logs:
-                        payload           = dict(log_entry)
+                        payload = dict(log_entry)
                         payload["device"] = device_name
 
                         success = await self._post_with_auth(session, log_api_url, payload)

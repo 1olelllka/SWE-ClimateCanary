@@ -35,53 +35,53 @@ class DatabaseManager:
             raise RuntimeError("Database not connected. Call connect() first.")
 
         await self.db.execute('''
-            CREATE TABLE IF NOT EXISTS measurements (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp   TEXT NOT NULL,
-                temperature REAL,
-                moisture    REAL,
-                co2         REAL
-            )
-        ''')
+                              CREATE TABLE IF NOT EXISTS measurements (
+                                  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                                  timestamp   TEXT NOT NULL,
+                                  temperature REAL,
+                                  moisture    REAL,
+                                  co2         REAL
+                                  )
+                              ''')
 
         await self.db.execute('''
-            CREATE TABLE IF NOT EXISTS system_limits (
-                key        TEXT PRIMARY KEY,
-                value      REAL NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        ''')
+                              CREATE TABLE IF NOT EXISTS system_limits (
+                                  key        TEXT PRIMARY KEY,
+                                  value      REAL NOT NULL,
+                                  updated_at TEXT NOT NULL
+                                  )
+                              ''')
 
         await self.db.execute('''
-            CREATE TABLE IF NOT EXISTS limit_violations (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                sensor_name     TEXT NOT NULL,
-                type            TEXT NOT NULL,
-                threshold_value REAL NOT NULL,
-                actual_value    REAL NOT NULL,
-                started_at      TEXT NOT NULL,
-                resolved_at     TEXT,
-                is_active       INTEGER DEFAULT 1
-            )
-        ''')
+                              CREATE TABLE IF NOT EXISTS limit_violations (
+                                  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                                  sensor_name     TEXT NOT NULL,
+                                  type            TEXT NOT NULL,
+                                  threshold_value REAL NOT NULL,
+                                  actual_value    REAL NOT NULL,
+                                  started_at      TEXT NOT NULL,
+                                  resolved_at     TEXT,
+                                  is_active       INTEGER DEFAULT 1
+                                  )
+                              ''')
 
         await self.db.execute('''
-            CREATE TABLE IF NOT EXISTS system_logs (
-                id             INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp      TEXT NOT NULL,
-                category       TEXT NOT NULL,
-                message        TEXT NOT NULL,
-                synced_to_web  INTEGER DEFAULT 0
-            )
-        ''')
+                              CREATE TABLE IF NOT EXISTS system_logs (
+                                  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                                  timestamp      TEXT NOT NULL,
+                                  category       TEXT NOT NULL,
+                                  message        TEXT NOT NULL,
+                                  synced_to_web  INTEGER DEFAULT 0
+                                  )
+                              ''')
 
         await self.db.execute('''
-            CREATE TABLE IF NOT EXISTS config (
-                key        TEXT PRIMARY KEY,
-                value      TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-        ''')
+                              CREATE TABLE IF NOT EXISTS config (
+                                  key        TEXT PRIMARY KEY,
+                                  value      TEXT NOT NULL,
+                                  updated_at TEXT NOT NULL
+                                  )
+                              ''')
 
         await self.db.commit()
         logger.info("[DB] Database initialized successfully with all tables.")
@@ -97,15 +97,15 @@ class DatabaseManager:
     async def set_config(self, key: str, value: str):
         """Upsert a config value."""
         await self.db.execute(
-            """
-            INSERT INTO config (key, value, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET
+                """
+                INSERT INTO config (key, value, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
                 value      = excluded.value,
                 updated_at = excluded.updated_at
-            """,
-            (key, str(value), get_current_time())
-        )
+                """,
+                (key, str(value), get_current_time())
+                )
         await self.db.commit()
         logger.debug(f"[Config] {key} = {value}")
 
@@ -132,9 +132,9 @@ class DatabaseManager:
     async def insert_measurement(self, temp: float, moisture: float, co2: float, timestamp: str):
         """Insert sensor readings into the measurements table."""
         await self.db.execute(
-            "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
-            (timestamp, temp, moisture, co2)
-        )
+                "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
+                (timestamp, temp, moisture, co2)
+                )
         await self.db.commit()
         logger.info(f"[DB] Measurement stored at {timestamp}: temp={temp}, moisture={moisture}, co2={co2}")
 
@@ -143,15 +143,15 @@ class DatabaseManager:
     async def set_limit(self, key: str, value: float):
         """Save or update a threshold limit from the Webapp."""
         await self.db.execute(
-            """
-            INSERT INTO system_limits (key, value, updated_at)
-            VALUES (?, ?, ?)
-            ON CONFLICT(key) DO UPDATE SET
+                """
+                INSERT INTO system_limits (key, value, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
                 value      = excluded.value,
                 updated_at = excluded.updated_at
-            """,
-            (key, value, get_current_time())
-        )
+                """,
+                (key, value, get_current_time())
+                )
         await self.db.commit()
         logger.info(f"[DB] Limit updated: {key} = {value}")
 
@@ -172,17 +172,17 @@ class DatabaseManager:
     async def register_violation(self, sensor_name: str, sensor_type: str, threshold: float, actual: float):
         """Register a new violation atomically, preventing TOCTOU duplicates."""
         async with self.db.execute("""
-            INSERT INTO limit_violations (sensor_name, type, threshold_value, actual_value, started_at)
-            SELECT ?, ?, ?, ?, ?
-            WHERE NOT EXISTS (
-                SELECT 1 FROM limit_violations 
-                WHERE sensor_name = ? AND type = ? AND is_active = 1
-            )
-            """, (sensor_name, sensor_type, threshold, actual, get_current_time(), sensor_name, sensor_type)
-        ) as cursor:
-            
+                                   INSERT INTO limit_violations (sensor_name, type, threshold_value, actual_value, started_at)
+                                   SELECT ?, ?, ?, ?, ?
+                                   WHERE NOT EXISTS (
+                                       SELECT 1 FROM limit_violations 
+                                       WHERE sensor_name = ? AND type = ? AND is_active = 1
+                                       )
+                                   """, (sensor_name, sensor_type, threshold, actual, get_current_time(), sensor_name, sensor_type)
+                                   ) as cursor:
+
             await self.db.commit()
-            
+
             # Only log if the WHERE NOT EXISTS check passed and a new row was added
             if cursor.rowcount > 0:
                 logger.warning(f"[DB] Violation: {sensor_name}/{sensor_type} = {actual} (limit: {threshold})")
@@ -190,9 +190,9 @@ class DatabaseManager:
     async def resolve_violation(self, sensor_name: str, sensor_type: str):
         """Mark an active violation as resolved."""
         await self.db.execute(
-            "UPDATE limit_violations SET is_active=0, resolved_at=? WHERE sensor_name=? AND type=? AND is_active=1",
-            (get_current_time(), sensor_name, sensor_type)
-        )
+                "UPDATE limit_violations SET is_active=0, resolved_at=? WHERE sensor_name=? AND type=? AND is_active=1",
+                (get_current_time(), sensor_name, sensor_type)
+                )
         await self.db.commit()
         logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
 
@@ -215,9 +215,9 @@ class DatabaseManager:
 
         if level in ("ERROR", "WARN", "WARNING"):
             await self.db.execute(
-                "INSERT INTO system_logs (timestamp, category, message) VALUES (?, ?, ?)",
-                (get_current_time(), category, message)
-            )
+                    "INSERT INTO system_logs (timestamp, category, message) VALUES (?, ?, ?)",
+                    (get_current_time(), category, message)
+                    )
             await self.db.commit()
 
     async def get_unsynced_logs(self) -> list:

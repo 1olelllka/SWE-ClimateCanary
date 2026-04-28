@@ -1,11 +1,11 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-#     "aiosqlite>=0.20.0",
-#     "pyyaml>=6.0",
-#     "bleak>=0.21.0",
-#     "aiohttp>=3.9.0"
-# ]
+        #     "aiosqlite>=0.20.0",
+        #     "pyyaml>=6.0",
+        #     "bleak>=0.21.0",
+        #     "aiohttp>=3.9.0"
+        # ]
 # ///
 import asyncio
 import logging
@@ -30,10 +30,10 @@ async def main(static_config: dict):
     await db.init_db()
 
     auth = AuthManager(
-        server_url=static_config['webapp']['server_url'],
-        username=static_config['auth']['username'],
-        password=static_config['auth']['password']
-    )
+            server_url=static_config['webapp']['server_url'],
+            username=static_config['auth']['username'],
+            password=static_config['auth']['password']
+            )
     try:
         await auth.login()
     except Exception as e:
@@ -44,9 +44,9 @@ async def main(static_config: dict):
         await ConfigManager.fetch_and_seed(static_config, db, auth)
     except Exception as e:
         logger.warning(
-            f"[Config] Could not reach webapp on startup: {e}. "
-            "Continuing with existing DB config — Pi must have run before."
-        )
+                f"[Config] Could not reach webapp on startup: {e}. "
+                "Continuing with existing DB config — Pi must have run before."
+                )
 
     sensors = await db.get_sensors()
 
@@ -57,18 +57,18 @@ async def main(static_config: dict):
 
 
     tasks: list[asyncio.Task[Any]] = [
-        asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
-        asyncio.create_task(web_manager.run_outgoing_data_worker(), name="WebOutgoingData"),
-        asyncio.create_task(web_manager.run_outgoing_violation_worker(), name="WebOutgoingViolation"),
-        asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
-    ]
-    
+            asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
+            asyncio.create_task(web_manager.run_outgoing_data_worker(), name="WebOutgoingData"),
+            asyncio.create_task(web_manager.run_outgoing_violation_worker(), name="WebOutgoingViolation"),
+            asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
+            ]
+
     for sensor in sensors:
         proc_queue = asyncio.Queue()
         ble_queue = asyncio.Queue()
 
         ble_manager = BLEManager(db, sensor, proc_queue, ble_queue)
-        
+
         # one ble manager per arduino 
         tasks.append(asyncio.create_task(ble_manager.run(), name=f"BLE:{sensor['name']}"))
         # one processor worker per arduino (same DataProcessor instance)
@@ -90,13 +90,13 @@ if __name__ == "__main__":
         sys.exit(1)
 
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(static_config['paths']['log_file']),
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(static_config['paths']['log_file']),
+                logging.StreamHandler(sys.stdout)
+                ]
+            )
 
     try:
         asyncio.run(main(static_config))
