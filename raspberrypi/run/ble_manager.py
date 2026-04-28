@@ -128,13 +128,13 @@ class BLEManager:
                             await self.disconnect_event.wait()
                             sender_task.cancel()
                             self.client = None
+                            break
 
                     except BleakError as e:
                         logger.error(f"[BLE:{self.name}] Connection error on attempt {attempt}: {e!r}")
                         await self.db.log_event("BLE", f"Connection error on {target_name}: {e}", "ERROR")
                         if attempt < 5:
                             await asyncio.sleep(5)
-                    break
 
                 if not connected:
                     logger.error(f"[BLE:{self.name}] All 5 attempts failed. Waiting for RECONNECT notify...")
