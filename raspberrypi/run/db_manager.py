@@ -226,7 +226,12 @@ class DatabaseManager:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-    async def mark_log_synced(self, log_id: int):
-        """Mark a log entry as successfully synced so it isn't sent again."""
-        await self.db.execute("UPDATE system_logs SET synced_to_web = 1 WHERE id = ?", (log_id,))
-        await self.db.commit()
+async def mark_logs_synced(self, log_ids: list[int]):
+    """Mark a batch of log entries as successfully synced."""
+    async with aiosqlite.connect(self.db_path) as db:
+        placeholders = ",".join("?" * len(log_ids))
+        await db.execute(
+                f"UPDATE system_logs SET synced_to_web=1 WHERE id IN ({placeholders})",
+                log_ids
+                )
+        await db.commit()

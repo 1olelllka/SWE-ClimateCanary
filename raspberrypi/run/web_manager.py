@@ -142,26 +142,33 @@ class WebManager:
                     self.web_violation_queue.task_done()
 
     async def run_offline_sync_worker(self):
-        """Periodically pushes unsynced system logs to the Webapp."""
+        """Periodically pushes unsynced system logs to the Webapp in bulk."""
         logger.info("[WebManager] Offline sync worker started.")
-        timeout     = aiohttp.ClientTimeout(total=10)
-        log_api_url = f"{self.server_url}/api/logs"
+        timeout = aiohttp.ClientTimeout(total=10)
+        log_api_url = f"{self.server_url}/api/logs/bulk"
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
                 await asyncio.sleep(30)
                 try:
-                    device_name = await self.db.get_config('ble.target_name')
                     unsynced_logs = await self.db.get_unsynced_logs()
-
-                    for log_entry in unsynced_logs:
-                        payload = dict(log_entry)
-                        payload["device"] = device_name
-
-                        success = await self._post_with_auth(session, log_api_url, payload)
-                        if success:
-                            await self.db.mark_log_synced(log_entry["id"])
-                            logger.info(f"[WebManager] Synced offline log ID {log_entry['id']}")
-
-                except Exception:
-                    pass  # Offline sync is best-effort, never crash the worker
+                    if not unsynced_logs:
+                        continue
+    
+                    payload = {
+                        "device": await self.db.get_config('ble.target_name'),
+                        "logs":   unsynced_logs
+                    }
+    
+                    success = await self._post_with_auth(session, log_api_url, payload)
+    
+                    if success:
+                        ids = [entry["id"] for entry in unsynced_logs]
+                        await self.db.mark_logs_synced(ids)
+                        logger.info(f"[WebManager] Synced {len(ids)} offline logs in bulk.")
+                    else:
+                        logger.warning("[WebManager] Bulk log sync rejected by webapp. Will retry in 30s.")
+    
+                except Exception as e:
+                    logger.warning(f"[WebManager] Offline sync error: {e}")
+                    # Best-effort, never crash the worker
