@@ -13,9 +13,10 @@ class DataProcessor:
     Arduino is processed independently.
     """
 
-    def __init__(self, db, web_out_queue: asyncio.Queue):
-        self.db            = db
+    def __init__(self, db, web_out_queue, web_violation_queue):
+        self.db = db
         self.web_out_queue = web_out_queue
+        self.web_violation_queue = web_violation_queue
 
     async def run(self, sensor_name: str, processing_queue: asyncio.Queue, ble_inbox: asyncio.Queue):
         """Worker loop for a single Arduino's queue.
@@ -72,7 +73,7 @@ class DataProcessor:
                             "actual_value":    val,
                             "threshold":       limit
                         }
-                        await self.web_out_queue.put(violation_report)
+                        await self.web_violation_queue.put(violation_report)
                         await ble_inbox.put(f"ALERT:{sensor_key.upper()}")
                         logger.warning(f"[Processor:{sensor_name}] {sensor_key} violation: {val} > {limit}")
 

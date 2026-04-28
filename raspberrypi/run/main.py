@@ -51,8 +51,9 @@ async def main(static_config: dict):
     sensors = await db.get_sensors()
 
     web_out_queue = asyncio.Queue()
-    processor = DataProcessor(db, web_out_queue)
-    web_manager = WebManager(static_config, db, web_out_queue, auth)
+    web_violation_queue = asyncio.Queue()
+    processor = DataProcessor(db, web_out_queue, web_violation_queue)
+    web_manager = WebManager(static_config, db, web_out_queue, web_violation_queue, auth)
 
 
     tasks: list[asyncio.Task[Any]] = [

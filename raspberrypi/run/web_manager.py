@@ -14,10 +14,11 @@ NOTIFY_HANDLERS = {
 }
 
 class WebManager:
-    def __init__(self, static_config, db, web_out_queue, auth):
+    def __init__(self, static_config, db, web_out_queue, web_violation_queue, auth):
         self.static_config = static_config
         self.db            = db
         self.web_out_queue = web_out_queue
+        self.web_violation_queue = web_violation_queue
         self.auth          = auth
         self.local_port    = static_config['webapp']['local_listen_port']
         self.server_url    = static_config['webapp']['server_url']
@@ -84,9 +85,9 @@ class WebManager:
                     return retry.status in (200, 201)
             return response.status in (200, 201)
 
-    async def run_outgoing_worker(self):
-        """Pushes sensor data and violation reports from the queue to the Webapp."""
-        logger.info("[WebManager] Outgoing worker started.")
+    async def run_outgoing_data_worker(self):
+        """Pushes sensor data from the queue to the Webapp."""
+        logger.info("[WebManager] Outgoing data worker started.")
         timeout = aiohttp.ClientTimeout(total=10)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -111,6 +112,34 @@ class WebManager:
 
                 finally:
                     self.web_out_queue.task_done()
+    
+    async def run_outgoing_violation_worker(self):
+        """Pushes violation reports from the queue to the webapp."""
+        logger.info("[WebManager] Outgoing violation report worker started.")
+        timeout = aiohttp.ClientTimeout(total=10)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            while True:
+                payload = await self.web_violation_queue.get()
+
+                try:
+                    api_url = f"{self.server_url}/api/violations"
+
+                    success = await self._post_with_auth(session, api_url, payload)
+
+                    if not success:
+                        logger.warning("[WebManager] Webapp rejected payload. Requeueing in 5s...")
+                        await asyncio.sleep(5)
+                        await self.web_violation_queue.put(payload)
+
+                except Exception as e:
+                    logger.error(f"[WebManager] Network error: {e}")
+                    await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
+                    await asyncio.sleep(10)
+                    await self.web_violation_queue.put(payload)
+
+                finally:
+                    self.web_violation_queue.task_done()
 
     async def run_offline_sync_worker(self):
         """Periodically pushes unsynced system logs to the Webapp."""
