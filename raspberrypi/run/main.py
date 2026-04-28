@@ -65,7 +65,7 @@ async def main(static_config: dict):
             ]
 
     queues = {
-            sensor['main']: {
+            sensor['name']: {
                 'proc': asyncio.Queue(),
                 'inbox': asyncio.Queue()
                 } for sensor in sensors 
