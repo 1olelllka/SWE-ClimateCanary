@@ -11,4 +11,5 @@ export const ROUTES = {
     DEPARTMENT_ABSENCES: '/department-absences',
     EMPLOYEE_DEPARTMENT: '/my-department',
     SETTINGS: '/settings',
+    DEPARTMENT_DETAIL: '/senior/department/:departmentName',
 } as const;
