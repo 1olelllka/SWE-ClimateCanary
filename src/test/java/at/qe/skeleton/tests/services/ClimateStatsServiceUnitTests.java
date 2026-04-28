@@ -1,11 +1,12 @@
 package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
+import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
-import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,8 +28,9 @@ class ClimateStatsServiceUnitTests {
     @Mock RoomMonitoringRepository  roomMonitoringRepository;
 
 
-    @Spy ClimateDataPointMapper climateMapper   = new ClimateDataPointMapper();
+    @Spy ClimateDataPointMapper climateMapper    = new ClimateDataPointMapper();
     @Spy AggregatedStatsMapper  aggregatedMapper = new AggregatedStatsMapper();
+    @Spy LimitMapper            limitMapper      = new LimitMapper();
 
     @InjectMocks ClimateStatsServiceImpl service;
 
@@ -325,11 +327,11 @@ class ClimateStatsServiceUnitTests {
         @DisplayName("returns aggregated stats when pre-aggregated data exists")
         void usesAggregatedData() {
             AggregatedStats agg = AggregatedStats.builder()
-                    .roomId(roomId).date(today)
+                    .roomId(roomId).date(today).granularity(Granularity.DAILY)
                     .avgTemp(21).avgHumidity(53).avgCO2(350)
                     .build();
-            when(aggregatedStatsRepository.findByRoomIdAndDateBetween(
-                    eq(roomId), any(), any()))
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
                     .thenReturn(List.of(agg));
 
             List<AggregatedDataPointDTO> result =
@@ -344,8 +346,8 @@ class ClimateStatsServiceUnitTests {
         @Test
         @DisplayName("falls back to raw grouping when no aggregated data exists")
         void fallsBackToRaw() {
-            when(aggregatedStatsRepository.findByRoomIdAndDateBetween(
-                    eq(roomId), any(), any()))
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
                     .thenReturn(List.of());
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     eq(roomId), any(), any()))
@@ -365,6 +367,63 @@ class ClimateStatsServiceUnitTests {
             assertThatThrownBy(() -> service.getClimateHistoryReduced(roomId, "DECADE"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("DECADE");
+        }
+    }
+
+
+    @Nested
+    @DisplayName("getLimits")
+    class GetLimits {
+
+        private RoomMonitoring roomWithLimits() {
+            return RoomMonitoring.builder()
+                    .roomId(roomId)
+                    .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
+                    .humLimit(HumidityLimit.builder().minVal(30f).maxVal(70f).build())
+                    .polLimit(PollutionLimit.builder().maxVal(800f).build())
+                    .build();
+        }
+
+        @Test
+        @DisplayName("returns LimitDTO with correct values when room exists")
+        void returnsLimitsForKnownRoom() {
+            when(roomMonitoringRepository.findById(roomId))
+                    .thenReturn(Optional.of(roomWithLimits()));
+
+            LimitDTO result = service.getLimits(roomId);
+
+            assertThat(result.roomId()).isEqualTo(roomId);
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
+        }
+
+        @Test
+        @DisplayName("returns defaults when room has no limits configured")
+        void returnsDefaultsWhenLimitsNull() {
+            RoomMonitoring noLimits = RoomMonitoring.builder().roomId(roomId).build();
+            when(roomMonitoringRepository.findById(roomId))
+                    .thenReturn(Optional.of(noLimits));
+
+            LimitDTO result = service.getLimits(roomId);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
+        }
+
+        @Test
+        @DisplayName("throws NotFoundException when room does not exist")
+        void throwsWhenRoomNotFound() {
+            when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.getLimits(roomId))
+                    .isInstanceOf(NotFoundException.class)
+                    .hasMessageContaining(roomId.toString());
         }
     }
 }
