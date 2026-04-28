@@ -55,24 +55,32 @@ class ConfigManager:
                 for s in sensors if s.get('name')
                 ]
 
-        candidates = {
-                'room_id':         remote.get('roomId'),
-                'raspberry_id':    pi_id,
-                'server_url':      server_url,
-                'frequency':       str(remote.get('frequency', 10000)),
-                'max_temp':        limits.get('tempMax'),
-                'min_temp':        limits.get('tempMin'),
-                'max_moisture':    limits.get('humMax'),
-                'min_moisture':    limits.get('humMin'),
-                'max_co2':         limits.get('co2Max'),
-                }
-
+        config_candidates = {
+            'room_id':   remote.get('roomId'),
+            'frequency': str(remote.get('frequency', 100)),
+        }
+        
+        limit_candidates = {
+            'max_temp':     limits.get('tempMax'),
+            'min_temp':     limits.get('tempMin'),
+            'max_moisture': limits.get('humMax'),
+            'min_moisture': limits.get('humMin'),
+            'max_co2':      limits.get('co2Max'),
+        }
+        
         seeded = 0
-        for key, value in candidates.items():
+        for key, value in config_candidates.items():
             if value is None:
                 continue
             if await db.get_config(key) is None:
                 await db.set_config(key, value)
+                seeded += 1
+        
+        for key, value in limit_candidates.items():
+            if value is None:
+                continue
+            if await db.get_limit(key) is None:
+                await db.set_limit(key, float(value))
                 seeded += 1
 
         if sensor_list:
