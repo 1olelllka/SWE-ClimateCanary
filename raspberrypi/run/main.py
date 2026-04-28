@@ -26,6 +26,7 @@ async def main(static_config: dict):
     logger.info("Starting IoT Gateway")
 
     db = DatabaseManager(static_config['paths']['database'])
+    await db.connect()
     await db.init_db()
 
     auth = AuthManager(

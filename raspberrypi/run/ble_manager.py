@@ -105,7 +105,7 @@ class BLEManager:
                     await client.start_notify(char_uuid, self.notification_handler)
 
                     # Send current timestamp to Arduino immediately after connection
-                    # TODO send frequency, should each arduino have individual frequency 
+                    # TODO send frequency, should each arduino have individual frequency ?
                     unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
                     time_command = f"TIME:{unix_ts}"
                     logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
