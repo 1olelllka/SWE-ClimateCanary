@@ -16,6 +16,7 @@ class BLEManager:
 
         self.client = None
         self.disconnect_event = asyncio.Event()
+        self.reconnect_event = asyncio.Event()
 
     @property
     def name(self) -> str:
@@ -73,54 +74,66 @@ class BLEManager:
                 target_name = sensor_cfg['name']
                 char_uuid   = sensor_cfg['char_uuid']
                 write_uuid  = sensor_cfg['write_uuid']
-
-                logger.info(f"[BLE] Looking for '{target_name}'...")
-
-                self.disconnect_event.clear()
-
-                device = await BleakScanner.find_device_by_filter(
-                        lambda d, _: d.name and target_name in d.name,
-                        timeout=15.0
-                        )
-
-                if not device:
-                    logger.warning(f"[BLE] '{target_name}' not found. Retrying in 10s...")
-                    await asyncio.sleep(10)
-                    continue
-
-                logger.info(f"[BLE] Found '{target_name}'. Connecting...")
-
-                async with BleakClient(
-                        device,
-                        timeout=30.0,
-                        disconnected_callback=lambda _: self.disconnected_callback()
-                        ) as client:
-
-                    self.client = client
+                
+                connected = False 
+                for attempt in range (1,6):
+                    logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
-                    logger.info("[BLE] Successfully connected to Arduino!")
-                    await self.db.log_event("BLE", f"Connected to {target_name}", "INFO")
+                    device = await BleakScanner.find_device_by_filter(
+                            lambda d, _: d.name and target_name in d.name,
+                            timeout=15.0
+                            )
 
-                    await client.start_notify(char_uuid, self.notification_handler)
+                    if not device:
+                        logger.warning(f"[BLE] '{target_name}' not found (attempt {attempt}/5))")
+                        if attempt < 5:
+                            await asyncio.sleep(3)
+                        continue
 
-                    # Send current timestamp to Arduino immediately after connection
-                    unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
-                    time_command = f"TIME:{unix_ts}"
-                    logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
-                    await client.write_gatt_char(write_uuid, time_command.encode('utf-8'), response=False)
+                    logger.info(f"[BLE] Found '{target_name}'. Connecting (attempt {attempt}/5)...")
+                    
+                    try:
+                        async with BleakClient(
+                                device,
+                                timeout=30.0,
+                                disconnected_callback=lambda _: self.disconnected_callback()
+                                ) as client:
 
-                    sender_task = asyncio.create_task(self._sender_task(write_uuid))
+                            self.client = client
+                            self.disconnect_event.clear()
+                            connected = True 
 
-                    await self.disconnect_event.wait()
+                            logger.info(f"[BLE:{self.name}] connected!")
+                            await self.db.log_event("BLE", f"Connected to {target_name}", "INFO")
 
-                    sender_task.cancel()
-                    self.client = None
+                            await client.start_notify(char_uuid, self.notification_handler)
 
-            except BleakError as e:
-                logger.error(f"[BLE] Connection error: {e!r}")
-                await self.db.log_event("BLE", f"Connection error: {e}", "ERROR")
-                await asyncio.sleep(5)
+                            # Send current timestamp to Arduino immediately after connection
+                            unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
+                            await client.write_gatt_char(
+                                write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False
+                                )
+                            logger.info(f"[BLE:{self.name}] Time sync sent.")
+
+                            sender_task = asyncio.create_task(self._sender_task(write_uuid))
+                            await self.disconnect_event.wait()
+                            sender_task.cancel()
+                            self.client = None
+
+                    except BleakError as e:
+                        logger.error(f"[BLE:{self.name}] Connection error on attempt {attempt}: {e!r}")
+                        await self.db.log_event("BLE", f"Connection error on {target_name}: {e}", "ERROR")
+                        if attempt < 5:
+                            await asyncio.sleep(5)
+                    break
+
+                if not connected:
+                    logger.error(f"[BLE:{self.name}] All 5 attempts failed. Waiting for RECONNECT notify...")
+                    await self.db.log_event("BLE", f"Failed to connect to {target_name} after 5 attempts", "ERROR")
+                    self.reconnect_event.clear()
+                    await self.reconnect_event.wait()
+                    logger.info(f"[BLE:{self.name}] RECONNECT received. Retrying...")
 
             except Exception as e:
                 logger.error(f"[BLE] Unexpected error: {e!r}")

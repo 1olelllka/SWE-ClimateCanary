@@ -64,16 +64,38 @@ async def main(static_config: dict):
             asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
             ]
 
-    for sensor in sensors:
-        proc_queue = asyncio.Queue()
-        ble_queue = asyncio.Queue()
+    queues = {
+            sensor['main']: {
+                'proc': asyncio.Queue(),
+                'inbox': asyncio.Queue()
+                } for sensor in sensors 
+            }
 
-        ble_manager = BLEManager(db, sensor, proc_queue, ble_queue)
+    ble_managers = {
+            sensor['name']: BLEManager(
+                db,
+                sensor,
+                queues[sensor['name']]['proc'],
+                queues[sensor['name']]['inbox']
+                )
+            for sensor in sensors
+            }
 
-        # one ble manager per arduino 
-        tasks.append(asyncio.create_task(ble_manager.run(), name=f"BLE:{sensor['name']}"))
-        # one processor worker per arduino (same DataProcessor instance)
-        tasks.append(asyncio.create_task(processor.run(sensor['name'], proc_queue, ble_queue), name=f"Proc:{sensor['name']}"))
+    web_manager.ble_managers = ble_managers 
+
+    for sensor_name, ble_manager in ble_managers.items():
+        tasks.append(asyncio.create_task(
+            ble_manager.run(),
+            name=f"BLE:{sensor_name}"
+            ))
+        tasks.append(asyncio.create_task(
+            processor.run(
+                sensor_name,
+                queues[sensor_name]['proc'],
+                queues[sensor_name]['inbox']
+                ),
+            name=f"Proc:{sensor_name}"
+            ))
 
     try:
         await asyncio.gather(*tasks)

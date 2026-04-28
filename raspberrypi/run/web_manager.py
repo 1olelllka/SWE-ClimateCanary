@@ -3,6 +3,7 @@ import logging
 import aiohttp
 from aiohttp import web
 from config_manager import ConfigManager
+from ble_manager import BLEManager
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,7 @@ NOTIFY_HANDLERS = {
         "SENSOR_CHANGE": ConfigManager.handle_sensor_change,
         "OCCUPANCY_CHANGE": ConfigManager.handle_occupancy_change,
         "CONFIG_CHANGE": ConfigManager.handle_config_change,
+        "RECONNECT": None, # handled seperately below 
         }
 
 class WebManager:
@@ -22,6 +24,7 @@ class WebManager:
         self.auth = auth
         self.local_port = static_config['webapp']['local_listen_port']
         self.server_url = static_config['webapp']['server_url']
+        self.ble_managers: dict[str, BLEManager] = {}
 
 # Inbound endpoints (Webapp -> Pi)
 
@@ -33,6 +36,15 @@ class WebManager:
         try:
             data = await request.json()
             notify_type = data.get("type", "").upper()
+
+            if notify_type == "RECONNECT":
+                sensor_name = data.get('sensor')
+                if sensor_name and sensor_name in self.ble_managers:
+                    self.ble_managers[sensor_name].reconnect_event.set()
+                    logger.info(f"[Web -> Pi] RECONNECT triggered for {sensor_name}")
+                    return web.json_response({"status": "accepted", "type": "RECONNECT"}, status=202)
+                return web.json_response({"status": "error", "message": "Unknown sensor"}, status=400)
+
             handler = NOTIFY_HANDLERS.get(notify_type)
 
             if not handler:

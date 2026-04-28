@@ -20,7 +20,7 @@ class DataProcessor:
 
     async def run(self, sensor_name: str, processing_queue: asyncio.Queue, ble_inbox: asyncio.Queue):
         """Worker loop for a single Arduino's queue.
-        Called once per sensor — main creates one task per sensor.
+        Called once per sensor, main creates one task per sensor.
         """
         logger.info(f"[Processor:{sensor_name}] Worker started.")
 
