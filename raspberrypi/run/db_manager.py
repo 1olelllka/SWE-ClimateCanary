@@ -37,6 +37,7 @@ class DatabaseManager:
         await self.db.execute('''
                               CREATE TABLE IF NOT EXISTS measurements (
                                   id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                                  sensor_name TEXT NOT NULL,
                                   timestamp   TEXT NOT NULL,
                                   temperature REAL,
                                   moisture    REAL,
@@ -138,13 +139,12 @@ class DatabaseManager:
 # Measurements
 
     async def insert_measurement(self, sensor_name: str, temp: float, moisture: float, co2: float, timestamp: str):
-        """Insert sensor readings into the measurements table."""
         await self.db.execute(
-                "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
-                (timestamp, temp, moisture, co2)
-                )
+            "INSERT INTO measurements (sensor_name, timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?, ?)",
+            (sensor_name, timestamp, temp, moisture, co2)
+        )
         await self.db.commit()
-        logger.debug(f"[DB] Measurement stored at {timestamp}: sensor={sensor_name}, temp={temp}, moisture={moisture}, co2={co2}")
+        logger.debug(f"[DB] Measurement stored: sensor={sensor_name}, temp={temp}, moisture={moisture}, co2={co2}, ts={timestamp}")
 
 # Limits
 
