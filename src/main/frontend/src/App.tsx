@@ -12,7 +12,9 @@ import {
     UserConfigurationRoute,
     BuildingConfigurationRoute,
     EmployeeAbsencesRoute,
-    DepartmentAbsencesRoute
+    DepartmentAbsencesRoute,
+    EmployeeDepartmentRoute,
+    SettingsRoute
 } from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
@@ -33,6 +35,8 @@ const App: React.FC = () => {
                             <Route path={UserConfigurationRoute.url} Component={UserConfigurationRoute.component}/>
                             <Route path={BuildingConfigurationRoute.url} Component={BuildingConfigurationRoute.component}/>
                             <Route path={DepartmentAbsencesRoute.url} Component={DepartmentAbsencesRoute.component}/>
+                            <Route path={EmployeeDepartmentRoute.url} Component={EmployeeDepartmentRoute.component}/>
+                            <Route path={SettingsRoute.url} Component={SettingsRoute.component}/>
                         </Route>
                     </Routes>
                 </BrowserRouter>

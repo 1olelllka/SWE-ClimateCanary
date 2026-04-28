@@ -6,6 +6,7 @@ import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.dtos.AbsenceDTO;
 import at.qe.skeleton.dtos.AbsenceListDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
+import at.qe.skeleton.dtos.ClockStatusDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AbsenceCreateMapper;
 import at.qe.skeleton.mappers.AbsenceListMapper;
@@ -30,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/absences")
@@ -113,8 +115,22 @@ public class AbsenceController {
         if (dto.startDate().isAfter(dto.endDate())) {
             throw new ValidationException("Start date must not be after end date.");
         }
+        if (dto.startDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Starting date must be in present or future.");
+        }
+
+        if (dto.endDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Ending date must be in present or future.");
+        }
         Absence absence = absenceService.createNewAbsenceForUser(absenceCreateMapper.mapFrom(dto));
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/clock-status")
+    public ResponseEntity<ClockStatusDTO> getClockStatus() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        boolean clockedIn = absenceService.isClockedIn(user);
+        return new ResponseEntity<>(new ClockStatusDTO(clockedIn), HttpStatus.OK);
     }
 
     @GetMapping("{absence_id}")

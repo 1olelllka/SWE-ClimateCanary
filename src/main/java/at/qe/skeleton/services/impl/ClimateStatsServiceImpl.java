@@ -18,6 +18,7 @@ import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.ClimateStatsService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Log
 public class ClimateStatsServiceImpl implements ClimateStatsService {
 
     private final ClimateStatsRepository climateStatsRepository;
@@ -60,7 +62,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         RoomMonitoring room = roomMonitoringRepository.findById(batch.roomId())
                 .orElseThrow(() -> new NotFoundException(
                         "RoomMonitoring not found: " + batch.roomId()));
-
+        log.info("The room was found.");
         double temp = 0;
         double hum = 0;
         double poll = 0;
@@ -71,7 +73,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 case CO2         -> poll = r.value();
             }
         }
-
+        log.info("Received: Temperature – " + temp + ", Humidity – " + hum + ", CO2 – " + poll + ".");
         climateStatsRepository.save(ClimateStats.builder()
                 .roomMonitoring(room)
                 .date(batch.timestamp())
@@ -79,6 +81,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 .humVal(hum)
                 .pollVal(poll)
                 .build());
+        log.info("Data was saved.");
     }
 
     // to get values for a specific timeframe for a specific room
@@ -124,11 +127,11 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDate from = resolveFrom(timeframe, to);
 
         List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
-
+                .findByRoomIdAndDateBetween(roomId, from, to);
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
+        log.info("Aggregated Data was not found.");
 
         // this is just a fallback for now — should be removed once background job is running
         return groupRawByDay(roomId, from, to);

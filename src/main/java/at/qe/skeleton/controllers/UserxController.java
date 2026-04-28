@@ -17,7 +17,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import at.qe.skeleton.model.Room;
+import at.qe.skeleton.repositories.RoomRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -37,6 +41,8 @@ public class UserxController {
     private final UserService userService;
     private final AbsenceService absenceService;
     private final AbsenceListMapper absenceListMapper;
+    private final RoomRepository roomRepository;
+    private final RoomMapper roomMapper;
 
     @Autowired
     public UserxController(UserxMapper userMapper,
@@ -44,13 +50,17 @@ public class UserxController {
                            UserxCreateMapper userxCreateMapper,
                            UserPatchMapper userPatchMapper,
                            AbsenceService absenceService,
-                           AbsenceListMapper absenceListMapper) {
+                           AbsenceListMapper absenceListMapper,
+                           RoomRepository roomRepository,
+                           RoomMapper roomMapper) {
         this.userMapper = userMapper;
         this.userService = userService;
         this.userxCreateMapper = userxCreateMapper;
         this.userPatchMapper = userPatchMapper;
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
+        this.roomRepository = roomRepository;
+        this.roomMapper = roomMapper;
     }
 
     @GetMapping("")
@@ -77,6 +87,26 @@ public class UserxController {
         Userx authenticated = userService.getByUsername(authentication.getName());
         Page<Absence> absences = absenceService.getAllAbsencesById(authenticated.getId(), pageable);
         return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
+    }
+
+    @GetMapping("/me/department/rooms")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE')")
+    public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
+        Userx authenticated = userService.getByUsername(authentication.getName());
+
+        if (authenticated.getMyRoom() == null || authenticated.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("User has no assigned room or department.");
+        }
+
+        UUID departmentId = authenticated.getMyRoom().getDepartment().getId();
+
+        List<RoomDTO> rooms = roomRepository.findAll().stream()
+                .filter(room -> room.getDepartment() != null)
+                .filter(room -> room.getDepartment().getId().equals(departmentId))
+                .map(roomMapper::mapTo)
+                .toList();
+
+        return new ResponseEntity<>(rooms, HttpStatus.OK);
     }
 
     @PostMapping("")

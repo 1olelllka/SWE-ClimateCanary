@@ -6,13 +6,23 @@ void ButtonManager::begin(uint8_t p) {
 }
 
 void ButtonManager::update() {
-  bool currentState = digitalRead(pin);
+  bool currentReading = digitalRead(pin);
 
-  if (lastState == HIGH && currentState == LOW) {
-    pressed = true;
+  if (currentReading != lastReading) {
+    lastDebounceTime = millis();
   }
 
-  lastState = currentState;
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (currentReading != stableState) {
+      stableState = currentReading;
+
+      if (stableState == LOW) {
+        pressed = true;
+      }
+    }
+  }
+
+  lastReading = currentReading;
 }
 
 bool ButtonManager::wasPressed() {
@@ -20,5 +30,6 @@ bool ButtonManager::wasPressed() {
     pressed = false;
     return true;
   }
+
   return false;
 }

@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.12"
 # dependencies = [
 #     "aiosqlite>=0.20.0",
 #     "pyyaml>=6.0",
@@ -11,76 +11,119 @@
 
 import asyncio
 import logging
-import signal
 import sys
 
+from auth_manager   import AuthManager
 from config_manager import ConfigManager
-from db_manager import DatabaseManager
+from db_manager     import DatabaseManager
 from data_processor import DataProcessor
-from web_manager import WebManager
-from ble_manager import BLEManager
-from mock_data import MockDataGenerator
+from web_manager    import WebManager
+from ble_manager    import BLEManager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-async def main(config):
-    logger.info("Starting IoT Gateway")
-    
-    db = DatabaseManager(config['paths']['database'])
-    await db.init_db()
-    
-    processing_queue = asyncio.Queue()
-    web_out_queue = asyncio.Queue()
-    violation_out_queue = asyncio.Queue() # New queue for urgent alerts
-    ble_inbox = asyncio.Queue()
-    
-    processor = DataProcessor(db, config, processing_queue, web_out_queue, violation_out_queue, ble_inbox)
-    web_manager = WebManager(config, db, web_out_queue, violation_out_queue)
-    ble_manager = BLEManager(config, db, processing_queue, ble_inbox)
-    # mock_gen = MockDataGenerator(config, processing_queue)
 
-    tasks = [
-        asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
-        asyncio.create_task(web_manager.run_outgoing_worker(), name="WebOutgoing"),
-        asyncio.create_task(web_manager.run_violation_worker(), name="WebViolation"),
-        asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
-        asyncio.create_task(processor.run(), name="DataProcessor"),
-        asyncio.create_task(ble_manager.run(), name="BLEConnection"),
-        # asyncio.create_task(mock_gen.run(), name="MockDataGenerator")
-    ]
+async def main(static_config: dict):
+    logger.info("Starting IoT Gateway")
+
+    db = DatabaseManager(static_config['paths']['database'])
+    await db.connect()
+    await db.init_db()
+
+    auth = AuthManager(
+            server_url=static_config['webapp']['server_url'],
+            username=static_config['auth']['username'],
+            password=static_config['auth']['password']
+            )
+    try:
+        await auth.login()
+    except Exception as e:
+        logger.error(f"[Auth] Login failed: {e}. Cannot start without authentication.")
+        sys.exit(1)
+
+    try:
+        await ConfigManager.fetch_and_seed(static_config, db, auth)
+    except Exception as e:
+        logger.warning(
+                f"[Config] Could not reach webapp on startup: {e}. "
+                "Continuing with existing DB config — Pi must have run before."
+                )
+
+    sensors = await db.get_sensors()
+
+    web_out_queue = asyncio.Queue()
+    web_violation_queue = asyncio.Queue()
+    processor = DataProcessor(db, web_out_queue, web_violation_queue)
+    web_manager = WebManager(static_config, db, web_out_queue, web_violation_queue, auth)
+
+
+    tasks: list[asyncio.Task[Any]] = [
+            asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
+            asyncio.create_task(web_manager.run_outgoing_data_worker(), name="WebOutgoingData"),
+            asyncio.create_task(web_manager.run_outgoing_violation_worker(), name="WebOutgoingViolation"),
+            asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
+            ]
+
+    queues = {
+            sensor['name']: {
+                'proc': asyncio.Queue(),
+                'inbox': asyncio.Queue()
+                } for sensor in sensors 
+            }
+
+    ble_managers = {
+            sensor['name']: BLEManager(
+                db,
+                sensor,
+                queues[sensor['name']]['proc'],
+                queues[sensor['name']]['inbox']
+                )
+            for sensor in sensors
+            }
+
+    web_manager.ble_managers = ble_managers 
+
+    for sensor_name, ble_manager in ble_managers.items():
+        tasks.append(asyncio.create_task(
+            ble_manager.run(),
+            name=f"BLE:{sensor_name}"
+            ))
+        tasks.append(asyncio.create_task(
+            processor.run(
+                sensor_name,
+                queues[sensor_name]['proc'],
+                queues[sensor_name]['inbox']
+                ),
+            name=f"Proc:{sensor_name}"
+            ))
 
     try:
         await asyncio.gather(*tasks)
     except asyncio.CancelledError:
         logger.info("All tasks cancelled. Exiting cleanly.")
     finally:
-        logger.info("Gateway Stopped")
+        await db.close()
+        logger.info("Gateway stopped.")
 
 
 if __name__ == "__main__":
     try:
-        config = ConfigManager.load()
+        static_config = ConfigManager.load("/home/pi/run/conf.yaml")
     except Exception as e:
         print(f"Failed to load config: {e}")
         sys.exit(1)
-        
-    # Ensure log directory exists
-    log_file = config['paths'].get('log_file', 'logs/gateway.log')
-    os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
     logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
-    
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler(static_config['paths']['log_file']),
+                logging.StreamHandler(sys.stdout)
+                ]
+            )
+
     try:
-        asyncio.run(main(config))
+        asyncio.run(main(static_config))
     except KeyboardInterrupt:
-        logging.info("Gateway shutdown requested by user via terminal.")
-    except Exception as e:
-        logging.critical(f"Unexpected crash in main loop: {e}", exc_info=True)
-        sys.exit(1)
+        logging.info("Gateway shutdown requested by user.")

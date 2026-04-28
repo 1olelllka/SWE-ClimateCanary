@@ -55,12 +55,13 @@ public class BuildingSeederService {
                                 .department(dept)
                                 .build()
                 );
-                monitoringRepository.save(RoomMonitoring.builder()
+                monitoringRepository.save(RoomMonitoring
+                        .builder()
                         .roomId(room.getId())
                         .roomNumber(room.getRoomNumber())
-                        .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
-                        .humLimit(HumidityLimit.builder().minVal(30f).maxVal(70f).build())
-                        .polLimit(PollutionLimit.builder().maxVal(800f).build())
+                        .polLimit(PollutionLimit.builder().build())
+                        .tempLimit(TemperatureLimit.builder().build())
+                        .humLimit(HumidityLimit.builder().build())
                         .build());
                 // Assign demo employee to first Engineering office for dashboard demo
                 if ("Engineering".equals(deptName) && i == 1) {

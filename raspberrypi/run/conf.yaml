@@ -1,0 +1,15 @@
+paths:
+  database: "/home/pi/data/production.sqlite"
+  log_file: "/home/pi/logs/raspberrypi.log"
+
+webapp:
+  server_url: "http://172.20.10.4:8080"
+  local_listen_port: 8080
+
+identity:
+  raspberry_id: "ccf4de6f-8034-4bc2-8a7d-412d3f7b1c8e"
+  room_name: "S3M2"
+
+auth:
+  username: "raspberrypi"
+  password: "passwd"
