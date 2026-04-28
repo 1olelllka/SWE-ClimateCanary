@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import aiohttp
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
 from datetime import datetime
@@ -62,6 +63,8 @@ class BLEManager:
         """Main orchestrator for the BLE connection."""
         logger.info("[BLE] Starting manager...")
 
+        is_reported_offline = False 
+
         while True:
             try:
                 sensors = await self.db.get_sensors()
@@ -74,7 +77,7 @@ class BLEManager:
                 target_name = sensor_cfg['name']
                 char_uuid   = sensor_cfg['char_uuid']
                 write_uuid  = sensor_cfg['write_uuid']
-                
+
                 connected = False 
                 for attempt in range (1,6):
                     logger.info(f"[BLE] Looking for '{target_name}'...")
@@ -92,7 +95,7 @@ class BLEManager:
                         continue
 
                     logger.info(f"[BLE] Found '{target_name}'. Connecting (attempt {attempt}/5)...")
-                    
+
                     try:
                         async with BleakClient(
                                 device,
@@ -109,11 +112,16 @@ class BLEManager:
 
                             await client.start_notify(char_uuid, self.notification_handler)
 
+                            if is_reported_offline:
+                                await self._notify_webapp_status("ONLINE")
+                                is_reported_offline = False
+
+
                             # Send current timestamp to Arduino immediately after connection
                             unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
                             await client.write_gatt_char(
-                                write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False
-                                )
+                                    write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False
+                                    )
                             logger.info(f"[BLE:{self.name}] Time sync sent.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
@@ -131,6 +139,11 @@ class BLEManager:
                 if not connected:
                     logger.error(f"[BLE:{self.name}] All 5 attempts failed. Waiting for RECONNECT notify...")
                     await self.db.log_event("BLE", f"Failed to connect to {target_name} after 5 attempts", "ERROR")
+
+                    if not is_reported_offline:
+                        await self._notify_webapp_status("OFFLINE")
+                        is_reported_offline = True
+
                     self.reconnect_event.clear()
                     await self.reconnect_event.wait()
                     logger.info(f"[BLE:{self.name}] RECONNECT received. Retrying...")
@@ -138,3 +151,33 @@ class BLEManager:
             except Exception as e:
                 logger.error(f"[BLE] Unexpected error: {e!r}")
                 await asyncio.sleep(10)
+
+    async def _notify_webapp_status(self, status: str):
+        """POST a device status update (ONLINE/OFFLINE) to the webapp.
+        Best-effort, failures are logged but never crash the BLE loop.
+        """
+        try:
+            server_url = await self.db.get_config('server_url')
+            pi_id = await self.db.get_config('raspberry_id')
+            if not server_url or not pi_id:
+                logger.warning(f"[BLE:{self.name}] Cannot notify webapp: server_url/raspberry_id missing.")
+                return
+
+            payload = {
+                    "raspberryId": pi_id,
+                    "device":      self.name,
+                    "status":      status,
+                    }
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                        f"{server_url}/api/device-status",
+                        json=payload
+                        ) as response:
+                    if response.status in (200, 201, 202):
+                        logger.info(f"[BLE:{self.name}] Webapp notified: device is {status}.")
+                    else:
+                        logger.warning(f"[BLE:{self.name}] Webapp status notify returned {response.status}.")
+        except Exception as e:
+            logger.warning(f"[BLE:{self.name}] Failed to notify webapp of {status} status: {e}")
+
