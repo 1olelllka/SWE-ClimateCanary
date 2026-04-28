@@ -149,7 +149,7 @@ class WebManager:
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
-                await asyncio.sleep(30)
+                await asyncio.sleep(3600)
                 try:
                     unsynced_logs = await self.db.get_unsynced_logs()
                     if not unsynced_logs:
