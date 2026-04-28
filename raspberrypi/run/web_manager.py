@@ -26,12 +26,8 @@ class WebManager:
 
     async def handle_notify(self, request):
         """Single entry point for all webapp-initiated updates.
-
         Webapp sends: {"type": "LIMIT_CHANGE"} (or SENSOR_CHANGE, etc.)
         Pi looks up the handler, fetches the updated data, and updates DB.
-
-        This is fire-and-forget from the webapp's perspective — Pi always
-        pulls the source of truth itself rather than trusting push payloads.
         """
         try:
             data         = await request.json()

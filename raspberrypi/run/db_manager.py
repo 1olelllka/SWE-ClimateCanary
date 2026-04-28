@@ -1,4 +1,5 @@
 import aiosqlite
+import json 
 import logging
 from datetime import datetime
 
@@ -35,6 +36,7 @@ class DatabaseManager:
             await db.execute('''
                 CREATE TABLE IF NOT EXISTS limit_violations (
                     id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sensor_name     TEXT NOT NULL,
                     type            TEXT NOT NULL,
                     threshold_value REAL NOT NULL,
                     actual_value    REAL NOT NULL,
@@ -99,6 +101,18 @@ class DatabaseManager:
                 rows = await cursor.fetchall()
                 return {row[0]: row[1] for row in rows}
 
+    async def get_sensors(self) -> list[dict]:
+        """Returns list of sensor dicts."""
+        raw = await self.get_config('sensors')
+        if not raw:
+            return []
+        return json.loads(raw)
+ 
+    async def set_sensors(self, sensors: list[dict]):
+        """Persist the full sensor list, replacing existing."""
+        await self.set_config('sensors', json.dumps(sensors))
+        logger.info(f"[DB] Sensors updated: {[s['name'] for s in sensors]}")
+
 # Measurements
 
     async def insert_measurement(self, temp: float, moisture: float, co2: float, timestamp: str):
@@ -146,39 +160,40 @@ class DatabaseManager:
                 rows = await cursor.fetchall()
                 return {row["key"]: row["value"] for row in rows}
 
-# Violations
+# Violations, scoped per sensor station 
 
-    async def register_violation(self, sensor_type: str, threshold: float, actual: float):
-        """Log a new violation only if one isn't already active for this sensor."""
+    async def register_violation(self, sensor_name: str, sensor_type: str, threshold: float, actual: float):
         async with aiosqlite.connect(self.db_path) as db:
             async with db.execute(
-                "SELECT id FROM limit_violations WHERE type = ? AND is_active = 1", (sensor_type,)
+                "SELECT id FROM limit_violations WHERE sensor_name=? AND type=? AND is_active=1",
+                (sensor_name, sensor_type)
             ) as cursor:
                 if await cursor.fetchone():
-                    return  # Already active, don't duplicate
-
+                    return  # Already active for this sensor
+ 
             await db.execute(
-                "INSERT INTO limit_violations (type, threshold_value, actual_value, started_at) VALUES (?, ?, ?, ?)",
-                (sensor_type, threshold, actual, datetime.now().isoformat())
+                "INSERT INTO limit_violations (sensor_name, type, threshold_value, actual_value, started_at) VALUES (?, ?, ?, ?, ?)",
+                (sensor_name, sensor_type, threshold, actual, datetime.now().isoformat())
             )
             await db.commit()
-            logger.warning(f"[DB] Violation registered: {sensor_type} = {actual} (limit: {threshold})")
-
-    async def resolve_violation(self, sensor_type: str):
-        """Mark an active violation as resolved when values return to normal."""
+            logger.warning(f"[DB] Violation: {sensor_name}/{sensor_type} = {actual} (limit: {threshold})")
+ 
+    async def resolve_violation(self, sensor_name: str, sensor_type: str):
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
-                "UPDATE limit_violations SET is_active = 0, resolved_at = ? WHERE type = ? AND is_active = 1",
-                (datetime.now().isoformat(), sensor_type)
+                "UPDATE limit_violations SET is_active=0, resolved_at=? WHERE sensor_name=? AND type=? AND is_active=1",
+                (datetime.now().isoformat(), sensor_name, sensor_type)
             )
             await db.commit()
-            logger.info(f"[DB] Violation resolved: {sensor_type}")
-
-    async def get_active_violations(self) -> list:
-        """Fetch all currently active violations."""
+            logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
+ 
+    async def get_active_violations(self, sensor_name: str) -> list:
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT * FROM limit_violations WHERE is_active = 1") as cursor:
+            async with db.execute(
+                "SELECT * FROM limit_violations WHERE sensor_name=? AND is_active=1",
+                (sensor_name,)
+            ) as cursor:
                 rows = await cursor.fetchall()
                 return [dict(row) for row in rows]
 

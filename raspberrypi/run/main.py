@@ -17,6 +17,7 @@ from db_manager     import DatabaseManager
 from data_processor import DataProcessor
 from web_manager    import WebManager
 from ble_manager    import BLEManager
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,21 +47,29 @@ async def main(static_config: dict):
             "Continuing with existing DB config — Pi must have run before."
         )
 
-    processing_queue = asyncio.Queue()
-    web_out_queue    = asyncio.Queue()
-    ble_inbox        = asyncio.Queue()
+    sensors = await db.get_sensors()
 
-    processor   = DataProcessor(db, processing_queue, web_out_queue, ble_inbox)
+    web_out_queue = asyncio.Queue()
+    processor = DataProcessor(db, web_out_queue)
     web_manager = WebManager(static_config, db, web_out_queue, auth)
-    ble_manager = BLEManager(db, processing_queue, ble_inbox)
 
-    tasks = [
-        asyncio.create_task(web_manager.run_local_server(),        name="WebServer"),
-        asyncio.create_task(web_manager.run_outgoing_worker(),     name="WebOutgoing"),
+
+    tasks: list[asyncio.Task[Any]] = [
+        asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
+        asyncio.create_task(web_manager.run_outgoing_worker(), name="WebOutgoing"),
         asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
-        asyncio.create_task(processor.run(),                       name="DataProcessor"),
-        asyncio.create_task(ble_manager.run(),                     name="BLEConnection"),
     ]
+    
+    for sensor in sensors:
+        proc_queue = asyncio.Queue()
+        ble_queue = asyncio.Queue()
+
+        ble_manager = BLEManager(db, sensor, proc_queue, ble_queue)
+        
+        # one ble manager per arduino 
+        tasks.append(asyncio.create_task(ble_manager.run(), name=f"BLE:{sensor['name']}"))
+        # one processor worker per arduino (same DataProcessor instance)
+        tasks.append(asyncio.create_task(processor.run(sensor['name'], proc_queue, ble_queue), name=f"Proc:{sensor['name']}"))
 
     try:
         await asyncio.gather(*tasks)

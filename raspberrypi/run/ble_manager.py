@@ -7,13 +7,18 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 class BLEManager:
-    def __init__(self, db, processing_queue, ble_inbox):
+    def __init__(self, db, sensor: dict, processing_queue, ble_inbox):
         self.db = db
+        self.sensor = sensor
         self.processing_queue = processing_queue  # Arduino -> Pi
         self.ble_inbox = ble_inbox                # Pi -> Arduino
 
         self.client = None
         self.disconnect_event = asyncio.Event()
+
+    @property
+    def name(self) -> str:
+        return self.sensor['name']
 
     def disconnected_callback(self):
         """Fired instantly by Bleak if the Arduino loses power or drops connection."""
@@ -57,14 +62,16 @@ class BLEManager:
 
         while True:
             try:
-                target_name = await self.db.get_config('ble.target_name')
-                char_uuid   = await self.db.get_config('ble.char_uuid')
-                write_uuid  = await self.db.get_config('ble.write_uuid')
+                sensors = await self.db.get_sensors()
+                sensor_cfg = next((s for s in sensors if s['name'] == self.name), None)
+ 
+                if not sensor_cfg:
+                    logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
+                    return
 
-                if not all([target_name, char_uuid, write_uuid]):
-                    logger.warning("[BLE] BLE config not yet available in DB. Retrying in 10s...")
-                    await asyncio.sleep(10)
-                    continue
+                target_name = sensor_cfg['name']
+                char_uuid   = sensor_cfg['char_uuid']
+                write_uuid  = sensor_cfg['write_uuid']
 
                 logger.info(f"[BLE] Looking for '{target_name}'...")
 
@@ -96,7 +103,8 @@ class BLEManager:
 
                     await client.start_notify(char_uuid, self.notification_handler)
 
-                    # Send current Unix timestamp to Arduino immediately after connection
+                    # Send current timestamp to Arduino immediately after connection
+                    # TODO send frequency, should each arduino have individual frequency 
                     unix_ts = int(datetime.now().timestamp())
                     time_command = f"TIME:{unix_ts}"
                     logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
