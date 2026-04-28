@@ -44,6 +44,7 @@ class ConfigManager:
 
         sensors = remote.get('sensors', [])
         limits = remote.get('limits', {})
+        tips = remote.get('tips', {})
 
         sensor_list = [
                 {
@@ -76,6 +77,9 @@ class ConfigManager:
 
         if sensor_list:
             await db.set_sensors(sensor_list)
+
+        if tips:
+            await db.set_tips(tips)
 
         logger.info(f"[Config] Boot seed complete: {seeded} new keys, {len(sensor_list)} sensors for room {remote.get('roomId')}")
 
@@ -121,6 +125,24 @@ class ConfigManager:
             await db.set_sensors(sensor_list)
 
         logger.info(f"[Config] Sensor list updated: {[s['name'] for s in sensor_list]}")
+
+    @staticmethod
+    async def handle_tips_change(db, auth) -> None:
+        """Re-fetch and overwrite sensor tips from webapp.
+        Expects the endpoint to return:
+            {"tips": {"temperature": "Turn on the radiator", "co2": "Open a window", ...}}
+        """
+        pi_id, server_url = await ConfigManager._identity(db)
+
+        remote = await ConfigManager._fetch(
+                f"{server_url}/api/raspberry/{pi_id}/tips", auth
+                )
+
+        tips = remote.get('tips', {})
+        if tips:
+            await db.set_tips(tips)
+
+        logger.info(f"[Config] Tips refreshed: {list(tips.keys())}")
 
     @staticmethod
     async def handle_occupancy_change(db, auth) -> None:

@@ -83,6 +83,14 @@ class DatabaseManager:
                                   )
                               ''')
 
+        await self.db.execute('''
+                              CREATE TABLE IF NOT EXISTS tips (
+                                  sensor_key TEXT PRIMARY KEY,
+                                  tip        TEXT NOT NULL,
+                                  updated_at TEXT NOT NULL
+                                  )
+                              ''')
+
         await self.db.commit()
         logger.info("[DB] Database initialized successfully with all tables.")
 
@@ -129,14 +137,14 @@ class DatabaseManager:
 
 # Measurements
 
-    async def insert_measurement(self, temp: float, moisture: float, co2: float, timestamp: str):
+    async def insert_measurement(self, sensor_name: str, temp: float, moisture: float, co2: float, timestamp: str):
         """Insert sensor readings into the measurements table."""
         await self.db.execute(
                 "INSERT INTO measurements (timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?)",
                 (timestamp, temp, moisture, co2)
                 )
         await self.db.commit()
-        logger.info(f"[DB] Measurement stored at {timestamp}: temp={temp}, moisture={moisture}, co2={co2}")
+        logger.debug(f"[DB] Measurement stored at {timestamp}: sensor={sensor_name}, temp={temp}, moisture={moisture}, co2={co2}")
 
 # Limits
 
@@ -202,6 +210,36 @@ class DatabaseManager:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
+# Tips
+
+    async def get_tip(self, sensor_key: str) -> str | None:
+        """Fetch the tip string for a given sensor key (e.g. 'temperature', 'co2')."""
+        async with self.db.execute("SELECT tip FROM tips WHERE sensor_key = ?", (sensor_key,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
+
+    async def get_all_tips(self) -> dict:
+        """Return all tips as {sensor_key: tip_string}."""
+        async with self.db.execute("SELECT sensor_key, tip FROM tips") as cursor:
+            rows = await cursor.fetchall()
+            return {row["sensor_key"]: row["tip"] for row in rows}
+
+    async def set_tips(self, tips: dict):
+        """Upsert the full tips map. tips = {'temperature': '...', 'co2': '...', ...}"""
+        for sensor_key, tip_text in tips.items():
+            await self.db.execute(
+                    """
+                    INSERT INTO tips (sensor_key, tip, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(sensor_key) DO UPDATE SET
+                    tip        = excluded.tip,
+                    updated_at = excluded.updated_at
+                    """,
+                    (sensor_key, tip_text, get_current_time())
+                    )
+        await self.db.commit()
+        logger.info(f"[DB] Tips updated for keys: {list(tips.keys())}")
+
 # Logging
 
     async def log_event(self, category: str, message: str, level: str = "INFO"):
@@ -226,12 +264,11 @@ class DatabaseManager:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
-async def mark_logs_synced(self, log_ids: list[int]):
-    """Mark a batch of log entries as successfully synced."""
-    async with aiosqlite.connect(self.db_path) as db:
+    async def mark_logs_synced(self, log_ids: list[int]):
+        """Mark a batch of log entries as successfully synced."""
         placeholders = ",".join("?" * len(log_ids))
-        await db.execute(
+        await self.db.execute(
                 f"UPDATE system_logs SET synced_to_web=1 WHERE id IN ({placeholders})",
                 log_ids
                 )
-        await db.commit()
+        await self.db.commit()

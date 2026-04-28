@@ -12,6 +12,7 @@ NOTIFY_HANDLERS = {
         "SENSOR_CHANGE": ConfigManager.handle_sensor_change,
         "OCCUPANCY_CHANGE": ConfigManager.handle_occupancy_change,
         "CONFIG_CHANGE": ConfigManager.handle_config_change,
+        "TIPS_CHANGE": ConfigManager.handle_tips_change,
         "RECONNECT": None, # handled seperately below 
         }
 
