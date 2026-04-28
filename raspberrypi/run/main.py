@@ -1,12 +1,13 @@
 # /// script
 # requires-python = ">=3.12"
 # dependencies = [
-        #     "aiosqlite>=0.20.0",
-        #     "pyyaml>=6.0",
-        #     "bleak>=0.21.0",
-        #     "aiohttp>=3.9.0"
-        # ]
+#     "aiosqlite>=0.20.0",
+#     "pyyaml>=6.0",
+#     "bleak>=0.21.0",
+#     "aiohttp>=3.9.0"
+# ]
 # ///
+
 import asyncio
 import logging
 import sys
