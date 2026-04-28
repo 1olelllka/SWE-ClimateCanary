@@ -127,7 +127,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDate from = resolveFrom(timeframe, to);
 
         List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomIdAndDateBetween(roomId, from, to);
+                .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
