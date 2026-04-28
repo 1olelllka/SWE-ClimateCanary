@@ -2,6 +2,7 @@ import asyncio
 import logging
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class DataProcessor:
                     logger.warning(f"[Processor:{sensor_name}] Occupancy exceeded ({current_occ}/{max_occ}). Discarding.")
                     continue
 
-                timestamp = datetime.now().isoformat()
+                timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
                 if not data.get('timestamp'):
                     data['timestamp'] = timestamp

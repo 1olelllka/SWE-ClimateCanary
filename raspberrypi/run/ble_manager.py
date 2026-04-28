@@ -3,6 +3,7 @@ import logging
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class BLEManager:
 
                     # Send current timestamp to Arduino immediately after connection
                     # TODO send frequency, should each arduino have individual frequency 
-                    unix_ts = int(datetime.now().timestamp())
+                    unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
                     time_command = f"TIME:{unix_ts}"
                     logger.info(f"[BLE] Sending time sync to Arduino: {time_command}")
                     await client.write_gatt_char(write_uuid, time_command.encode('utf-8'), response=False)

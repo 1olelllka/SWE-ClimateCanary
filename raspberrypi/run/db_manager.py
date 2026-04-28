@@ -2,8 +2,11 @@ import aiosqlite
 import json 
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
+
+innsbruck_time = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
 class DatabaseManager:
     def __init__(self, db_path: str):
@@ -89,7 +92,7 @@ class DatabaseManager:
                     value      = excluded.value,
                     updated_at = excluded.updated_at
                 """,
-                (key, str(value), datetime.now().isoformat())
+                (key, str(value), innsbruck_time)
             )
             await db.commit()
             logger.debug(f"[Config] {key} = {value}")
@@ -138,7 +141,7 @@ class DatabaseManager:
                     value      = excluded.value,
                     updated_at = excluded.updated_at
                 """,
-                (key, value, datetime.now().isoformat())
+                (key, value, innsbruck_time)
             )
             await db.commit()
             logger.info(f"[DB] Limit updated: {key} = {value}")
@@ -173,7 +176,7 @@ class DatabaseManager:
  
             await db.execute(
                 "INSERT INTO limit_violations (sensor_name, type, threshold_value, actual_value, started_at) VALUES (?, ?, ?, ?, ?)",
-                (sensor_name, sensor_type, threshold, actual, datetime.now().isoformat())
+                (sensor_name, sensor_type, threshold, actual, innsbruck_time)
             )
             await db.commit()
             logger.warning(f"[DB] Violation: {sensor_name}/{sensor_type} = {actual} (limit: {threshold})")
@@ -182,7 +185,7 @@ class DatabaseManager:
         async with aiosqlite.connect(self.db_path) as db:
             await db.execute(
                 "UPDATE limit_violations SET is_active=0, resolved_at=? WHERE sensor_name=? AND type=? AND is_active=1",
-                (datetime.now().isoformat(), sensor_name, sensor_type)
+                (innsbruck_time, sensor_name, sensor_type)
             )
             await db.commit()
             logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
@@ -212,7 +215,7 @@ class DatabaseManager:
             async with aiosqlite.connect(self.db_path) as db:
                 await db.execute(
                     "INSERT INTO system_logs (timestamp, category, message) VALUES (?, ?, ?)",
-                    (datetime.now().isoformat(), category, message)
+                    (innsbruck_time, category, message)
                 )
                 await db.commit()
 
