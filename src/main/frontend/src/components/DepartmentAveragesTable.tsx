@@ -2,6 +2,7 @@ import React from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
+import { useNavigate } from 'react-router-dom';
 
 export interface DepartmentData {
     department: string;
@@ -20,9 +21,11 @@ const mockDepartments: DepartmentData[] = [
 ];
 
 export const DepartmentAveragesTable: React.FC = () => {
+    const navigate = useNavigate();
+
     const handleRowClick = (e: any) => {
         const dep = e.data as DepartmentData;
-        alert(`Navigiere zu: ${dep.department} Overview`);
+        navigate(`/senior/department/${encodeURIComponent(dep.department)}`);
     };
 
     const statusTemplate = (rowData: DepartmentData) => {
