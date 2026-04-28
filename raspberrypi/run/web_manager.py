@@ -188,7 +188,7 @@ class WebManager:
                         continue
     
                     payload = {
-                        "device": await self.db.get_config('ble.target_name'),
+                        "device": await self.db.get_config('raspberry_id'),
                         "logs":   unsynced_logs
                     }
     
