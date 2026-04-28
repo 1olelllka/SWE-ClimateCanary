@@ -58,7 +58,8 @@ async def main(static_config: dict):
 
     tasks: list[asyncio.Task[Any]] = [
         asyncio.create_task(web_manager.run_local_server(), name="WebServer"),
-        asyncio.create_task(web_manager.run_outgoing_worker(), name="WebOutgoing"),
+        asyncio.create_task(web_manager.run_outgoing_data_worker(), name="WebOutgoingData"),
+        asyncio.create_task(web_manager.run_outgoing_violation_worker(), name="WebOutgoingViolation"),
         asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
     ]
     
