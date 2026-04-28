@@ -22,7 +22,7 @@ public interface UserxRepository extends JpaRepository<Userx, UUID> {
     @Query("SELECT u FROM Userx u WHERE :role MEMBER OF u.userRoles")
     List<Userx> findByRole(@Param("role") UserRole role);
 
-    @Query("SELECT u FROM Userx u LEFT JOIN FETCH u.userRoles r LEFT JOIN FETCH r.permissions WHERE u.username = :username")
+    @Query("SELECT u FROM Userx u LEFT JOIN FETCH u.userRoles r LEFT JOIN FETCH r.permissions LEFT JOIN FETCH u.myRoom room LEFT JOIN FETCH room.department WHERE u.username = :username")
     Optional<Userx> findByUsernameWithRoles(@Param("username") String username);
 
     boolean existsByUsername(String username);

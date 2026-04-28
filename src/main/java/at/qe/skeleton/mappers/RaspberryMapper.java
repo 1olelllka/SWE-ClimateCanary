@@ -1,6 +1,7 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.RaspberryDTO;
+import at.qe.skeleton.dtos.RoomRaspberry;
 import at.qe.skeleton.model.RaspberryPi;
 import org.springframework.stereotype.Component;
 
@@ -9,15 +10,16 @@ public class RaspberryMapper implements DTOMapper<RaspberryPi, RaspberryDTO> {
 
     @Override
     public RaspberryDTO mapTo(RaspberryPi entity) {
+        RoomRaspberry room = entity.getRoomMonitoring() != null
+                ? new RoomRaspberry(entity.getRoomMonitoring().getRoomId(), entity.getRoomMonitoring().getRoomNumber())
+                : null;
         return new RaspberryDTO(
                 entity.getId(),
                 entity.getName(),
                 entity.getIp(),
                 entity.getPort(),
                 entity.getStatus(),
-                entity.getRoomMonitoring() != null ? entity.getRoomMonitoring().getRoomId() : null,
-                entity.getRoomMonitoring() != null ? entity.getRoomMonitoring().getRoomNumber() : null
-        );
+                room);
     }
 
     @Override

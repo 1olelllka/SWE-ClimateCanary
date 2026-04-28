@@ -65,7 +65,7 @@ public class JwtTokenProvider {
                 .signWith(key, Jwts.SIG.HS512)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(jwtConfig.getJwtExpirationMs())))
-                .id(UUID.randomUUID().toString())
+                .id(user.getId().toString())
                 .issuer(jwtConfig.getTokenIssuer())
                 .audience()
                     .add(jwtConfig.getTokenAudience())

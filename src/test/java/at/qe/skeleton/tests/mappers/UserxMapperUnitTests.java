@@ -77,7 +77,7 @@ class UserxMapperUnitTests {
     @Test
     void testThatMapFromShouldReconstructUserWithShellRoom() {
         UUID roomId = UUID.randomUUID();
-        UserRoom userRoom = new UserRoom(roomId, UUID.randomUUID(), "IT", RoomType.OFFICE);
+        UserRoom userRoom = new UserRoom(roomId, UUID.randomUUID(), "IT", RoomType.OFFICE, "IT-101");
         UserxDTO dto = new UserxDTO(
                 UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now(),
                 "jdoe", "John", "Doe", true, null,

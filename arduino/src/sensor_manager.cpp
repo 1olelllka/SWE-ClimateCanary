@@ -6,13 +6,16 @@ bool SensorManager::begin() {
     return false;
   }
 
-  // Recommended oversampling / filter setup
+  //oversampling for reducing noise
   bme.setTemperatureOversampling(BME680_OS_8X);
-  bme.setHumidityOversampling(BME680_OS_2X);
-  bme.setPressureOversampling(BME680_OS_4X);
-  bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
+  bme.setHumidityOversampling(BME680_OS_4X);
+  bme.setIIRFilterSize(BME680_FILTER_SIZE_7);
 
-  // Gas heater for gas resistance readings
+  /*
+  gas heater for gas resistance readings
+  heating temp for measurement 320° C,
+  heating time: 150ms 
+  */
   bme.setGasHeater(320, 150);
 
   reading.valid = false;
@@ -20,16 +23,75 @@ bool SensorManager::begin() {
 }
 
 bool SensorManager::update() {
-  if (!bme.performReading()) {
-    reading.valid = false;
+  //warm-up time for gas sensor
+  if (millis() < 30000) {
     return false;
   }
 
-  reading.temperatureC = bme.temperature;
-  reading.humidityPct = bme.humidity;
-  reading.pressurehPa = bme.pressure / 100.0f;
-  reading.gasResistanceKOhm = bme.gas_resistance / 1000.0f;
-  reading.valid = true;
+  if (!bme.performReading()) {
+    return false;
+  }
+
+  //accept gas reading if heater reached target temperature
+  const float gasKOhm = bme.gas_resistance / 1000.0f;
+  if (gasKOhm < 1.0f) {
+    return false;
+  }
+  
+  temperatureBuffer[sampleIndex]    = bme.temperature;
+  humidityBuffer[sampleIndex]       = bme.humidity;
+  gasResistanceBuffer[sampleIndex]  = gasKOhm;
+
+  sampleIndex = (sampleIndex + 1) % NUM_SAMPLES;
+  if (sampleCount < NUM_SAMPLES) {
+    sampleCount++;
+  }
+
+  float sumTemperature = 0, sumHumidity = 0, sumGasResistance = 0;
+  for (uint8_t i = 0; i < sampleCount; i++) {
+    sumTemperature    += temperatureBuffer[i];
+    sumHumidity       += humidityBuffer[i];
+    sumGasResistance  += gasResistanceBuffer[i]; 
+  }
+
+  reading.temperatureC      = sumTemperature / sampleCount;
+  reading.humidityPct       = sumHumidity / sampleCount;
+  reading.gasResistanceKOhm = sumGasResistance / sampleCount;
+
+  //initialize baseline after first average is ready
+  if (!baselineInitialized && sampleCount == NUM_SAMPLES) {
+    gasBaseline = reading.gasResistanceKOhm;
+    baselineInitialized = true;
+  }
+
+  float airQuality = 0.0f;
+
+  if (baselineInitialized) {
+    //slowly update gas baseline to track long-term air quality while preserving short-term changes
+    gasBaseline = 0.99f * gasBaseline + 0.01f * reading.gasResistanceKOhm;
+
+      /*
+      > 1: cleaner than baseline
+      = 1: same as baseline
+      < 1: more polluted than baseline
+      */
+    float ratio = reading.gasResistanceKOhm / gasBaseline;
+
+    //ratio 1 ~ 100, ratio 0.5 ~ 50,...
+    airQuality = ratio * 100.0f;
+
+    //range limit
+    if (airQuality > 100.0f) {
+      airQuality = 100.0f;
+    }
+    else if (airQuality < 0.0f) {
+      airQuality = 0.0f;
+    }
+  }
+
+  reading.airQualityIndex = airQuality;
+
+  reading.valid = (sampleCount == NUM_SAMPLES) && baselineInitialized;
 
   return true;
 }

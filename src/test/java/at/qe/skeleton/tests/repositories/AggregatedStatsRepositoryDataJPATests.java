@@ -1,6 +1,7 @@
 package at.qe.skeleton.tests.repositories;
 
 import at.qe.skeleton.model.AggregatedStats;
+import at.qe.skeleton.model.Granularity;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,9 +98,77 @@ class AggregatedStatsRepositoryDataJPATests {
         }
     }
 
+    @Nested
+    @DisplayName("findByRoomIdAndDateBetweenAndGranularity")
+    class FindByDateRangeAndGranularity {
+
+        @Test
+        @DisplayName("returns only entries with matching granularity")
+        void filtersGranularity() {
+            persist(roomId, base,             20, 50, 300, Granularity.DAILY);
+            persist(roomId, base.plusDays(1), 21, 52, 310, Granularity.WEEKLY);
+            em.flush();
+
+            List<AggregatedStats> result = repository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, base, base.plusDays(1), Granularity.DAILY);
+
+            assertThat(result).hasSize(1)
+                    .extracting(AggregatedStats::getGranularity)
+                    .containsOnly(Granularity.DAILY);
+        }
+
+        @Test
+        @DisplayName("returns empty when granularity does not match any entry in range")
+        void returnsEmptyWhenNoGranularityMatch() {
+            persist(roomId, base, 20, 50, 300, Granularity.DAILY);
+            em.flush();
+
+            List<AggregatedStats> result = repository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, base, base, Granularity.WEEKLY);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("existsByRoomIdAndDateAndGranularity")
+    class ExistsByRoomIdDateGranularity {
+
+        @Test
+        @DisplayName("returns true when matching entry exists")
+        void returnsTrueWhenExists() {
+            persist(roomId, base, 20, 50, 300, Granularity.DAILY);
+            em.flush();
+
+            assertThat(repository.existsByRoomIdAndDateAndGranularity(
+                    roomId, base, Granularity.DAILY)).isTrue();
+        }
+
+        @Test
+        @DisplayName("returns false when granularity does not match")
+        void returnsFalseForWrongGranularity() {
+            persist(roomId, base, 20, 50, 300, Granularity.DAILY);
+            em.flush();
+
+            assertThat(repository.existsByRoomIdAndDateAndGranularity(
+                    roomId, base, Granularity.WEEKLY)).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns false when no entry exists for date")
+        void returnsFalseWhenMissing() {
+            assertThat(repository.existsByRoomIdAndDateAndGranularity(
+                    roomId, base, Granularity.DAILY)).isFalse();
+        }
+    }
+
     private void persist(UUID rId, LocalDate date, float temp, float hum, float co2) {
+        persist(rId, date, temp, hum, co2, Granularity.DAILY);
+    }
+
+    private void persist(UUID rId, LocalDate date, float temp, float hum, float co2, Granularity granularity) {
         em.persist(AggregatedStats.builder()
-                .roomId(rId).date(date)
+                .roomId(rId).date(date).granularity(granularity)
                 .avgTemp(temp).avgHumidity(hum).avgCO2(co2)
                 .build());
     }

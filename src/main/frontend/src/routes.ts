@@ -4,13 +4,19 @@
  */
 
 import HomePage from "./views/HomePage";
-import ManageUsers from "./views/ManageUsers";
+import UserConfigurationPage from "./views/UserConfigurationPage";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
 import {ROUTES} from "./utilities/routes.paths";
 import EmployeeDashboard from "./views/EmployeeDashboard";
 import RoleBasedHome from "./views/RoleBasedHome";
-
+import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
+import UserConfigurationPage from "./views/UserConfigurationPage";
+import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
+import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
+import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
+import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
+import SettingsPage from "./views/SettingsPage";
 /**
  * Define the routes of the application.
  */
@@ -22,7 +28,7 @@ export const HomePageRoute = {
 
 export const ManageUsersRoute = {
     url: ROUTES.MANAGE_USERS,
-    component: ManageUsers
+    component: UserConfigurationPage
 }
 export const LoginsRoute = {
     url: ROUTES.LOGIN,
@@ -32,3 +38,38 @@ export const LogoutsRoute = {
     url: ROUTES.LOGOUT,
     component: Logout
 }
+
+export const DeviceConfigurationRoute = {
+    url: ROUTES.DEVICE_CONFIGURATION,
+    component: DeviceConfigurationPage
+}
+
+export const UserConfigurationRoute = {
+    url: ROUTES.USER_CONFIGURATION,
+    component: UserConfigurationPage
+}
+
+export const BuildingConfigurationRoute = {
+    url: ROUTES.BUILDING_CONFIGURATION,
+    component: BuildingConfigurationPage
+}
+
+export const EmployeeAbsencesRoute = {
+    url: ROUTES.EMPLOYEE_ABSENCES,
+    component: EmployeeAbsencesPage
+}
+
+export const DepartmentAbsencesRoute = {
+    url: ROUTES.DEPARTMENT_ABSENCES,
+    component: DepartmentAbsencesPage
+};
+
+export const EmployeeDepartmentRoute = {
+    url: ROUTES.EMPLOYEE_DEPARTMENT,
+    component: EmployeeDepartmentPage
+};
+
+export const SettingsRoute = {
+    url: ROUTES.SETTINGS,
+    component: SettingsPage
+};

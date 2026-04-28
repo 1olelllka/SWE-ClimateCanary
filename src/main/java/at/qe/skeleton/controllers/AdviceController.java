@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.time.Instant;
 
 @ControllerAdvice
-@CrossOrigin(origins = "*")
 public class AdviceController {
 
     @ExceptionHandler(ValidationException.class)

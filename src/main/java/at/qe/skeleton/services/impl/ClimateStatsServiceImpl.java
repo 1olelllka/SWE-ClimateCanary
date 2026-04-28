@@ -2,19 +2,23 @@ package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
+import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
 import at.qe.skeleton.dtos.ReadingDTO;
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
+import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.AggregatedStats;
 import at.qe.skeleton.model.ClimateStats;
 import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.Granularity;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.services.ClimateStatsService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,13 +35,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Log
 public class ClimateStatsServiceImpl implements ClimateStatsService {
 
     private final ClimateStatsRepository climateStatsRepository;
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final ClimateDataPointMapper climateMapper;
-    private final AggregatedStatsMapper aggregatedMapper;
+    private final AggregatedStatsMapper  aggregatedMapper;
+    private final LimitMapper            limitMapper;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -45,7 +51,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         return climateStatsRepository
                 .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                 .map(climateMapper::mapTo)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "No climate data found for room: " + roomId));
     }
 
@@ -54,9 +60,9 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     @Transactional
     public void saveMeasurementBatch(MeasurementBatchDTO batch) {
         RoomMonitoring room = roomMonitoringRepository.findById(batch.roomId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "RoomMonitoring not found: " + batch.roomId()));
-
+        log.info("The room was found.");
         double temp = 0;
         double hum = 0;
         double poll = 0;
@@ -67,7 +73,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 case CO2         -> poll = r.value();
             }
         }
-
+        log.info("Received: Temperature – " + temp + ", Humidity – " + hum + ", CO2 – " + poll + ".");
         climateStatsRepository.save(ClimateStats.builder()
                 .roomMonitoring(room)
                 .date(batch.timestamp())
@@ -75,6 +81,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 .humVal(hum)
                 .pollVal(poll)
                 .build());
+        log.info("Data was saved.");
     }
 
     // to get values for a specific timeframe for a specific room
@@ -120,14 +127,21 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         LocalDate from = resolveFrom(timeframe, to);
 
         List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomIdAndDateBetween(roomId, from, to);
-
+                .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
+        log.info("Aggregated Data was not found.");
 
         // this is just a fallback for now — should be removed once background job is running
         return groupRawByDay(roomId, from, to);
+    }
+
+    @Override
+    public LimitDTO getLimits(UUID roomId) {
+        RoomMonitoring room = roomMonitoringRepository.findById(roomId)
+                .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
+        return limitMapper.mapTo(room);
     }
 
     private boolean isWithinTimeWindow(LocalTime time, LocalTime start, LocalTime end) {

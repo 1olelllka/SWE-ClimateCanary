@@ -8,6 +8,7 @@ public record UserRoom(
         UUID id,
         UUID departmentID,
         String departmentName,
-        RoomType roomType
+        RoomType roomType,
+        String roomNumber
 ) {
 }

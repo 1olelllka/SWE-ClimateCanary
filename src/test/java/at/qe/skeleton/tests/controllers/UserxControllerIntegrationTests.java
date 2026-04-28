@@ -90,7 +90,7 @@ public class UserxControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
     public void testThatGetPageOfAbsencesOfAuthenticatedUserReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
-        TestingAuthenticationToken auth = new TestingAuthenticationToken("principal", user, "CAN_MANAGE_OWN_ABSENCE");
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(user, null, "CAN_MANAGE_OWN_ABSENCE");
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/me/absences")
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -124,7 +124,7 @@ public class UserxControllerIntegrationTests {
     public void testThatPatchSpecificUserReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
 
-        UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet());
+        UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
         String json = objectMapper.writeValueAsString(patchDTO);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/users/" + user.getId())
@@ -138,7 +138,7 @@ public class UserxControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
     public void testThatPatchSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
-        UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet());
+        UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
         String json = objectMapper.writeValueAsString(patchDTO);
 
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/users/" + UUID.randomUUID())

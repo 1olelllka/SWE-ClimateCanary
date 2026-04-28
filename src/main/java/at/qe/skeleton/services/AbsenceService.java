@@ -21,4 +21,10 @@ public interface AbsenceService {
     Absence updateAbsenceStatus(UUID id, @NotNull(message = "Status must not be null.") AbsenceStatus status);
 
     Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable);
+
+    void clockIn(Userx user);
+
+    void clockOut(Userx user);
+
+    boolean isClockedIn(Userx user);
 }

@@ -10,7 +10,8 @@ public class SensorStationMapper implements DTOMapper<SensorStation, SensorStati
     @Override
     public SensorStationDTO mapTo(SensorStation entity) {
         return new SensorStationDTO(
-                entity.getId(),
+                entity.getReadId(),
+                entity.getWriteId(),
                 entity.getName(),
                 entity.getStatus(),
                 entity.getRoomMonitoring() != null ? entity.getRoomMonitoring().getRoomId() : null,

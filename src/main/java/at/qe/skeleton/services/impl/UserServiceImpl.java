@@ -46,6 +46,7 @@ public class UserServiceImpl implements UserService {
             Optional.ofNullable(u.getLastName()).ifPresent(user::setLastName);
             Optional.ofNullable(u.getUserRoles()).ifPresent(user::setUserRoles);
             Optional.ofNullable(u.getEnabled()).ifPresent(user::setEnabled);
+            user.setMyRoom(u.getMyRoom()); // always apply (null = unassign room)
             return userxRepository.save(user);
         }).orElseThrow(() -> new NotFoundException("User with id " + id + " was not found."));
     }
@@ -62,6 +63,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(UUID id) {
         userxRepository.deleteById(id);
+    }
+
+    @Override
+    public Userx getByUsername(String username) {
+        return userxRepository.findByUsernameWithRoles(username)
+                .orElseThrow(() -> new NotFoundException("User " + username + " was not found."));
     }
 
 }

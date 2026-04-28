@@ -18,7 +18,9 @@ public class SensorStation {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
-    private UUID id;
+    private UUID readId;
+    @Builder.Default
+    private UUID writeId = UUID.randomUUID();
 
     @Column(nullable = false)
     private String name;
@@ -30,6 +32,7 @@ public class SensorStation {
     @Enumerated(EnumType.STRING)
     private DeviceStatus status;
 
-    @OneToOne(mappedBy = "sensorStation", fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_monitoring_id")
     private RoomMonitoring roomMonitoring;
 }

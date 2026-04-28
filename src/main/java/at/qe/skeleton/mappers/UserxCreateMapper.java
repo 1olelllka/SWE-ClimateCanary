@@ -1,30 +1,26 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.UserxCreateDTO;
-import at.qe.skeleton.model.UserRole;
+import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoleRepository;
-import jakarta.persistence.EntityManager;
+import at.qe.skeleton.repositories.RoomRepository; // NEU
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.stream.Collectors;
 
-/**
- * Mapping between UserxCreateDTO and Userx.
- *
- * This class is part of the skeleton project provided for students of the
-* course "Software Engineering" offered by Innsbruck University.
- */
 @Service
 public class UserxCreateMapper implements DTOMapper<Userx, UserxCreateDTO> {
 
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
+    private final RoomRepository roomRepository; // NEU
 
     @Autowired
-    public UserxCreateMapper(RoleRepository roleRepository) {
+    public UserxCreateMapper(RoleRepository roleRepository, RoomRepository roomRepository) {
         this.roleRepository = roleRepository;
+        this.roomRepository = roomRepository; // NEU
     }
 
     @Override
@@ -41,9 +37,14 @@ public class UserxCreateMapper implements DTOMapper<Userx, UserxCreateDTO> {
         user.setFirstName(dto.firstName());
         user.setLastName(dto.lastName());
         user.setEnabled(dto.enabled());
-        user.setUserRoles(dto.roles().stream().map(roleRepository::getReferenceById).collect(Collectors.toSet()));
-        
+        user.setUserRoles(dto.roles().stream()
+                .map(roleRepository::getReferenceById)
+                .collect(Collectors.toSet()));
+
+        if (dto.roomId() != null) {
+            roomRepository.findById(dto.roomId()).ifPresent(user::setMyRoom);
+        }
+
         return user;
     }
-    
 }

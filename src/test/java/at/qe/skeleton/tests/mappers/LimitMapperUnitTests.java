@@ -115,8 +115,8 @@ class LimitMapperUnitTests {
         }
 
         @Test
-        @DisplayName("throws NullPointerException when tempLimit is null")
-        void throwsWhenTempLimitIsNull() {
+        @DisplayName("returns temperature defaults when tempLimit is null")
+        void returnsDefaultsWhenTempLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(null)
@@ -124,12 +124,18 @@ class LimitMapperUnitTests {
                     .polLimit(PollutionLimit.builder().maxVal(1000).build())
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(1000f);
         }
 
         @Test
-        @DisplayName("throws NullPointerException when humLimit is null")
-        void throwsWhenHumLimitIsNull() {
+        @DisplayName("returns humidity defaults when humLimit is null")
+        void returnsDefaultsWhenHumLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
@@ -137,12 +143,18 @@ class LimitMapperUnitTests {
                     .polLimit(PollutionLimit.builder().maxVal(1000).build())
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(1000f);
         }
 
         @Test
-        @DisplayName("throws NullPointerException when polLimit is null")
-        void throwsWhenPolLimitIsNull() {
+        @DisplayName("returns CO2 default when polLimit is null")
+        void returnsDefaultWhenPolLimitIsNull() {
             RoomMonitoring entity = RoomMonitoring.builder()
                     .roomId(UUID.randomUUID())
                     .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
@@ -150,7 +162,29 @@ class LimitMapperUnitTests {
                     .polLimit(null)
                     .build();
 
-            assertThrows(NullPointerException.class, () -> mapper.mapTo(entity));
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
+        }
+
+        @Test
+        @DisplayName("returns all defaults when all limits are null")
+        void returnsAllDefaultsWhenAllLimitsNull() {
+            RoomMonitoring entity = RoomMonitoring.builder()
+                    .roomId(UUID.randomUUID())
+                    .build();
+
+            LimitDTO result = mapper.mapTo(entity);
+
+            assertThat(result.tempMin()).isEqualTo(18f);
+            assertThat(result.tempMax()).isEqualTo(26f);
+            assertThat(result.humMin()).isEqualTo(30f);
+            assertThat(result.humMax()).isEqualTo(70f);
+            assertThat(result.co2Max()).isEqualTo(800f);
         }
     }
 
@@ -162,7 +196,7 @@ class LimitMapperUnitTests {
         @DisplayName("maps all fields correctly")
         void mapsAllFields() {
             UUID roomId = UUID.randomUUID();
-            LimitDTO dto = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -174,8 +208,8 @@ class LimitMapperUnitTests {
             assertThat(result.getTempLimit().getMaxVal()).isEqualTo(26.0f);
 
             assertThat(result.getHumLimit()).isNotNull();
-            assertThat(result.getHumLimit().getMinVal()).isEqualTo(30.0f);
-            assertThat(result.getHumLimit().getMaxVal()).isEqualTo(70.0f);
+            assertThat(result.getHumLimit().getMaxVal()).isEqualTo(30.0f);
+            assertThat(result.getHumLimit().getMinVal()).isEqualTo(70.0f);
 
             assertThat(result.getPolLimit()).isNotNull();
             assertThat(result.getPolLimit().getMaxVal()).isEqualTo(1000);
@@ -184,7 +218,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("maps zero limit values correctly")
         void mapsZeroValues() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 0f, 0f, 0f, 0f, 0);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 0f, 0f, 0f, 0f, 0f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -198,7 +232,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("maps negative temperature limits correctly")
         void mapsNegativeTemperatureLimits() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), -20.0f, -5.0f, 60.0f, 20.0f, 800);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), -20.0f, -5.0f, 60.0f, 20.0f, 800f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -209,18 +243,18 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("does not set devices — left for service layer")
         void doesNotSetDevices() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
             assertThat(result.getRaspberryPi()).isNull();
-            assertThat(result.getSensorStation()).isNull();
+            assertThat(result.getSensorStations()).isNullOrEmpty();
         }
 
         @Test
         @DisplayName("does not set climate stats — left for service layer")
         void doesNotSetClimateStats() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -230,7 +264,7 @@ class LimitMapperUnitTests {
         @Test
         @DisplayName("does not set warnings — left for service layer")
         void doesNotSetWarnings() {
-            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO dto = new LimitDTO(UUID.randomUUID(), 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             RoomMonitoring result = mapper.mapFrom(dto);
 
@@ -268,7 +302,7 @@ class LimitMapperUnitTests {
         @DisplayName("mapFrom then mapTo preserves all limit values")
         void dtoToEntityToDto() {
             UUID roomId = UUID.randomUUID();
-            LimitDTO original = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000);
+            LimitDTO original = new LimitDTO(roomId, 18.0f, 26.0f, 70.0f, 30.0f, 1000f);
 
             LimitDTO result = mapper.mapTo(mapper.mapFrom(original));
 

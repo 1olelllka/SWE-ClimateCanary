@@ -2,6 +2,7 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
+import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
 
 import java.time.LocalDate;
@@ -29,4 +30,6 @@ public interface ClimateStatsService {
     // Reduced granularity (hourly aggregated using background job)
     List<AggregatedDataPointDTO> getClimateHistoryReduced(UUID roomId,
                                                           String timeframe);
+
+    LimitDTO getLimits(UUID roomId);
 }

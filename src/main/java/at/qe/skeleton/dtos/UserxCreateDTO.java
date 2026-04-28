@@ -21,5 +21,6 @@ public record UserxCreateDTO(
     String lastName,
     boolean enabled,
     @NotNull
-    Set<UUID> roles
+    Set<UUID> roles,
+    UUID roomId
 ) {}

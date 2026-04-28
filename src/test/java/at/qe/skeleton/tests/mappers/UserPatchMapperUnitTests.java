@@ -66,7 +66,8 @@ class UserPatchMapperUnitTests {
                 "Jane",
                 "Smith",
                 true,
-                Set.of(roleId)
+                Set.of(roleId),
+                null
         );
         when(roleRepository.getReferenceById(roleId)).thenReturn(UserRole.builder().id(roleId).build());
         when(roleRepository.getReferenceById(roleId)).thenThrow(EntityNotFoundException.class);
@@ -81,7 +82,8 @@ class UserPatchMapperUnitTests {
                 "Jane",
                 "Smith",
                 true,
-                Set.of(roleId)
+                Set.of(roleId),
+                null
         );
         when(roleRepository.getReferenceById(roleId)).thenReturn(UserRole.builder().id(roleId).build());
         Userx result = mapper.mapFrom(dto);
@@ -99,7 +101,7 @@ class UserPatchMapperUnitTests {
 
     @Test
     void testThatMapFromWhenRolesDtoIsNullShouldReturnNullRolesInEntity() {
-        UserxPatchDTO dto = new UserxPatchDTO("user", "F", "L", true, null);
+        UserxPatchDTO dto = new UserxPatchDTO("user", "F", "L", true, null, null);
 
         Userx result = mapper.mapFrom(dto);
 

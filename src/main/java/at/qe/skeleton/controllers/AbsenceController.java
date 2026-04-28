@@ -1,9 +1,12 @@
 package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.dtos.AbsenceCreateDTO;
+import at.qe.skeleton.dtos.AbsenceManagerDTO;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.dtos.AbsenceDTO;
 import at.qe.skeleton.dtos.AbsenceListDTO;
 import at.qe.skeleton.dtos.AbsencePatchDTO;
+import at.qe.skeleton.dtos.ClockStatusDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AbsenceCreateMapper;
 import at.qe.skeleton.mappers.AbsenceListMapper;
@@ -27,6 +30,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.List;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/absences")
@@ -37,18 +42,21 @@ public class AbsenceController {
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
     private AuthenticatedUserService authenticatedUserService;
+    private final UserxRepository userxRepository;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
                              AbsenceMapper absenceMapper,
-                             AuthenticatedUserService authenticatedUserService) {
+                             AuthenticatedUserService authenticatedUserService,
+                             UserxRepository userxRepository) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
         this.authenticatedUserService = authenticatedUserService;
+        this.userxRepository = userxRepository;
     }
 
     @GetMapping("")
@@ -68,6 +76,34 @@ public class AbsenceController {
         }
     }
 
+    @GetMapping("/managers")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<List<AbsenceManagerDTO>> getAbsenceManagers() {
+        Userx currentUser = authenticatedUserService.getAuthenticatedUser();
+
+        if (currentUser.getMyRoom() == null || currentUser.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("User has no assigned room or department.");
+        }
+
+        UUID departmentId = currentUser.getMyRoom().getDepartment().getId();
+
+        List<AbsenceManagerDTO> managers = userxRepository.findAll().stream()
+                .filter(candidate -> candidate.getAuthorities().stream()
+                        .anyMatch(authority -> authority.getAuthority().equals("CAN_MANAGE_ABSENCES")))
+                .filter(candidate -> candidate.getMyRoom() != null
+                        && candidate.getMyRoom().getDepartment() != null
+                        && candidate.getMyRoom().getDepartment().getId().equals(departmentId))
+                .map(candidate -> new AbsenceManagerDTO(
+                        candidate.getId(),
+                        candidate.getFirstName(),
+                        candidate.getLastName(),
+                        candidate.getUsername()
+                ))
+                .toList();
+
+        return new ResponseEntity<>(managers, HttpStatus.OK);
+    }
+
     @PostMapping("")
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
     public ResponseEntity<AbsenceDTO> createNewAbsence(@RequestBody @Valid AbsenceCreateDTO dto,
@@ -79,8 +115,22 @@ public class AbsenceController {
         if (dto.startDate().isAfter(dto.endDate())) {
             throw new ValidationException("Start date must not be after end date.");
         }
+        if (dto.startDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Starting date must be in present or future.");
+        }
+
+        if (dto.endDate().toLocalDate().isBefore(LocalDate.now())) {
+            throw new ValidationException("Ending date must be in present or future.");
+        }
         Absence absence = absenceService.createNewAbsenceForUser(absenceCreateMapper.mapFrom(dto));
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/clock-status")
+    public ResponseEntity<ClockStatusDTO> getClockStatus() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        boolean clockedIn = absenceService.isClockedIn(user);
+        return new ResponseEntity<>(new ClockStatusDTO(clockedIn), HttpStatus.OK);
     }
 
     @GetMapping("{absence_id}")
@@ -111,6 +161,20 @@ public class AbsenceController {
         Userx user = authenticatedUserService.getAuthenticatedUser();
         absenceService.deleteAbsenceById(id, user);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping("/clock-in")
+    public ResponseEntity<Void> clockInForSpecificRoom() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        absenceService.clockIn(user);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @DeleteMapping("/clock-out")
+    public ResponseEntity<Void> clockOutForSpecificRoom() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        absenceService.clockOut(user);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 }

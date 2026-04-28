@@ -11,7 +11,7 @@ public record AbsenceListDTO(
         UUID userId,
         String firstName,
         String lastName,
-        UUID room,
+        String roomNumber,
         LocalDateTime startDate,
         LocalDateTime endDate,
         AbsenceType typeOfAbsence,

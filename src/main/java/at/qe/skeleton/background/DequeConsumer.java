@@ -2,9 +2,9 @@ package at.qe.skeleton.background;
 
 import at.qe.skeleton.commands.Command;
 import at.qe.skeleton.commands.CommandDeque;
-import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.model.NotifyDeadLetter;
-import at.qe.skeleton.repositories.NotifyDeadLetterRepository;
+import at.qe.skeleton.model.DeviceStatus;
+import at.qe.skeleton.model.RaspberryPi;
+import at.qe.skeleton.repositories.RaspberryPiRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.java.Log;
@@ -22,11 +22,11 @@ public class DequeConsumer {
     private Thread consumerThread;
     private Integer attempts = 0;
 
-    private final NotifyDeadLetterRepository repository;
+    private final RaspberryPiRepository raspberryPiRepository;
 
     @Autowired
-    public DequeConsumer(NotifyDeadLetterRepository repository) {
-        this.repository = repository;
+    public DequeConsumer(RaspberryPiRepository raspberryPiRepository) {
+        this.raspberryPiRepository = raspberryPiRepository;
     }
 
     @PostConstruct
@@ -65,6 +65,11 @@ public class DequeConsumer {
             if (response.getStatusCode().value() >= 300) {
                 handleFailure(command);
             }
+            if (response.getStatusCode().value() < 300) {
+                RaspberryPi pi = command.getRaspberry();
+                pi.setStatus(DeviceStatus.ONLINE);
+                raspberryPiRepository.save(pi);
+            }
         } catch (Exception e) {
             log.info("Exception during execute: " + e.getMessage());
             handleFailure(command);
@@ -78,18 +83,10 @@ public class DequeConsumer {
             CommandDeque.addFirst(command);
             this.attempts += 1;
         } else {
-            persistDeadLetter(command);
+            log.info("Failed to communicate with raspberry pi");
+            command.getRaspberry().setStatus(DeviceStatus.OFFLINE);
+            raspberryPiRepository.save(command.getRaspberry());
             this.attempts = 0;
-        }
-    }
-
-    void persistDeadLetter(Command command) {
-        if (command instanceof NotifyRaspberryCommand c) {
-            log.info("Persisting dead letter...");
-            repository.save(NotifyDeadLetter.builder()
-                    .updateType(c.getDto().updateType())
-                    .triggeredAt(c.getDto().triggeredAt())
-                    .build());
         }
     }
 }

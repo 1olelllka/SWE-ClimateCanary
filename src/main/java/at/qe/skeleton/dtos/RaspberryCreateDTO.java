@@ -17,7 +17,7 @@ public record RaspberryCreateDTO(
         @Max(value = 9999, message = "Port must be maximum 9999.")
         Integer port,
 
-        @NotNull(message = "Room ID must not be null.")
+        @NotNull(message = "Room must not be null.")
         UUID roomId
 ) {
 }

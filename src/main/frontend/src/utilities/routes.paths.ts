@@ -3,5 +3,12 @@ export const ROUTES = {
     MANAGE_USERS: '/manage-users',
     LOGIN: '/login',
     LOGOUT: '/logout',
-    EMPLOYEE_DASHBOARD: '/employee-dashboard'
+    EMPLOYEE_DASHBOARD: '/employee-dashboard',
+    DEVICE_CONFIGURATION: '/device-configuration',
+    USER_CONFIGURATION: '/user-configuration',
+    BUILDING_CONFIGURATION: '/building-configuration',
+    EMPLOYEE_ABSENCES: '/employee-absences',
+    DEPARTMENT_ABSENCES: '/department-absences',
+    EMPLOYEE_DEPARTMENT: '/my-department',
+    SETTINGS: '/settings',
 } as const;

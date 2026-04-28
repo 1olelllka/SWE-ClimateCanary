@@ -3,10 +3,16 @@
  * Engineering" offered by Innsbruck University.
  */
 
-import ManageUsers from "./views/ManageUsers";
 import Login from "./views/Login";
 import Logout from "./views/Logout";
 import RoleBasedHome from "./views/RoleBasedHome";
+import DeviceConfigurationPage from "./views/DeviceConfigurationPage";
+import UserConfigurationPage from "./views/UserConfigurationPage";
+import BuildingConfigurationPage from "./views/BuildingConfigurationPage";
+import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
+import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
+import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
+import SettingsPage from "./views/SettingsPage";
 
 /**
  * Define the routes of the application.
@@ -19,7 +25,7 @@ export const HomePageRoute = {
 
 export const ManageUsersRoute = {
     url: '/manage-users',
-    component: ManageUsers
+    component: UserConfigurationPage
 }
 export const LoginsRoute = {
     url: '/login',
@@ -28,4 +34,39 @@ export const LoginsRoute = {
 export const LogoutsRoute = {
     url: '/logout',
     component: Logout
+}
+
+export const DeviceConfigurationRoute = {
+    url: '/device-configuration',
+    component: DeviceConfigurationPage
+}
+
+export const UserConfigurationRoute = {
+    url: '/user-configuration',
+    component: UserConfigurationPage
+}
+
+export const BuildingConfigurationRoute = {
+    url: '/building-configuration',
+    component: BuildingConfigurationPage
+}
+
+export const EmployeeAbsencesRoute = {
+    url: '/absences',
+    component: EmployeeAbsencesPage
+}
+
+export const DepartmentAbsencesRoute = {
+    url: '/department-absences',
+    component: DepartmentAbsencesPage
+}
+
+export const EmployeeDepartmentRoute = {
+    url: '/my-department',
+    component: EmployeeDepartmentPage
+}
+
+export const SettingsRoute = {
+    url: '/settings',
+    component: SettingsPage
 }
