@@ -77,8 +77,7 @@ void loop() {
 
     if (now < SENSOR_WARMUP_TIME_MS) {
       Serial.println("Still in gas sensor warm-up period, skipping sensor read");
-    }
-    else if (sensorManager.update()) {
+    } else if (sensorManager.update()) {
       const SensorReading reading = sensorManager.getReading();
       if (reading.valid) {
         displayManager.showReading(reading);
@@ -88,12 +87,10 @@ void loop() {
           Serial.println("Advertising...");          
           isAdvertising = true;
         }
-      }
-      else {
+      } else {
         Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
       }
-    } 
-    else {
+    } else {
       Serial.println("Sensor read failed");
     }
   }
@@ -105,8 +102,7 @@ void loop() {
 
     if (reading.valid) {
       bleManager.sendReading(reading);
-    } 
-    else {
+    } else {
       Serial.println("Skipping BLE send: invalid sensor reading");
     }
   }
