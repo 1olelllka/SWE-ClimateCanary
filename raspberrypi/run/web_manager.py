@@ -208,7 +208,7 @@ class WebManager:
                         await self.db.mark_logs_synced(ids)
                         logger.info(f"[WebManager] Synced {len(ids)} offline logs in bulk.")
                     else:
-                        logger.warning("[WebManager] Bulk log sync rejected by webapp. Will retry in 30s.")
+                        logger.warning("[WebManager] Bulk log sync rejected by webapp. Will retry next cycle.")
     
                 except Exception as e:
                     logger.warning(f"[WebManager] Offline sync error: {e}")
