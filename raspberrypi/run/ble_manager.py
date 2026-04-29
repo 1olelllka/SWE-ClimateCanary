@@ -117,12 +117,15 @@ class BLEManager:
                                 is_reported_offline = False
 
 
-                            # Send current timestamp to Arduino immediately after connection
+                            # Send current timestamp and initial frequency to Arduino immediately after connection
+
                             unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
-                            await client.write_gatt_char(
-                                    write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False
-                                    )
+                            await client.write_gatt_char( write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False)
                             logger.info(f"[BLE:{self.name}] Time sync sent.")
+
+                            freq = await self.db.get_config('frequency')
+                            await client.write_gatt_char( write_uuid, f"FREQ:{freq}".encode('utf-8'), response=False)
+                            logger.info(f"[BLE:{self.name}] Frequency sync sent.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
                             await self.disconnect_event.wait()

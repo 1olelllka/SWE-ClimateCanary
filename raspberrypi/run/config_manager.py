@@ -168,7 +168,6 @@ class ConfigManager:
 
         logger.info("[Config] Occupancy refreshed from webapp.")
 
-    # TODO implement separate handlers for frequency and roomid 
     @staticmethod
     async def handle_config_change(db, auth) -> None:
         """Re-fetch and overwrite general config (frequency, room assignment, etc.)."""
@@ -187,6 +186,7 @@ class ConfigManager:
                 await db.set_config(key, value)
 
         logger.info("[Config] General config refreshed from webapp.")
+        return updates.get('frequency')
 
 # internal helpers
 

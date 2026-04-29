@@ -71,7 +71,13 @@ class WebManager:
     async def _handle_notify_task(self, notify_type: str, handler):
         """Background task that calls the config handler and logs the result."""
         try:
-            await handler(self.db, self.auth)
+            result = await handler(self.db, self.auth)
+            
+            if notify_type == 'CONFIG_CHANGE' and result:
+                logger.info(f"[WebManager] Frequency changed to {result}. Broadcasting to all connected arduinos.")
+                for ble in self.ble_managers.values():
+                    await ble.ble_inbox.put(f"FREQ:{result}")
+
         except Exception as e:
             logger.error(f"[WebManager] Failed to handle notify '{notify_type}': {e}")
             await self.db.log_event("CONFIG", f"Failed to handle notify {notify_type}: {e}", "ERROR")
