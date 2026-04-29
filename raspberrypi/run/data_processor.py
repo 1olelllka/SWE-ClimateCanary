@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
@@ -58,31 +58,36 @@ class DataProcessor:
                     logger.warning(f"[Processor:{sensor_name}] Occupancy exceeded ({current_occ}/{max_occ}). Discarding.")
                     continue
 
-                if not data.get('timestamp'):
-                    data['timestamp'] = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
+                time_base = data.get('time_base')
+                offset_ms = data.get('millis_offset')
+                
+                if time_base and offset_ms:
+                    timestamp = (datetime.fromisoformat(time_base) + timedelta(milliseconds=int(offset_ms))).isoformat()
+                else:
+                    timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
-                await self._check_violations(sensor_name, data, limits, tips, room_id, data['timestamp'], ble_inbox)
+                await self._check_violations(sensor_name, data, limits, tips, room_id, timestamp, ble_inbox)
 
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
                     temp=data.get('temperature'),
                     moisture=data.get('moisture'),
                     co2=data.get('co2'),
-                    timestamp=data.get('timestamp')
-                )
+                    timestamp=timestamp
+                    )
 
                 webapp_payload = {
                     "roomId":    room_id,
                     "device":    sensor_name,
-                    "timestamp": data['timestamp'],
+                    "timestamp": timestamp,
                     "readings":  []
                 }
                 if data.get('temperature') is not None:
                     webapp_payload["readings"].append({"type": "TEMPERATURE", "value": data['temperature']})
                 if data.get('moisture') is not None:
-                    webapp_payload["readings"].append({"type": "HUMIDITY",    "value": data['moisture']})
+                    webapp_payload["readings"].append({"type": "HUMIDITY", "value": data['moisture']})
                 if data.get('co2') is not None:
-                    webapp_payload["readings"].append({"type": "CO2",         "value": data['co2']})
+                    webapp_payload["readings"].append({"type": "CO2", "value": data['co2']})
 
                 await self.web_out_queue.put(webapp_payload)
 
