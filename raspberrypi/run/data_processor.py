@@ -31,7 +31,7 @@ class DataProcessor:
 
     def _init_sensor_state(self, sensor_name: str):
         if sensor_name not in self._bad_streak:
-            limit_keys = [limit_key for _, limit_key, _, _ in SENSOR_CHECKS]
+            limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
             self._bad_streak[sensor_name]  = {k: 0 for k in limit_keys}
             self._good_streak[sensor_name] = {k: 0 for k in limit_keys}
 
@@ -127,6 +127,7 @@ class DataProcessor:
                 )
 
                 if bad == VIOLATION_THRESHOLD:
+                    self._good_streak[sensor_name][limit_key] = 0
                     await self.db.register_violation(sensor_name, limit_key, limit, val)
 
                     violation_report = {
