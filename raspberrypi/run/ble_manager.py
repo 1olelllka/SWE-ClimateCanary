@@ -18,12 +18,13 @@ class BLEManager:
         self.client = None
         self.disconnect_event = asyncio.Event()
         self.reconnect_event = asyncio.Event()
+        self._loop = asyncio.get_event_loop()
 
     @property
     def name(self) -> str:
         return self.sensor['name']
 
-    def disconnected_callback(self):
+    def disconnected_callback(self, client):
         """Fired instantly by Bleak if the Arduino loses power or drops connection."""
         logger.warning("[BLE] Arduino disconnected unexpectedly!")
         self.disconnect_event.set()
@@ -34,9 +35,7 @@ class BLEManager:
         logger.debug(f"[Arduino -> Pi] Received: {message}")
 
         # thread-safe, works regardless of which thread Bleak calls this from
-        asyncio.get_event_loop().call_soon_threadsafe(
-                self.processing_queue.put_nowait, message
-                )
+        self._loop.call_soon_threadsafe(self.processing_queue.put_nowait, message)
 
     async def _sender_task(self, write_uuid: str):
         """Background task that exclusively handles sending data TO the Arduino."""
@@ -100,7 +99,7 @@ class BLEManager:
                         async with BleakClient(
                                 device,
                                 timeout=30.0,
-                                disconnected_callback=lambda _: self.disconnected_callback()
+                                disconnected_callback=lambda client: self.disconnected_callback(client)
                                 ) as client:
 
                             self.client = client
