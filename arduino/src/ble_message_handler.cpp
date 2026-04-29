@@ -22,13 +22,12 @@ void BLEMessageHandler::handleRxMessage(
 
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);
+  } else if (received.startsWith("FREQUENCY:")) {
+    //TODO: update frequency based on message
+  } else if (received.startsWith("WARNTEXT:")) {
+    //TODO: update warning text based on message
   } else if (received.startsWith("ERROR:")) {
-    //TODO: print error message on LCD
-  } else if (received.startsWith("ADVICE:")) {
-    //TODO: print advice message on LCD
-  } else if (received.startsWith("SENSOR_READING_INTERVAL:")) {
-    //TODO: update sensor reading interval
-  } else if (received.startsWith("BLE_SEND_INTERVAL:")) {
-    //TODO: update BLE send interval
+    //TODO: implement error code handling based on message
   }
+
 }

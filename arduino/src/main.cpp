@@ -72,7 +72,7 @@ void loop() {
 
   const unsigned long now = millis();
 
-  if (now - lastSensorRead >= SENSOR_INTERVAL_MS) {
+  if (now - lastSensorRead >= MEASURE_AND_SEND_INTERVAL_MS) {
     lastSensorRead = now;
 
     if (now < SENSOR_WARMUP_TIME_MS) {
@@ -95,7 +95,7 @@ void loop() {
     }
   }
 
-  if (bleManager.isConnected() && now - lastBleSend >= BLE_SEND_INTERVAL_MS) {
+  if (bleManager.isConnected() && now - lastBleSend >= MEASURE_AND_SEND_INTERVAL_MS) {
     lastBleSend = now;
 
     const SensorReading reading = sensorManager.getReading();
