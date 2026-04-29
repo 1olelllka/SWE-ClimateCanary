@@ -58,11 +58,10 @@ class DataProcessor:
                     logger.warning(f"[Processor:{sensor_name}] Occupancy exceeded ({current_occ}/{max_occ}). Discarding.")
                     continue
 
-                timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
                 if not data.get('timestamp'):
-                    data['timestamp'] = timestamp
+                    data['timestamp'] = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
-                await self._check_violations(sensor_name, data, limits, tips, room_id, timestamp, ble_inbox)
+                await self._check_violations(sensor_name, data, limits, tips, room_id, data['timestamp'], ble_inbox)
 
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
@@ -75,7 +74,7 @@ class DataProcessor:
                 webapp_payload = {
                     "roomId":    room_id,
                     "device":    sensor_name,
-                    "timestamp": timestamp,
+                    "timestamp": data['timestamp'],
                     "readings":  []
                 }
                 if data.get('temperature') is not None:
