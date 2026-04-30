@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import aiohttp
 from bleak import BleakScanner, BleakClient
 from bleak.exc import BleakError
 from datetime import datetime
@@ -9,11 +8,12 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 
 class BLEManager:
-    def __init__(self, db, sensor: dict, processing_queue, ble_inbox):
+    def __init__(self, db, sensor: dict, processing_queue, ble_inbox, status_queue):
         self.db = db
         self.sensor = sensor
         self.processing_queue = processing_queue  # Arduino -> Pi
         self.ble_inbox = ble_inbox                # Pi -> Arduino
+        self.status_queue = status_queue          # Pi -> WebManager (ONLINE/OFFLINE events)
 
         self.client = None
         self.disconnect_event = asyncio.Event()
@@ -23,6 +23,10 @@ class BLEManager:
     @property
     def name(self) -> str:
         return self.sensor['name']
+
+    @property
+    def read_uuid(self) -> str:
+        return self.sensor['char_uuid']
 
     def disconnected_callback(self, client):
         logger.warning("[BLE] Arduino disconnected unexpectedly!")
@@ -108,7 +112,11 @@ class BLEManager:
                             await client.start_notify(char_uuid, self.notification_handler)
 
                             if is_reported_offline:
-                                await self._notify_webapp_status("ONLINE")
+                                await self.status_queue.put({
+                                    "read_uuid": self.read_uuid,
+                                    "sensor_name": self.name,
+                                    "status": "ONLINE",
+                                })
                                 is_reported_offline = False
 
 
@@ -139,7 +147,11 @@ class BLEManager:
                     await self.db.log_event("BLE", f"Failed to connect to {target_name} after 5 attempts", "ERROR")
 
                     if not is_reported_offline:
-                        await self._notify_webapp_status("OFFLINE")
+                        await self.status_queue.put({
+                            "read_uuid": self.read_uuid,
+                            "sensor_name": self.name,
+                            "status": "OFFLINE",
+                        })
                         is_reported_offline = True
 
                     self.reconnect_event.clear()
@@ -149,29 +161,3 @@ class BLEManager:
             except Exception as e:
                 logger.error(f"[BLE] Unexpected error: {e!r}")
                 await asyncio.sleep(10)
-
-    async def _notify_webapp_status(self, status: str):
-        try:
-            server_url = await self.db.get_config('server_url')
-            pi_id = await self.db.get_config('raspberry_id')
-            if not server_url or not pi_id:
-                logger.warning(f"[BLE:{self.name}] Cannot notify webapp: server_url/raspberry_id missing.")
-                return
-
-            payload = {
-                    "raspberryId": pi_id,
-                    "device": self.name,
-                    "status": status,
-                    }
-            timeout = aiohttp.ClientTimeout(total=10)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                        f"{server_url}/api/device-status",
-                        json=payload
-                        ) as response:
-                    if response.status in (200, 201, 202):
-                        logger.info(f"[BLE:{self.name}] Webapp notified: device is {status}.")
-                    else:
-                        logger.warning(f"[BLE:{self.name}] Webapp status notify returned {response.status}.")
-        except Exception as e:
-            logger.warning(f"[BLE:{self.name}] Failed to notify webapp of {status} status: {e}")

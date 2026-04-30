@@ -76,6 +76,7 @@ async def main(static_config: dict):
         server_task,
         asyncio.create_task(web_manager.run_outgoing_data_worker(), name="WebOutgoingData"),
         asyncio.create_task(web_manager.run_outgoing_violation_worker(), name="WebOutgoingViolation"),
+        asyncio.create_task(web_manager.run_outgoing_status_worker(), name="WebOutgoingStatus"),
         asyncio.create_task(web_manager.run_offline_sync_worker(), name="WebSync"),
     ]
 
@@ -93,6 +94,7 @@ async def main(static_config: dict):
             sensor,
             queues[sensor['name']]['proc'],
             queues[sensor['name']]['inbox'],
+            web_manager.status_queue,
         )
         for sensor in sensors
     }

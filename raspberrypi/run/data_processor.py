@@ -25,7 +25,7 @@ class DataProcessor:
         self.web_out_queue = web_out_queue
         self.web_violation_queue = web_violation_queue
 
-        self._bad_streak:  dict[str, dict[str, int]] = {}
+        self._bad_streak: dict[str, dict[str, int]] = {}
         self._good_streak: dict[str, dict[str, int]] = {}
 
     def _init_sensor_state(self, sensor_name: str):
@@ -135,6 +135,7 @@ class DataProcessor:
 
                     violation_report = {
                         "type": "violation_warning",
+                        "sensor_name": sensor_name,
                         "device": sensor_name,
                         "roomId": room_id,
                         "timestamp": timestamp,
@@ -174,6 +175,14 @@ class DataProcessor:
                     if limit_key in active_keys:
                         await self.db.resolve_violation(sensor_name, limit_key)
                         any_newly_resolved = True
+
+                        # Ask web_manager to PATCH /api/warnings/{id}/resolve
+                        await self.web_violation_queue.put({
+                            "type": "violation_resolve",
+                            "sensor_name": sensor_name,
+                            "limit_key": limit_key,
+                        })
+
                         logger.info(
                             f"[Processor:{sensor_name}] Violation for {limit_key} resolved "
                             f"after {VIOLATION_THRESHOLD} consecutive clean readings."

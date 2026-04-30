@@ -21,6 +21,7 @@ class WebManager:
         self.local_port = static_config['webapp']['local_listen_port']
         self.server_url = static_config['webapp']['server_url']
         self.ble_managers: dict[str, BLEManager] = {}
+        self.status_queue: asyncio.Queue = asyncio.Queue()  # BLEManager -> WebManager
 
         self.config_ready_event = config_ready_event
 
@@ -107,6 +108,37 @@ class WebManager:
         asyncio.create_task(self._task_config_change(str(pi_id)))
         return web.json_response({"status": "accepted"}, status=202)
 
+    async def handle_retry_sensor(self, request: web.Request) -> web.Response:
+        """
+        POST /api/retry-sensor?sensorIds={readId,writeId}
+        Signals BLE managers whose read UUID matches to retry the connection.
+        Called by the webapp after the Pi has exhausted its 5 connection attempts.
+        """
+        raw_ids = request.rel_url.query.get('sensorIds', '')
+        sensor_ids = {sid.strip() for sid in raw_ids.split(',') if sid.strip()}
+
+        if not sensor_ids:
+            return web.json_response(
+                {"status": "error", "message": "sensorIds query param is required"},
+                status=400
+            )
+
+        triggered = []
+        for name, ble in self.ble_managers.items():
+            if ble.read_uuid in sensor_ids or ble.sensor.get('write_uuid') in sensor_ids:
+                ble.reconnect_event.set()
+                triggered.append(name)
+                logger.info(f"[Web -> Pi] /api/retry-sensor: reconnect_event set for '{name}'")
+
+        if not triggered:
+            logger.warning(f"[Web -> Pi] /api/retry-sensor: no matching sensor for ids={sensor_ids}")
+            return web.json_response(
+                {"status": "error", "message": f"No sensor matched sensorIds={raw_ids}"},
+                status=404
+            )
+
+        return web.json_response({"status": "accepted", "triggered": triggered}, status=202)
+
 # Background tasks
 
     async def _task_limit_change(self, payload: dict):
@@ -166,6 +198,7 @@ class WebManager:
         app.router.add_post('/api/occupancy', self.handle_occupancy)
         app.router.add_post('/api/sensors', self.handle_sensors)
         app.router.add_post('/api/config', self.handle_config)
+        app.router.add_post('/api/retry-sensor', self.handle_retry_sensor)
 
         runner = web.AppRunner(app)
         await runner.setup()
@@ -173,7 +206,7 @@ class WebManager:
         await site.start()
 
         logger.info(f"[WebManager] Local API listening on port {self.local_port} "
-                    f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config)")
+                    f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config, /api/retry-sensor)")
         while True:
             await asyncio.sleep(3600)
 
@@ -204,7 +237,7 @@ class WebManager:
                 payload = await self.web_out_queue.get()
 
                 try:
-                    api_url = f"{self.server_url}/api/sensor-data"
+                    api_url = f"{self.server_url}/api/measurements"
                     success = await self._post_with_auth(session, api_url, payload)
 
                     if success:
@@ -216,7 +249,7 @@ class WebManager:
                     else:
                         failure_streak += 1
                         logger.warning(
-                            f"[WebManager] Webapp rejected payload "
+                            f"[WebManager] Webapp rejected measurement payload "
                             f"(streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 5s..."
                         )
                         await asyncio.sleep(5)
@@ -243,25 +276,123 @@ class WebManager:
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
             while True:
-                payload = await self.web_violation_queue.get()
+                event = await self.web_violation_queue.get()
 
                 try:
-                    api_url = f"{self.server_url}/api/violations"
-                    success = await self._post_with_auth(session, api_url, payload)
+                    event_type = event.get("type")
 
-                    if not success:
-                        logger.warning("[WebManager] Webapp rejected violation payload. Requeueing in 5s...")
-                        await asyncio.sleep(5)
-                        await self.web_violation_queue.put(payload)
+                    if event_type == "violation_warning":
+                        await self._handle_violation_warning(session, event)
+
+                    elif event_type == "violation_resolve":
+                        await self._handle_violation_resolve(session, event)
+
+                    else:
+                        logger.warning(f"[WebManager] Unknown violation event type: {event_type!r}")
 
                 except Exception as e:
-                    logger.error(f"[WebManager] Network error: {e}")
-                    await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
+                    logger.error(f"[WebManager] Violation worker unexpected error: {e}")
+                    await self.db.log_event("NETWORK", f"Violation worker error: {e}", "ERROR")
                     await asyncio.sleep(10)
-                    await self.web_violation_queue.put(payload)
+                    await self.web_violation_queue.put(event)
 
                 finally:
                     self.web_violation_queue.task_done()
+
+    async def _handle_violation_warning(self, session, event: dict):
+        api_url = f"{self.server_url}/api/warnings"
+        sensor_name = event["sensor_name"]
+        limit_key = event["limit_reached"]
+
+        try:
+            async with session.post(api_url, json=event, headers=self.auth.get_headers()) as response:
+                if response.status == 401:
+                    await self.auth.refresh_if_needed()
+                    async with session.post(api_url, json=event, headers=self.auth.get_headers()) as retry:
+                        retry.raise_for_status()
+                        data = await retry.json()
+                else:
+                    response.raise_for_status()
+                    data = await response.json()
+
+            warning_id = str(data.get("id", ""))
+            if warning_id:
+                await self.db.save_warning_id(sensor_name, limit_key, warning_id)
+                logger.info(f"[WebManager] Warning posted for {sensor_name}/{limit_key}, id={warning_id}")
+            else:
+                logger.warning(f"[WebManager] /api/warnings response had no 'id' field: {data}")
+
+        except Exception as e:
+            logger.warning(f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s...")
+            await asyncio.sleep(5)
+            await self.web_violation_queue.put(event)
+
+    async def _handle_violation_resolve(self, session, event: dict):
+        sensor_name = event["sensor_name"]
+        limit_key = event["limit_key"]
+
+        warning_id = await self.db.get_warning_id(sensor_name, limit_key)
+        if not warning_id:
+            logger.warning(
+                f"[WebManager] Cannot resolve {sensor_name}/{limit_key}: no warning_id in DB. Skipping."
+            )
+            return
+
+        api_url = f"{self.server_url}/api/warnings/{warning_id}/resolve"
+        try:
+            async with session.patch(api_url, json={}, headers=self.auth.get_headers()) as response:
+                if response.status == 401:
+                    await self.auth.refresh_if_needed()
+                    async with session.patch(api_url, json={}, headers=self.auth.get_headers()) as retry:
+                        retry.raise_for_status()
+                else:
+                    response.raise_for_status()
+
+            logger.info(f"[WebManager] Warning {warning_id} resolved for {sensor_name}/{limit_key}")
+
+        except Exception as e:
+            logger.warning(f"[WebManager] Failed to resolve warning {warning_id}: {e}. Requeueing in 5s...")
+            await asyncio.sleep(5)
+            await self.web_violation_queue.put(event)
+
+    async def run_outgoing_status_worker(self):
+        logger.info("[WebManager] Outgoing status worker started.")
+        timeout = aiohttp.ClientTimeout(total=10)
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            while True:
+                event = await self.status_queue.get()
+
+                try:
+                    read_uuid = event["read_uuid"]
+                    status = event["status"]
+                    sensor_name = event["sensor_name"]
+                    timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
+
+                    api_url = f"{self.server_url}/api/sensor-stations/{read_uuid}"
+                    payload = {"status": status, "timestamp": timestamp}
+
+                    async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as response:
+                        if response.status == 401:
+                            await self.auth.refresh_if_needed()
+                            async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as retry:
+                                retry.raise_for_status()
+                        elif response.status not in (200, 201, 202, 204):
+                            logger.warning(
+                                f"[WebManager] PATCH sensor-stations/{read_uuid} returned {response.status}"
+                            )
+                        else:
+                            logger.info(f"[WebManager] Sensor '{sensor_name}' status={status} sent to webapp.")
+
+                except Exception as e:
+                    logger.warning(f"[WebManager] Failed to send status for {event.get('sensor_name')}: {e}. Requeueing in 5s...")
+                    await asyncio.sleep(5)
+                    await self.status_queue.put(event)
+
+                finally:
+                    self.status_queue.task_done()
 
     async def run_offline_sync_worker(self):
         logger.info("[WebManager] Offline sync worker started.")

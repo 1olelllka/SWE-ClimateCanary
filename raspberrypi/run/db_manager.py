@@ -59,7 +59,8 @@ class DatabaseManager:
                                   actual_value REAL NOT NULL,
                                   started_at TEXT NOT NULL,
                                   resolved_at TEXT,
-                                  is_active INTEGER DEFAULT 1
+                                  is_active INTEGER DEFAULT 1,
+                                  warning_id TEXT
                                   )
                               ''')
 
@@ -212,6 +213,27 @@ class DatabaseManager:
                 )
         await self.db.commit()
         logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
+
+    async def save_warning_id(self, sensor_name: str, sensor_type: str, warning_id: str):
+        """Persist the webapp-assigned warning ID on the active violation row."""
+        await self.db.execute(
+            "UPDATE limit_violations SET warning_id=? WHERE sensor_name=? AND type=? AND is_active=1",
+            (warning_id, sensor_name, sensor_type)
+        )
+        await self.db.commit()
+        logger.debug(f"[DB] warning_id={warning_id} saved for {sensor_name}/{sensor_type}")
+
+    async def get_warning_id(self, sensor_name: str, sensor_type: str) -> str | None:
+        async with self.db.execute(
+            """
+            SELECT warning_id FROM limit_violations
+            WHERE sensor_name=? AND type=?
+            ORDER BY id DESC LIMIT 1
+            """,
+            (sensor_name, sensor_type)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
 
     async def get_active_violations(self, sensor_name: str) -> list:
         async with self.db.execute("SELECT * FROM limit_violations WHERE sensor_name=? AND is_active=1", (sensor_name,)) as cursor:
