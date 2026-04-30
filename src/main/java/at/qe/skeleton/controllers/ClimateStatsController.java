@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class ClimateStatsController {
     private final ClimateStatsService climateStatsService;
 
     @PostMapping("/measurements")
+    @PreAuthorize("hasAuthority('CAN_SEND_MEASUREMENTS')")
     public ResponseEntity<Void> postMeasurements(
             @Valid @RequestBody MeasurementBatchDTO batch) {
         climateStatsService.saveMeasurementBatch(batch);

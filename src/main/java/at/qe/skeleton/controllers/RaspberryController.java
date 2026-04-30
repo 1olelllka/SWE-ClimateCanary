@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,17 +43,20 @@ public class RaspberryController {
     }
 
     @GetMapping("")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<Page<RaspberryDTO>> getAllRaspberries(Pageable pageable) {
         Page<RaspberryPi> pis = raspberryService.getAllRaspberries(pageable);
         return new ResponseEntity<>(pis.map(raspberryMapper::mapTo), HttpStatus.OK);
     }
 
     @GetMapping("/{raspberry_id}")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<RaspberryDTO> getSpecificRaspberry(@PathVariable(name="raspberry_id")UUID id) {
         RaspberryPi pi = raspberryService.getSpecificRaspberry(id);
         return new ResponseEntity<>(raspberryMapper.mapTo(pi), HttpStatus.OK);
     }
 
+    @PreAuthorize("hasAuthority('CAN_VIEW_OCCUPANCY')")
     @GetMapping("/{raspberry_id}/sync/occupancy")
     public ResponseEntity<OccupancyDTO> syncOccupancy(@PathVariable(name="raspberry_id") UUID id) {
         RoomOccupancy occupancy = raspberryService.getOccupancyFromRedis(id);
@@ -63,12 +67,14 @@ public class RaspberryController {
     }
 
     @PostMapping("/{raspberry_id}/retry-connection")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<Void> retryDevicesConnection(@PathVariable(name="raspberry_id") UUID id) {
         raspberryService.retryConnection(id);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PostMapping("")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<RaspberryDTO> createNewRaspberry(@RequestBody @Valid RaspberryCreateDTO dto,
                                                            BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
@@ -81,6 +87,7 @@ public class RaspberryController {
     }
 
     @PatchMapping("/{raspberry_id}")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<RaspberryDTO> patchSpecificRaspberry(@PathVariable(name = "raspberry_id") UUID id,
                                                                @RequestBody @Valid RaspberryPatchDTO dto,
                                                                BindingResult bindingResult) {
@@ -93,6 +100,7 @@ public class RaspberryController {
     }
 
     @PostMapping("/{raspberry_id}/rooms/{room_id}")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<RaspberryDTO> addTheRoomToRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
                                                       @PathVariable(name="room_id") UUID room_id) {
         RaspberryPi pi = raspberryService.addNewRoom(raspberry_id, room_id);
@@ -100,6 +108,7 @@ public class RaspberryController {
     }
 
     @DeleteMapping("/{raspberry_id}/rooms/{room_id}")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<RaspberryDTO> removeTheRoomFromRaspberry(@PathVariable(name="raspberry_id") UUID raspberry_id,
                                                               @PathVariable(name="room_id") UUID room_id) {
         RaspberryPi pi = raspberryService.removeRoomFromRaspberry(raspberry_id, room_id);
@@ -107,12 +116,14 @@ public class RaspberryController {
     }
 
     @DeleteMapping("/{raspberry_id}")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_DEVICES')")
     public ResponseEntity<Void> deleteSpecificRaspberry(@PathVariable(name="raspberry_id") UUID id) {
         raspberryService.deleteRaspberry(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping("/{raspberry_id}/config")
+    @PreAuthorize("hasAuthority('CAN_GET_RASPBERRY_CONFIG')")
     public ResponseEntity<PiConfigDTO> getRaspberryPiConfig(@PathVariable(name="raspberry_id") UUID id) {
         PiConfigDTO config = raspberryService.getConfigForRaspberry(id);
         return new ResponseEntity<>(config, HttpStatus.OK);

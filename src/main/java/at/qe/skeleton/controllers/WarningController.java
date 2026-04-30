@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +33,7 @@ public class WarningController {
 
     // Pi reports a new warning
     @PostMapping("/warnings")
+    @PreAuthorize("hasAuthority('CAN_SEND_WARNINGS')")
     public ResponseEntity<WarningDTO> createWarning(
             @Valid @RequestBody WarningCreateDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -49,6 +51,7 @@ public class WarningController {
 
     // Pi resolves warning
     @PatchMapping("/warnings/{id}/resolve")
+    @PreAuthorize("hasAuthority('CAN_SEND_WARNINGS')")
     public ResponseEntity<WarningDTO> resolveWarning(
             @PathVariable UUID id) {
         return ResponseEntity.ok(warningsService.resolveWarning(id));

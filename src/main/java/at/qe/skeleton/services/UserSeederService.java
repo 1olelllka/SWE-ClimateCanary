@@ -70,6 +70,14 @@ public class UserSeederService {
                 List.of("SYSADMIN"),
                 null
         );
+
+        createUserIfNotExists(
+                "raspberry-pi",
+                "Raspberry",
+                "Pi",
+                List.of("RASPBERRY_PI"),
+                null
+        );
     }
 
     private void createUserIfNotExists(String username,
