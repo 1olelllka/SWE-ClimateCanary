@@ -34,7 +34,7 @@ class BLEManager:
 
     def notification_handler(self, data):
         message = data.decode('utf-8').strip()
-        logger.debug(f"[Arduino -> Pi] Received: {message}")
+        logger.info(f"[Arduino -> Pi] Received: {message}")
 
         # thread-safe, works regardless of which thread Bleak calls this from
         self._loop.call_soon_threadsafe(self.processing_queue.put_nowait, message)
