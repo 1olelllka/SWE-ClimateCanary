@@ -8,14 +8,14 @@ logger = logging.getLogger(__name__)
 
 VIOLATION_THRESHOLD = 4
 
-# Each sensor key maps to (limit_db_key, direction, tip_key)
+# Each sensor key maps to (limit_db_key, direction)
 # direction: 'max' = violation when value > limit, 'min' = violation when value < limit
 SENSOR_CHECKS = [
-    ("temperature", "max_temp",     "max", "maxtemperature"),
-    ("temperature", "min_temp",     "min", "mintemperature"),
-    ("moisture",    "max_moisture", "max", "maxmoisture"),
-    ("moisture",    "min_moisture", "min", "minmoisture"),
-    ("co2",         "max_co2",      "max", "maxco2"),
+    ("temperature", "max_temp",     "max"),
+    ("temperature", "min_temp",     "min"),
+    ("moisture",    "max_moisture", "max"),
+    ("moisture",    "min_moisture", "min"),
+    ("co2",         "max_co2",      "max"),
 ]
 
 class DataProcessor:
@@ -25,12 +25,12 @@ class DataProcessor:
         self.web_out_queue = web_out_queue
         self.web_violation_queue = web_violation_queue
 
-        self._bad_streak: dict[str, dict[str, int]] = {}
+        self._bad_streak:  dict[str, dict[str, int]] = {}
         self._good_streak: dict[str, dict[str, int]] = {}
 
     def _init_sensor_state(self, sensor_name: str):
         if sensor_name not in self._bad_streak:
-            limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
+            limit_keys = {limit_key for _, limit_key, _ in SENSOR_CHECKS}
             self._bad_streak[sensor_name]  = {k: 0 for k in limit_keys}
             self._good_streak[sensor_name] = {k: 0 for k in limit_keys}
 
@@ -47,7 +47,6 @@ class DataProcessor:
                 data = json.loads(raw_data)
 
                 limits = await self.db.get_all_limits()
-                tips = await self.db.get_all_tips()
                 room_id = await self.db.get_config('room_id')
 
                 current_occ = limits.get('current_occupancy', 0)
@@ -65,7 +64,7 @@ class DataProcessor:
                 else:
                     timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
-                await self._check_violations(sensor_name, data, limits, tips, room_id, timestamp, ble_inbox)
+                await self._check_violations(sensor_name, data, limits, room_id, timestamp, ble_inbox)
 
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
@@ -102,15 +101,13 @@ class DataProcessor:
         sensor_name: str,
         data: dict,
         limits: dict,
-        tips: dict,
         room_id: str,
         timestamp: str,
         ble_inbox: asyncio.Queue,
     ):
-        any_newly_fired    = False
         any_newly_resolved = False
 
-        for sensor_key, limit_key, direction, tip_key in SENSOR_CHECKS:
+        for sensor_key, limit_key, direction in SENSOR_CHECKS:
             val = data.get(sensor_key)
             limit = limits.get(limit_key)
 
@@ -146,12 +143,12 @@ class DataProcessor:
                         "direction": direction,
                     }
                     await self.web_violation_queue.put(violation_report)
-                    any_newly_fired = True
 
-                    tip = tips.get(tip_key)
-                    if tip:
-                        await ble_inbox.put(f"TIP:{tip}")
-                        logger.info(f"[Processor:{sensor_name}] Tip sent for {limit_key}: {tip}")
+                    direction_word = "above" if direction == "max" else "below"
+                    warn_text = f"{sensor_key} {direction_word} limit"
+                    ble_msg = f"WARNTEXT:{warn_text}TRESHOLD:{limit}TIP:Check conditions and adjust accordingly"
+                    await ble_inbox.put(ble_msg)
+                    logger.info(f"[Processor:{sensor_name}] Sent to Arduino: {ble_msg}")
 
                     logger.warning(
                         f"[Processor:{sensor_name}] Violation confirmed for {limit_key}: "
@@ -176,7 +173,6 @@ class DataProcessor:
                         await self.db.resolve_violation(sensor_name, limit_key)
                         any_newly_resolved = True
 
-                        # Ask web_manager to PATCH /api/warnings/{id}/resolve
                         await self.web_violation_queue.put({
                             "type": "violation_resolve",
                             "sensor_name": sensor_name,
@@ -191,11 +187,7 @@ class DataProcessor:
                 elif good > VIOLATION_THRESHOLD:
                     self._good_streak[sensor_name][limit_key] = VIOLATION_THRESHOLD
 
-        if any_newly_fired:
-            await ble_inbox.put("ALERT:ON")
-
         if any_newly_resolved:
             remaining = await self.db.get_active_violations(sensor_name)
             if not remaining:
-                await ble_inbox.put("ALERT:OFF")
-                logger.info(f"[Processor:{sensor_name}] All violations resolved, ALERT:OFF sent.")
+                logger.info(f"[Processor:{sensor_name}] All violations resolved.")

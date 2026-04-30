@@ -109,11 +109,6 @@ class WebManager:
         return web.json_response({"status": "accepted"}, status=202)
 
     async def handle_retry_sensor(self, request: web.Request) -> web.Response:
-        """
-        POST /api/retry-sensor?sensorIds={readId,writeId}
-        Signals BLE managers whose read UUID matches to retry the connection.
-        Called by the webapp after the Pi has exhausted its 5 connection attempts.
-        """
         raw_ids = request.rel_url.query.get('sensorIds', '')
         sensor_ids = {sid.strip() for sid in raw_ids.split(',') if sid.strip()}
 
@@ -177,9 +172,9 @@ class WebManager:
 
             new_freq = await self.db.get_config('frequency')
             if new_freq:
-                logger.info(f"[WebManager] Config re-seeded. Broadcasting FREQ:{new_freq} to all Arduinos.")
+                logger.info(f"[WebManager] Config re-seeded. Broadcasting FREQUENCY:{new_freq} to all Arduinos.")
                 for ble in self.ble_managers.values():
-                    await ble.ble_inbox.put(f"FREQ:{new_freq}")
+                    await ble.ble_inbox.put(f"FREQUENCY:{new_freq}")
 
             # Unblock the boot gate (idempotent after first call)
             if not self.config_ready_event.is_set():
@@ -245,7 +240,7 @@ class WebManager:
                         if is_webapp_offline:
                             is_webapp_offline = False
                             logger.info("[WebManager] Webapp back online — notifying Arduinos.")
-                            await _broadcast_to_arduinos("WEBAPP:ONLINE")
+                            await _broadcast_to_arduinos("ERROR:CLEAR")
                     else:
                         failure_streak += 1
                         logger.warning(
@@ -266,7 +261,7 @@ class WebManager:
                     if failure_streak >= OFFLINE_THRESHOLD and not is_webapp_offline:
                         is_webapp_offline = True
                         logger.warning("[WebManager] Webapp confirmed offline — notifying Arduinos.")
-                        await _broadcast_to_arduinos("WEBAPP:OFFLINE")
+                        await _broadcast_to_arduinos("ERROR:WEBAPP_OFFLINE")
 
                     self.web_out_queue.task_done()
 
