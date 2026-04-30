@@ -6,20 +6,20 @@ import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoleRepository;
+import at.qe.skeleton.repositories.RoomRepository;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class UserPatchMapper implements DTOMapper<Userx, UserxPatchDTO> {
 
-    private RoleRepository roleRepository;
-    @Autowired
-    public UserPatchMapper(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-    }
+    private final RoleRepository roleRepository;
+    private final RoomRepository roomRepository;
 
     @Override
     public UserxPatchDTO mapTo(Userx entity) {
@@ -40,7 +40,7 @@ public class UserPatchMapper implements DTOMapper<Userx, UserxPatchDTO> {
                     .userRoles(dto.roles() != null
                             ? dto.roles().stream().map(uuid -> roleRepository.getReferenceById(uuid)).collect(Collectors.toSet())
                             : null)
-                    .myRoom(dto.roomId() != null ? Room.builder().id(dto.roomId()).build() : null)
+                    .myRoom(dto.roomId() != null ? roomRepository.findById(dto.roomId()).orElseThrow(() -> new NotFoundException("Room with id " + dto.roomId() + " was not found.")) : null)
                     .build();
         } catch (EntityNotFoundException ex) {
             throw new NotFoundException(ex.getMessage());

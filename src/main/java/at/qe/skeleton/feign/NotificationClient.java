@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @FeignClient(name="notification-raspberry-client", url = "http://dummy-url.com")
 public interface NotificationClient {
-    @PostMapping("/api/notify")
+    @PostMapping("/api/sensors")
     ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
                                                      @RequestBody StateChangeNotificationDTO notification,
                                                      @RequestParam(required = false) UUID[] sensorIds);

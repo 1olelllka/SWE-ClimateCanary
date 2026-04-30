@@ -1,7 +1,10 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.PiConfigDTO;
+import at.qe.skeleton.dtos.ReducedSensorDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
@@ -9,7 +12,6 @@ import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.RoomOccupancy;
-import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
@@ -112,12 +114,11 @@ public class RaspberryServiceImpl implements RaspberryService {
 
     @Override
     @Transactional
-    public List<RoomOccupancy> getOccupancyFromRedis(UUID id) {
+    public RoomOccupancy getOccupancyFromRedis(UUID id) {
         RaspberryPi pi = raspberryPiRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
-        if (pi.getRoomMonitoring() == null) return List.of();
-        return (List<RoomOccupancy>) occupancyRepository.findAllById(
-                List.of(pi.getRoomMonitoring().getRoomId().toString()));
+        if (pi.getRoomMonitoring() == null) return null;
+        return occupancyRepository.findById(pi.getRoomMonitoring().getRoomId().toString()).orElse(null);
     }
 
     @Override
@@ -130,10 +131,18 @@ public class RaspberryServiceImpl implements RaspberryService {
                         .map(sensor -> new ReducedSensorDTO(sensor.getName(), sensor.getReadId(), sensor.getWriteId()))
                         .collect(Collectors.toSet())
                 : Set.of();
+        RoomOccupancy occupancy = getOccupancyFromRedis(id);
         if (pi.getRoomMonitoring() != null) {
-            return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(), id, pi.getFrequency(), limitMapper.mapTo(pi.getRoomMonitoring()), sensors);
+            return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(),
+                    id,
+                    pi.getFrequency(),
+                    limitMapper.mapTo(pi.getRoomMonitoring()),
+                    sensors,
+                    occupancy != null ?
+                    new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), occupancy.getPeopleCnt() < 5)
+                    : null);
         } else {
-            return new PiConfigDTO(null, id, pi.getFrequency(), null, null);
+            return new PiConfigDTO(null, id, pi.getFrequency(), null, null, null);
         }
     }
 

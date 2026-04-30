@@ -54,9 +54,12 @@ public class RaspberryController {
     }
 
     @GetMapping("/{raspberry_id}/sync/occupancy")
-    public ResponseEntity<List<OccupancyDTO>> syncOccupancy(@PathVariable(name="raspberry_id") UUID id) {
-        List<RoomOccupancy> occupancy = raspberryService.getOccupancyFromRedis(id);
-        return new ResponseEntity<>(occupancy.stream().map(r -> new OccupancyDTO(r.getPeopleCnt(), r.getRoomId(), r.getPeopleCnt() < 5)).toList(), HttpStatus.OK);
+    public ResponseEntity<OccupancyDTO> syncOccupancy(@PathVariable(name="raspberry_id") UUID id) {
+        RoomOccupancy occupancy = raspberryService.getOccupancyFromRedis(id);
+        if (occupancy != null) {
+            return new ResponseEntity<>(new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), occupancy.getPeopleCnt() < 5), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @PostMapping("/{raspberry_id}/retry-connection")

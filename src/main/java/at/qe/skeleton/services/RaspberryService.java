@@ -20,7 +20,7 @@ public interface RaspberryService {
 
     void deleteRaspberry(UUID id);
 
-    List<RoomOccupancy> getOccupancyFromRedis(UUID id);
+    RoomOccupancy getOccupancyFromRedis(UUID id);
 
     PiConfigDTO getConfigForRaspberry(UUID id);
 

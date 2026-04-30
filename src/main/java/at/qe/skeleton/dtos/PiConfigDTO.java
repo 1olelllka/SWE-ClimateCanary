@@ -8,6 +8,7 @@ public record PiConfigDTO(
         UUID raspberryId,
         int frequency,
         LimitDTO limits,
-        Set<ReducedSensorDTO> sensors
+        Set<ReducedSensorDTO> sensors,
+        OccupancyDTO occupancy
 ) {
 }

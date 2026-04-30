@@ -20,9 +20,9 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
     public LimitDTO mapTo(RoomMonitoring entity) {
         return new LimitDTO(
                 entity.getRoomId(),
-                entity.getTempLimit() != null ? entity.getTempLimit().getMinVal() : DEFAULT_TEMP_MIN,
+                entity.getTempLimit() != null && entity.getTempLimit().getMinVal() != null? entity.getTempLimit().getMinVal() : DEFAULT_TEMP_MIN,
                 entity.getTempLimit() != null ? entity.getTempLimit().getMaxVal() : DEFAULT_TEMP_MAX,
-                entity.getHumLimit()  != null ? entity.getHumLimit().getMinVal()  : DEFAULT_HUM_MIN,
+                entity.getHumLimit()  != null && entity.getHumLimit().getMinVal() != null? entity.getHumLimit().getMinVal()  : DEFAULT_HUM_MIN,
                 entity.getHumLimit()  != null ? entity.getHumLimit().getMaxVal()  : DEFAULT_HUM_MAX,
                 entity.getPolLimit()  != null ? entity.getPolLimit().getMaxVal()  : DEFAULT_CO2_MAX
         );
