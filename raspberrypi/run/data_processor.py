@@ -19,7 +19,6 @@ SENSOR_CHECKS = [
 ]
 
 class DataProcessor:
-    """Processes incoming sensor data from all Arduinos. """
 
     def __init__(self, db, web_out_queue, web_violation_queue):
         self.db = db
@@ -77,10 +76,10 @@ class DataProcessor:
                     )
 
                 webapp_payload = {
-                    "roomId":    room_id,
-                    "device":    sensor_name,
+                    "roomId": room_id,
+                    "device": sensor_name,
                     "timestamp": timestamp,
-                    "readings":  []
+                    "readings": []
                 }
                 if data.get('temperature') is not None:
                     webapp_payload["readings"].append({"type": "TEMPERATURE", "value": data['temperature']})
@@ -135,15 +134,15 @@ class DataProcessor:
                     await self.db.register_violation(sensor_name, limit_key, limit, val)
 
                     violation_report = {
-                        "type":            "violation_warning",
-                        "device":          sensor_name,
-                        "roomId":          room_id,
-                        "timestamp":       timestamp,
-                        "limit_reached":   limit_key,
+                        "type": "violation_warning",
+                        "device": sensor_name,
+                        "roomId": room_id,
+                        "timestamp": timestamp,
+                        "limit_reached": limit_key,
                         "violation_delta": round(abs(val - limit), 2),
-                        "actual_value":    val,
-                        "threshold":       limit,
-                        "direction":       direction,
+                        "actual_value": val,
+                        "threshold": limit,
+                        "direction": direction,
                     }
                     await self.web_violation_queue.put(violation_report)
                     any_newly_fired = True
@@ -190,4 +189,4 @@ class DataProcessor:
             remaining = await self.db.get_active_violations(sensor_name)
             if not remaining:
                 await ble_inbox.put("ALERT:OFF")
-                logger.info(f"[Processor:{sensor_name}] All violations resolved — ALERT:OFF sent.")
+                logger.info(f"[Processor:{sensor_name}] All violations resolved, ALERT:OFF sent.")

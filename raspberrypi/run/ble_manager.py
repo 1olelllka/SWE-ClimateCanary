@@ -25,12 +25,10 @@ class BLEManager:
         return self.sensor['name']
 
     def disconnected_callback(self, client):
-        """Fired instantly by Bleak if the Arduino loses power or drops connection."""
         logger.warning("[BLE] Arduino disconnected unexpectedly!")
         self.disconnect_event.set()
 
     def notification_handler(self, data):
-        """Triggered automatically whenever the Arduino sends sensor data."""
         message = data.decode('utf-8').strip()
         logger.debug(f"[Arduino -> Pi] Received: {message}")
 
@@ -38,7 +36,6 @@ class BLEManager:
         self._loop.call_soon_threadsafe(self.processing_queue.put_nowait, message)
 
     async def _sender_task(self, write_uuid: str):
-        """Background task that exclusively handles sending data TO the Arduino."""
         logger.info("[BLE] Sender task started. Ready to transmit commands.")
 
         while self.client and self.client.is_connected:
@@ -59,7 +56,6 @@ class BLEManager:
                 break
 
     async def run(self):
-        """Main orchestrator for the BLE connection."""
         logger.info("[BLE] Starting manager...")
 
         is_reported_offline = False 
@@ -74,8 +70,8 @@ class BLEManager:
                     return
 
                 target_name = sensor_cfg['name']
-                char_uuid   = sensor_cfg['char_uuid']
-                write_uuid  = sensor_cfg['write_uuid']
+                char_uuid = sensor_cfg['char_uuid']
+                write_uuid = sensor_cfg['write_uuid']
 
                 connected = False 
                 for attempt in range (1,6):
@@ -155,9 +151,6 @@ class BLEManager:
                 await asyncio.sleep(10)
 
     async def _notify_webapp_status(self, status: str):
-        """POST a device status update (ONLINE/OFFLINE) to the webapp.
-        Best-effort, failures are logged but never crash the BLE loop.
-        """
         try:
             server_url = await self.db.get_config('server_url')
             pi_id = await self.db.get_config('raspberry_id')
@@ -167,8 +160,8 @@ class BLEManager:
 
             payload = {
                     "raspberryId": pi_id,
-                    "device":      self.name,
-                    "status":      status,
+                    "device": self.name,
+                    "status": status,
                     }
             timeout = aiohttp.ClientTimeout(total=10)
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -182,4 +175,3 @@ class BLEManager:
                         logger.warning(f"[BLE:{self.name}] Webapp status notify returned {response.status}.")
         except Exception as e:
             logger.warning(f"[BLE:{self.name}] Failed to notify webapp of {status} status: {e}")
-
