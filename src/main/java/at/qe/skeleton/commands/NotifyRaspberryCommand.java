@@ -59,6 +59,15 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         this.client = client;
     }
 
+    public NotifyRaspberryCommand(UUID readId, UUID writeId,
+                                  RaspberryPi pi,
+                                  NotificationClient client) {
+        this.writeId = writeId;
+        this.readId = readId;
+        this.pi = pi;
+        this.client = client;
+    }
+
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
@@ -76,9 +85,12 @@ public class NotifyRaspberryCommand implements Command, Serializable {
             return response;
         }
         if (writeId == null || readId == null) {
-            response = client.notifyRaspberryAboutChanges(piUri, dto, null);
+            response = client.notifyRaspberryAboutSensorChanges(piUri, dto, null);
         } else {
-            response = client.notifyRaspberryAboutChanges(piUri, dto, new UUID[]{this.readId, this.writeId});
+            if (dto == null) {
+                response = client.retrySensorConnection(piUri, new UUID[]{this.readId, this.writeId});
+            } else
+                response = client.notifyRaspberryAboutSensorChanges(piUri, dto, new UUID[]{this.readId, this.writeId});
         }
         return response;
     }

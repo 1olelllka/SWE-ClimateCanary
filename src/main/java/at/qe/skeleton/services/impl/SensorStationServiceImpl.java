@@ -6,6 +6,7 @@ import at.qe.skeleton.dtos.UpdateType;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
+import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.SensorStationRepository;
@@ -129,5 +130,19 @@ public class SensorStationServiceImpl implements SensorStationService {
                             monitoring.getRaspberryPi(),
                             notificationClient));
         }
+    }
+
+    @Override
+    public void retryConnection(UUID id) {
+        SensorStation station = sensorRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Sensor station with id " + id + " was not found."));
+        if (station.getRoomMonitoring() == null || station.getRoomMonitoring().getRaspberryPi() == null) return;
+        RaspberryPi pi = station.getRoomMonitoring().getRaspberryPi();
+        eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                station.getReadId(),
+                station.getWriteId(),
+                pi,
+                notificationClient
+        ));
     }
 }

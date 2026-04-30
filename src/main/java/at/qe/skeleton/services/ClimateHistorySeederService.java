@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,8 +46,8 @@ public class ClimateHistorySeederService {
             return;
         }
 
-        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-        LocalDateTime start = now.minusDays(historyDays);
+        OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        OffsetDateTime start = now.minusDays(historyDays);
         long minutesTotal = ChronoUnit.MINUTES.between(start, now);
 
         log.info("Seeding {} days of climate history ({} data points) for room {}...",
@@ -58,7 +59,7 @@ public class ClimateHistorySeederService {
             double roomHumOffset = 0.0;
 
             List<ClimateStats> batch = new ArrayList<>(BATCH_SIZE);
-            LocalDateTime cursor = start;
+            OffsetDateTime cursor = start;
 
             while (!cursor.isAfter(now)) {
                 double temp = computeTemperature(cursor, roomTempOffset);
@@ -92,7 +93,7 @@ public class ClimateHistorySeederService {
     }
 
     // Peak ~14:00, trough ~04:00, daily sinusoidal variation
-    private double computeTemperature(LocalDateTime dt, double roomOffset) {
+    private double computeTemperature(OffsetDateTime dt, double roomOffset) {
         double hourFraction = dt.getHour() + dt.getMinute() / 60.0;
         double dailyCycle = 3.0 * Math.sin(2 * Math.PI * (hourFraction - 4.0) / 24.0);
         double noise = RANDOM.nextGaussian() * 0.3;
@@ -107,7 +108,7 @@ public class ClimateHistorySeederService {
     }
 
     // Higher during weekday work hours (8–18), low on weekends and at night
-    private double computePollution(LocalDateTime dt) {
+    private double computePollution(OffsetDateTime dt) {
         int hour = dt.getHour();
         boolean isWeekend = dt.getDayOfWeek().getValue() >= 6;
         boolean isWorkHours = hour >= 8 && hour < 18;

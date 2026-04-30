@@ -71,6 +71,12 @@ public class SensorStationController {
         return new ResponseEntity<>(sensorStationMapper.mapTo(sensorStation), HttpStatus.OK);
     }
 
+    @PostMapping("/retry-sensor/{sensor_id}")
+    public ResponseEntity<Void> retrySensorStation(@PathVariable(name = "sensor_id") UUID id) {
+        sensorStationService.retryConnection(id);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
     @GetMapping("/{sensor_id}")
     public ResponseEntity<SensorStationDTO> getSpecificSensorById(@PathVariable(name = "sensor_id") UUID id) {
         SensorStation station = sensorStationService.getSpecificSensor(id);

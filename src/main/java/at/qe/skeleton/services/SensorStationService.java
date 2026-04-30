@@ -16,4 +16,6 @@ public interface SensorStationService {
     SensorStation getSpecificSensor(UUID id);
 
     void deleteById(UUID id);
+
+    void retryConnection(UUID id);
 }

@@ -48,10 +48,6 @@ public class AbsenceServiceImpl implements AbsenceService {
     @Override
     @Transactional
     public Absence createNewAbsenceForUser(Absence absence) {
-        if (absence.getAssignedTo().equals(absence.getUser().getId())) {
-            throw new ValidationException("Assigned person must not be the same as you.");
-        }
-
         Optional<Userx> manager = userxRepository.findById(absence.getAssignedTo());
         if (manager.isEmpty()) {
             throw new NotFoundException("Manager with id " + absence.getAssignedTo() + " was not found.");

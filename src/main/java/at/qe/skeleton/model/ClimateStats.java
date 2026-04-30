@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -31,7 +32,7 @@ public class ClimateStats {
     private double tempVal;
 
     @Column(nullable = false)
-    private LocalDateTime date;
+    private OffsetDateTime date;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_monitoring_id", nullable = false)

@@ -3,7 +3,7 @@ package at.qe.skeleton.dtos;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,7 +14,7 @@ public record MeasurementBatchDTO(
 
 
         @NotNull(message = "Timestamp must not be null.")
-        LocalDateTime timestamp,
+        OffsetDateTime timestamp,
 
         @NotNull(message = "Readings must not be null.")
         @NotEmpty(message = "Readings must not be empty.")

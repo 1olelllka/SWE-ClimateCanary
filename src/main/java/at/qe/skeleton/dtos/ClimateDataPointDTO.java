@@ -1,9 +1,9 @@
 package at.qe.skeleton.dtos;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record ClimateDataPointDTO(
-        LocalDateTime timestamp,
+        OffsetDateTime timestamp,
         double temperature,
         double humidity,
         double airQuality

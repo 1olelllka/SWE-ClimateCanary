@@ -16,10 +16,9 @@ import java.util.UUID;
 @FeignClient(name="notification-raspberry-client", url = "http://dummy-url.com")
 public interface NotificationClient {
     @PostMapping("/api/sensors")
-    ResponseEntity<Void> notifyRaspberryAboutChanges(URI baseUrl,
-                                                     @RequestBody StateChangeNotificationDTO notification,
-                                                     @RequestParam(required = false) UUID[] sensorIds);
-
+    ResponseEntity<Void> notifyRaspberryAboutSensorChanges(URI baseUrl,
+                                                           @RequestBody StateChangeNotificationDTO notification,
+                                                           @RequestParam(required = false) UUID[] sensorIds);
     @PostMapping("/api/config")
     ResponseEntity<Void> requestRaspberryToCheckConfig(URI baseUrl,
                                                        @RequestBody ConfigRequestDTO configRequestDTO);
@@ -31,4 +30,8 @@ public interface NotificationClient {
     @PostMapping("/api/occupancy")
     ResponseEntity<Void> notifyAboutOccupancyChanges(URI baseUrl,
                                                      @RequestBody OccupancyDTO dto);
+
+    @PostMapping("/api/retry-sensor")
+    ResponseEntity<Void> retrySensorConnection(URI baseUrl,
+                                               @RequestParam UUID[] sensorIds);
 }
