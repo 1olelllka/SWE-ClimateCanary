@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,4 +23,6 @@ public interface WarningRepository extends JpaRepository<Warnings, UUID> {
 
     // all historical warnings for a room (active + resolved)
     List<Warnings> findByRoomMonitoring_RoomId(UUID roomId);
+
+    List<Warnings> findByRoomMonitoring_RoomIdAndCreatedAtBetween(UUID roomId, LocalDateTime startDate, LocalDateTime endDate);
 }

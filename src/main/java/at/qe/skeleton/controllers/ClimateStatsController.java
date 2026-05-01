@@ -27,7 +27,6 @@ public class ClimateStatsController {
     private final ClimateStatsService climateStatsService;
 
     @PostMapping("/measurements")
-    @PreAuthorize("hasAuthority('CAN_SEND_MEASUREMENTS')")
     public ResponseEntity<Void> postMeasurements(
             @Valid @RequestBody MeasurementBatchDTO batch) {
         climateStatsService.saveMeasurementBatch(batch);

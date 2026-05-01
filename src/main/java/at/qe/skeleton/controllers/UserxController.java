@@ -89,6 +89,7 @@ public class UserxController {
         return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
     }
 
+    // TODO: WTF?
     @GetMapping("/me/department/rooms")
     @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE')")
     public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {

@@ -71,7 +71,7 @@ public class SensorStationController {
         return new ResponseEntity<>(sensorStationMapper.mapTo(sensorStation), HttpStatus.OK);
     }
 
-    @PostMapping("/retry-sensor/{sensor_id}")
+    @PostMapping("{sensor_id}/retry-connection")
     public ResponseEntity<Void> retrySensorStation(@PathVariable(name = "sensor_id") UUID id) {
         sensorStationService.retryConnection(id);
         return new ResponseEntity<>(HttpStatus.OK);

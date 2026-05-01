@@ -76,6 +76,7 @@ public class AbsenceController {
         }
     }
 
+    // TODO: CHANGE THIS SHIT
     @GetMapping("/managers")
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
     public ResponseEntity<List<AbsenceManagerDTO>> getAbsenceManagers() {
