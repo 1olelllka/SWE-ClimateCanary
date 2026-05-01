@@ -3,16 +3,20 @@ package at.qe.skeleton.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tips")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Table(name = "tips", uniqueConstraints = @UniqueConstraint(
+        columnNames = {"violationType", "violatedSensor", "violationStatus"}
+))
 public class Tip {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,7 +34,19 @@ public class Tip {
     @Column(nullable = false)
     private ViolatedSensor violatedSensor;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warning_id", nullable = false)
-    private Warnings warning;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private WarningStatus violationStatus;
+
+    @OneToMany(mappedBy = "tip", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Warnings> warnings = new ArrayList<>();
+
+    public void addNewWarning(Warnings warnings) {
+        this.warnings.add(warnings);
+    }
+
+    public void removeWarning(Warnings warnings) {
+        this.warnings.remove(warnings);
+    }
 }

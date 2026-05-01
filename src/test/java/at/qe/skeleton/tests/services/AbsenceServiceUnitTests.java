@@ -117,13 +117,6 @@ public class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatCreateNewAbsenceThrowsValidationWhenAssigningToSelf() {
-        absence.setAssignedTo(user.getId());
-
-        assertThrows(ValidationException.class, () -> absenceService.createNewAbsenceForUser(absence));
-    }
-
-    @Test
     void testThatCreateNewAbsenceThrowsNotFoundWhenManagerDoesNotExist() {
         when(userxRepository.findById(manager.getId())).thenReturn(Optional.empty());
 

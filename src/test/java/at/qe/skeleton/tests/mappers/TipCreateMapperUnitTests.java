@@ -5,12 +5,11 @@ import at.qe.skeleton.mappers.TipCreateMapper;
 import at.qe.skeleton.model.Tip;
 import at.qe.skeleton.model.ViolatedSensor;
 import at.qe.skeleton.model.ViolationType;
+import at.qe.skeleton.model.WarningStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -55,9 +54,9 @@ class TipCreateMapperUnitTests {
         @DisplayName("maps all fields correctly")
         void mapsAllFields() {
             TipCreateDTO dto = new TipCreateDTO(
-                    UUID.randomUUID(),
                     ViolationType.OVER,
                     ViolatedSensor.TEMPERATURE,
+                    WarningStatus.RED,
                     "Open a window to reduce temperature."
             );
 
@@ -67,36 +66,39 @@ class TipCreateMapperUnitTests {
             assertThat(result.getMsg()).isEqualTo("Open a window to reduce temperature.");
             assertThat(result.getViolationType()).isEqualTo(ViolationType.OVER);
             assertThat(result.getViolatedSensor()).isEqualTo(ViolatedSensor.TEMPERATURE);
+            assertThat(result.getViolationStatus()).isEqualTo(WarningStatus.RED);
         }
 
         @Test
         @DisplayName("maps HUMIDITY violated sensor correctly")
         void mapsHumiditySensor() {
             TipCreateDTO dto = new TipCreateDTO(
-                    UUID.randomUUID(),
                     ViolationType.OVER,
                     ViolatedSensor.HUMIDITY,
+                    WarningStatus.GREEN,
                     "Use a dehumidifier."
             );
 
             Tip result = mapper.mapFrom(dto);
 
             assertThat(result.getViolatedSensor()).isEqualTo(ViolatedSensor.HUMIDITY);
+            assertThat(result.getViolationStatus()).isEqualTo(WarningStatus.GREEN);
         }
 
         @Test
         @DisplayName("maps CO2 violated sensor correctly")
         void mapsCo2Sensor() {
             TipCreateDTO dto = new TipCreateDTO(
-                    UUID.randomUUID(),
                     ViolationType.OVER,
                     ViolatedSensor.AIR,
+                    WarningStatus.GREEN,
                     "Ventilate the room immediately."
             );
 
             Tip result = mapper.mapFrom(dto);
 
             assertThat(result.getViolatedSensor()).isEqualTo(ViolatedSensor.AIR);
+            assertThat(result.getViolationStatus()).isEqualTo(WarningStatus.GREEN);
         }
 
         @Test
@@ -104,9 +106,9 @@ class TipCreateMapperUnitTests {
         void mapsAllViolationTypes() {
             for (ViolationType type : ViolationType.values()) {
                 TipCreateDTO dto = new TipCreateDTO(
-                        UUID.randomUUID(),
                         type,
                         ViolatedSensor.TEMPERATURE,
+                        WarningStatus.GREEN,
                         "Some tip message."
                 );
 
@@ -121,9 +123,9 @@ class TipCreateMapperUnitTests {
         void mapsAllViolatedSensors() {
             for (ViolatedSensor sensor : ViolatedSensor.values()) {
                 TipCreateDTO dto = new TipCreateDTO(
-                        UUID.randomUUID(),
                         ViolationType.OVER,
                         sensor,
+                        WarningStatus.GREEN,
                         "Some tip message."
                 );
 
@@ -137,9 +139,9 @@ class TipCreateMapperUnitTests {
         @DisplayName("does not set id — left for JPA generation")
         void doesNotSetId() {
             TipCreateDTO dto = new TipCreateDTO(
-                    UUID.randomUUID(),
                     ViolationType.OVER,
                     ViolatedSensor.TEMPERATURE,
+                    WarningStatus.GREEN,
                     "Open a window."
             );
 
@@ -148,38 +150,6 @@ class TipCreateMapperUnitTests {
             assertThat(result.getId()).isNull();
         }
 
-        @Test
-        @DisplayName("does not set warning — resolved by service layer via roomID")
-        void doesNotSetWarning() {
-            TipCreateDTO dto = new TipCreateDTO(
-                    UUID.randomUUID(),
-                    ViolationType.OVER,
-                    ViolatedSensor.TEMPERATURE,
-                    "Open a window."
-            );
-
-            Tip result = mapper.mapFrom(dto);
-
-            assertThat(result.getWarning()).isNull();
-        }
-
-        @Test
-        @DisplayName("roomID in DTO is not mapped — resolved by service layer")
-        void roomIdNotMapped() {
-            UUID roomId = UUID.randomUUID();
-            TipCreateDTO dto = new TipCreateDTO(
-                    roomId,
-                    ViolationType.OVER,
-                    ViolatedSensor.TEMPERATURE,
-                    "Open a window."
-            );
-
-            Tip result = mapper.mapFrom(dto);
-
-            // roomID is intentionally not set on Tip directly —
-            // the service resolves Warnings by roomID and links it
-            assertThat(result.getWarning()).isNull();
-        }
 
         @Test
         @DisplayName("throws NullPointerException when dto is null")

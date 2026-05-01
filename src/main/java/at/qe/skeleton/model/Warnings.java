@@ -26,6 +26,9 @@ public class Warnings {
     private String message;
 
     @Column(nullable = false)
+    private String deviceName;
+
+    @Column(nullable = false)
     private double triggeredValue;
 
     @Column(nullable = false)
@@ -45,9 +48,8 @@ public class Warnings {
     @Enumerated(EnumType.STRING)
     private MeasurementType measurementType;
 
-    @OneToMany(mappedBy = "warning", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
-    private List<Tip> tips = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Tip tip;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_monitoring_id", nullable = false)

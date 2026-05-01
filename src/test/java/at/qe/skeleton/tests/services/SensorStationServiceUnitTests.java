@@ -294,4 +294,27 @@ public class SensorStationServiceUnitTests {
         assertThrows(NotFoundException.class, () -> sensorService.deleteById(stationId));
         verify(sensorRepository, never()).deleteById(any());
     }
+
+    @Test
+    void testThatRetryConnectionThrowsNotFoundExceptionIfNoSensorWasFound() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> sensorService.retryConnection(stationId));
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatRetryConnectionDoesNotTriggerEventIfSensorDoesNotHaveARoom() {
+        sampleStation.setRoomMonitoring(null);
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        assertDoesNotThrow(() -> sensorService.retryConnection(stationId));
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatRetryConnectionTriggersEventPublishingIfRoomWasFound() {
+        sampleRoom.setRaspberryPi(samplePi);
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        assertDoesNotThrow(() -> sensorService.retryConnection(stationId));
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
+    }
 }

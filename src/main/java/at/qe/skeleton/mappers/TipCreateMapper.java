@@ -15,10 +15,10 @@ public class TipCreateMapper implements DTOMapper<Tip, TipCreateDTO> {
     @Override
     public Tip mapFrom(TipCreateDTO dto) {
         Tip tip = new Tip();
+        tip.setViolationStatus(dto.violationStatus());
         tip.setMsg(dto.message());
         tip.setViolationType(dto.violationType());
         tip.setViolatedSensor(dto.violatedSensor());
-        // warning will be resolved in service via dto.roomID()
         return tip;
     }
 }

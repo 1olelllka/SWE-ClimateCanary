@@ -12,22 +12,13 @@ public class WarningCreateMapper implements DTOMapper<Warnings, WarningCreateDTO
 
     @Override
     public WarningCreateDTO mapTo(Warnings entity) {
-        return new WarningCreateDTO(
-                entity.getRoomMonitoring().getRoomId(),
-                entity.getMeasurementType(),
-                entity.getStatus(),
-                entity.getTriggeredValue(),
-                entity.getActiveLimitAtTime(),
-                entity.getMessage()
-        );
+        throw new UnsupportedOperationException("Operation is not supported.");
     }
 
     @Override
     public Warnings mapFrom(WarningCreateDTO dto) {
         return Warnings.builder()
-                .roomMonitoring(RoomMonitoring.builder()
-                        .roomId(dto.roomId())
-                        .build())
+                .deviceName(dto.device())
                 .measurementType(dto.measurementType())
                 .status(dto.status())
                 .message(dto.message())

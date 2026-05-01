@@ -89,26 +89,25 @@ public class UserxController {
         return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
     }
 
-    // TODO: WTF?
-    @GetMapping("/me/department/rooms")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE')")
-    public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
-        Userx authenticated = userService.getByUsername(authentication.getName());
-
-        if (authenticated.getMyRoom() == null || authenticated.getMyRoom().getDepartment() == null) {
-            throw new ValidationException("User has no assigned room or department.");
-        }
-
-        UUID departmentId = authenticated.getMyRoom().getDepartment().getId();
-
-        List<RoomDTO> rooms = roomRepository.findAll().stream()
-                .filter(room -> room.getDepartment() != null)
-                .filter(room -> room.getDepartment().getId().equals(departmentId))
-                .map(roomMapper::mapTo)
-                .toList();
-
-        return new ResponseEntity<>(rooms, HttpStatus.OK);
-    }
+//    @GetMapping("/me/department/rooms")
+//    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE')")
+//    public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
+//        Userx authenticated = userService.getByUsername(authentication.getName());
+//
+//        if (authenticated.getMyRoom() == null || authenticated.getMyRoom().getDepartment() == null) {
+//            throw new ValidationException("User has no assigned room or department.");
+//        }
+//
+//        UUID departmentId = authenticated.getMyRoom().getDepartment().getId();
+//
+//        List<RoomDTO> rooms = roomRepository.findAll().stream()
+//                .filter(room -> room.getDepartment() != null)
+//                .filter(room -> room.getDepartment().getId().equals(departmentId))
+//                .map(roomMapper::mapTo)
+//                .toList();
+//
+//        return new ResponseEntity<>(rooms, HttpStatus.OK);
+//    }
 
     @PostMapping("")
     public ResponseEntity<UserxDTO> createNewUser(@RequestBody @Valid UserxCreateDTO dto,

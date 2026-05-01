@@ -11,8 +11,7 @@ public class TipMapper implements DTOMapper<Tip, TipDTO> {
     public TipDTO mapTo(Tip entity) {
         return new TipDTO(
                 entity.getId(),
-                entity.getWarning() != null && entity.getWarning().getRoomMonitoring() != null
-                        ? entity.getWarning().getRoomMonitoring().getRoomId() : null,
+                entity.getViolationStatus(),
                 entity.getViolationType(),
                 entity.getViolatedSensor(),
                 entity.getMsg()

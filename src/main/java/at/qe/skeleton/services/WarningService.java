@@ -12,8 +12,6 @@ import java.util.UUID;
 
 public interface WarningService {
 
-    List<WarningDTO> getAllActiveWarnings();
-
     List<WarningDTO> getAllWarningsForRoom(Userx authenticated, UUID roomId, Boolean active, LocalDate startDate, LocalDate endDate);
 
     // where Pi reports new violation

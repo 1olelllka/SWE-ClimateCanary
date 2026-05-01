@@ -97,6 +97,7 @@ public class WebSecurityConfig {
                                                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/measurements").hasAuthority(Permission.CAN_SEND_MEASUREMENTS.name())
                                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                                         .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
+                                                        .requestMatchers("/api/tips").hasAuthority(Permission.CAN_MANAGE_TIPS.name())
                                                         .requestMatchers("/api/**").authenticated()
                                                         .anyRequest().authenticated())
                                         // Add the token authentication filter before the

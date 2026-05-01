@@ -13,6 +13,7 @@ public class WarningMapper implements DTOMapper<Warnings, WarningDTO> {
         return new WarningDTO(
                 entity.getId(),
                 entity.getRoomMonitoring().getRoomId(),
+                entity.getDeviceName(),
                 entity.getMeasurementType(),
                 entity.getStatus(),
                 entity.getMessage(),
@@ -31,6 +32,7 @@ public class WarningMapper implements DTOMapper<Warnings, WarningDTO> {
                 .roomMonitoring(RoomMonitoring.builder()
                         .roomId(dto.roomId())
                         .build())
+                .deviceName(dto.deviceName())
                 .measurementType(dto.measurementType())
                 .status(dto.status())
                 .message(dto.message())

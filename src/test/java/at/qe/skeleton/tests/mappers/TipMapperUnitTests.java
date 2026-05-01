@@ -24,24 +24,13 @@ class TipMapperUnitTests {
     }
 
     private Tip buildTip(UUID id, ViolationType violationType,
-                         ViolatedSensor violatedSensor, String message,
-                         Warnings warning) {
+                         ViolatedSensor violatedSensor, String message) {
         Tip tip = new Tip();
         tip.setId(id);
         tip.setViolationType(violationType);
         tip.setViolatedSensor(violatedSensor);
         tip.setMsg(message);
-        tip.setWarning(warning);
         return tip;
-    }
-
-    private Warnings buildWarning(UUID roomId) {
-        RoomMonitoring room = new RoomMonitoring();
-        room.setRoomId(roomId);
-
-        Warnings warning = new Warnings();
-        warning.setRoomMonitoring(room);
-        return warning;
     }
 
     @Nested
@@ -52,32 +41,13 @@ class TipMapperUnitTests {
         @DisplayName("maps all fields correctly when warning and roomMonitoring are present")
         void mapsAllFieldsWithWarningAndRoom() {
             UUID tipId = UUID.randomUUID();
-            UUID roomId = UUID.randomUUID();
-            Warnings warning = buildWarning(roomId);
             Tip tip = buildTip(tipId, ViolationType.OVER, ViolatedSensor.TEMPERATURE,
-                    "Open a window.", warning);
+                    "Open a window.");
 
             TipDTO result = mapper.mapTo(tip);
 
             assertThat(result).isNotNull();
             assertThat(result.id()).isEqualTo(tipId);
-            assertThat(result.roomId()).isEqualTo(roomId);
-            assertThat(result.violationType()).isEqualTo(ViolationType.OVER);
-            assertThat(result.violatedSensor()).isEqualTo(ViolatedSensor.TEMPERATURE);
-            assertThat(result.message()).isEqualTo("Open a window.");
-        }
-
-        @Test
-        @DisplayName("maps roomId to null when warning is null")
-        void mapsNullRoomIdWhenWarningIsNull() {
-            UUID tipId = UUID.randomUUID();
-            Tip tip = buildTip(tipId, ViolationType.OVER, ViolatedSensor.TEMPERATURE,
-                    "Open a window.", null);
-
-            TipDTO result = mapper.mapTo(tip);
-
-            assertThat(result.id()).isEqualTo(tipId);
-            assertThat(result.roomId()).isNull();
             assertThat(result.violationType()).isEqualTo(ViolationType.OVER);
             assertThat(result.violatedSensor()).isEqualTo(ViolatedSensor.TEMPERATURE);
             assertThat(result.message()).isEqualTo("Open a window.");
@@ -88,7 +58,7 @@ class TipMapperUnitTests {
         void mapsAllViolationTypes() {
             for (ViolationType type : ViolationType.values()) {
                 Tip tip = buildTip(UUID.randomUUID(), type, ViolatedSensor.TEMPERATURE,
-                        "Some tip.", null);
+                        "Some tip.");
 
                 TipDTO result = mapper.mapTo(tip);
 
@@ -101,24 +71,12 @@ class TipMapperUnitTests {
         void mapsAllViolatedSensors() {
             for (ViolatedSensor sensor : ViolatedSensor.values()) {
                 Tip tip = buildTip(UUID.randomUUID(), ViolationType.OVER, sensor,
-                        "Some tip.", null);
+                        "Some tip.");
 
                 TipDTO result = mapper.mapTo(tip);
 
                 assertThat(result.violatedSensor()).isEqualTo(sensor);
             }
-        }
-
-        @Test
-        @DisplayName("maps roomId to null when warning has null roomMonitoring")
-        void mapsNullWhenWarningHasNullRoomMonitoring() {
-            Warnings warning = new Warnings(); // roomMonitoring not set
-            Tip tip = buildTip(UUID.randomUUID(), ViolationType.OVER,
-                    ViolatedSensor.TEMPERATURE, "Open a window.", warning);
-
-            TipDTO result = mapper.mapTo(tip);
-
-            assertThat(result.roomId()).isNull();
         }
 
         @Test
@@ -137,7 +95,7 @@ class TipMapperUnitTests {
         void throwsUnsupportedOperationException() {
             TipDTO dto = new TipDTO(
                     UUID.randomUUID(),
-                    UUID.randomUUID(),
+                    WarningStatus.GREEN,
                     ViolationType.OVER,
                     ViolatedSensor.TEMPERATURE,
                     "Open a window."

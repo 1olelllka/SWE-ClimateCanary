@@ -13,6 +13,8 @@ public record WarningCreateDTO(
         @NotEmpty(message = "Room ID must not be empty.")
         UUID roomId,
 
+        String device,
+
         @NotNull(message = "Sensor type must not be null.")
         MeasurementType measurementType,
 
