@@ -127,7 +127,6 @@ export const EmployeeAbsencesPage: React.FC = () => {
                     <KpiCard title="Vacation Days Remaining" value={18} max={25} />
                     <KpiCard title="Used This Year" value={7} max={25} />
                     <KpiCard title="Pending Requests" value={absences.filter(a => a.status === 'PENDING').length} max={10} />
-                    <KpiCard title="Zeitausgleich?" value={18} max={25} />
                 </div>
 
                 {/* Controls */}

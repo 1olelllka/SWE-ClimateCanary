@@ -25,7 +25,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
     lcd.setCursor(0, 0);
     lcd.print("Sensor invalid");
     lcd.setCursor(0, 1);
-    lcd.print("Check BME680");
+    lcd.print("Check BME688");
     return;
   }
 
@@ -37,7 +37,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
         lcd.setCursor(0, 1);
         lcd.print("Temp.: ");
         lcd.print(reading.temperatureC, 1);
-        lcd.print(" C");
+        lcd.print("C");
         break;
 
       case RegularModeDisplay::Humidity:
@@ -53,7 +53,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
         lcd.setCursor(0, 0);
         lcd.print("Mode: Regular");
         lcd.setCursor(0, 1);
-        lcd.print("CO2: ");
+        lcd.print("IAQ: ");
         lcd.print(reading.airQualityIndex, 0);
         lcd.print("%");
         break;

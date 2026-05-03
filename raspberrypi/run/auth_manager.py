@@ -11,7 +11,6 @@ class AuthManager:
         self.token: str | None = None
 
     async def login(self):
-        """Log in and store the JWT token in memory."""
         url = f"{self.server_url}/api/auth/login"
         timeout = aiohttp.ClientTimeout(total=10)
 
@@ -26,7 +25,6 @@ class AuthManager:
                 logger.info("[Auth] Successfully authenticated with webapp.")
 
     def get_headers(self) -> dict:
-        """Returns auth headers for any request to the webapp."""
         if not self.token:
             raise RuntimeError("Not authenticated. Call login() first.")
         return {
@@ -35,6 +33,5 @@ class AuthManager:
                 }
 
     async def refresh_if_needed(self):
-        """If a request returns 401 — re-login and retry."""
         logger.warning("[Auth] Token expired or invalid, re-authenticating...")
         await self.login()
