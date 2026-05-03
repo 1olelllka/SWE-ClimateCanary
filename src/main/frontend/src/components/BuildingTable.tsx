@@ -49,7 +49,7 @@ const BuildingTable: React.FC<Props> = ({ buildings, loading, onAdd, onEdit, onD
             <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll">
                 <Column field="id" header="ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                 <Column field="name" header="Name" sortable />
-                <Column field="address" header="Address" />
+                <Column field="address" header="Address" sortable />
                 <Column header="" body={actionsTemplate} style={{ width: '6rem' }} exportable={false} />
             </DataTable>
         </div>

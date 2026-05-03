@@ -49,9 +49,9 @@ const RoomTable: React.FC<Props> = ({ rooms, loading, onAdd, onEdit, onDelete })
             <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll">
                 <Column field="id" header="ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                 <Column field="name" header="Name" sortable />
-                <Column field="departmentName" header="Department" />
+                <Column field="departmentName" header="Department" sortable />
                 <Column field="roomType" header="Type" />
-                <Column field="defaultPeopleCount" header="Capacity" />
+                <Column field="defaultPeopleCount" header="Capacity" sortable />
                 <Column header="" body={actionsTemplate} style={{ width: '6rem' }} exportable={false} />
             </DataTable>
         </div>
