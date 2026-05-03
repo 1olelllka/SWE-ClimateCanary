@@ -45,10 +45,10 @@ public class RoomServiceImpl implements RoomService {
 
     @Transactional
     public Room createRoom(Room room) {
+        if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id " + room.getDepartment().getId() + " was not found.");
         if (roomRepository.existsByRoomNumberAndDepartmentId(room.getRoomNumber(), room.getDepartment().getId())) {
             throw new ConflictException("Room with this name already exists in this department.");
         }
-        if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id " + room.getDepartment().getId() + " was not found.");
         Room r = roomRepository.save(room);
         RoomMonitoring monitoring = RoomMonitoring.builder()
                 .roomId(r.getId())
