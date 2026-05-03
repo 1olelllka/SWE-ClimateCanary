@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Builder
-@Table(name = "rooms")
+@Table(name = "rooms", uniqueConstraints = @UniqueConstraint(columnNames = {"room_number", "department_id"}))
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -24,7 +24,7 @@ public class Room {
     @Column(nullable = false)
     private RoomType roomType;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "room_number", nullable = false)
     private String roomNumber;
 
     @Column(nullable = false)

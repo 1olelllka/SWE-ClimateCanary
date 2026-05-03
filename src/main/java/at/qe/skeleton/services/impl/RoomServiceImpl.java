@@ -45,8 +45,8 @@ public class RoomServiceImpl implements RoomService {
 
     @Transactional
     public Room createRoom(Room room) {
-        if (roomRepository.existsByRoomNumber(room.getRoomNumber())) {
-            throw new ConflictException("Room with such name already exists.");
+        if (roomRepository.existsByRoomNumberAndDepartmentId(room.getRoomNumber(), room.getDepartment().getId())) {
+            throw new ConflictException("Room with this name already exists in this department.");
         }
         if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id " + room.getDepartment().getId() + " was not found.");
         Room r = roomRepository.save(room);
@@ -70,8 +70,10 @@ public class RoomServiceImpl implements RoomService {
             Optional.ofNullable(room.getIsActive()).ifPresent(r::setIsActive);
             Optional.ofNullable(room.getDefaultPeopleCnt()).ifPresent(r::setDefaultPeopleCnt);
             Optional.ofNullable(room.getRoomNumber()).ifPresent(number -> {
-                if (roomRepository.existsByRoomNumber(room.getRoomNumber())) {
-                    throw new ConflictException("Room with such name already exists.");
+                UUID deptId = Optional.ofNullable(room.getDepartment()).map(d -> d.getId())
+                        .orElse(r.getDepartment().getId());
+                if (roomRepository.existsByRoomNumberAndDepartmentId(number, deptId)) {
+                    throw new ConflictException("Room with this name already exists in this department.");
                 }
                 RoomMonitoring m = monitoringRepository.findById(r.getId()).get(); // it should exist
                 m.setRoomNumber(number);
