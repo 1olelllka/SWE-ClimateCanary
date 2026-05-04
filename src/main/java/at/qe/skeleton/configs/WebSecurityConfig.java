@@ -12,7 +12,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
@@ -57,7 +56,7 @@ public class WebSecurityConfig {
 
         @Bean
         public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-                        throws Exception {
+                throws Exception {
                 return authenticationConfiguration.getAuthenticationManager();
         }
 
@@ -68,55 +67,55 @@ public class WebSecurityConfig {
 
         @Bean
         public SecurityFilterChain filterChain(HttpSecurity http, TokenAuthenticationFilter tokenAuthenticationFilter)
-                        throws Exception {
+                throws Exception {
 
                 try {
 
                         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                                        .csrf(AbstractHttpConfigurer::disable).headers(
-                                                        headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin)) // needed
-                                                                                                                         // for
-                                                                                                                         // H2
-                                                                                                                         // console
-                                        // backend endpoints we want to handle here
-                                        .securityMatcher("/api/**", "/h2-console/**")
-                                        .authorizeHttpRequests(authorize -> authorize
-                                                        .requestMatchers("/h2-console/**").access(devOnly())
-                                                        .requestMatchers("/api/login/**").permitAll()
-                                                        .requestMatchers("/api/logout").authenticated()
-                                                        .requestMatchers("/api-docs/**")
-                                                        .permitAll()
-                                                        .requestMatchers("/swagger-ui/**")
-                                                        .permitAll()
-                                                        .requestMatchers("/api/users/me/absences").hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
-                                                        .requestMatchers("/api/users/me/department/rooms").hasAuthority(Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name())
-                                                        .requestMatchers("/api/users/me").authenticated()
-                                                        .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
-                                                        .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
-                                                        .requestMatchers("/api/rooms/*/current-climate", "/api/rooms/*/overtime", "/api/rooms/*/climate-history").authenticated()
-                                                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/measurements").permitAll()
-                                                        .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
-                                                        .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
-                                                        .requestMatchers("/api/**").authenticated()
-                                                        .anyRequest().authenticated())
-                                        // Add the token authentication filter before the
-                                        // UsernamePasswordAuthenticationFilter
-                                        .addFilterBefore(tokenAuthenticationFilter,
-                                                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+                                .csrf(AbstractHttpConfigurer::disable).headers(
+                                        headers -> headers.frameOptions(FrameOptionsConfig::sameOrigin))   // needed for H2 console
 
-                                        .sessionManagement(
-                                                        // no session creation, we use JWT
-                                                        session -> session.sessionCreationPolicy(
-                                                                        SessionCreationPolicy.STATELESS))
-                                        .exceptionHandling(exception -> exception.accessDeniedHandler(
-                                                        (request, response, accessDeniedException) -> response
-                                                                        .setStatus(
-                                                                                        HttpStatus.FORBIDDEN.value()))
-                                                        .authenticationEntryPoint(
-                                                                        (request, response, authException) -> response
-                                                                                        .setStatus(
-                                                                                                        HttpStatus.UNAUTHORIZED
-                                                                                                                        .value())))
+                                // backend endpoints we want to handle here
+                                .securityMatcher("/api/**", "/h2-console/**")
+                                .authorizeHttpRequests(authorize -> authorize
+                                        .requestMatchers("/h2-console/**").access(devOnly())
+                                        .requestMatchers("/api/login/**").permitAll()
+                                        .requestMatchers("/api/logout").authenticated()
+                                        .requestMatchers("/api-docs/**")
+                                        .permitAll()
+                                        .requestMatchers("/swagger-ui/**")
+                                        .permitAll()
+                                        .requestMatchers("/api/users/me/absences").hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
+                                        .requestMatchers("/api/users/me/department/rooms").hasAuthority(Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name())
+                                        .requestMatchers("/api/users/me").authenticated()
+                                        .requestMatchers("/api/users/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
+                                        .requestMatchers("/api/roles/**").hasAuthority(Permission.CAN_MANAGE_USERS.name())
+                                        .requestMatchers("/api/rooms/*/current-climate", "/api/rooms/*/overtime", "/api/rooms/*/climate-history").authenticated()
+                                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/measurements").permitAll()
+                                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/rooms", "/api/rooms/*/limits", "/api/rooms/*/climate-limits", "/api/rooms/*/violations").hasAnyAuthority(Permission.CAN_VIEW_ALL_ROOMS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
+                                        .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/rooms/*/limits", "/api/rooms/*/climate-limits").hasAnyAuthority(Permission.CAN_VIEW_ALL_ROOMS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
+                                        .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**").hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
+                                        .requestMatchers("/api/sensor-stations/**").hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
+                                        .requestMatchers("/api/**").authenticated()
+                                        .anyRequest().authenticated())
+                                // Add the token authentication filter before the
+                                // UsernamePasswordAuthenticationFilter
+                                .addFilterBefore(tokenAuthenticationFilter,
+                                        org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+
+                                .sessionManagement(
+                                        // no session creation, we use JWT
+                                        session -> session.sessionCreationPolicy(
+                                                SessionCreationPolicy.STATELESS))
+                                .exceptionHandling(exception -> exception.accessDeniedHandler(
+                                                (request, response, accessDeniedException) -> response
+                                                        .setStatus(
+                                                                HttpStatus.FORBIDDEN.value()))
+                                        .authenticationEntryPoint(
+                                                (request, response, authException) -> response
+                                                        .setStatus(
+                                                                HttpStatus.UNAUTHORIZED
+                                                                        .value())))
                                 .logout(customizer -> {
                                         customizer.logoutUrl("/api/logout")
                                                 .clearAuthentication(true)
@@ -142,7 +141,7 @@ public class WebSecurityConfig {
         @Bean
         public CorsConfigurationSource corsConfigurationSource() {
                 List<String> originsList = Arrays.stream(allowedOrigins.split(","))
-                                .map(String::trim).filter(s -> !s.isBlank()).toList();
+                        .map(String::trim).filter(s -> !s.isBlank()).toList();
                 List<String> methodsList = Arrays.stream(allowedMethods.split(",")).map(String::trim).toList();
                 List<String> headersList = Arrays.stream(allowedHeaders.split(",")).map(String::trim).toList();
 

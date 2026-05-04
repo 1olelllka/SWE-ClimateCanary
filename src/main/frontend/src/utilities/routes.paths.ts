@@ -12,4 +12,5 @@ export const ROUTES = {
     EMPLOYEE_DEPARTMENT: '/my-department',
     SETTINGS: '/settings',
     DEPARTMENT_DETAIL: '/senior/department/:departmentName',
+    BUILDING_ROOM_ANALYSIS: '/building-room-analysis/:roomId',
 } as const;

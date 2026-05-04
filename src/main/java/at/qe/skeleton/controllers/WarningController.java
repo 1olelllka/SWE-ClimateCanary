@@ -55,7 +55,7 @@ public class WarningController {
     }
 
     // full violation log for UI table
-    @GetMapping("/rooms/{id}/violations")
+    @GetMapping("/api/rooms/{id}/violations")
     public ResponseEntity<List<WarningDTO>> getViolationLog(
             @PathVariable UUID id) {
         return ResponseEntity.ok(warningsService.getViolationLog(id));
