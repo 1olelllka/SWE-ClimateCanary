@@ -18,4 +18,5 @@ public interface SensorStationService {
     void deleteById(UUID id);
 
     void retryConnection(UUID id);
+    SensorStation disconnectFromRoom(UUID id);
 }

@@ -1,8 +1,10 @@
 #include "ble_manager.h"
 #include "display_manager.h"
+#include "ble_message_handler.h"
 
 #define JSON_BUFFER_SIZE 128
 #define ADVERTISING_INTERVAL 32
+#define TIMESTAMP_MAX_LENGTH 19
 
 BLEManager* BLEManager::instance = nullptr;
 
@@ -47,7 +49,7 @@ void BLEManager::poll() {
 
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
-  }
+  } 
 
   if (currentCentral && !currentCentral.connected()) {
     Serial.print("Disconnected from: ");
@@ -76,8 +78,11 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   json += "{";
 
   json += "\"timestamp\":\"";
-  json += getCurrentTimestamp();
+  json += receivedTimestamp;
   json += "\"";
+
+  json += ",\"millis_offset\":";
+  json += String(millis() - timeSyncMillis);
 
   json += ",\"temperature\":";
   json += String(r.temperatureC, 2);
@@ -85,7 +90,7 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   json += ",\"moisture\":";
   json += String(r.humidityPct, 2);
 
-  json += ",\"co2\":";
+  json += ",\"iaq\":";
   json += String(r.airQualityIndex, 2);
 
   json += "}";
@@ -114,63 +119,9 @@ void BLEManager::onRxWritten(BLEDevice central, BLECharacteristic characteristic
 
   String received = instance->rxCharacteristic.value();
 
-  Serial.print("Received from Pi (");
-  Serial.print(central.address());
-  Serial.print("): ");
-  Serial.println(received);
-
-  if (received.startsWith("TIME:")) {
-    instance->receivedTimestamp = received.substring(5);
-    instance->timeSyncMillis = millis();
-    instance->timeReceived = true;
-
-    Serial.print("Time Format: ");
-    Serial.println(instance->receivedTimestamp);
-  }
-}
-
-String BLEManager::getCurrentTimestamp() const {
-  if (!timeReceived || receivedTimestamp.length() < 19) {
-    return "0";
-  }
-
-  int year   = receivedTimestamp.substring(0, 4).toInt();
-  int month  = receivedTimestamp.substring(5, 7).toInt();
-  int day    = receivedTimestamp.substring(8, 10).toInt();
-  int hour   = receivedTimestamp.substring(11, 13).toInt();
-  int minute = receivedTimestamp.substring(14, 16).toInt();
-  int second = receivedTimestamp.substring(17, 19).toInt();
-
-  unsigned long elapsedSeconds = (millis() - timeSyncMillis) / 1000;
-  second += elapsedSeconds;
-
-  while (second >= 60) {
-    second -= 60;
-    minute++;
-  }
-
-  while (minute >= 60) {
-    minute -= 60;
-    hour++;
-  }
-
-  while (hour >= 24) {
-    hour -= 24;
-    day++;
-  }
-
-  char buffer[24];
-  snprintf(
-    buffer,
-    sizeof(buffer),
-    "%04d-%02d-%02d %02d:%02d:%02d",
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second
+  BLEMessageHandler::handleRxMessage(
+    instance,
+    central,
+    received
   );
-
-  return String(buffer);
 }

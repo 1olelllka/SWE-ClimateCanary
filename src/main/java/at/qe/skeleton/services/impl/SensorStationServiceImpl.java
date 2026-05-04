@@ -114,6 +114,26 @@ public class SensorStationServiceImpl implements SensorStationService {
 
     @Override
     @Transactional
+    public SensorStation disconnectFromRoom(UUID id) {
+        SensorStation station = sensorRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
+        RoomMonitoring prevMonitoring = station.getRoomMonitoring();
+        station.setRoomMonitoring(null);
+        SensorStation saved = sensorRepository.save(station);
+        if (prevMonitoring != null && prevMonitoring.getRaspberryPi() != null) {
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(
+                            new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
+                            id,
+                            station.getWriteId(),
+                            prevMonitoring.getRaspberryPi(),
+                            notificationClient));
+        }
+        return saved;
+    }
+
+    @Override
+    @Transactional
     public void deleteById(UUID id) {
         SensorStation station = sensorRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));

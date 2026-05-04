@@ -126,7 +126,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             </div>
 
             <div className="sidebar-footer">
-                <ClockInOutButton />
+                {isEmployee && <ClockInOutButton />}
                 <div className="user-profile">
                     <div className="user-avatar">
                         <i className="pi pi-user" style={{ fontSize: '1.5rem' }}></i>

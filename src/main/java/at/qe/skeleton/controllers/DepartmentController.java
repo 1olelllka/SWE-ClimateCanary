@@ -3,11 +3,14 @@ package at.qe.skeleton.controllers;
 import at.qe.skeleton.dtos.DepartmentCreateDTO;
 import at.qe.skeleton.dtos.DepartmentDTO;
 import at.qe.skeleton.dtos.DepartmentListDTO;
+import at.qe.skeleton.dtos.DepartmentEditWithRoomsDTO;
+import at.qe.skeleton.dtos.DepartmentWithRoomsCreateDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.DepartmentDetailMapper;
 import at.qe.skeleton.mappers.DepartmentListMapper;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
+import at.qe.skeleton.model.Room;
 import at.qe.skeleton.services.DepartmentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -51,35 +55,55 @@ public class DepartmentController {
     }
 
     @PostMapping("")
-    public ResponseEntity<DepartmentDTO> createNewDepartment(@RequestBody @Valid DepartmentCreateDTO dto,
+    public ResponseEntity<DepartmentDTO> createNewDepartment(@RequestBody @Valid DepartmentWithRoomsCreateDTO dto,
                                                              BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Department created = departmentService
-                .createDepartment(
-                        Department
-                                .builder()
-                                .name(dto.name())
-                                .building(Building.builder().id(dto.buildingID()).build())
-                                .build());
+        List<UUID> existingRoomIds = dto.existingRoomIds() != null ? dto.existingRoomIds() : List.of();
+        List<Room> newRooms = dto.newRooms() != null ? dto.newRooms().stream()
+                .map(r -> Room.builder()
+                        .roomNumber(r.name())
+                        .roomType(r.roomType())
+                        .defaultPeopleCnt(r.defaultPeopleCount())
+                        .isActive(true)
+                        .build())
+                .toList() : List.of();
+        Department created = departmentService.createDepartmentWithRooms(
+                Department.builder()
+                        .name(dto.name())
+                        .building(Building.builder().id(dto.buildingID()).build())
+                        .build(),
+                existingRoomIds,
+                newRooms);
         return new ResponseEntity<>(departmentDetailMapper.mapTo(created), HttpStatus.CREATED);
     }
 
     @PatchMapping("{department_id}")
     public ResponseEntity<DepartmentDTO> patchSpecificDepartment(@PathVariable(name="department_id") UUID id,
-                                                                 @RequestBody @Valid DepartmentCreateDTO dto,
+                                                                 @RequestBody @Valid DepartmentEditWithRoomsDTO dto,
                                                                  BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
             throw new ValidationException(msg);
         }
-        Department patched = departmentService.patchSpecificDepartment(id,
+        List<UUID> roomIdsToDelete = dto.roomIdsToDelete() != null ? dto.roomIdsToDelete() : List.of();
+        List<UUID> existingRoomIdsToAssign = dto.existingRoomIdsToAssign() != null ? dto.existingRoomIdsToAssign() : List.of();
+        List<Room> newRooms = dto.newRooms() != null ? dto.newRooms().stream()
+                .map(r -> Room.builder()
+                        .roomNumber(r.name())
+                        .roomType(r.roomType())
+                        .defaultPeopleCnt(r.defaultPeopleCount())
+                        .isActive(true)
+                        .build())
+                .toList() : List.of();
+        Department patched = departmentService.editDepartmentWithRooms(id,
                 Department.builder()
                         .name(dto.name())
                         .building(Building.builder().id(dto.buildingID()).build())
-                        .build());
+                        .build(),
+                roomIdsToDelete, existingRoomIdsToAssign, newRooms);
         return new ResponseEntity<>(departmentDetailMapper.mapTo(patched), HttpStatus.OK);
     }
 

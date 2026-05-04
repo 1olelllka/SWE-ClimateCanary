@@ -6,6 +6,7 @@
 #include "sensor_manager.h"
 
 class DisplayManager;
+class BLEMessageHandler;
 
 class BLEManager {
 public:
@@ -14,9 +15,9 @@ public:
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
 
-  String getCurrentTimestamp() const;
-
 private:
+  friend class BLEMessageHandler;
+
   static void onRxWritten(BLEDevice central, BLECharacteristic characteristic);
 
   String serializeReading(const SensorReading& reading) const;
@@ -27,7 +28,7 @@ private:
     BLERead | BLENotify,
     128
   };
-  
+
   BLEStringCharacteristic rxCharacteristic{
     BLE_RX_UUID,
     BLEWriteWithoutResponse,

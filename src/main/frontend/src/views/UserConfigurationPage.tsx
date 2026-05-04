@@ -204,7 +204,7 @@ const UserConfigurationPage: React.FC = () => {
                             value={roleFilter}
                             options={roleFilterOptions}
                             onChange={e => setRoleFilter(e.value)}
-                            placeholder="Role Filter ▼"
+                            placeholder="Role Filter"
                             showClear
                             style={{ borderRadius: '20px', minWidth: '180px' }}
                         />
