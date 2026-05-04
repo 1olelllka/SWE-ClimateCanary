@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -100,24 +101,24 @@ public class RaspberryControllerIntegrationTests {
 
     // /api/raspberry-pis/{raspberry_id}/sync/occupancy ... (after adding redis)
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    @WithMockUser(authorities = "CAN_VIEW_OCCUPANCY")
     public void testThatSyncOccupancyReturnsHttp404IfSuchRaspberryDoesNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + UUID.randomUUID() + "/sync/occupancy"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    @WithMockUser(authorities = "CAN_VIEW_OCCUPANCY")
     public void testThatSyncOccupancyReturnsHttp200OkWithMockedRedis() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);
         raspberryService.addNewRoom(pi.getId(), this.savedRoom.getRoomId());
-        when(occupancyRepository.findAllById(List.of(this.savedRoom.getRoomId().toString()))).thenReturn(List.of(new RoomOccupancy(this.savedRoom.getRoomId(), 4)));
+        when(occupancyRepository.findById(this.savedRoom.getRoomId().toString())).thenReturn(Optional.of(new RoomOccupancy(this.savedRoom.getRoomId(), 4)));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId() + "/sync/occupancy"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].effectiveOccupancy").value("4"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].roomId").value(this.savedRoom.getRoomId().toString()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].privacyMode").value("true"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.effectiveOccupancy").value("4"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.roomId").value(this.savedRoom.getRoomId().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.privacyMode").value("true"));
     }
 
     // /api/raspberry-pis/{raspberry_id}/retry-connection ... (after compatibilities with devices)
@@ -247,14 +248,14 @@ public class RaspberryControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    @WithMockUser(authorities = "CAN_GET_RASPBERRY_CONFIG")
     public void testThatGetRaspberryPiConfigReturnsHttp404IfRaspberryNotFound() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + UUID.randomUUID() + "/config"))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    @WithMockUser(authorities = "CAN_GET_RASPBERRY_CONFIG")
     public void testThatGetRaspberryPiConfigReturnsHttp200OkIfSuccessful() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);

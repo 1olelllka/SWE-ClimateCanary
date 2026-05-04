@@ -56,7 +56,8 @@ public class RoleControllerIntegrationTests {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[2].id").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[3].id").exists())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[4].id").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[5].id").doesNotExist());
+                .andExpect(MockMvcResultMatchers.jsonPath("$[5].id").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[6].id").doesNotExist());
     }
 
     @Test

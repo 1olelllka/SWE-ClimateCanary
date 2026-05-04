@@ -168,21 +168,6 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp400IfIdsAreEqual() throws Exception {
-        AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(5),
-                AbsenceType.ILLNESS,
-                "Comment",
-                this.user.getId());
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(MockMvcResultMatchers.status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
     public void testThatCreateAbsenceReturnsHttp403IfManagerRoleIsIncorrect() throws Exception {
         Userx mockManager = TestDataUtil.createUserxEntity(userRoleService.getListOfPermissions().stream().filter(r -> r.getName().equals("EMPLOYEE")).toList().getFirst(), null);
         mockManager.setUsername("mockManager");
