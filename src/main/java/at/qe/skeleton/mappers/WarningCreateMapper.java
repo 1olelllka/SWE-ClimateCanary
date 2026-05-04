@@ -1,7 +1,6 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.WarningCreateDTO;
-import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.Warnings;
 import org.springframework.stereotype.Component;
 

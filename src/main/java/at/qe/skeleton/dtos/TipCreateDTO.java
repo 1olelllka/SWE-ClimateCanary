@@ -6,8 +6,6 @@ import at.qe.skeleton.model.WarningStatus;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.UUID;
-
 public record TipCreateDTO(
 
         @NotNull(message = "Violation type must not be null.")

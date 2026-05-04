@@ -2,7 +2,6 @@ package at.qe.skeleton.tests.controllers;
 
 import at.qe.skeleton.dtos.BuildingCreateDTO;
 import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.services.BuildingService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;

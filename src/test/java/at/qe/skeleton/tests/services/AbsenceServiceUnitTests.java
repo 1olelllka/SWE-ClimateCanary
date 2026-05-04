@@ -4,7 +4,6 @@ import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;

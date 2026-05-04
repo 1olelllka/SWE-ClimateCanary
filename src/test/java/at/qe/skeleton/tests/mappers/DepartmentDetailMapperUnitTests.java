@@ -1,10 +1,10 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.DepartmentDTO;
+import at.qe.skeleton.mappers.DepartmentDetailMapper;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
-import at.qe.skeleton.mappers.DepartmentDetailMapper;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.Test;
 

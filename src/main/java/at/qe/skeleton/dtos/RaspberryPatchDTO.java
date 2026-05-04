@@ -4,8 +4,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 
-import java.util.UUID;
-
 public record RaspberryPatchDTO(
         @Pattern(regexp = "^(?!\\s*$).+", message = "Name must not be blank.")
         String name,

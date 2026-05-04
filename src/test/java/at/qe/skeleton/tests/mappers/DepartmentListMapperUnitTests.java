@@ -1,15 +1,16 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.DepartmentListDTO;
+import at.qe.skeleton.mappers.DepartmentListMapper;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
-import at.qe.skeleton.mappers.DepartmentListMapper;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class DepartmentListMapperUnitTests {
 

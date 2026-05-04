@@ -1,6 +1,9 @@
 package at.qe.skeleton.commands;
 
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import lombok.Getter;

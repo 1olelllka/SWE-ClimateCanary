@@ -1,7 +1,6 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.RaspberryDTO;
-import at.qe.skeleton.dtos.RoomRaspberry;
 import at.qe.skeleton.mappers.RaspberryMapper;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RaspberryPi;

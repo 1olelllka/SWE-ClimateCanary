@@ -2,7 +2,10 @@ package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.TipDTO;
 import at.qe.skeleton.mappers.TipMapper;
-import at.qe.skeleton.model.*;
+import at.qe.skeleton.model.Tip;
+import at.qe.skeleton.model.ViolatedSensor;
+import at.qe.skeleton.model.ViolationType;
+import at.qe.skeleton.model.WarningStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

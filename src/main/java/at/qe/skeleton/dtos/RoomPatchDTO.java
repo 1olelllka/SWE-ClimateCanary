@@ -1,7 +1,6 @@
 package at.qe.skeleton.dtos;
 
 import at.qe.skeleton.model.RoomType;
-import at.qe.skeleton.model.Userx;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 

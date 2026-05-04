@@ -1,13 +1,16 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.AbsenceListDTO;
+import at.qe.skeleton.dtos.UserxCreateDTO;
+import at.qe.skeleton.dtos.UserxDTO;
+import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.*;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,11 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.repositories.RoomRepository;
-import org.springframework.security.access.prepost.PreAuthorize;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 

@@ -1,18 +1,13 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.AbsenceCreateDTO;
-import at.qe.skeleton.dtos.AbsenceManagerDTO;
-import at.qe.skeleton.repositories.UserxRepository;
-import at.qe.skeleton.dtos.AbsenceDTO;
-import at.qe.skeleton.dtos.AbsenceListDTO;
-import at.qe.skeleton.dtos.AbsencePatchDTO;
-import at.qe.skeleton.dtos.ClockStatusDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AbsenceCreateMapper;
 import at.qe.skeleton.mappers.AbsenceListMapper;
 import at.qe.skeleton.mappers.AbsenceMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import jakarta.validation.Valid;
@@ -27,11 +22,10 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.List;
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/absences")

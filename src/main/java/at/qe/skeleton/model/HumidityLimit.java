@@ -1,7 +1,6 @@
 package at.qe.skeleton.model;
 
 import jakarta.persistence.*;
-
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 

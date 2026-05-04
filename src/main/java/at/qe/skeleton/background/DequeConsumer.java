@@ -7,20 +7,22 @@ import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 @Component
-@Log
+@Slf4j
 public class DequeConsumer {
 
     public static final int MAX_ATTEMPTS = 5;
 
     private volatile boolean running = true;
     private Thread consumerThread;
-    private Integer attempts = 0;
+    private AtomicInteger attempts = new AtomicInteger(0);
 
     private final RaspberryPiRepository raspberryPiRepository;
 
@@ -44,16 +46,15 @@ public class DequeConsumer {
     }
 
     public void consume() {
-        log.info("Running deque consumer...");
         while (running) {
             try {
                 Command command = CommandDeque.getFirst();
                 if (command == null) continue;
-                log.info("Caught command: " + command.getClass().getSimpleName());
+                log.info("Caught raspberry pi command: {}", command.getClass().getSimpleName());
                 processCommand(command);
             } catch (InterruptedException ex) {
                 Thread.currentThread().interrupt();
-                log.info("Consumer interrupted, shutting down...");
+                log.error("Consumer interrupted, shutting down...");
                 break;
             }
         }
@@ -71,22 +72,22 @@ public class DequeConsumer {
                 raspberryPiRepository.save(pi);
             }
         } catch (Exception e) {
-            log.info("Exception during execute: " + e.getMessage());
+            log.error("Exception during execute: {}", e.getMessage(), e);
             handleFailure(command);
         }
     }
 
     public void handleFailure(Command command) {
-        int attempts = this.attempts;
-        log.info("Failed attempt " + attempts);
-        if (attempts < MAX_ATTEMPTS) {
+        AtomicInteger attempts = this.attempts;
+        log.warn("Failed attempt {} for Pi [{}:{}]", attempts.get(), command.getRaspberry().getIp(), command.getRaspberry().getPort());
+        if (attempts.get() < MAX_ATTEMPTS) {
             CommandDeque.addFirst(command);
-            this.attempts += 1;
+            this.attempts.incrementAndGet();
         } else {
-            log.info("Failed to communicate with raspberry pi");
+            log.error("Failed to communicate with Raspberry Pi [{}:{}]. Setting to offline...", command.getRaspberry().getIp(), command.getRaspberry().getPort());
             command.getRaspberry().setStatus(DeviceStatus.OFFLINE);
             raspberryPiRepository.save(command.getRaspberry());
-            this.attempts = 0;
+            this.attempts.set(0);
         }
     }
 }

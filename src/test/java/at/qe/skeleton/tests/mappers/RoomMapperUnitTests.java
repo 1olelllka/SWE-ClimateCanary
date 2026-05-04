@@ -2,8 +2,11 @@ package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.RoomDTO;
 import at.qe.skeleton.dtos.UserxListDTO;
-import at.qe.skeleton.model.*;
 import at.qe.skeleton.mappers.RoomMapper;
+import at.qe.skeleton.model.Building;
+import at.qe.skeleton.model.Department;
+import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.Test;
 

@@ -1,10 +1,9 @@
 package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.UserxCreateDTO;
-import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoleRepository;
-import at.qe.skeleton.repositories.RoomRepository; // NEU
+import at.qe.skeleton.repositories.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

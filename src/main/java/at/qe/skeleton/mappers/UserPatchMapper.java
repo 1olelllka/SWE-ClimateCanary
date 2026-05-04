@@ -2,14 +2,12 @@ package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.stream.Collectors;

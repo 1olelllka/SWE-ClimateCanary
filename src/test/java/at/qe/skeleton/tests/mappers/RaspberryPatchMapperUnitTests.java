@@ -5,8 +5,6 @@ import at.qe.skeleton.mappers.RaspberryPatchMapper;
 import at.qe.skeleton.model.RaspberryPi;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class RaspberryPatchMapperUnitTests {

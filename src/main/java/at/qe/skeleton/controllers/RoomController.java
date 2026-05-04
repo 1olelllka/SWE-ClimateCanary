@@ -7,7 +7,6 @@ import at.qe.skeleton.dtos.RoomPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.mappers.RoomMapper;
-import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.RoomMonitoring;

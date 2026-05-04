@@ -2,7 +2,10 @@ package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.mappers.LimitMapper;
-import at.qe.skeleton.model.*;
+import at.qe.skeleton.model.HumidityLimit;
+import at.qe.skeleton.model.PollutionLimit;
+import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.TemperatureLimit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

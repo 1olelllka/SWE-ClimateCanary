@@ -2,7 +2,10 @@ package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.WarningDTO;
 import at.qe.skeleton.mappers.WarningMapper;
-import at.qe.skeleton.model.*;
+import at.qe.skeleton.model.MeasurementType;
+import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.WarningStatus;
+import at.qe.skeleton.model.Warnings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

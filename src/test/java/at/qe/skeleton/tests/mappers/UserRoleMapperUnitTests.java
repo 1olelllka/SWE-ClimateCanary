@@ -1,9 +1,9 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.UserRoleDTO;
+import at.qe.skeleton.mappers.UserRoleMapper;
 import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.model.UserRole;
-import at.qe.skeleton.mappers.UserRoleMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
