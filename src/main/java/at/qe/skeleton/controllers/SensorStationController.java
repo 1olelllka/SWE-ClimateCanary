@@ -77,6 +77,12 @@ public class SensorStationController {
         return new ResponseEntity<>(sensorStationMapper.mapTo(station), HttpStatus.OK);
     }
 
+    @DeleteMapping("/{sensor_id}/room")
+    public ResponseEntity<SensorStationDTO> disconnectSensorFromRoom(@PathVariable(name = "sensor_id") UUID id) {
+        SensorStation station = sensorStationService.disconnectFromRoom(id);
+        return new ResponseEntity<>(sensorStationMapper.mapTo(station), HttpStatus.OK);
+    }
+
     @DeleteMapping("/{sensor_id}")
     public ResponseEntity<Void> removeSpecificSensor(@PathVariable(name = "sensor_id") UUID id) {
         sensorStationService.deleteById(id);

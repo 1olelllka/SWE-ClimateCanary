@@ -91,7 +91,10 @@ const BuildingConfigurationPage: React.FC = () => {
     }, []);
 
     const buildingOptions = buildings.map(b => ({ label: b.name ?? b.id ?? '', value: b.id ?? '' }));
-    const departmentOptions = departments.map(d => ({ label: d.name ?? d.id ?? '', value: d.id ?? '' }));
+    const departmentOptions = departments.map(d => ({
+        label: d.buildingName ? `${d.name ?? ''} (${d.buildingName})` : (d.name ?? d.id ?? ''),
+        value: d.id ?? '',
+    }));
 
     // --- Building handlers ---
     const openCreateBuilding = () => {
@@ -166,7 +169,17 @@ const BuildingConfigurationPage: React.FC = () => {
     };
 
     const openEditDepartment = (d: DepartmentListDTO) => {
-        setDepartmentForm({ name: d.name ?? '', buildingID: d.buildingID ?? '', rooms: [] });
+        const currentRoomIds = rooms
+            .filter(r => r.departmentID === d.id && r.id)
+            .map(r => r.id!);
+        setDepartmentForm({
+            name: d.name ?? '',
+            buildingID: d.buildingID ?? '',
+            currentRoomIds,
+            existingRoomIds: [],
+            rooms: [],
+            roomIdsToDelete: [],
+        });
         setDepartmentFormErrors({});
         setIsNewDepartment(false);
         setEditingDepartmentId(d.id);
@@ -187,7 +200,16 @@ const BuildingConfigurationPage: React.FC = () => {
         try {
             if (isNewDepartment) {
                 const res = await new DepartmentControllerApi().createNewDepartment({
-                    departmentCreateDTO: { name: departmentForm.name, buildingID: departmentForm.buildingID },
+                    departmentCreateDTO: {
+                        name: departmentForm.name,
+                        buildingID: departmentForm.buildingID,
+                        existingRoomIds: departmentForm.existingRoomIds,
+                        newRooms: departmentForm.rooms.map(r => ({
+                            name: r.name,
+                            roomType: r.roomType,
+                            defaultPeopleCount: r.defaultPeopleCount,
+                        })),
+                    },
                 });
                 const newDept: DepartmentListDTO = {
                     id: res.data.id,
@@ -196,31 +218,33 @@ const BuildingConfigurationPage: React.FC = () => {
                     buildingName: buildings.find(b => b.id === res.data.buildingID)?.name,
                 };
                 setDepartments(prev => [...prev, newDept]);
-
-                // Create any rooms added in the dialog
-                if (departmentForm.rooms.length > 0) {
-                    await Promise.all(departmentForm.rooms.map(r =>
-                        new RoomControllerApi().createNewRoom({
-                            roomCreateDTO: {
-                                name: r.name,
-                                departmentID: res.data.id!,
-                                roomType: r.roomType,
-                                defaultPeopleCount: r.defaultPeopleCount,
-                            },
-                        })
-                    ));
+                if (departmentForm.existingRoomIds.length > 0 || departmentForm.rooms.length > 0) {
                     fetchRooms();
                 }
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'Department created.', life: 3000 });
             } else {
                 const res = await new DepartmentControllerApi().patchSpecificDepartment({
                     departmentId: editingDepartmentId!,
-                    departmentCreateDTO: { name: departmentForm.name, buildingID: departmentForm.buildingID },
+                    departmentEditWithRoomsDTO: {
+                        name: departmentForm.name,
+                        buildingID: departmentForm.buildingID,
+                        roomIdsToDelete: departmentForm.roomIdsToDelete,
+                        existingRoomIdsToAssign: departmentForm.existingRoomIds,
+                        newRooms: departmentForm.rooms.map(r => ({
+                            name: r.name,
+                            roomType: r.roomType,
+                            defaultPeopleCount: r.defaultPeopleCount,
+                        })),
+                    },
                 });
                 setDepartments(prev => prev.map(d => d.id === res.data.id
                     ? { id: res.data.id, name: res.data.name, buildingID: res.data.buildingID, buildingName: buildings.find(b => b.id === res.data.buildingID)?.name }
                     : d
                 ));
+                const roomsChanged = departmentForm.roomIdsToDelete.length > 0
+                    || departmentForm.existingRoomIds.length > 0
+                    || departmentForm.rooms.length > 0;
+                if (roomsChanged) fetchRooms();
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Department updated.', life: 3000 });
             }
             setShowDepartmentDialog(false);
@@ -397,6 +421,7 @@ const BuildingConfigurationPage: React.FC = () => {
                 form={departmentForm}
                 formErrors={departmentFormErrors}
                 buildingOptions={buildingOptions}
+                availableRooms={rooms}
                 loading={departmentDialogLoading}
                 onHide={() => setShowDepartmentDialog(false)}
                 onSave={handleSaveDepartment}
