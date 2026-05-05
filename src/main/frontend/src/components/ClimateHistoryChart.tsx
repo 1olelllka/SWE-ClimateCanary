@@ -85,7 +85,7 @@ function groupByDay(raw: RawPoint[]): DataPoint[] {
 function round2(n: number) { return Math.round(n * 100) / 100; }
 
 export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
-    const [timeFilter, setTimeFilter] = useState<TimeFilter>('Week');
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
     const [data,       setData]       = useState<DataPoint[]>([]);

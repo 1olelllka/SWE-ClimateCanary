@@ -38,3 +38,36 @@
     font-weight: 600;
     color: var(--text-primary);
 }
+
+/* Compact two-month date picker */
+.compact-calendar .p-datepicker {
+    font-size: 0.75rem;
+}
+
+.compact-calendar .p-datepicker-header {
+    padding: 0.25rem 0.5rem;
+}
+
+.compact-calendar .p-datepicker-header .p-datepicker-title {
+    font-size: 0.8rem;
+}
+
+.compact-calendar .p-datepicker table {
+    font-size: 0.72rem;
+}
+
+.compact-calendar .p-datepicker table td {
+    padding: 1px;
+}
+
+.compact-calendar .p-datepicker table td > span {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.72rem;
+}
+
+.compact-calendar .p-datepicker .p-datepicker-prev,
+.compact-calendar .p-datepicker .p-datepicker-next {
+    width: 1.6rem;
+    height: 1.6rem;
+}
