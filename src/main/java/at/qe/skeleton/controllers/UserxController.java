@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.repositories.RoomRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -103,6 +104,7 @@ public class UserxController {
         List<RoomDTO> rooms = roomRepository.findAll().stream()
                 .filter(room -> room.getDepartment() != null)
                 .filter(room -> room.getDepartment().getId().equals(departmentId))
+                .filter(room -> room.getRoomType() == RoomType.SHARED)
                 .map(roomMapper::mapTo)
                 .toList();
 
