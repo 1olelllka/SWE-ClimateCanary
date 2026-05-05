@@ -1,0 +1,256 @@
+.employee-absences-page {
+    min-height: 100vh;
+    background-color: var(--page-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.employee-absences-content {
+    padding: 1.5rem;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    flex-grow: 1;
+}
+
+.employee-absences-back-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+}
+
+.employee-absences-back-button i {
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.employee-absences-section-heading {
+    margin: 0 0 0.875rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+/* KPI grid */
+
+.employee-absences-kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.absence-kpi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.absence-kpi-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+    min-height: 2.2em;
+}
+
+.absence-kpi-bar-track {
+    background: var(--page-bg);
+    height: 8px;
+    width: 100%;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.absence-kpi-bar-fill {
+    background: #22c55e;
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.absence-kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: right;
+}
+
+/* Controls */
+
+.employee-absences-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.absence-sort-button {
+    padding: 0.5rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.absence-sort-button:hover {
+    border-color: #94a3b8;
+}
+
+.absence-request-button {
+    padding: 0.5rem 1rem;
+    background: var(--nav-bg);
+    border: 1px solid var(--nav-bg);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.absence-request-button:hover {
+    background: #14303f;
+}
+
+/* Dialog overlay */
+
+.absence-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 1rem;
+}
+
+/* Table */
+
+.employee-absences-table-wrapper {
+    overflow-x: auto;
+}
+
+.employee-absences-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.35rem;
+    text-align: left;
+}
+
+.employee-absences-table thead th {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+.employee-absences-table tbody tr {
+    background: var(--card-bg);
+}
+
+.employee-absences-table tbody td {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.employee-absences-table tbody td:first-child {
+    border-left: 1px solid var(--card-border);
+    border-radius: 8px 0 0 8px;
+}
+
+.employee-absences-table tbody td:last-child {
+    border-right: 1px solid var(--card-border);
+    border-radius: 0 8px 8px 0;
+    text-align: right;
+}
+
+.employee-absences-empty-cell {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.employee-absences-loading,
+.employee-absences-error {
+    padding: 1rem 0;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.employee-absences-error {
+    color: #b91c1c;
+}
+
+/* Status badges */
+
+.absence-status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.absence-status-badge.approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.absence-status-badge.pending {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.absence-status-badge.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.absence-status-badge.other {
+    background: var(--page-bg);
+    color: var(--text-secondary);
+}
+
+@media (max-width: 700px) {
+    .employee-absences-content {
+        padding: 1rem;
+    }
+
+    .employee-absences-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .employee-absences-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

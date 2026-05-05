@@ -1,0 +1,159 @@
+.absence-form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 520px;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.16);
+}
+
+.absence-form-title {
+    margin: 0 0 1.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.absence-form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.absence-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.absence-form-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+.absence-form-input,
+.absence-form-select,
+.absence-form-textarea {
+    width: 100%;
+    padding: 0.6rem 0.875rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.absence-form-input:focus,
+.absence-form-select:focus,
+.absence-form-textarea:focus {
+    border-color: #94a3b8;
+}
+
+.absence-form-textarea {
+    resize: vertical;
+}
+
+.absence-form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+    cursor: pointer;
+}
+
+.absence-form-date-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.absence-form-date-row .absence-form-field {
+    flex: 1;
+}
+
+.absence-form-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.absence-form-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: var(--nav-bg);
+    flex-shrink: 0;
+}
+
+.absence-form-checkbox-label {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.absence-form-time-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.absence-form-time-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.absence-form-time-row .absence-form-input {
+    flex: 1;
+}
+
+.absence-form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.absence-form-cancel-btn,
+.absence-form-submit-btn {
+    padding: 0.6rem 1.75rem;
+    border-radius: 20px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, opacity 0.15s;
+    font-family: inherit;
+}
+
+.absence-form-cancel-btn {
+    background: #e2e8f0;
+    color: var(--text-primary);
+}
+
+.absence-form-cancel-btn:hover {
+    background: #cbd5e1;
+}
+
+.absence-form-submit-btn {
+    background: var(--nav-bg);
+    color: #ffffff;
+}
+
+.absence-form-submit-btn:hover:not(:disabled) {
+    background: #14303f;
+}
+
+.absence-form-submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
