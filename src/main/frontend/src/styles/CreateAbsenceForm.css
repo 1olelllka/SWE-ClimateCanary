@@ -157,3 +157,35 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Read-only fields in detail dialog */
+
+.absence-form-input[readonly],
+.absence-form-textarea[readonly] {
+    background: var(--page-bg);
+    cursor: default;
+}
+
+/* Cancel-request (destructive) button used in detail dialog */
+
+.absence-detail-cancel-btn {
+    padding: 0.6rem 1.75rem;
+    border-radius: 20px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    background: #ef4444;
+    color: #ffffff;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+
+.absence-detail-cancel-btn:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+.absence-detail-cancel-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

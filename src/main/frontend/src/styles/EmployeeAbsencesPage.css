@@ -75,10 +75,10 @@
 }
 
 .absence-kpi-bar-fill {
-    background: #22c55e;
     height: 100%;
     border-radius: 4px;
     transition: width 0.3s ease;
+    /* background is set inline per-card */
 }
 
 .absence-kpi-value {
@@ -235,9 +235,33 @@
     color: #991b1b;
 }
 
+.absence-status-badge.cancelled {
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    text-decoration: line-through;
+}
+
 .absence-status-badge.other {
     background: var(--page-bg);
     color: var(--text-secondary);
+}
+
+/* ⋯ trigger button in table rows */
+
+.absence-detail-trigger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.absence-detail-trigger:hover {
+    background: var(--page-bg);
+    color: var(--text-primary);
 }
 
 @media (max-width: 700px) {
