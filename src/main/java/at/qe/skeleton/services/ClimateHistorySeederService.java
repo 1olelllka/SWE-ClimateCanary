@@ -60,8 +60,15 @@ public class ClimateHistorySeederService {
             List<ClimateStats> batch = new ArrayList<>(BATCH_SIZE);
             LocalDateTime cursor = start;
 
+            LocalDateTime warningOnset = now.minusHours(2);
+
             while (!cursor.isAfter(now)) {
-                double temp = computeTemperature(cursor, roomTempOffset);
+                // For the most recent 2 hours elevate temperature above the 26 °C limit
+                // so the sparkline trend line visually breaches the dashed limit line.
+                double temp = cursor.isAfter(warningOnset)
+                        ? round2(Math.max(WarningSeederService.TEMP_MAX,
+                                WarningSeederService.TRIGGERED_TEMP + RANDOM.nextGaussian() * 0.4))
+                        : computeTemperature(cursor, roomTempOffset);
                 double hum = computeHumidity(temp, roomHumOffset);
                 double poll = computePollution(cursor);
 
