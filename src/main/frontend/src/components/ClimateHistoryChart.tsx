@@ -204,6 +204,10 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
     ].filter(Boolean);
 
     const rotateLabels = timeFilter === 'Day' || timeFilter === 'Custom';
+    const showLegend   = metric === 'All';
+
+    // Rotated labels need ~44 px; legend needs ~28 px; combine when both are present
+    const gridBottom = (rotateLabels ? 44 : 20) + (showLegend ? 28 : 0);
 
     const option = {
         tooltip: {
@@ -211,24 +215,28 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             axisPointer: { type: 'cross' as const },
         },
         legend: {
-            show:   metric === 'All',
-            bottom: 0,
-            data:   ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
+            show:      showLegend,
+            bottom:    0,
+            data:      ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
             textStyle: { fontSize: 11 },
         },
         grid: {
             left:         48,
             right:        24,
             top:          16,
-            bottom:       metric === 'All' ? 48 : 28,
+            bottom:       gridBottom,
             containLabel: false,
         },
         xAxis: {
             type:        'category' as const,
             boundaryGap: false,
             data:        data.map(d => d.label),
-            axisLabel:   { rotate: rotateLabels ? 35 : 0, fontSize: 11 },
-            axisLine:    { lineStyle: { color: '#e2e8f0' } },
+            axisLabel: {
+                rotate:   rotateLabels ? 35 : 0,
+                fontSize: 11,
+                align:    rotateLabels ? 'right' : 'center',
+            },
+            axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
         yAxis: {
             type:      'value' as const,
