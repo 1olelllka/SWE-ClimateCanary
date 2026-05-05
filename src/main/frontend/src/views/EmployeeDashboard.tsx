@@ -22,24 +22,66 @@ interface ActiveWarning {
     active: boolean;
 }
 
+interface RawPoint {
+    timestamp: string;
+    temperature: number;
+    humidity: number;
+    airQuality: number;
+}
+
+// Local-time formatting helpers (server stores LocalDateTime without timezone)
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const fmtTime = (d: Date) =>
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
+function calcTrend(
+    current: number | undefined,
+    points: RawPoint[],
+    field: 'temperature' | 'humidity' | 'airQuality',
+    fmtDelta: (v: number) => string,
+    threshold: number,
+): { text: string; icon: string } {
+    if (current == null || points.length === 0) return { text: '', icon: 'pi-minus' };
+
+    const tenMinRef = Date.now() - 10 * 60 * 1000;
+    let closest: RawPoint | null = null;
+    let closestDiff = Infinity;
+    for (const p of points) {
+        const diff = Math.abs(new Date(p.timestamp).getTime() - tenMinRef);
+        if (diff < closestDiff) { closestDiff = diff; closest = p; }
+    }
+
+    // Only use reference if it's within ±3 min of 10 min ago
+    if (!closest || closestDiff > 3 * 60 * 1000) return { text: 'Stable', icon: 'pi-minus' };
+
+    const delta = current - closest[field];
+    if (Math.abs(delta) < threshold) return { text: 'Stable', icon: 'pi-minus' };
+
+    const icon  = delta > 0 ? 'pi-caret-up' : 'pi-caret-down';
+    return { text: ` ${fmtDelta(Math.abs(delta))} vs 10 min ago`, icon };
+}
+
 export const EmployeeDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [roomId, setRoomId] = useState<string | null>(null);
-    const [roomLabel, setRoomLabel] = useState('My Office');
+    const [roomName, setRoomName] = useState('My Office');
     const [noRoom, setNoRoom] = useState(false);
     const [climate, setClimate] = useState<ClimateData | null>(null);
     const [warnings, setWarnings] = useState<ActiveWarning[]>([]);
+    const [historyPoints, setHistoryPoints] = useState<RawPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Resolve the current user's room from /api/users/me on mount
+    // Resolve current user's room on mount
     useEffect(() => {
         globalAxios.get('/api/users/me')
             .then(res => {
                 const room = res.data?.myRoom;
                 if (room?.id) {
                     setRoomId(room.id);
-                    if (room.departmentName) setRoomLabel(room.departmentName);
+                    if (room.roomNumber) setRoomName(room.roomNumber);
                 } else {
                     setNoRoom(true);
                     setLoading(false);
@@ -50,14 +92,27 @@ export const EmployeeDashboard: React.FC = () => {
 
     const fetchLiveData = useCallback(() => {
         if (!roomId) return;
+
+        const now = new Date();
+        const twentyMinAgo = new Date(now.getTime() - 20 * 60 * 1000);
+
         Promise.all([
             globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
                 .then(r => r.data).catch(() => null),
-            globalAxios.get<ActiveWarning[]>(`/warnings?roomId=${roomId}`)
+            globalAxios.get<ActiveWarning[]>(`/api/warnings?roomId=${roomId}`)
                 .then(r => r.data).catch(() => []),
-        ]).then(([climateData, warningData]) => {
+            globalAxios.get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
+                params: {
+                    startDate: fmtDate(twentyMinAgo),
+                    endDate:   fmtDate(now),
+                    startTime: fmtTime(twentyMinAgo),
+                    endTime:   fmtTime(now),
+                },
+            }).then(r => r.data).catch(() => []),
+        ]).then(([climateData, warningData, histData]) => {
             setClimate(climateData);
             setWarnings((warningData ?? []).filter(w => w.active));
+            setHistoryPoints(histData ?? []);
             setLoading(false);
         });
     }, [roomId]);
@@ -79,10 +134,22 @@ export const EmployeeDashboard: React.FC = () => {
         ? new Date(climate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : '--:--';
 
+    // Sparkline: display only the last 10 minutes; trend uses full historyPoints to find 10-min-ago reference
+    const tenMinAgo = Date.now() - 10 * 60 * 1000;
+    const last10min = historyPoints.filter(p => new Date(p.timestamp).getTime() >= tenMinAgo);
+    const tempSparkline = last10min.map(p => p.temperature);
+    const humSparkline  = last10min.map(p => p.humidity);
+    const aqSparkline   = last10min.map(p => p.airQuality);
+
+    // Trend text: current value vs 10 min ago
+    const tempTrend = calcTrend(climate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
+    const humTrend  = calcTrend(climate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
+    const aqTrend   = calcTrend(climate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
+
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--page-bg)' }}>
             <PageHeader
-                title={roomLabel}
+                title={roomName}
                 subtitle="My Office"
                 lastUpdated={updatedAt}
                 onMenuClick={() => setSidebarVisible(true)}
@@ -103,27 +170,27 @@ export const EmployeeDashboard: React.FC = () => {
                                 value={fmt(climate?.temperature)}
                                 unit="°C"
                                 color="#e05252"
-                                points="0,20 20,15 40,25 60,10 80,18 100,10"
-                                trendIcon="pi-caret-up"
-                                trendText={climate ? `Updated ${updatedAt}` : ''}
+                                dataPoints={tempSparkline}
+                                trendIcon={tempTrend.icon}
+                                trendText={tempTrend.text}
                             />
                             <Cards
                                 title="Humidity"
                                 value={fmt(climate?.humidity)}
                                 unit="%"
                                 color="#26a69a"
-                                points="0,25 20,22 40,18 60,12 80,8 100,5"
-                                trendIcon="pi-minus"
-                                trendText=""
+                                dataPoints={humSparkline}
+                                trendIcon={humTrend.icon}
+                                trendText={humTrend.text}
                             />
                             <Cards
                                 title="Air Quality (CO₂)"
                                 value={fmt(climate?.airQuality, 0)}
                                 unit="ppm"
                                 color="#d4891a"
-                                points="0,10 20,12 40,15 60,18 80,22 100,25"
-                                trendIcon={activeWarning ? 'pi-caret-up' : 'pi-check'}
-                                trendText={activeWarning ? 'Elevated — ventilate recommended' : ''}
+                                dataPoints={aqSparkline}
+                                trendIcon={aqTrend.icon}
+                                trendText={aqTrend.text}
                             />
                         </div>
 
