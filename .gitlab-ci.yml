@@ -30,6 +30,7 @@ backend-unit-tests:
       - .m2/repository
   script:
     - echo "Running unit tests ..."
+    - cd webapp
     # to also generate Jacoco report (see pom.xml); use cache
     - mvn -Dmaven.repo.local=.m2/repository clean verify -Dskip.frontend=true
     # for sonar-scanner in next stage; use cache
