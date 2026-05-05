@@ -182,25 +182,24 @@ class ClimateStatsServiceUnitTests {
     class GetOvertime {
 
         @Test
-        @DisplayName("returns entries within date and time window")
+        @DisplayName("passes correct datetime bounds to repository and returns all results")
         void filtersCorrectly() {
             LocalDate  start     = today;
             LocalDate  end       = today;
             LocalTime  startTime = LocalTime.of(8, 0);
             LocalTime  endTime   = LocalTime.of(18, 0);
 
-            List<ClimateStats> raw = List.of(
-                    stats(today.atTime(7,  0), 18, 45, 250), // before startTime — excluded
-                    stats(today.atTime(10, 0), 20, 50, 300), // in window
-                    stats(today.atTime(14, 0), 21, 52, 320), // in window
-                    stats(today.atTime(20, 0), 22, 55, 400)  // after endTime — excluded
+            // The DB BETWEEN clause is the only filter; mock only what the DB would return
+            List<ClimateStats> dbResult = List.of(
+                    stats(today.atTime(10, 0), 20, 50, 300),
+                    stats(today.atTime(14, 0), 21, 52, 320)
             );
 
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
                     start.atTime(startTime),
                     end.atTime(endTime)))
-                    .thenReturn(raw);
+                    .thenReturn(dbResult);
 
             List<ClimateDataPointDTO> result =
                     service.getOvertime(roomId, start, end, startTime, endTime);

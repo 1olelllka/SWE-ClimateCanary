@@ -97,7 +97,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(roomId, from, to)
                 .stream()
-                .filter(s -> isWithinTimeWindow(s.getDate().toLocalTime(), startTime, endTime))
                 .map(climateMapper::mapTo)
                 .toList();
     }
@@ -144,10 +143,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         return limitMapper.mapTo(room);
     }
 
-    private boolean isWithinTimeWindow(LocalTime time, LocalTime start, LocalTime end) {
-        return (start == null || !time.isBefore(start))
-                && (end == null || !time.isAfter(end));
-    }
 
     private LocalDate resolveFrom(String timeframe, LocalDate to) {
         return switch (timeframe) {
