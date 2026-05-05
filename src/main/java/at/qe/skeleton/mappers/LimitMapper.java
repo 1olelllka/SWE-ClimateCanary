@@ -10,11 +10,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
 
-    private static final float DEFAULT_TEMP_MIN = 18f;
-    private static final float DEFAULT_TEMP_MAX = 26f;
-    private static final float DEFAULT_HUM_MIN  = 30f;
-    private static final float DEFAULT_HUM_MAX  = 70f;
-    private static final float DEFAULT_CO2_MAX  = 800f;
+    private static final Float DEFAULT_TEMP_MIN = 18f;
+    private static final Float DEFAULT_TEMP_MAX = 26f;
+    private static final Float DEFAULT_HUM_MIN  = 30f;
+    private static final Float DEFAULT_HUM_MAX  = 70f;
+    private static final Float DEFAULT_CO2_MAX  = 800f;
 
     @Override
     public LimitDTO mapTo(RoomMonitoring entity) {
