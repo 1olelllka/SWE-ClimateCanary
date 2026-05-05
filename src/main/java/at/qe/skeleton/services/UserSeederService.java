@@ -1,5 +1,6 @@
 package at.qe.skeleton.services;
 
+import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Room;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
@@ -7,6 +8,7 @@ import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserSeederService {
 
     private final UserxRepository userxRepository;
@@ -30,6 +33,7 @@ public class UserSeederService {
     private String defaultSeedPassword;
 
     public void seed() {
+        log.info("Running user seeder...");
         createUserIfNotExists(
                 "employee",
                 "Emma",
@@ -98,18 +102,19 @@ public class UserSeederService {
 
         Set<UserRole> roles = roleNames.stream()
                 .map(roleName -> roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName)))
+                        .orElseThrow(() -> new NotFoundException("Role not found: " + roleName)))
                 .collect(Collectors.toSet());
 
         user.setUserRoles(roles);
 
         if (roomNumber != null) {
             Room room = roomRepository.findByRoomNumber(roomNumber)
-                    .orElseThrow(() -> new RuntimeException("Room not found: " + roomNumber));
+                    .orElseThrow(() -> new NotFoundException("Room not found: " + roomNumber));
 
             user.setMyRoom(room);
         }
 
         userxRepository.save(user);
+        log.info("Saved new user '{} {}' - {}", user.getFirstName(), user.getLastName(), user.getUsername());
     }
 }

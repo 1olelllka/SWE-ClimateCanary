@@ -15,9 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClimateHistorySeederService {
 
     private final RoomMonitoringRepository roomMonitoringRepository;
@@ -30,8 +30,9 @@ public class ClimateHistorySeederService {
     private static final Random RANDOM = new Random(42);
 
     public void seed() {
+        log.info("Running climate history seeder...");
         if (climateStatsRepository.count() > 0) {
-            log.info("Climate history already seeded, skipping.");
+            log.info("Climate history already seeded. Aborting...");
             return;
         }
 

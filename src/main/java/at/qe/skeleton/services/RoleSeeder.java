@@ -1,14 +1,14 @@
 package at.qe.skeleton.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @Order(1)
-public class RoleSeeder implements ApplicationListener<ContextRefreshedEvent> {
+public class RoleSeeder implements ApplicationRunner {
 
     private RoleSeederService service;
 
@@ -18,8 +18,7 @@ public class RoleSeeder implements ApplicationListener<ContextRefreshedEvent> {
     }
 
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void run(ApplicationArguments args) throws Exception {
         service.loadRoles();
     }
-
 }

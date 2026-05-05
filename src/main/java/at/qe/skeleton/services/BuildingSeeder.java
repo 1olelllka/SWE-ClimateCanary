@@ -1,16 +1,16 @@
 package at.qe.skeleton.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Order(3)
+@Order(2)
 @ConditionalOnProperty(name = "app.seeder.building.enabled", havingValue = "true", matchIfMissing = true)
-public class BuildingSeeder implements ApplicationListener<ContextRefreshedEvent> {
+public class BuildingSeeder implements ApplicationRunner {
 
     private final BuildingSeederService service;
 
@@ -20,7 +20,7 @@ public class BuildingSeeder implements ApplicationListener<ContextRefreshedEvent
     }
 
     @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void run(ApplicationArguments args) throws Exception {
         service.seed();
     }
 }

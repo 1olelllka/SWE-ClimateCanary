@@ -11,12 +11,15 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,7 +34,7 @@ public class ClimateAggregationJob {
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
 
-    @Value("${app.aggregation.run-on-startup:false}")
+    @Value("${app.aggregation.run-on-startup:true}")
     private boolean runOnStartup;
 
     @PostConstruct
@@ -43,6 +46,7 @@ public class ClimateAggregationJob {
     }
 
     @Scheduled(cron = "${app.aggregation.daily.cron:0 0 0 * * *}")
+    @Async
     @Transactional
     public void aggregateDaily() {
         log.info("Running daily climate aggregation...");
@@ -51,6 +55,7 @@ public class ClimateAggregationJob {
 
     // Averages the 7 DAILY rows from the past week into a single WEEKLY summary
     @Scheduled(cron = "${app.aggregation.weekly.cron:0 0 0 * * SUN}")
+    @Async
     @Transactional
     public void aggregateWeekly() {
         log.info("Running weekly climate aggregation...");
@@ -59,7 +64,7 @@ public class ClimateAggregationJob {
             LocalDate weekEnd   = LocalDate.now().minusDays(1);
 
             if (aggregatedStatsRepository.existsByRoomIdAndDateAndGranularity(roomId, weekStart, Granularity.WEEKLY)) {
-                log.debug("Weekly aggregation already exists for {} starting {}, skipping.", roomId, weekStart);
+                log.info("Weekly aggregation already exists for {} starting {}, skipping.", roomId, weekStart);
                 return;
             }
 
@@ -87,15 +92,15 @@ public class ClimateAggregationJob {
 
     private void aggregateDay(UUID roomId, LocalDate date) {
         if (aggregatedStatsRepository.existsByRoomIdAndDateAndGranularity(roomId, date, Granularity.DAILY)) {
-            log.debug("Daily aggregation already exists for {} on {}, skipping.", roomId, date);
+            log.info("Daily aggregation already exists for {} on {}, skipping.", roomId, date);
             return;
         }
 
         List<ClimateStats> records = climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(
                         roomId,
-                        date.atStartOfDay(),
-                        date.atTime(LocalTime.MAX));
+                        OffsetDateTime.from(date.atStartOfDay(ZoneOffset.UTC)),
+                        date.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC));
 
         if (records.isEmpty()) {
             log.warn("No climate data for room {} on {}, skipping.", roomId, date);

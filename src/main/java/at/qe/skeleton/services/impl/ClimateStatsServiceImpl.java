@@ -19,8 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -87,8 +88,8 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                  LocalDate endDate,
                                                  LocalTime startTime,
                                                  LocalTime endTime) {
-        LocalDateTime from = startDate.atTime(startTime != null ? startTime : LocalTime.MIDNIGHT);
-        LocalDateTime to   = endDate.atTime(endTime != null ? endTime : LocalTime.MAX);
+        OffsetDateTime from = OffsetDateTime.from(startDate.atTime(startTime != null ? startTime : LocalTime.MIDNIGHT).atOffset(ZoneOffset.UTC));
+        OffsetDateTime to   = OffsetDateTime.from(endDate.atTime(endTime != null ? endTime : LocalTime.MAX).atOffset(ZoneOffset.UTC));
 
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(roomId, from, to)
@@ -163,7 +164,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                         LocalDate to) {
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(
-                        roomId, from.atStartOfDay(), to.atTime(LocalTime.MAX))
+                        roomId, OffsetDateTime.from(from.atStartOfDay(ZoneOffset.UTC)), OffsetDateTime.from(to.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
                 .stream()
                 .collect(Collectors.groupingBy(s ->
                         s.getDate().truncatedTo(ChronoUnit.HOURS)))
@@ -182,7 +183,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                        LocalDate to) {
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(
-                        roomId, from.atStartOfDay(), to.atTime(LocalTime.MAX))
+                        roomId, OffsetDateTime.from(from.atStartOfDay(ZoneOffset.UTC)), OffsetDateTime.from(to.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
                 .stream()
                 .collect(Collectors.groupingBy(s -> s.getDate().toLocalDate()))
                 .entrySet().stream()
