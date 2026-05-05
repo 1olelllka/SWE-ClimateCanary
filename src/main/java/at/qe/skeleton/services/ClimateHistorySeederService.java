@@ -35,13 +35,21 @@ public class ClimateHistorySeederService {
             return;
         }
 
-        List<RoomMonitoring> rooms = roomMonitoringRepository.findAll().stream()
+        List<RoomMonitoring> allRooms = roomMonitoringRepository.findAll();
+
+        List<RoomMonitoring> rooms = new ArrayList<>();
+        allRooms.stream()
                 .filter(r -> r.getRoomNumber().endsWith("101"))
                 .limit(1)
-                .toList();
+                .findFirst()
+                .ifPresent(rooms::add);
+        allRooms.stream()
+                .filter(r -> "ENG-103".equals(r.getRoomNumber()))
+                .findFirst()
+                .ifPresent(rooms::add);
 
         if (rooms.isEmpty()) {
-            log.warn("Room 101 not found, skipping climate history seeding.");
+            log.warn("No target rooms found, skipping climate history seeding.");
             return;
         }
 
@@ -49,8 +57,8 @@ public class ClimateHistorySeederService {
         LocalDateTime start = now.minusDays(historyDays);
         long minutesTotal = ChronoUnit.MINUTES.between(start, now);
 
-        log.info("Seeding {} days of climate history ({} data points) for room {}...",
-                historyDays, minutesTotal, rooms.get(0).getRoomNumber());
+        log.info("Seeding {} days of climate history ({} data points) for {} room(s)...",
+                historyDays, minutesTotal, rooms.size());
 
         for (int roomIndex = 0; roomIndex < rooms.size(); roomIndex++) {
             RoomMonitoring room = rooms.get(roomIndex);
