@@ -32,6 +32,7 @@ public class DequeConsumerUnitTests {
     @BeforeEach
     void setUp() {
         notifyCommand = mock(NotifyRaspberryCommand.class);
+        when(notifyCommand.getRaspberry()).thenReturn(RaspberryPi.builder().ip("localhost").port(8000).name("Test Pi").build());
     }
 
     @Test
