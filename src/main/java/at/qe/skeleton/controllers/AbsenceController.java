@@ -154,6 +154,14 @@ public class AbsenceController {
         return new ResponseEntity<>(absenceMapper.mapTo(patched), HttpStatus.OK);
     }
 
+    @PatchMapping("{absence_id}/cancel")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<AbsenceDTO> cancelAbsence(@PathVariable(name="absence_id") UUID id) {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        Absence cancelled = absenceService.cancelAbsence(id, user);
+        return new ResponseEntity<>(absenceMapper.mapTo(cancelled), HttpStatus.OK);
+    }
+
     @DeleteMapping("{absence_id}")
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
     public ResponseEntity<Void> deleteSpecificAbsence(@PathVariable(name="absence_id") UUID id,
