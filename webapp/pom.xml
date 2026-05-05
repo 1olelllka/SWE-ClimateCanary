@@ -265,7 +265,7 @@
                         <configuration>
                             <inputSpec>${project.basedir}/src/main/resources/api-docs.json</inputSpec>
                             <generatorName>typescript-axios</generatorName>
-                            <output>${project.basedir}/src/main/frontend/src/generated-skeleton-api</output>
+                            <output>src/main/frontend/src/generated-skeleton-api</output>
                             <configOptions>
                                 <supportsES6>true</supportsES6>
                                 <npmName>skeleton-api</npmName>

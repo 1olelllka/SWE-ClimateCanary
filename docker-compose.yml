@@ -1,6 +1,6 @@
 services:
   #  app:
-  #    build: .
+  #    build: ./webapp
   #    image: skel-app
   #    container_name: "${TEAM_NAME:-local}-app"
   #    ports:

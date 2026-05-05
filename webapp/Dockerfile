@@ -17,12 +17,12 @@ FROM node:25 AS frontend-build
 WORKDIR /app/frontend
 
 # Copy only package files here for better caching (Docker image layers!)
-COPY src/main/frontend/package*.json ./ 
+COPY ./src/main/frontend/package*.json ./
 
 RUN npm ci
 
 # Copy the rest and build
-COPY src/main/frontend/ .
+COPY src/main/frontend .
 COPY --from=api-generate /app/src/main/frontend/src/generated-skeleton-api ./src/generated-skeleton-api
 
 RUN npm run build
