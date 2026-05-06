@@ -389,33 +389,3 @@ class WebManager:
                 finally:
                     self.status_queue.task_done()
 
-    async def run_offline_sync_worker(self):
-        logger.info("[WebManager] Offline sync worker started.")
-        timeout = aiohttp.ClientTimeout(total=10)
-        log_api_url = f"{self.server_url}/api/logs/bulk"
-
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            while True:
-                await asyncio.sleep(3600)
-                try:
-                    unsynced_logs = await self.db.get_unsynced_logs()
-                    if not unsynced_logs:
-                        continue
-
-                    payload = {
-                        "device": await self.db.get_config('raspberry_id'),
-                        "logs": unsynced_logs,
-                    }
-
-                    success = await self._post_with_auth(session, log_api_url, payload)
-
-                    if success:
-                        ids = [entry["id"] for entry in unsynced_logs]
-                        await self.db.mark_logs_synced(ids)
-                        logger.info(f"[WebManager] Synced {len(ids)} offline logs in bulk.")
-                    else:
-                        logger.warning("[WebManager] Bulk log sync rejected by webapp. Will retry next cycle.")
-
-                except Exception as e:
-                    logger.warning(f"[WebManager] Offline sync error: {e}")
-                    # Best-effort, never crash the worker

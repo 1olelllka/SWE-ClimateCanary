@@ -40,6 +40,17 @@ public:
   void setFault(const String& text, const String& code);
   void clearFault();
 
+  void setWarningData(
+    const String& warnText,
+    const String& threshold,
+    const String& tip
+  );
+  
+
 private:
   rgb_lcd lcd;
+
+  String currentWarnText = "No warning";
+  String currentThreshold = "None";
+  String currentTip = "No advice";
 };
