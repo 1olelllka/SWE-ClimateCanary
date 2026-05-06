@@ -1,6 +1,6 @@
-src/**/node_modules
-src/test
+webapp/src/**/node_modules
+webapp/src/test
 **/*.log
-src/target
+webapp/src/target
 .git
 .idea
