@@ -65,16 +65,6 @@ class DatabaseManager:
                               ''')
 
         await self.db.execute('''
-                              CREATE TABLE IF NOT EXISTS system_logs (
-                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                  timestamp TEXT NOT NULL,
-                                  category TEXT NOT NULL,
-                                  message TEXT NOT NULL,
-                                  synced_to_web INTEGER DEFAULT 0
-                                  )
-                              ''')
-
-        await self.db.execute('''
                               CREATE TABLE IF NOT EXISTS config (
                                   key TEXT PRIMARY KEY,
                                   value TEXT NOT NULL,
@@ -276,23 +266,3 @@ class DatabaseManager:
             logger.warning(f"[{category}] {message}")
         else:
             logger.info(f"[{category}] {message}")
-
-        if level in ("ERROR", "WARN", "WARNING"):
-            await self.db.execute(
-                    "INSERT INTO system_logs (timestamp, category, message) VALUES (?, ?, ?)",
-                    (get_current_time(), category, message)
-                    )
-            await self.db.commit()
-
-    async def get_unsynced_logs(self) -> list:
-        async with self.db.execute("SELECT * FROM system_logs WHERE synced_to_web = 0 ORDER BY id ASC") as cursor:
-            rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
-
-    async def mark_logs_synced(self, log_ids: list[int]):
-        placeholders = ",".join("?" * len(log_ids))
-        await self.db.execute(
-                f"UPDATE system_logs SET synced_to_web=1 WHERE id IN ({placeholders})",
-                log_ids
-                )
-        await self.db.commit()
