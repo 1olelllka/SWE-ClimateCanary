@@ -18,6 +18,16 @@ void DisplayManager::showStartup() {
   lcd.print("Collecting data");
 }
 
+void DisplayManager::setWarningData(
+  const String& warnText,
+  const String& threshold,
+  const String& tip
+) {
+  currentWarnText = warnText;
+  currentThreshold = threshold;
+  currentTip = tip;
+}
+
 void DisplayManager::showReading(const SensorReading& reading) {
   lcd.clear();
 
@@ -66,21 +76,21 @@ void DisplayManager::showReading(const SensorReading& reading) {
         lcd.setCursor(0, 0);
         lcd.print("Mode: Warning");
         lcd.setCursor(0, 1);
-        lcd.print("Limit exceeded");
+        lcd.print(currentWarnText.substring(0, 16));
         break;
 
       case WarningModeDisplay::ExceededThreshold:
         lcd.setCursor(0, 0);
         lcd.print("Mode: Warning");
         lcd.setCursor(0, 1);
-        lcd.print("T/H/Air quality");
+        lcd.print(currentThreshold.substring(0, 16));
         break;
 
       case WarningModeDisplay::AdviceMessage:
         lcd.setCursor(0, 0);
         lcd.print("Mode: Warning");
         lcd.setCursor(0, 1);
-        lcd.print("No advice yet");
+        lcd.print(currentTip.substring(0, 16));
         break;
     }
   }

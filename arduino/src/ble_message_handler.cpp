@@ -25,7 +25,33 @@ void BLEMessageHandler::handleRxMessage(
   } else if (received.startsWith("FREQUENCY:")) {
     //TODO: update frequency based on message
   } else if (received.startsWith("WARNTEXT:")) {
-    //TODO: update warning text based on message
+  int thresholdIndex = received.indexOf("TRESHOLD:");
+    int tipIndex = received.indexOf("TIP:");
+
+    if (thresholdIndex != -1 && tipIndex != -1) {
+      String warnText = received.substring(9, thresholdIndex);
+      String threshold = received.substring(thresholdIndex + 10, tipIndex);
+      String tip = received.substring(tipIndex + 4);
+
+      warnText.trim();
+      threshold.trim();
+      tip.trim();
+
+      Serial.println("Parsed warning:");
+      Serial.println(warnText);
+
+      Serial.println("Parsed threshold:");
+      Serial.println(threshold);
+
+      Serial.println("Parsed tip:");
+      Serial.println(tip);
+
+      manager->displayManager->setWarningData(
+        warnText,
+        threshold,
+        tip
+      );
+    } 
   } else if (received.startsWith("ERROR:")) {
     //TODO: implement error code handling based on message
   }
