@@ -93,7 +93,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
     const [loading,    setLoading]    = useState(false);
 
     useEffect(() => {
-        globalAxios.get<Limits>(`/api/rooms/${roomId}/limits`)
+        globalAxios.get<Limits>(`/api/rooms/${roomId}/climate-limits`)
             .then(r => setLimits(r.data))
             .catch(() => {});
     }, [roomId]);

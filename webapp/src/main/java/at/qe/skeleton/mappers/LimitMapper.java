@@ -18,13 +18,17 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
 
     @Override
     public LimitDTO mapTo(RoomMonitoring entity) {
+        TemperatureLimit tempLimit = entity.getTempLimit();
+        HumidityLimit humLimit = entity.getHumLimit();
+        PollutionLimit polLimit = entity.getPolLimit();
+
         return new LimitDTO(
                 entity.getRoomId(),
-                entity.getTempLimit() != null && entity.getTempLimit().getMinVal() != null? entity.getTempLimit().getMinVal() : DEFAULT_TEMP_MIN,
-                entity.getTempLimit() != null ? entity.getTempLimit().getMaxVal() : DEFAULT_TEMP_MAX,
-                entity.getHumLimit()  != null && entity.getHumLimit().getMinVal() != null? entity.getHumLimit().getMinVal()  : DEFAULT_HUM_MIN,
-                entity.getHumLimit()  != null ? entity.getHumLimit().getMaxVal()  : DEFAULT_HUM_MAX,
-                entity.getPolLimit()  != null ? entity.getPolLimit().getMaxVal()  : DEFAULT_CO2_MAX
+                valueOrDefault(tempLimit != null ? tempLimit.getMinVal() : null, DEFAULT_TEMP_MIN),
+                valueOrDefault(tempLimit != null ? tempLimit.getMaxVal() : null, DEFAULT_TEMP_MAX),
+                valueOrDefault(humLimit != null ? humLimit.getMinVal() : null, DEFAULT_HUM_MIN),
+                valueOrDefault(humLimit != null ? humLimit.getMaxVal() : null, DEFAULT_HUM_MAX),
+                valueOrDefault(polLimit != null ? polLimit.getMaxVal() : null, DEFAULT_CO2_MAX)
         );
     }
 
@@ -44,5 +48,9 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
                         .maxVal(dto.co2Max())
                         .build())
                 .build();
+    }
+
+    private float valueOrDefault(Float value, float defaultValue) {
+        return value != null ? value : defaultValue;
     }
 }

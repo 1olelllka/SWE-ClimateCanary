@@ -7,6 +7,7 @@ import '../styles/Tables.css';
 
 export interface RoomData {
     readonly id: string;
+    readonly backendId?: string;
     readonly department?: string;
     readonly type: string;
     readonly people: string;
