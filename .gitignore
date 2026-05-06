@@ -287,7 +287,7 @@ sketch
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 
-/src/main/frontend/build/
+/webapp/src/main/frontend/build/
 
 # other
 .sdkmanrc
@@ -295,4 +295,4 @@ sketch
 
 
 # openapi generated files
-src/main/frontend/src/generated-skeleton-api/
+webapp/src/main/frontend/src/generated-skeleton-api/

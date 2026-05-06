@@ -1,0 +1,308 @@
+.building-room-analysis-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--page-bg);
+}
+
+.building-room-analysis-container {
+    flex-grow: 1;
+    padding: 1.5rem;
+}
+
+.building-room-analysis-back-button {
+    width: fit-content;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.building-room-analysis-back-button i {
+    font-size: 2.4rem;
+    color: #0f172a;
+}
+
+.building-room-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.room-analysis-section {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.room-analysis-section h2 {
+    font-size: 1.25rem;
+    margin: 0 0 1rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.room-analysis-chart-section {
+    padding-bottom: 1.5rem;
+}
+
+.room-analysis-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.room-analysis-section-header h2 {
+    margin-bottom: 0;
+}
+
+.room-analysis-filter-select {
+    appearance: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.4rem 2rem 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.room-analysis-filter-select:focus {
+    border-color: #94a3b8;
+}
+
+/* =========================
+   Violation Table
+   ========================= */
+
+.room-analysis-table-wrapper {
+    overflow-x: auto;
+}
+
+.room-analysis-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.room-analysis-table th {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.room-analysis-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+}
+
+.room-analysis-table tbody tr {
+    background-color: #f1f5f9;
+    border-bottom: 6px solid #ffffff;
+}
+
+.room-analysis-empty-row {
+    text-align: center;
+    color: #64748b;
+}
+
+/* =========================
+   Limit Settings
+   ========================= */
+
+.room-analysis-limits-table {
+    width: 100%;
+}
+
+.room-analysis-limits-header,
+.room-analysis-limit-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    align-items: center;
+    column-gap: 1.25rem;
+}
+
+.room-analysis-limits-header {
+    padding: 0 1.25rem 0.75rem 1.25rem;
+    background: transparent;
+    color: #334155;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.room-analysis-limit-row {
+    min-height: 72px;
+    padding: 0.75rem 1.25rem;
+    background-color: #f1f5f9;
+    border-bottom: 0.75rem solid #ffffff;
+}
+
+.room-analysis-limit-row:last-child {
+    border-bottom: none;
+}
+
+.room-analysis-limit-row > span:first-child {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 1rem;
+}
+
+.room-analysis-limit-row input {
+    width: 100%;
+    height: 44px;
+    border: none;
+    border-radius: 999px;
+    background-color: #ffffff;
+    text-align: center;
+    font-size: 1rem;
+    color: #0f172a;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.room-analysis-limit-row input:focus {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.room-analysis-limit-row input:disabled {
+    background-color: #ffffff;
+    color: #64748b;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+
+/* =========================
+   Save Buttons / Messages
+   ========================= */
+
+.room-analysis-save-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.room-analysis-save-button {
+    border: none;
+    background-color: #3478f6;
+    color: #ffffff;
+    border-radius: 999px;
+    padding: 0.85rem 1.8rem;
+    min-width: 180px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.room-analysis-save-button:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.room-analysis-save-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.room-analysis-message {
+    font-size: 0.85rem;
+    color: #334155;
+}
+
+.room-analysis-loading-note {
+    margin-top: 1rem;
+    color: #64748b;
+}
+
+/* =========================
+   Desktop Layout
+   ========================= */
+
+@media (min-width: 900px) {
+    .building-room-analysis-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .building-room-analysis-grid > :first-child,
+    .building-room-analysis-grid > :nth-child(2) {
+        grid-column: 1 / -1;
+    }
+}
+
+/* =========================
+   Mobile
+   ========================= */
+
+@media (max-width: 700px) {
+    .building-room-analysis-container {
+        padding: 1rem;
+    }
+
+    .building-room-analysis-grid {
+        gap: 1rem;
+    }
+
+    .room-analysis-section {
+        padding: 1rem;
+        border-radius: 14px;
+    }
+
+    .room-analysis-section h2 {
+        font-size: 1.15rem;
+    }
+
+    .room-analysis-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .room-analysis-filter-select {
+        width: 100%;
+    }
+
+    .room-analysis-table th,
+    .room-analysis-table td {
+        white-space: nowrap;
+    }
+
+    .room-analysis-limits-header {
+        display: none;
+    }
+
+    .room-analysis-limit-row {
+        grid-template-columns: 1fr;
+        row-gap: 0.5rem;
+        padding: 1rem;
+        min-height: auto;
+    }
+
+    .room-analysis-limit-row > span:first-child {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .room-analysis-limit-row input {
+        height: 42px;
+        font-size: 0.95rem;
+    }
+
+    .room-analysis-save-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .room-analysis-save-button {
+        width: 100%;
+        min-width: 0;
+    }
+}
