@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AbsenceServiceUnitTests {
+class AbsenceServiceUnitTests {
 
     @Mock private AbsenceRepository absenceRepository;
     @Mock private UserxRepository userxRepository;
@@ -496,5 +496,29 @@ public class AbsenceServiceUnitTests {
         absenceService.clockOut(user);
 
         verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void testThatClockStatusReturnsFalseIfNothingWasFound() {
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.empty());
+
+        boolean res = absenceService.isClockedIn(user);
+        assertFalse(res);
+    }
+
+    @Test
+    void testThatClockStatusReturnsTrueIfClockStatusIsTrue() {
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(user.getId(), true)));
+
+        boolean res = absenceService.isClockedIn(user);
+        assertTrue(res);
+    }
+
+    @Test
+    void testThatClockStatusReturnsFalseIfClockStatusIsFalse() {
+        when(clockStatusRepository.findById(user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(user.getId(), false)));
+
+        boolean res = absenceService.isClockedIn(user);
+        assertFalse(res);
     }
 }

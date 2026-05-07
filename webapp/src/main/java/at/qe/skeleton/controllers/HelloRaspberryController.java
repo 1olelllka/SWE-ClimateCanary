@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.*;
 public class HelloRaspberryController {
     private static final Logger logger = LoggerFactory.getLogger(HelloRaspberryController.class);
     private final TestConnectionClient connectionClient;
-    // placeholder for PiMessage (is overwritten as soon as message received)
+    // placeholder for PiMessage (is overwritten as soon as tip received)
     private RaspberryTestDTO latestPiMessage = new RaspberryTestDTO("Warte auf eine Nachricht...");
     public HelloRaspberryController(TestConnectionClient connectionClient) {
         this.connectionClient = connectionClient; // Spring automatically injects this
     }
 
-    // Frontend POSTs a message -> forwards to Pi
+    // Frontend POSTs a tip -> forwards to Pi
     @PostMapping("/send-to-raspberry")
     public ResponseEntity<Void> sendToPi(@RequestBody RaspberryCommandDTO command) {
         ResponseEntity<RaspberryTestDTO> response = connectionClient.postCommandToRaspberry(command);
@@ -32,7 +32,7 @@ public class HelloRaspberryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    //Pi POSTs its message here
+    //Pi POSTs its tip here
     @PostMapping("/test-info")
     public ResponseEntity<Void> receiveMsg(@RequestBody RaspberryTestDTO dto) {
         this.latestPiMessage = dto;
@@ -40,7 +40,7 @@ public class HelloRaspberryController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    // Frontend GETs the latest Pi message
+    // Frontend GETs the latest Pi tip
     @GetMapping("/test-info")
     public ResponseEntity<RaspberryTestDTO> getRaspberryResponse(){
         return new ResponseEntity<>(latestPiMessage, HttpStatus.OK); //returns whatever Pi last sent

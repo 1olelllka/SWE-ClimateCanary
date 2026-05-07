@@ -34,7 +34,7 @@ public class Room {
     private Integer defaultPeopleCnt;
 
     @ManyToOne
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @OneToMany(mappedBy = "myRoom", cascade = {CascadeType.PERSIST, CascadeType.MERGE})

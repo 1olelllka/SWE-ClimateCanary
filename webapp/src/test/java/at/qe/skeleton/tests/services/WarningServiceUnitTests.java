@@ -238,7 +238,7 @@ class WarningServiceUnitTests {
         when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createWarning(createDto()))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(roomId.toString());
 
         verify(warningsRepository, never()).save(any());
@@ -434,7 +434,7 @@ class WarningServiceUnitTests {
         when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createWarning(createDto()))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(NotFoundException.class);
     }
 
     // ───── updateWarningStatus ─────
@@ -456,7 +456,7 @@ class WarningServiceUnitTests {
 
         assertThatThrownBy(() ->
                 service.updateWarningStatus(warningId, new WarningUpdateStatusDTO(WarningStatus.RED, 30)))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(NotFoundException.class);
     }
 
     // ───── resolveWarning ─────
@@ -469,19 +469,6 @@ class WarningServiceUnitTests {
         var result = service.resolveWarning(warningId);
 
         assertThat(result.active()).isFalse();
-    }
-
-    // ───── getViolationLog ─────
-
-    @Test
-    void getViolationLog_success() {
-        when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
-        when(warningsRepository.findByRoomMonitoring_RoomId(roomId))
-                .thenReturn(List.of(activeWarning(), resolvedWarning()));
-
-        var result = service.getViolationLog(departmentViewer(), roomId);
-
-        assertThat(result).hasSize(2);
     }
 
     // ───── getViolationLogForDepartment ─────

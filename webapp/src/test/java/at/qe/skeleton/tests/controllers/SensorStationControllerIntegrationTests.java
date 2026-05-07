@@ -20,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -27,26 +28,24 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
-public class SensorStationControllerIntegrationTests {
-    @Autowired
-    private MockMvc mockMvc;
-    @Autowired
-    private SensorStationService sensorService;
-    @Autowired
-    private RaspberryService raspberryService;
-    @Autowired
-    private RaspberryPiRepository raspberryPiRepository;
-    @Autowired
-    private SensorStationRepository sensorRepository;
-    @Autowired
-    private RoomMonitoringRepository monitoringRepository;
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class SensorStationControllerIntegrationTests {
+    @Autowired MockMvc mockMvc;
+    @Autowired SensorStationService sensorService;
+    @Autowired RaspberryService raspberryService;
+    @Autowired RaspberryPiRepository raspberryPiRepository;
+    @Autowired SensorStationRepository sensorRepository;
+    @Autowired RoomMonitoringRepository monitoringRepository;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private RoomMonitoring savedRoom;
+    private RaspberryPi pi;
 
     @BeforeEach
     void setUp() {
@@ -54,20 +53,20 @@ public class SensorStationControllerIntegrationTests {
         sensorRepository.deleteAll();
         raspberryPiRepository.deleteAll();
         this.savedRoom = monitoringRepository.save(RoomMonitoring.builder().roomId(UUID.randomUUID()).roomNumber("A101").build());
-        RaspberryPi pi = RaspberryPi.builder().ip("localhost").port(8000).name("Test Raspberry").status(DeviceStatus.ONLINE).build();
-        raspberryService.createNewRaspberry(pi);
+        pi = RaspberryPi.builder().ip("localhost").port(8000).name("Test Raspberry").status(DeviceStatus.ONLINE).build();
+        pi = raspberryService.createNewRaspberry(pi);
     }
 
 
     @Test
-    public void testThatSensorStationsEndpointsAreSecured() throws Exception {
+    void testThatSensorStationsEndpointsAreSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/sensor-stations"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatGetAllSensorStationsReturnsHttp200AndPage() throws Exception {
+    void testThatGetAllSensorStationsReturnsHttp200AndPage() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         sensorService.createNewSensorStation(station);
 
@@ -78,7 +77,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatCreateNewSensorReturnsHttp400IfValidationFails() throws Exception {
+    void testThatCreateNewSensorReturnsHttp400IfValidationFails() throws Exception {
         SensorStationCreateDTO dto = new SensorStationCreateDTO("Hallway-Sensor", null);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sensor-stations")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -88,7 +87,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatCreateNewSensorReturnsHttp404IfRoomNotFound() throws Exception {
+    void testThatCreateNewSensorReturnsHttp404IfRoomNotFound() throws Exception {
         SensorStationCreateDTO dto = new SensorStationCreateDTO("Hallway-Sensor", UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sensor-stations")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -98,7 +97,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatCreateNewSensorReturnsHttp409IfNameAlreadyExist() throws Exception {
+    void testThatCreateNewSensorReturnsHttp409IfNameAlreadyExist() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         sensorService.createNewSensorStation(station);
         SensorStationCreateDTO dto = new SensorStationCreateDTO("Hallway-Sensor", savedRoom.getRoomId());
@@ -110,7 +109,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatCreateNewSensorReturnsHttp201IfSuccessful() throws Exception {
+    void testThatCreateNewSensorReturnsHttp201IfSuccessful() throws Exception {
         SensorStationCreateDTO dto = new SensorStationCreateDTO("Hallway-Sensor", savedRoom.getRoomId());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/sensor-stations")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,7 +123,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatPatchSensorReturnsHttp400IfValidationFails() throws Exception {
+    void testThatPatchSensorReturnsHttp400IfValidationFails() throws Exception {
         SensorStationPatchDTO dto = new SensorStationPatchDTO("", null, null, null);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + UUID.randomUUID())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -134,7 +133,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatPatchSensorReturnsHttp404IfSensorNotFound() throws Exception {
+    void testThatPatchSensorReturnsHttp404IfSensorNotFound() throws Exception {
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor", null, null, null);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/sensor-stations/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +143,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatPatchSensorReturnsHttp404IfRoomNotFound() throws Exception {
+    void testThatPatchSensorReturnsHttp404IfRoomNotFound() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor", null, null, UUID.randomUUID());
@@ -156,7 +155,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatPatchSensorReturnsHttp409IfNameAlreadyExist() throws Exception {
+    void testThatPatchSensorReturnsHttp409IfNameAlreadyExist() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         RoomMonitoring room2 = monitoringRepository.save(RoomMonitoring.builder().roomId(UUID.randomUUID()).roomNumber("A102").build());
@@ -171,7 +170,7 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatPatchSensorReturnsHttp201IfSuccessful() throws Exception {
+    void testThatPatchSensorReturnsHttp201IfSuccessful() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         SensorStationPatchDTO dto = new SensorStationPatchDTO("Hallway-Sensor 2", null, DeviceStatus.ONLINE, null);
@@ -187,14 +186,14 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatGetSpecificStationReturnsHttp404IfNotFound() throws Exception {
+    void testThatGetSpecificStationReturnsHttp404IfNotFound() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/sensor-stations/" + UUID.randomUUID()))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatGetSpecificStationReturnsHttp200IfSuccessful() throws Exception {
+    void testThatGetSpecificStationReturnsHttp200IfSuccessful() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         mockMvc.perform(MockMvcRequestBuilders.get("/api/sensor-stations/" + station.getReadId()))
@@ -206,18 +205,60 @@ public class SensorStationControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatDeleteSensorReturnsHttp404IfSensorNotFound() throws Exception {
+    void testThatDeleteSensorReturnsHttp404IfSensorNotFound() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/" + UUID.randomUUID()))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
-    public void testThatDeleteSensorReturnsHttp204IfSuccessful() throws Exception {
+    void testThatDeleteSensorReturnsHttp204IfSuccessful() throws Exception {
         SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
         station = sensorService.createNewSensorStation(station);
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/" + station.getReadId()))
                 .andExpect(MockMvcResultMatchers.status().isNoContent());
     }
 
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    void testThatRetrySensorConnectionReturnsHttp404NotFoundIfSensorNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/sensor-stations/"+UUID.randomUUID()+"/retry-connection"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    void testThatRetrySensorConnectionReturnsHttp200OkButDoesNotTriggerRaspberryIfNoRoomConnected() throws Exception {
+        SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).build();
+        station = sensorService.createNewSensorStation(station);
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/sensor-stations/"+station.getReadId()+"/retry-connection"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    void testThatDisconnectSensorFromRoomReturnsHttp404NotFoundIfSensorStationWasNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/"+UUID.randomUUID()+"/room"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    void testThatDisconnectSensorFromRoomReturnsHttp200OkEvenIfRoomWasNotAssigned() throws Exception {
+        SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).build();
+        station = sensorService.createNewSensorStation(station);
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/"+station.getReadId()+"/room"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        assertNull(sensorRepository.findAll().getFirst().getRoomMonitoring());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
+    void testThatDisconnectSensorFromRoomReturnsHttp200OkIfRoomWasAssigned() throws Exception {
+        SensorStation station = SensorStation.builder().name("Hallway-Sensor").status(DeviceStatus.OFFLINE).roomMonitoring(this.savedRoom).build();
+        station = sensorService.createNewSensorStation(station);
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/sensor-stations/"+station.getReadId()+"/room"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        assertNull(sensorRepository.findAll().getFirst().getRoomMonitoring());
+    }
 }

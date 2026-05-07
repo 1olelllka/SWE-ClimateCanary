@@ -2,6 +2,7 @@ package at.qe.skeleton.mappers;
 
 import at.qe.skeleton.dtos.WarningDTO;
 import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.Tip;
 import at.qe.skeleton.model.Warnings;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +22,7 @@ public class WarningMapper implements DTOMapper<Warnings, WarningDTO> {
                 entity.getActiveLimitAtTime(),
                 entity.getCreatedAt(),
                 entity.getResolvedAt(),
+                entity.getTip() != null ? entity.getTip().getMsg() : "There's no tip.",
                 entity.isActive()
         );
     }
@@ -36,6 +38,7 @@ public class WarningMapper implements DTOMapper<Warnings, WarningDTO> {
                 .measurementType(dto.measurementType())
                 .status(dto.status())
                 .message(dto.message())
+                .tip(Tip.builder().msg(dto.tip()).build())
                 .triggeredValue(dto.triggeredValue())
                 .activeLimitAtTime(dto.activeLimitAtTime())
                 .createdAt(dto.createdAt())

@@ -9,14 +9,17 @@ package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.dtos.LoginRequestDTO;
 import at.qe.skeleton.dtos.LoginResponseDTO;
+import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.services.AuthenticationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api")
 public class AuthenticationController {
@@ -35,7 +38,12 @@ public class AuthenticationController {
      * @return the JWT token
      */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> authenticateUser(@Valid @RequestBody LoginRequestDTO loginRequest) {
+    public ResponseEntity<LoginResponseDTO> authenticateUser(@RequestBody @Valid LoginRequestDTO loginRequest,
+                                                             BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
+            throw new ValidationException(msg);
+        }
         Authentication authentication = authenticationService.authenticateLoginRequest(loginRequest.username(), loginRequest.password());
         String token = authenticationService.generateToken(authentication);
         return ResponseEntity.ok(new LoginResponseDTO(token));

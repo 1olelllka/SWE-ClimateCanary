@@ -23,10 +23,7 @@ public interface WarningService {
     // Pi resolves warning
     WarningDTO resolveWarning(UUID warningId);
 
-    // violation log for UI table
-    List<WarningDTO> getViolationLog(Userx authenticated, UUID roomId);
+    List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, boolean active, LocalDate startDate, LocalDate endDate);
 
-    List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, Boolean active, LocalDate startDate, LocalDate endDate);
-
-    List<?> getDetailedViolationLogForDepartment(Userx user, UUID id, Boolean active, LocalDate startDate, LocalDate endDate);
+    List<?> getDetailedViolationLogForDepartment(Userx user, UUID id, boolean active, LocalDate startDate, LocalDate endDate);
 }
