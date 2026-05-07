@@ -4,6 +4,7 @@
 #include <ArduinoBLE.h>
 #include "config.h"
 #include "sensor_manager.h"
+#include "display_manager.h"
 
 class DisplayManager;
 class BLEMessageHandler;

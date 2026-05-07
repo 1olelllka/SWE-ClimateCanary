@@ -69,7 +69,7 @@ public class ClimateStatsController {
                 climateStatsService.getClimateHistoryFull(id, timeframe, granularity));
     }
 
-    @GetMapping("/rooms/{id}/limits")
+    @GetMapping("/rooms/{id}/climate-limits")
     public ResponseEntity<LimitDTO> getRoomLimits(@PathVariable UUID id) {
         return ResponseEntity.ok(climateStatsService.getLimits(id));
     }
