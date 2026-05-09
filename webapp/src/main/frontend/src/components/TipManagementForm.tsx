@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import globalAxios from 'axios';
 import { Button } from 'primereact/button';
+import { BASE_PATH } from '../generated-skeleton-api/base';
 
 import { TipConditionSelect } from './TipConditionSelect';
 import { TipEditor } from './TipEditor';
@@ -41,7 +42,7 @@ export const TipManagementForm: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        globalAxios.get<TipDTO[]>('/api/tips')
+        globalAxios.get<TipDTO[]>(`${BASE_PATH}/api/tips`)
             .then(response => {
                 const loadedTips = Array.isArray(response.data)
                     ? response.data
@@ -98,11 +99,11 @@ export const TipManagementForm: React.FC = () => {
 
         const request = selectedTip
             ? globalAxios.patch<TipDTO>(
-                `/api/tips/${selectedTip.id}`,
+                `${BASE_PATH}/api/tips/${selectedTip.id}`,
                 { message: currentMessage }
             )
             : globalAxios.post<TipDTO>(
-                '/api/tips',
+                `${BASE_PATH}/api/tips`,
                 buildCreateDTO(selectedOption, currentMessage)
             );
 
