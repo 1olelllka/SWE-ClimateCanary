@@ -18,6 +18,7 @@ import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 import SettingsPage from "./views/SettingsPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
+import TipManagement from "./views/TipManagement";
 
 export const HomePageRoute = {
     url: ROUTES.HOME,
@@ -83,6 +84,11 @@ export const BuildingRoomAnalysisRoute = {
     url: ROUTES.BUILDING_ROOM_ANALYSIS,
     component: BuildingRoomAnalysisPage
 };
+
+export const TipManagementRoute = {
+    url: ROUTES.TIPMANAGEMENT,
+    component: TipManagement
+}
 
 // referenced but not yet routed — kept to avoid unused-import warnings
 const _unused = [HomePage, EmployeeDashboard];

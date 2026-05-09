@@ -136,7 +136,7 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/sensor-stations/**")
                                         .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
 
-                                        .requestMatchers("/api/tips")
+                                        .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
 
                                         .requestMatchers("/api/**").authenticated()
