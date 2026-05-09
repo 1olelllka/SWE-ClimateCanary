@@ -11,6 +11,7 @@ import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;
+import at.qe.skeleton.dtos.RoomDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,9 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * Userx endpoints exposed by the server.
@@ -86,6 +89,26 @@ public class UserxController {
         Userx authenticated = userService.getByUsername(authentication.getName());
         Page<Absence> absences = absenceService.getAllAbsencesById(authenticated.getId(), pageable);
         return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
+    }
+
+    @GetMapping("/me/department/rooms")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_DEPARTMENT_MEASURES')")
+    public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
+        Userx authenticated = userService.getByUsername(authentication.getName());
+
+        if (authenticated.getMyRoom() == null || authenticated.getMyRoom().getDepartment() == null) {
+            throw new ValidationException("User has no assigned room or department.");
+        }
+
+        UUID departmentId = authenticated.getMyRoom().getDepartment().getId();
+
+        List<RoomDTO> rooms = roomRepository.findAll().stream()
+                .filter(room -> room.getDepartment() != null)
+                .filter(room -> room.getDepartment().getId().equals(departmentId))
+                .map(roomMapper::mapTo)
+                .toList();
+
+        return new ResponseEntity<>(rooms, HttpStatus.OK);
     }
 
 //    @GetMapping("/me/department/rooms")

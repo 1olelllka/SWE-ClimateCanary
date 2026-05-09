@@ -16,7 +16,7 @@ export const ThresholdViolationsTable: React.FC = () => {
             <DataTable value={mockViolations} {...defaultTableProps} rows={5}>
                 <Column field="warning" header="Warning" sortable></Column>
                 <Column field="room" header="Room" sortable></Column>
-                <Column field="type" header="Type"></Column>
+                <Column field="type" header="Type"></Column>a
                 <Column field="max" header="Max"></Column>
                 <Column field="real" header="Real value"></Column>
                 <Column field="date" header="Date" sortable></Column>
