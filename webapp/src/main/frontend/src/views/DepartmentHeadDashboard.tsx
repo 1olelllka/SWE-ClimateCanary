@@ -5,7 +5,10 @@ import { BASE_PATH } from '../generated-skeleton-api/base';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import { ThresholdViolationsTable } from '../components/ThresholdViolationsTable';
+import {
+    ThresholdViolationsTable,
+    ThresholdViolationData
+} from '../components/ThresholdViolationsTable';
 import { PendingRequestsTable } from '../components/PendingRequestsTable';
 import { NumberOfViolationsTable } from '../components/NumberOfViolationsTable';
 
@@ -39,6 +42,20 @@ interface ActiveWarning {
     status?: string;
     warningStatus?: string;
     violationStatus?: string;
+}
+
+interface WarningDTO {
+    id: string;
+    roomId: string;
+    deviceName?: string;
+    measurementType: string;
+    status: 'GREEN' | 'YELLOW' | 'RED' | string;
+    message: string;
+    triggeredValue: number;
+    activeLimitAtTime: number;
+    createdAt: string;
+    resolvedAt?: string | null;
+    active: boolean;
 }
 
 const extractArrayResponse = <T,>(responseData: unknown): T[] => {
@@ -179,12 +196,97 @@ const mapToRoomData = (
     } as RoomData;
 };
 
+const formatMeasurementType = (measurementType?: string): string => {
+    if (!measurementType) {
+        return 'Warning';
+    }
+
+    if (measurementType === 'TEMPERATURE') {
+        return 'Temperature';
+    }
+
+    if (measurementType === 'HUMIDITY') {
+        return 'Humidity';
+    }
+
+    if (measurementType === 'AIR') {
+        return 'Air Quality';
+    }
+
+    return measurementType
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+};
+
+const getMeasurementUnit = (measurementType?: string): string => {
+    if (measurementType === 'TEMPERATURE') {
+        return '°C';
+    }
+
+    if (measurementType === 'HUMIDITY') {
+        return '%';
+    }
+
+    if (measurementType === 'AIR') {
+        return 'ppm';
+    }
+
+    return '';
+};
+
+const formatDate = (dateString?: string): string => {
+    if (!dateString) {
+        return 'n/a';
+    }
+
+    return new Date(dateString).toLocaleDateString('de-DE');
+};
+
+const formatViolationNumber = (
+    value: number | null | undefined,
+    measurementType?: string
+): string => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+        return 'n/a';
+    }
+
+    const unit = getMeasurementUnit(measurementType);
+
+    if (measurementType === 'AIR') {
+        return `${value.toFixed(0)} ${unit}`.trim();
+    }
+
+    return `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+};
+
+const mapWarningToThresholdViolation = (
+    warning: WarningDTO,
+    roomLabel: string,
+    roomType: string
+): ThresholdViolationData => {
+    const measurementLabel = formatMeasurementType(warning.measurementType);
+
+    return {
+        id: warning.id,
+        warning: warning.message || `${measurementLabel} ${warning.status}`,
+        room: roomLabel,
+        type: roomType,
+        max: formatViolationNumber(warning.activeLimitAtTime, warning.measurementType),
+        real: formatViolationNumber(warning.triggeredValue, warning.measurementType),
+        date: formatDate(warning.createdAt)
+    };
+};
+
 export const DepartmentHeadDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
+    const [thresholdViolations, setThresholdViolations] = useState<ThresholdViolationData[]>([]);
+
     const [departmentName, setDepartmentName] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [violationsLoading, setViolationsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
@@ -199,6 +301,61 @@ export const DepartmentHeadDashboard: React.FC = () => {
         ]).then(([climate, warnings]) => {
             return mapToRoomData(room, climate, warnings);
         });
+    }, []);
+
+    const fetchThresholdViolations = useCallback((roomData: RoomData[]) => {
+        setViolationsLoading(true);
+
+        const roomsWithBackendId = roomData.filter(room => Boolean(room.backendId));
+
+        if (roomsWithBackendId.length === 0) {
+            setThresholdViolations([]);
+            setViolationsLoading(false);
+            return;
+        }
+
+        Promise.all(
+            roomsWithBackendId.map(room =>
+                globalAxios.get<WarningDTO[]>(`${BASE_PATH}/api/warnings/rooms/${room.backendId}/violations`)
+                    .then(response => {
+                        const warnings = Array.isArray(response.data)
+                            ? response.data
+                            : [];
+
+                        return warnings.map(warning =>
+                            mapWarningToThresholdViolation(
+                                warning,
+                                room.id,
+                                room.type
+                            )
+                        );
+                    })
+                    .catch(error => {
+                        console.warn(
+                            'Could not load violations for room',
+                            room.backendId,
+                            error.response?.status
+                        );
+
+                        return [];
+                    })
+            )
+        )
+            .then(results => {
+                const flattened = results.flat();
+
+                flattened.sort((a, b) => {
+                    const dateA = new Date(a.date.split('.').reverse().join('-')).getTime();
+                    const dateB = new Date(b.date.split('.').reverse().join('-')).getTime();
+
+                    return dateB - dateA;
+                });
+
+                setThresholdViolations(flattened);
+            })
+            .finally(() => {
+                setViolationsLoading(false);
+            });
     }, []);
 
     const fetchDepartmentRooms = useCallback(() => {
@@ -222,12 +379,14 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                 if (apiRooms.length === 0) {
                     setRooms([]);
+                    setThresholdViolations([]);
                     return;
                 }
 
                 return Promise.all(apiRooms.map(fetchRoomWithLiveData))
                     .then(roomData => {
                         setRooms(roomData);
+                        fetchThresholdViolations(roomData);
                     });
             })
             .catch(error => {
@@ -238,12 +397,13 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 );
 
                 setRooms([]);
+                setThresholdViolations([]);
                 setError('Department rooms could not be loaded.');
             })
             .finally(() => {
                 setLoading(false);
             });
-    }, [fetchRoomWithLiveData]);
+    }, [fetchRoomWithLiveData, fetchThresholdViolations]);
 
     useEffect(() => {
         fetchDepartmentRooms();
@@ -358,7 +518,10 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                 <RoomListTable rooms={rooms} />
 
-                <ThresholdViolationsTable />
+                <ThresholdViolationsTable
+                    violations={thresholdViolations}
+                    loading={violationsLoading}
+                />
 
                 <PendingRequestsTable />
 
