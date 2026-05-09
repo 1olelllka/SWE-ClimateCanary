@@ -4,25 +4,48 @@ import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
 import '../styles/Tables.css';
 
-const mockRequests = [
-    { first: 'Sarah', last: 'Deng', room: '015', date: '23.05.26 - 27.05.26', reason: 'Illness' },
-];
+export interface PendingRequestData {
+    readonly id: string;
+    readonly first: string;
+    readonly last: string;
+    readonly room: string;
+    readonly date: string;
+    readonly reason: string;
+}
 
-export const PendingRequestsTable: React.FC = () => {
+interface PendingRequestsTableProps {
+    readonly requests?: PendingRequestData[];
+    readonly loading?: boolean;
+}
+
+export const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
+                                                                              requests = [],
+                                                                              loading = false
+                                                                          }) => {
     const actionBodyTemplate = () => {
         return <button className="btn-primary-small">View</button>;
     };
 
     return (
         <div className="table-container">
-            <h3>Pending requests</h3>
-            <DataTable value={mockRequests} {...defaultTableProps}>
-                <Column field="first" header="Firstname" sortable></Column>
-                <Column field="last" header="Lastname" sortable></Column>
-                <Column field="room" header="Room" sortable></Column>
-                <Column field="date" header="Date"></Column>
-                <Column field="reason" header="Reason"></Column>
-                <Column body={actionBodyTemplate} exportable={false} style={{ minWidth: '8rem' }}></Column>
+            <h3>Pending Requests</h3>
+
+            <DataTable
+                value={requests}
+                {...defaultTableProps}
+                loading={loading}
+                emptyMessage="No pending requests found."
+            >
+                <Column field="first" header="Firstname" sortable />
+                <Column field="last" header="Lastname" sortable />
+                <Column field="room" header="Room" sortable />
+                <Column field="date" header="Date" />
+                <Column field="reason" header="Reason" />
+                <Column
+                    body={actionBodyTemplate}
+                    exportable={false}
+                    style={{ minWidth: '8rem' }}
+                />
             </DataTable>
         </div>
     );

@@ -5,13 +5,9 @@ import { BASE_PATH } from '../generated-skeleton-api/base';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import {
-    ThresholdViolationsTable,
-    ThresholdViolationData
-} from '../components/ThresholdViolationsTable';
-import { PendingRequestsTable } from '../components/PendingRequestsTable';
-import { NumberOfViolationsTable } from '../components/NumberOfViolationsTable';
-
+import {ThresholdViolationsTable, ThresholdViolationData} from '../components/ThresholdViolationsTable';
+import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
+import {NumberOfViolationsTable, ViolationStatsData} from '../components/NumberOfViolationsTable';
 interface RoomDTO {
     id: string;
     departmentID?: string;
@@ -56,6 +52,19 @@ interface WarningDTO {
     createdAt: string;
     resolvedAt?: string | null;
     active: boolean;
+}
+
+interface AbsenceListDTO {
+    id: string;
+    userId: string;
+    firstName: string;
+    lastName: string;
+    roomNumber?: string | null;
+    startDate: string;
+    endDate: string;
+    typeOfAbsence: string;
+    status: string;
+    createdAt: string;
 }
 
 const extractArrayResponse = <T,>(responseData: unknown): T[] => {
@@ -278,15 +287,84 @@ const mapWarningToThresholdViolation = (
     };
 };
 
+const formatAbsenceDateRange = (
+    startDate?: string,
+    endDate?: string
+): string => {
+    if (!startDate || !endDate) {
+        return 'n/a';
+    }
+
+    const start = new Date(startDate).toLocaleDateString('de-DE');
+    const end = new Date(endDate).toLocaleDateString('de-DE');
+
+    return `${start} - ${end}`;
+};
+
+const formatAbsenceReason = (reason?: string): string => {
+    if (!reason) {
+        return 'n/a';
+    }
+
+    return reason
+        .toLowerCase()
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, char => char.toUpperCase());
+};
+
+const mapAbsenceToPendingRequest = (
+    absence: AbsenceListDTO
+): PendingRequestData => {
+    return {
+        id: absence.id,
+        first: absence.firstName,
+        last: absence.lastName,
+        room: absence.roomNumber || 'n/a',
+        date: formatAbsenceDateRange(absence.startDate, absence.endDate),
+        reason: formatAbsenceReason(absence.typeOfAbsence)
+    };
+};
+
+const buildViolationStats = (
+    rooms: RoomData[],
+    violations: ThresholdViolationData[]
+): ViolationStatsData[] => {
+    return rooms.map(room => {
+        const roomViolations = violations.filter(
+            violation => violation.room === room.id
+        );
+
+        const lastViolation = roomViolations.length > 0
+            ? roomViolations
+                .map(violation => violation.date)
+                .sort((a, b) => {
+                    const dateA = new Date(a.split('.').reverse().join('-')).getTime();
+                    const dateB = new Date(b.split('.').reverse().join('-')).getTime();
+
+                    return dateB - dateA;
+                })[0]
+            : '-';
+
+        return {
+            room: room.id,
+            type: room.type,
+            violationsCount: roomViolations.length,
+            lastViolation
+        };
+    });
+};
+
 export const DepartmentHeadDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
     const [thresholdViolations, setThresholdViolations] = useState<ThresholdViolationData[]>([]);
+    const [pendingRequests, setPendingRequests] = useState<PendingRequestData[]>([]);
 
     const [departmentName, setDepartmentName] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [violationsLoading, setViolationsLoading] = useState(false);
+    const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
@@ -358,6 +436,33 @@ export const DepartmentHeadDashboard: React.FC = () => {
             });
     }, []);
 
+    const fetchPendingRequests = useCallback(() => {
+        setPendingRequestsLoading(true);
+
+        globalAxios.get(`${BASE_PATH}/api/absences?page=0&size=100`)
+            .then(response => {
+                const absences = extractArrayResponse<AbsenceListDTO>(response.data);
+
+                const pending = absences
+                    .filter(absence => absence.status === 'PENDING')
+                    .map(mapAbsenceToPendingRequest);
+
+                setPendingRequests(pending);
+            })
+            .catch(error => {
+                console.warn(
+                    'Could not load pending absence requests',
+                    error.response?.status,
+                    error.response?.data || error
+                );
+
+                setPendingRequests([]);
+            })
+            .finally(() => {
+                setPendingRequestsLoading(false);
+            });
+    }, []);
+
     const fetchDepartmentRooms = useCallback(() => {
         setLoading(true);
         setError(null);
@@ -407,11 +512,15 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
     useEffect(() => {
         fetchDepartmentRooms();
+        fetchPendingRequests();
 
-        const interval = window.setInterval(fetchDepartmentRooms, 30_000);
+        const interval = window.setInterval(() => {
+            fetchDepartmentRooms();
+            fetchPendingRequests();
+        }, 30_000);
 
         return () => window.clearInterval(interval);
-    }, [fetchDepartmentRooms]);
+    }, [fetchDepartmentRooms, fetchPendingRequests]);
 
     const problemRoomsCount = useMemo(() => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
@@ -462,6 +571,10 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
         return 'Good';
     }, [rooms]);
+
+    const violationStats = useMemo(() => {
+        return buildViolationStats(rooms, thresholdViolations);
+    }, [rooms, thresholdViolations]);
 
     return (
         <div className="dashboard-layout">
@@ -523,9 +636,15 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     loading={violationsLoading}
                 />
 
-                <PendingRequestsTable />
+                <PendingRequestsTable
+                    requests={pendingRequests}
+                    loading={pendingRequestsLoading}
+                />
 
-                <NumberOfViolationsTable />
+                <NumberOfViolationsTable
+                    stats={violationStats}
+                    loading={violationsLoading}
+                />
             </div>
         </div>
     );

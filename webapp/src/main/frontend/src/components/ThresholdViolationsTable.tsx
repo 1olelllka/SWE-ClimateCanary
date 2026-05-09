@@ -25,7 +25,7 @@ export const ThresholdViolationsTable: React.FC<ThresholdViolationsTableProps> =
                                                                                   }) => {
     return (
         <div className="table-container">
-            <h3>Threshold violations</h3>
+            <h3>Threshold Violations</h3>
 
             <DataTable
                 value={violations}
