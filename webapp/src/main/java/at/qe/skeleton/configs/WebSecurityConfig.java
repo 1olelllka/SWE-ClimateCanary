@@ -91,7 +91,7 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
                                         .requestMatchers("/api/users/me/department/rooms")
-                                        .hasAuthority(Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name())
+                                        .hasAuthority(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
 
                                         .requestMatchers("/api/users/me").authenticated()
 
@@ -136,7 +136,7 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/sensor-stations/**")
                                         .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
 
-                                        .requestMatchers("/api/tips")
+                                        .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
 
                                         .requestMatchers("/api/**").authenticated()

@@ -13,4 +13,5 @@ export const ROUTES = {
     SETTINGS: '/settings',
     DEPARTMENT_DETAIL: '/senior/department/:departmentName',
     BUILDING_ROOM_ANALYSIS: '/building-room-analysis/:roomId',
+    TIPMANAGEMENT: '/tipmanagement',
 } as const;
