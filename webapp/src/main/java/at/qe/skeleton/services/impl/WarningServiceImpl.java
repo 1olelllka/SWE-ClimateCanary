@@ -22,7 +22,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -50,7 +49,6 @@ public class WarningServiceImpl implements WarningService {
 
         boolean isDeptUser = hasAuthority(user, "CAN_VIEW_OWN_DEPARTMENT_WARNINGS");
         boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS");
-
         if (user.getMyRoom() != null) {
             // Department-level access
             if (isDeptUser) {
@@ -79,8 +77,6 @@ public class WarningServiceImpl implements WarningService {
                 );
             }
         }
-
-
         throw new ForbiddenException("You are not allowed to see warnings of this room.");
     }
 
@@ -89,7 +85,7 @@ public class WarningServiceImpl implements WarningService {
     @Transactional
     public WarningDTO createWarning(WarningCreateDTO dto) {
         RoomMonitoring room = roomMonitoringRepository.findById(dto.roomId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "RoomMonitoring not found: " + dto.roomId()));
 
         Warnings warning = warningCreateMapper.mapFrom(dto);
@@ -158,23 +154,9 @@ public class WarningServiceImpl implements WarningService {
         return warningMapper.mapTo(warningsRepository.save(warning));
     }
 
-    // full history of active and resolved warning for a specific room
-    @Override
-    public List<WarningDTO> getViolationLog(Userx user, UUID roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
-
-        if (!room.getDepartment().getId().equals(user.getMyRoom().getDepartment().getId())) {
-            throw new ForbiddenException("You are not allowed to see the violation log for this room.");
-        }
-
-        return mapToDTOs(
-                warningsRepository.findByRoomMonitoring_RoomId(roomId)
-        );
-    }
 
     @Override
-    public List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, Boolean active, LocalDate startDate, LocalDate endDate) {
+    public List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, boolean active, LocalDate startDate, LocalDate endDate) {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department with id " + id + " was not found."));
         List<Warnings> summary = new ArrayList<>();
@@ -184,8 +166,8 @@ public class WarningServiceImpl implements WarningService {
         } else {
             for (Room room : department.getRooms()) {
                 summary.addAll(warningsRepository.findByRoomMonitoring_RoomIdAndCreatedAtBetween(room.getId(),
-                        LocalDateTime.of(startDate, LocalTime.of(0, 0)),
-                        LocalDateTime.of(endDate, LocalTime.of(0, 0))));
+                        startOfDay(startDate),
+                        endOfDay(endDate)));
             }
         }
         return summary.stream()
@@ -199,12 +181,12 @@ public class WarningServiceImpl implements WarningService {
                         warning.getCreatedAt(),
                         warning.getResolvedAt(),
                         warning.isActive()
-                )).collect(Collectors.toList());
+                )).toList();
     }
 
     @Override
     public List<WarningDTO> getDetailedViolationLogForDepartment(Userx user, UUID id,
-                                                                 Boolean active,
+                                                                 boolean active,
                                                                  LocalDate startDate,
                                                                  LocalDate endDate) {
 
@@ -243,11 +225,11 @@ public class WarningServiceImpl implements WarningService {
 
     private Warnings findActiveWarningById(UUID warningId) {
         Warnings warning = warningsRepository.findById(warningId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Warning not found: " + warningId));
 
         if (!warning.isActive()) {
-            throw new IllegalStateException(
+            throw new ForbiddenException(
                     "Warning " + warningId + " is already resolved");
         }
         return warning;

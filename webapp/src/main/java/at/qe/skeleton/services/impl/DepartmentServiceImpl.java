@@ -9,7 +9,7 @@ import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.DepartmentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,34 +20,22 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final RoomRepository roomRepository;
     private final RoomMonitoringRepository monitoringRepository;
     private final RaspberryPiRepository raspberryPiRepository;
+    private final RoomServiceImpl roomService;
 
-    @Autowired
-    public DepartmentServiceImpl(DepartmentRepository departmentRepository,
-                                 RoomRepository roomRepository,
-                                 RoomMonitoringRepository monitoringRepository,
-                                 RaspberryPiRepository raspberryPiRepository) {
-        this.departmentRepository = departmentRepository;
-        this.roomRepository = roomRepository;
-        this.monitoringRepository = monitoringRepository;
-        this.raspberryPiRepository = raspberryPiRepository;
+    public Page<Department> getPageOfDepartments(Pageable pageable) {
+        return departmentRepository.findAll(pageable);
     }
 
-    public Page<Department> getPageOfDepartments(Pageable pageable) {return departmentRepository.findAll(pageable);}
-
-    public Department getDepartmentById(UUID id){
+    public Department getDepartmentById(UUID id) {
         return departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department not found with id: " + id));
     }
-
-//    public Department getDepartmentByName(String name){
-//        return departmentRepository.findByName(name)
-//                .orElseThrow(() -> new NotFoundException("Department not found with name: " + name));
-//    }
 
     public Department createDepartment(Department department) {
         if (departmentRepository.existsByNameAndBuildingId(department.getName(), department.getBuilding().getId())) {
@@ -65,27 +53,19 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         for (UUID roomId : existingRoomIds) {
             Room room = roomRepository.findById(roomId)
-                    .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
+                    .orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId)));
             if (roomRepository.existsByRoomNumberAndDepartmentId(room.getRoomNumber(), created.getId())) {
                 throw new ConflictException("Room '" + room.getRoomNumber() + "' already exists in this department.");
             }
             room.setDepartment(created);
             roomRepository.save(room);
+            created.addNewRoom(room);
         }
 
         for (Room newRoom : newRooms) {
             newRoom.setDepartment(created);
-            if (roomRepository.existsByRoomNumberAndDepartmentId(newRoom.getRoomNumber(), created.getId())) {
-                throw new ConflictException("Room '" + newRoom.getRoomNumber() + "' already exists in this department.");
-            }
-            Room saved = roomRepository.save(newRoom);
-            monitoringRepository.save(RoomMonitoring.builder()
-                    .roomId(saved.getId())
-                    .roomNumber(saved.getRoomNumber())
-                    .humLimit(HumidityLimit.builder().build())
-                    .tempLimit(TemperatureLimit.builder().build())
-                    .polLimit(PollutionLimit.builder().build())
-                    .build());
+            newRoom = roomService.createRoom(newRoom);
+            created.addNewRoom(newRoom);
         }
 
         return created;
@@ -153,21 +133,12 @@ public class DepartmentServiceImpl implements DepartmentService {
     public Department patchSpecificDepartment(UUID id, Department department) {
         return departmentRepository.findById(id).map(dep -> {
             Optional.ofNullable(department.getName()).ifPresent(name -> {
-                if (!name.equals(dep.getName()) && departmentRepository.existsByNameAndBuildingId(name, dep.getBuilding().getId())) throw new ConflictException("Department with the same name exists");
+                if (!name.equals(dep.getName()) && departmentRepository.existsByNameAndBuildingId(name, dep.getBuilding().getId()))
+                    throw new ConflictException("Department with the same name exists");
                 dep.setName(name);
             });
             Optional.ofNullable(department.getBuilding()).ifPresent(dep::setBuilding);
             return departmentRepository.save(dep);
-        }).orElseThrow(() -> new NotFoundException("Department with such id " + department.getId() + " was not found."));
+        }).orElseThrow(() -> new NotFoundException("Department with id %s was not found".formatted(department.getId())));
     }
-
-//    public List<Room> getRoomsByDepartment(UUID departmentId) {
-//        Department department = getDepartmentById(departmentId); // in DepartmentService
-//        return department.getRooms();
-//    }
-//
-//    public Building getBuildingOfDepartment(UUID departmentId) {
-//        Department department = getDepartmentById(departmentId);
-//        return department.getBuilding();
-//    }
 }

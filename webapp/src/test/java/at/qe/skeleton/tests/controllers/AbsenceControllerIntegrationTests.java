@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,7 +36,8 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
-public class AbsenceControllerIntegrationTests {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class AbsenceControllerIntegrationTests {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private AbsenceService absenceService;
@@ -94,13 +96,13 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatAbsenceEndpointsAreSecured() throws Exception {
+    void testThatAbsenceEndpointsAreSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
-    public void testThatGetAllAbsencesForEmployeeReturnsListOfUsersAbsences() throws Exception {
+    void testThatGetAllAbsencesForEmployeeReturnsListOfUsersAbsences() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "ROLE_EMPLOYEE");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences")
                 .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -109,7 +111,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatGetAllAbsencesForDepartmentManagerReturnsListOfAbsencesForDepartment() throws Exception {
+    void testThatGetAllAbsencesForDepartmentManagerReturnsListOfAbsencesForDepartment() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.manager.getUsername(), this.manager, "ROLE_DEPARTMENT_MANAGER");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences")
                 .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -119,7 +121,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(roles = "BUILDING_MANAGER")
-    public void testThatCreateAbsenceIsSecured() throws Exception {
+    void testThatCreateAbsenceIsSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -128,7 +130,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp400IfValidationFails() throws Exception {
+    void testThatCreateAbsenceReturnsHttp400IfValidationFails() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{}"))
@@ -137,7 +139,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp400IfStartDateIsAfterEndDate() throws Exception {
+    void testThatCreateAbsenceReturnsHttp400IfStartDateIsAfterEndDate() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.of(2028, 2, 2, 0, 0),
                 LocalDateTime.of(2026, 2, 2, 0, 0),
@@ -152,7 +154,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp404IfManagerWasNotFound() throws Exception {
+    void testThatCreateAbsenceReturnsHttp404IfManagerWasNotFound() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(5),
@@ -167,7 +169,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp403IfManagerRoleIsIncorrect() throws Exception {
+    void testThatCreateAbsenceReturnsHttp403IfManagerRoleIsIncorrect() throws Exception {
         Userx mockManager = TestDataUtil.createUserxEntity(userRoleService.getListOfPermissions().stream().filter(r -> r.getName().equals("EMPLOYEE")).toList().getFirst(), null);
         mockManager.setUsername("mockManager");
         mockManager.setPassword("passwd");
@@ -187,7 +189,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp403IfDepartmentOfManagerIsIncorrect() throws Exception {
+    void testThatCreateAbsenceReturnsHttp403IfDepartmentOfManagerIsIncorrect() throws Exception {
         Department dep = TestDataUtil.createDepartmentEntity(this.building);
         dep.setName("Another department");
         dep = departmentService.createDepartment(dep);
@@ -211,7 +213,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatCreateAbsenceReturnsHttp201AndCreatedAbsence() throws Exception {
+    void testThatCreateAbsenceReturnsHttp201AndCreatedAbsence() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(5),
@@ -227,7 +229,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_ABSENCES")
-    public void testThatPatchAbsenceReturnsHttp400IfValidationFails() throws Exception {
+    void testThatPatchAbsenceReturnsHttp400IfValidationFails() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString("{}")))
@@ -236,7 +238,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_ABSENCES")
-    public void testThatPatchAbsenceReturnsHttp404IfAbsenceWasNotFound() throws Exception {
+    void testThatPatchAbsenceReturnsHttp404IfAbsenceWasNotFound() throws Exception {
         AbsencePatchDTO dto = new AbsencePatchDTO(AbsenceStatus.APPROVED);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -246,7 +248,7 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_ABSENCES")
-    public void testThatPatchAbsenceReturnsHttp200OkAndUpdatedAbsence() throws Exception {
+    void testThatPatchAbsenceReturnsHttp200OkAndUpdatedAbsence() throws Exception {
         AbsencePatchDTO dto = new AbsencePatchDTO(AbsenceStatus.APPROVED);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + this.mockedAbsence.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -258,13 +260,13 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatDeleteAbsenceReturnsHttp404IfAbsenceDoesNotExist() throws Exception {
+    void testThatDeleteAbsenceReturnsHttp404IfAbsenceDoesNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/" + UUID.randomUUID()))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
-    public void testThatDeleteAbsenceReturnsHttp403ForbiddenIfAbsenceDoesNotBelongToUser() throws Exception {
+    void testThatDeleteAbsenceReturnsHttp403ForbiddenIfAbsenceDoesNotBelongToUser() throws Exception {
         Userx otherUser = TestDataUtil.createUserxEntity(null, null);
         otherUser.setUsername("u");
         otherUser.setPassword("passwd");
@@ -277,7 +279,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatDeleteAbsenceReturnsHttp204NoContentOnSuccessfulDeletion() throws Exception {
+    void testThatDeleteAbsenceReturnsHttp204NoContentOnSuccessfulDeletion() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/" + this.mockedAbsence.getId())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -287,13 +289,13 @@ public class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_ABSENCES")
-    public void testThatGetSpecificAbsenceReturnsHttp404IfAbsenceWasNotFound() throws Exception {
+    void testThatGetSpecificAbsenceReturnsHttp404IfAbsenceWasNotFound() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences/" + UUID.randomUUID()))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
-    public void testThatGetSpecificAbsenceReturnsHttp403IfAssignedIDIsOther() throws Exception {
+    void testThatGetSpecificAbsenceReturnsHttp403IfAssignedIDIsOther() throws Exception {
         Userx mockManager = TestDataUtil.createUserxEntity(userRoleService.getListOfPermissions().stream().filter(r -> r.getName().equals("EMPLOYEE")).toList().getFirst(), null);
         mockManager.setUsername("mockManager");
         mockManager.setPassword("passwd");
@@ -305,7 +307,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatGetSpecificAbsenceReturnsHttp200Ok() throws Exception {
+    void testThatGetSpecificAbsenceReturnsHttp200Ok() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.manager.getUsername(), this.manager, "CAN_MANAGE_ABSENCES");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences/" + this.mockedAbsence.getId())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -314,7 +316,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockInReturnsHttp409ConflictIfUserHasAlreadyClockedIn() throws Exception {
+    void testThatClockInReturnsHttp409ConflictIfUserHasAlreadyClockedIn() throws Exception {
 
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
@@ -323,7 +325,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockInReturnsHttp200OkIfUserDoesNotHaveRoomAndTheStatusIsUpdated() throws Exception {
+    void testThatClockInReturnsHttp200OkIfUserDoesNotHaveRoomAndTheStatusIsUpdated() throws Exception {
         Userx sampleUser = TestDataUtil.createUserxEntity(userRoleService.getListOfPermissions().stream().filter(u -> u.getName().equals("EMPLOYEE")).toList().getFirst(), null);
         sampleUser.setUsername("sample username");
         sampleUser.setPassword("passwd");
@@ -336,7 +338,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsNotInRedis() throws Exception {
+    void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsNotInRedis() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
         when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString())).thenReturn(Optional.empty());
@@ -347,7 +349,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsInRedis() throws Exception {
+    void testThatClockInReturnsHttp200OkOnSuccessfulClockInIfItIsInRedis() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), false)));
         when(roomOccupancyRepository.findById(this.user.getMyRoom().getId().toString())).thenReturn(Optional.of(new RoomOccupancy(this.user.getMyRoom().getId(), 10)));
@@ -358,13 +360,13 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutEndpointIsSecured() throws Exception {
+    void testThatClockOutEndpointIsSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/absences/clock-out"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
-    public void testThatClockOutReturnsHttp409ConflictIfUserNeverClockedIn() throws Exception {
+    void testThatClockOutReturnsHttp409ConflictIfUserNeverClockedIn() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(
                 this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.empty());
@@ -375,7 +377,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutReturnsHttp409ConflictIfUserAlreadyClockedOut() throws Exception {
+    void testThatClockOutReturnsHttp409ConflictIfUserAlreadyClockedOut() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(
                 this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString()))
@@ -387,7 +389,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutReturnsHttp200OkIfUserHasNoRoom() throws Exception {
+    void testThatClockOutReturnsHttp200OkIfUserHasNoRoom() throws Exception {
         Userx userWithoutRoom = TestDataUtil.createUserxEntity(
                 userRoleService.getListOfPermissions().stream().filter(u -> u.getName().equals("EMPLOYEE")).toList().getFirst(), null);
         userWithoutRoom.setUsername("clockout-noroomuser");
@@ -407,7 +409,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutReturnsHttp200OkAndDecrementsOccupancyWhenRecordExists() throws Exception {
+    void testThatClockOutReturnsHttp200OkAndDecrementsOccupancyWhenRecordExists() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(
                 this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString()))
@@ -424,7 +426,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutReturnsHttp200OkAndCreatesOccupancyRecordWhenNoneExists() throws Exception {
+    void testThatClockOutReturnsHttp200OkAndCreatesOccupancyRecordWhenNoneExists() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(
                 this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString()))
@@ -441,7 +443,7 @@ public class AbsenceControllerIntegrationTests {
     }
 
     @Test
-    public void testThatClockOutDoesNotDecrementOccupancyBelowZero() throws Exception {
+    void testThatClockOutDoesNotDecrementOccupancyBelowZero() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(
                 this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         when(clockRepository.findById(this.user.getId().toString()))
@@ -455,6 +457,30 @@ public class AbsenceControllerIntegrationTests {
 
         verify(roomOccupancyRepository, times(1)).save(any(RoomOccupancy.class));
         verify(clockRepository, times(1)).save(any(UserClockStatus.class));
+    }
+
+    @Test
+    void testThatGetClockStatusReturnsHttp200OkAndTrueClockStatus() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "ROLE_EMPLOYEE"
+        );
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.of(new UserClockStatus(this.user.getId(), true)));
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/absences/clock-status")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.clockedIn").value("true"));
+    }
+
+    @Test
+    void testThatGetClockStatusReturnsHttp200OkAndFalseClockStatus() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "ROLE_EMPLOYEE"
+        );
+        when(clockRepository.findById(this.user.getId().toString())).thenReturn(Optional.empty());
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/absences/clock-status")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.clockedIn").value("false"));
     }
 
 }
