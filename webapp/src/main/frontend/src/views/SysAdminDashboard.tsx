@@ -399,15 +399,16 @@ const SysAdminDashboard: React.FC = () => {
         if (Object.keys(errors).length > 0) { setDeptFormErrors(errors); return; }
         setDeptDialogLoading(true);
         try {
-            const res = await new DepartmentControllerApi().patchSpecificDepartment({
-                departmentId: editingDeptId!,
-                departmentEditWithRoomsDTO: {
-                    name: deptForm.name,
-                    buildingID: deptForm.buildingID,
-                    roomIdsToDelete: deptForm.roomIdsToDelete,
-                    existingRoomIdsToAssign: deptForm.existingRoomIds,
-                    newRooms: deptForm.rooms.map(r => ({ name: r.name, roomType: r.roomType, defaultPeopleCount: r.defaultPeopleCount })),
-                },
+            const res = await globalAxios.patch(`/api/departments/${editingDeptId}`, {
+                name: deptForm.name,
+                buildingID: deptForm.buildingID,
+                roomIdsToDelete: deptForm.roomIdsToDelete,
+                existingRoomIdsToAssign: deptForm.existingRoomIds,
+                newRooms: deptForm.rooms.map(r => ({
+                    name: r.name,
+                    roomType: r.roomType,
+                    defaultPeopleCount: r.defaultPeopleCount
+                })),
             });
             setDepartments(prev => prev.map(d => d.id === res.data.id
                 ? { ...d, name: res.data.name, buildingID: res.data.buildingID, buildingName: buildings.find(b => b.id === res.data.buildingID)?.name }
