@@ -4,6 +4,7 @@ import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
@@ -21,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,6 +68,7 @@ class AbsenceServiceUnitTests {
                 .permissions(Set.of(Permission.CAN_MANAGE_ABSENCES)).build()));
 
         absence = TestDataUtil.createAbsence(user);
+        this.user.setNumberOfAbsences((int) (25 - ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
         absence.setId(UUID.randomUUID());
         absence.setAssignedTo(manager.getId());
 
@@ -101,6 +105,16 @@ class AbsenceServiceUnitTests {
 
         assertEquals(expected, result);
         verify(absenceRepository).findByAssignedTo(manager.getId(), pageable);
+    }
+
+    @Test
+    void testThatCreateNewAbsenceThrowsValidationExceptionIfTooManyDaysChosen() {
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        absence.setEndDate(LocalDateTime.MAX);
+        assertThrows(ValidationException.class, () -> absenceService.createNewAbsenceForUser(absence));
+
+        verify(absenceRepository, never()).save(absence);
     }
 
     @Test
@@ -167,6 +181,7 @@ class AbsenceServiceUnitTests {
         assertThrows(ForbiddenException.class, () -> absenceService.getAbsenceById(absence.getId(), wrongManager));
     }
 
+
     @Test
     void testThatDeleteAbsenceByIdSucceedsForOwner() {
         when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
@@ -193,7 +208,7 @@ class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatUpdateAbsenceStatusChangesStatusSuccessfully() {
+    void testThatUpdateAbsenceStatusChangesStatusSuccessfullyAndUsersAvailableDays() {
         when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
         when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
         when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
@@ -202,6 +217,21 @@ class AbsenceServiceUnitTests {
         Absence result = absenceService.updateAbsenceStatus(absence.getId(), AbsenceStatus.REJECTED);
 
         assertEquals(AbsenceStatus.REJECTED, result.getStatus());
+        assertEquals(25, this.user.getNumberOfAbsences());
+        verify(absenceRepository).save(absence);
+    }
+
+    @Test
+    void testThatUpdateAbsenceStatusChangesStatusSuccessfullyWithoutUpdatingUsersAvailableDays() {
+        when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(absenceRepository.save(any(Absence.class))).thenAnswer(i -> i.getArgument(0));
+
+        Absence result = absenceService.updateAbsenceStatus(absence.getId(), AbsenceStatus.APPROVED);
+
+        assertEquals(AbsenceStatus.APPROVED, result.getStatus());
+        assertNotEquals(25, this.user.getNumberOfAbsences());
         verify(absenceRepository).save(absence);
     }
 

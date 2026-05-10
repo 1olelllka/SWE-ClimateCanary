@@ -26,11 +26,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -213,6 +215,21 @@ class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
+    void testThatCreateAbsenceReturnsHttp400BadRequestIfNumberOfDaysIsTooBig() throws Exception {
+        AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(30),
+                AbsenceType.ILLNESS,
+                "Comment",
+                this.manager.getId());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
     void testThatCreateAbsenceReturnsHttp201AndCreatedAbsence() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.now().plusDays(1),
@@ -225,6 +242,7 @@ class AbsenceControllerIntegrationTests {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists());
+        assertEquals(12, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
     }
 
     @Test
@@ -257,6 +275,20 @@ class AbsenceControllerIntegrationTests {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.mockedAbsence.getId().toString()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(dto.status().name()));
     }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_ABSENCES")
+    void testThatPatchAbsenceReturnsHttp200OkAndUpdatedAbsenceWithNewAbsenceDaysForUser() throws Exception {
+        AbsencePatchDTO dto = new AbsencePatchDTO(AbsenceStatus.REJECTED);
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + this.mockedAbsence.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.mockedAbsence.getId().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(dto.status().name()));
+        assertEquals(25, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
+    }
+
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")

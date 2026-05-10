@@ -39,6 +39,8 @@ public class Userx implements Comparable<Userx>, UserDetails {
   private String firstName;
   private String lastName;
   private LocalDateTime snoozedWarningsUntil;
+  @Builder.Default
+  private Integer numberOfAbsences = 25;
 
   @ManyToMany(cascade = CascadeType.MERGE)
   @JoinTable(name = "User_UserRole",

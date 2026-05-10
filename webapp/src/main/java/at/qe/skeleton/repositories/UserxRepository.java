@@ -19,8 +19,8 @@ public interface UserxRepository extends JpaRepository<Userx, UUID> {
     @Query("SELECT u FROM Userx u WHERE CONCAT(u.firstName, ' ', u.lastName) = :wholeName")
     List<Userx> findByWholeNameConcat(@Param("wholeName") String wholeName);
 
-    @Query("SELECT u FROM Userx u WHERE :role MEMBER OF u.userRoles")
-    List<Userx> findByRole(@Param("role") UserRole role);
+    @Query("SELECT u FROM Userx u JOIN u.userRoles r WHERE r.name = :roleName")
+    List<Userx> findByRoleName(@Param("roleName") String roleName);
 
     @Query("SELECT u FROM Userx u LEFT JOIN FETCH u.userRoles r LEFT JOIN FETCH r.permissions LEFT JOIN FETCH u.myRoom room LEFT JOIN FETCH room.department WHERE u.username = :username")
     Optional<Userx> findByUsernameWithRoles(@Param("username") String username);
