@@ -1,9 +1,6 @@
 package at.qe.skeleton.feign;
 
-import at.qe.skeleton.dtos.ConfigRequestDTO;
-import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
-import at.qe.skeleton.dtos.OccupancyDTO;
-import at.qe.skeleton.dtos.StateChangeNotificationDTO;
+import at.qe.skeleton.dtos.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,4 +31,8 @@ public interface NotificationClient {
     @PostMapping("/api/retry-sensor")
     ResponseEntity<Void> retrySensorConnection(URI baseUrl,
                                                @RequestParam UUID[] sensorIds);
+
+    @PostMapping("/api/tips")
+    ResponseEntity<Void> sendTips(URI baseUrl,
+                                  @RequestBody RaspberryTipDTO dto);
 }
