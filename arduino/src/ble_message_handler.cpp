@@ -23,7 +23,14 @@ void BLEMessageHandler::handleRxMessage(
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);
   } else if (received.startsWith("FREQUENCY:")) {
-    //TODO: update frequency based on message
+    String frequency = received.substring(10);
+    frequency.trim();
+
+    unsigned long newIntervalMs = frequency.toInt();
+
+    if(newIntervalMs > 0) {
+      manager->measureAndSendIntervalMs = newIntervalMs;
+    } 
   } else if (received.startsWith("WARNTEXT:")) {
     int thresholdIndex = received.indexOf("TRESHOLD:");
     int tipIndex = received.indexOf("TIP:");
