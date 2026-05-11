@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,8 +49,10 @@ public class DepartmentController {
     }
 
     @GetMapping("{department_id}")
-    public ResponseEntity<DepartmentDTO> getSpecificDepartment(@PathVariable(name = "department_id") UUID id) {
-        Department department = departmentService.getDepartmentById(id);
+    @PreAuthorize("hasRole('DEPARTMENT_MANAGER') or hasRole('EMPLOYEE')")
+    public ResponseEntity<DepartmentDTO> getSpecificDepartment(@PathVariable(name = "department_id") UUID id,
+                                                               @RequestParam(name = "onlyShared") boolean shared) {
+        Department department = departmentService.getDepartmentById(id, shared);
         return new ResponseEntity<>(departmentDetailMapper.mapTo(department), HttpStatus.OK);
     }
 

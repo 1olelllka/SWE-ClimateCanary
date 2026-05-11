@@ -130,13 +130,14 @@ public class WebSecurityConfig {
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()
                                         )
-
+                                        .requestMatchers(HttpMethod.GET, "/api/departments/*")
+                                        .authenticated()
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
 
-                                        .requestMatchers(HttpMethod.PATCH, "/api/sensor-stations/**")
+                                        .requestMatchers(HttpMethod.PATCH, "/api/sensor-stations/*")
                                         .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
-                                        .requestMatchers(HttpMethod.GET, "/api/sensor-stations/**")
+                                        .requestMatchers(HttpMethod.GET, "/api/sensor-stations/*")
                                         .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
                                         .requestMatchers("/api/sensor-stations/**")
                                         .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name())
