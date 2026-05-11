@@ -25,7 +25,7 @@ void BLEMessageHandler::handleRxMessage(
   } else if (received.startsWith("FREQUENCY:")) {
     //TODO: update frequency based on message
   } else if (received.startsWith("WARNTEXT:")) {
-  int thresholdIndex = received.indexOf("TRESHOLD:");
+    int thresholdIndex = received.indexOf("TRESHOLD:");
     int tipIndex = received.indexOf("TIP:");
 
     if (thresholdIndex != -1 && tipIndex != -1) {
@@ -53,7 +53,13 @@ void BLEMessageHandler::handleRxMessage(
       );
     } 
   } else if (received.startsWith("ERROR:")) {
-    //TODO: implement error code handling based on message
-  }
+      String faultText = received.substring(6);
+      faultText.trim();
 
+      if (faultText.length() > 0) {
+        Serial.println("Parsed fault: " + faultText);
+
+        manager->displayManager->setFault(faultText);
+      }
+  }
 }
