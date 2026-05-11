@@ -132,7 +132,7 @@ public class WarningServiceImpl implements WarningService {
         }
         if (room.getRaspberryPi() != null && warning.getTip() != null) {
             eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                    new RaspberryTipDTO(warning.getTip().getMsg(), warning.getDeviceName()),
+                    new RaspberryTipDTO(warning.getTip().getMsg(), warning.getSensorWriteId(), warning.getDeviceName()),
                     room.getRaspberryPi(),
                     notificationClient
             ));

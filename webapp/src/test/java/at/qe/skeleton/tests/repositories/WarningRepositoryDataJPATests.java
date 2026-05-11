@@ -410,6 +410,7 @@ class WarningRepositoryDataJPATests {
                 .status(resolvedAt == null ? WarningStatus.RED : WarningStatus.GREEN)
                 .measurementType(MeasurementType.TEMPERATURE)
                 .roomMonitoring(room)
+                .sensorWriteId(UUID.randomUUID())
                 .build());
     }
 }

@@ -98,9 +98,9 @@ class WarningControllerIntegrationTests {
     void testThatGetWarningsForRoomForEmployeeReturnsOnlyCurrentWarnings() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.employee.getUsername(), this.employee, this.employee.getAuthorities());
         WarningDTO warning1 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/rooms/"+this.room.getRoomId()+"?activeOnly=true&startDate="+ LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -125,9 +125,9 @@ class WarningControllerIntegrationTests {
     void testThatGetWarningsForDepartmentManagerReturnsHttp200OkAndResolvedAndActiveWarningsForRoom() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.deptManager.getUsername(), this.deptManager, this.deptManager.getAuthorities());
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/rooms/"+this.room.getRoomId()+"?activeOnly=false&startDate="+ LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -140,9 +140,9 @@ class WarningControllerIntegrationTests {
     void testThatGetWarningsForDepartmentManagerReturnsHttp200OkAndOnlyActiveWarningsForRoom() throws Exception {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.deptManager.getUsername(), this.deptManager, this.deptManager.getAuthorities());
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/rooms/"+this.room.getRoomId()+"?activeOnly=true&startDate="+ LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -163,9 +163,9 @@ class WarningControllerIntegrationTests {
         userxRepository.save(this.deptManager);
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.deptManager.getUsername(), this.deptManager, this.deptManager.getAuthorities());
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/rooms/"+this.room.getRoomId()+"?activeOnly=true&startDate="+ LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -176,7 +176,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp404NotFoundIfRoomWasNotFound() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(UUID.randomUUID(), "name", MeasurementType.TEMPERATURE,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg", UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -187,7 +187,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp400BadRequestIfValidationFails() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(UUID.randomUUID(), "", MeasurementType.TEMPERATURE,
-                null, 100, 43, "msg");
+                null, 100, 43, "msg", UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -198,7 +198,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndNoTipsForTemperature() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.TEMPERATURE,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -212,7 +212,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndNoTipsForHumidity() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.HUMIDITY,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -226,7 +226,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndNoTipsForAir() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.CO2,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -240,7 +240,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndTipsForTemperature() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.TEMPERATURE,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         tipRepository.save(Tip.builder().violationType(ViolationType.OVER).violationStatus(WarningStatus.GREEN).violatedSensor(ViolatedSensor.TEMPERATURE).msg("Open the window").build());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -256,7 +256,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndTipsForHumidity() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.HUMIDITY,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         tipRepository.save(Tip.builder().violationType(ViolationType.OVER).violationStatus(WarningStatus.GREEN).violatedSensor(ViolatedSensor.HUMIDITY).msg("Open the window").build());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -271,7 +271,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatCreateNewWarningReturnsHttp201CreatedAndTipsForAir() throws Exception {
         WarningCreateDTO dto = new WarningCreateDTO(this.room.getRoomId(), "name", MeasurementType.CO2,
-                WarningStatus.GREEN, 100, 43, "msg");
+                WarningStatus.GREEN, 100, 43, "msg",  UUID.randomUUID());
         tipRepository.save(Tip.builder().violationType(ViolationType.OVER).violationStatus(WarningStatus.GREEN).violatedSensor(ViolatedSensor.AIR).msg("Open the window").build());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/warnings")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -293,7 +293,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatResolveWarningReturnsHttp403ForbiddenIfWarningIsAlreadyResolved() throws Exception {
         WarningDTO dto = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip",  UUID.randomUUID()));
         warningService.resolveWarning(dto.id());
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/warnings/"+dto.id()+"/resolve"))
                 .andExpect(MockMvcResultMatchers.status().isForbidden());
@@ -303,7 +303,7 @@ class WarningControllerIntegrationTests {
     @WithMockUser(authorities = "CAN_SEND_WARNINGS")
     void testThatResolveWarningReturnsHttp200OkIfResolvedSuccessfully() throws Exception {
         WarningDTO dto = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip",  UUID.randomUUID()));
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/warnings/"+dto.id()+"/resolve"))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
@@ -337,15 +337,15 @@ class WarningControllerIntegrationTests {
     void testThatGetDetailedViolationLogForDepartmentReturnsHttp200OkAndAllActiveWarningsFromDifferentRoomsWithinDepartment() throws Exception {
         UUID deptID = departmentRepository.findAll().getFirst().getId();
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip",  UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip",  UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         Room room2 = TestDataUtil.createRoomEntity(departmentRepository.findAll().getFirst());
         room2.setRoomNumber("Another room");
         room2 = roomService.createRoom(room2);
         warningService.createWarning(new WarningCreateDTO(room2.getId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.deptManager.getUsername(), this.deptManager, this.deptManager.getAuthorities());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/departments/"+deptID+"/summary?onlyActive=true&startDate="+LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -361,15 +361,15 @@ class WarningControllerIntegrationTests {
     void testThatGetDetailedViolationLogForDepartmentReturnsHttp200OkAndAllWarningsFromDifferentRoomsWithinDepartment() throws Exception {
         UUID deptID = departmentRepository.findAll().getFirst().getId();
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         Room room2 = TestDataUtil.createRoomEntity(departmentRepository.findAll().getFirst());
         room2.setRoomNumber("Another room");
         room2 = roomService.createRoom(room2);
         warningService.createWarning(new WarningCreateDTO(room2.getId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.deptManager.getUsername(), this.deptManager, this.deptManager.getAuthorities());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/departments/"+deptID+"/summary?onlyActive=false&startDate="+LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -394,15 +394,15 @@ class WarningControllerIntegrationTests {
     void testThatGetViolationLogForHigherManagementReturnsHttp200OkAndAllActiveWarningsFromDifferentRoomsWithinDepartmentWithAnonymousRooms() throws Exception {
         UUID deptID = departmentRepository.findAll().getFirst().getId();
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         Room room2 = TestDataUtil.createRoomEntity(departmentRepository.findAll().getFirst());
         room2.setRoomNumber("Another room");
         room2 = roomService.createRoom(room2);
         warningService.createWarning(new WarningCreateDTO(room2.getId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.senior.getUsername(), this.senior, this.senior.getAuthorities());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/departments/"+deptID+"/summary?onlyActive=true&startDate="+LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
@@ -418,15 +418,15 @@ class WarningControllerIntegrationTests {
     void testThatGetViolationLogForHigherManagementReturnsHttp200OkAndAllWarningsFromDifferentRoomsWithinDepartmentWithAnonymousRooms() throws Exception {
         UUID deptID = departmentRepository.findAll().getFirst().getId();
         warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip"));
+                MeasurementType.TEMPERATURE, WarningStatus.GREEN, 100, 41, "tip", UUID.randomUUID()));
         WarningDTO warning2 = warningService.createWarning(new WarningCreateDTO(this.room.getRoomId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         warningService.resolveWarning(warning2.id());
         Room room2 = TestDataUtil.createRoomEntity(departmentRepository.findAll().getFirst());
         room2.setRoomNumber("Another room");
         room2 = roomService.createRoom(room2);
         warningService.createWarning(new WarningCreateDTO(room2.getId(), "Device",
-                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip"));
+                MeasurementType.HUMIDITY, WarningStatus.RED, 100, 12, "tip", UUID.randomUUID()));
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.senior.getUsername(), this.senior, this.senior.getAuthorities());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/departments/"+deptID+"/summary?onlyActive=false&startDate="+LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))

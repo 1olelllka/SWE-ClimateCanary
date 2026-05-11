@@ -33,6 +33,9 @@ public class Warnings {
     private double activeLimitAtTime;
 
     @Column(nullable = false)
+    private UUID sensorWriteId;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column

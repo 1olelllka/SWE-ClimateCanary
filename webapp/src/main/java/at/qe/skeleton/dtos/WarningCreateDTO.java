@@ -27,6 +27,9 @@ public record WarningCreateDTO(
         double activeLimitAtTime,
 
         @NotEmpty(message = "Message must not be empty.") //thought can be null if not set
-        String message
+        String message,
+
+        @NotNull(message = "Sensor write ID must not be null.")
+        UUID sensorWriteId
 ) {
 }

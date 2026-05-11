@@ -30,7 +30,7 @@ public class WarningCreateMapperUnitTests {
     public void testThatMapFromDTOWorksFine() {
         UUID roomId = UUID.randomUUID();
         WarningCreateDTO dto = new WarningCreateDTO(roomId, "Test Device", MeasurementType.TEMPERATURE, WarningStatus.YELLOW,
-                10.0, 20, "Msg");
+                10.0, 20, "Msg", UUID.randomUUID());
         Warnings result = mapper.mapFrom(dto);
         assertAll(
                 () -> assertEquals(dto.message(), result.getMessage()),

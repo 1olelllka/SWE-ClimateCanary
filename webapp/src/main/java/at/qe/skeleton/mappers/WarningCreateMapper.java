@@ -25,6 +25,7 @@ public class WarningCreateMapper implements DTOMapper<Warnings, WarningCreateDTO
                 .activeLimitAtTime(dto.activeLimitAtTime())
                 .createdAt(LocalDateTime.now())
                 .resolvedAt(null)
+                .sensorWriteId(dto.sensorWriteId())
                 .build();
     }
 }
