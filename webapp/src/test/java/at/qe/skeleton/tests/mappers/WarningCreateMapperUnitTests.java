@@ -29,12 +29,12 @@ public class WarningCreateMapperUnitTests {
     @DisplayName("map from DTO works fine and resolved date is null")
     public void testThatMapFromDTOWorksFine() {
         UUID roomId = UUID.randomUUID();
-        WarningCreateDTO dto = new WarningCreateDTO(roomId, "Test Device", MeasurementType.TEMPERATURE, WarningStatus.YELLOW,
-                10.0, 20, "Msg");
+        WarningCreateDTO dto = new WarningCreateDTO(roomId, MeasurementType.TEMPERATURE, WarningStatus.YELLOW,
+                10.0, 20, "Msg", UUID.randomUUID());
         Warnings result = mapper.mapFrom(dto);
         assertAll(
                 () -> assertEquals(dto.message(), result.getMessage()),
-                () -> assertEquals(dto.device(), result.getDeviceName()),
+                () -> assertEquals(dto.sensorWriteId(), result.getSensorWriteId()),
                 () -> assertEquals(dto.measurementType(), result.getMeasurementType()),
                 () -> assertNull(result.getRoomMonitoring()),
                 () -> assertEquals(dto.status(), result.getStatus()),

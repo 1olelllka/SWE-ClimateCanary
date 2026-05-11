@@ -21,8 +21,6 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     private LimitChangeNotificationDTO limitDto = null;
     private OccupancyDTO occupancyDTO = null;
     private ConfigRequestDTO configRequestDTO = null;
-    private RaspberryTipDTO tipDto = null;
-
 
     public NotifyRaspberryCommand(StateChangeNotificationDTO dto,
                                   UUID readId,
@@ -69,14 +67,6 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         this.client = client;
     }
 
-    public NotifyRaspberryCommand(RaspberryTipDTO dto,
-                                  RaspberryPi pi,
-                                  NotificationClient client) {
-        this.tipDto = dto;
-        this.client = client;
-        this.pi = pi;
-    }
-
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
@@ -91,10 +81,6 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         }
         if (configRequestDTO != null) {
             response = client.requestRaspberryToCheckConfig(piUri, configRequestDTO);
-            return response;
-        }
-        if (tipDto != null) {
-            response = client.sendTips(piUri, tipDto);
             return response;
         }
         if (writeId == null || readId == null) {

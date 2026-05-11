@@ -1,17 +1,17 @@
 package at.qe.skeleton.services.impl;
 
-import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.SummaryWarningDTO;
+import at.qe.skeleton.dtos.WarningCreateDTO;
+import at.qe.skeleton.dtos.WarningDTO;
+import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +34,6 @@ public class WarningServiceImpl implements WarningService {
     private final WarningMapper warningMapper;
     private final WarningCreateMapper warningCreateMapper;
     private final TipRepository tipRepository;
-    private final ApplicationEventPublisher eventPublisher;
-    private final NotificationClient notificationClient;
 
     // get warnings for a specific room
     @Override
@@ -129,13 +127,6 @@ public class WarningServiceImpl implements WarningService {
                     tipRepository.save(tip);
                 }
             }
-        }
-        if (room.getRaspberryPi() != null && warning.getTip() != null) {
-            eventPublisher.publishEvent(new NotifyRaspberryCommand(
-                    new RaspberryTipDTO(warning.getTip().getMsg(), warning.getDeviceName()),
-                    room.getRaspberryPi(),
-                    notificationClient
-            ));
         }
         warning.setRoomMonitoring(room);
         return warningMapper.mapTo(warningsRepository.save(warning));

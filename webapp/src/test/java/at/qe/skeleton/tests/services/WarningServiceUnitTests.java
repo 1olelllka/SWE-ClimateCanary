@@ -137,8 +137,8 @@ class WarningServiceUnitTests {
 
     private WarningCreateDTO createDto() {
         return new WarningCreateDTO(
-                roomId, "Test device", MeasurementType.TEMPERATURE,
-                WarningStatus.YELLOW, 28.5, 25.0, "Too hot");
+                roomId, MeasurementType.TEMPERATURE,
+                WarningStatus.YELLOW, 28.5, 25.0, "Too hot", UUID.randomUUID());
     }
 
     private Userx departmentViewer() {
@@ -250,8 +250,8 @@ class WarningServiceUnitTests {
     void temperature_over_linksTip() {
         // triggeredValue (28.5) > tempLimit.maxVal (25.0) → OVER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.TEMPERATURE,
-                WarningStatus.YELLOW, 28.5, 25.0, "Too hot");
+                roomId, MeasurementType.TEMPERATURE,
+                WarningStatus.YELLOW, 28.5, 25.0, "Too hot", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))
@@ -278,8 +278,8 @@ class WarningServiceUnitTests {
     void temperature_under_linksTip() {
         // triggeredValue (15.0) < tempLimit.maxVal (25.0) → UNDER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.TEMPERATURE,
-                WarningStatus.YELLOW, 15.0, 20.0, "Too cold");
+                roomId, MeasurementType.TEMPERATURE,
+                WarningStatus.YELLOW, 15.0, 20.0, "Too cold", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))
@@ -300,8 +300,8 @@ class WarningServiceUnitTests {
     @DisplayName("TEMPERATURE — saves warning without tip when no matching tip exists")
     void temperature_noMatchingTip_savesWarningOnly() {
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.TEMPERATURE,
-                WarningStatus.YELLOW, 28.5, 25.0, "Too hot");
+                roomId, MeasurementType.TEMPERATURE,
+                WarningStatus.YELLOW, 28.5, 25.0, "Too hot", UUID.randomUUID());
 
         when(roomMonitoringRepository.findById(roomId))
                 .thenReturn(Optional.of(roomMonitoring()));
@@ -324,8 +324,8 @@ class WarningServiceUnitTests {
     void humidity_over_linksTip() {
         // triggeredValue (70.0) > humLimit.maxVal (60.0) → OVER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.HUMIDITY,
-                WarningStatus.YELLOW, 70.0, 60.0, "Too humid");
+                roomId, MeasurementType.HUMIDITY,
+                WarningStatus.YELLOW, 70.0, 60.0, "Too humid", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))
@@ -347,8 +347,8 @@ class WarningServiceUnitTests {
     void humidity_under_linksTip() {
         // triggeredValue (30.0) < humLimit.maxVal (60.0) → UNDER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.HUMIDITY,
-                WarningStatus.YELLOW, 30.0, 60.0, "Too dry");
+                roomId, MeasurementType.HUMIDITY,
+                WarningStatus.YELLOW, 30.0, 60.0, "Too dry", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))
@@ -371,8 +371,8 @@ class WarningServiceUnitTests {
     void air_over_linksTip() {
         // triggeredValue (60.0) > polLimit.maxVal (50.0) → OVER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.CO2,
-                WarningStatus.RED, 60.0, 50.0, "Air quality critical");
+                roomId, MeasurementType.CO2,
+                WarningStatus.RED, 60.0, 50.0, "Air quality critical", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))
@@ -394,8 +394,8 @@ class WarningServiceUnitTests {
     void air_under_linksTip() {
         // triggeredValue (20.0) < polLimit.maxVal (50.0) → UNDER
         WarningCreateDTO dto = new WarningCreateDTO(
-                roomId, "Sensor-01", MeasurementType.CO2,
-                WarningStatus.YELLOW, 20.0, 50.0, "Air quality low");
+                roomId, MeasurementType.CO2,
+                WarningStatus.YELLOW, 20.0, 50.0, "Air quality low", UUID.randomUUID());
 
         Tip tip = sampleTip();
         when(roomMonitoringRepository.findById(roomId))

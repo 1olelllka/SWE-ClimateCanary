@@ -402,7 +402,7 @@ class WarningRepositoryDataJPATests {
     private void persist(RoomMonitoring room, LocalDateTime createdAt, LocalDateTime resolvedAt) {
         em.persist(Warnings.builder()
                 .message("Test warning")
-                .deviceName("Test Device")
+                .sensorWriteId(UUID.randomUUID())
                 .triggeredValue(25.0)
                 .activeLimitAtTime(20.0)
                 .createdAt(createdAt)
@@ -410,6 +410,7 @@ class WarningRepositoryDataJPATests {
                 .status(resolvedAt == null ? WarningStatus.RED : WarningStatus.GREEN)
                 .measurementType(MeasurementType.TEMPERATURE)
                 .roomMonitoring(room)
+                .sensorWriteId(UUID.randomUUID())
                 .build());
     }
 }
