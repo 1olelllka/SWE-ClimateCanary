@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -133,8 +134,12 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
 
+                                        .requestMatchers(HttpMethod.PATCH, "/api/sensor-stations/**")
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
+                                        .requestMatchers(HttpMethod.GET, "/api/sensor-stations/**")
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
                                         .requestMatchers("/api/sensor-stations/**")
-                                        .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name())
 
                                         .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
