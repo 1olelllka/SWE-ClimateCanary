@@ -21,5 +21,5 @@ public interface DepartmentService {
 
     Department patchSpecificDepartment(UUID id, Department department);
 
-    Department getDepartmentById(UUID id);
+    Department getDepartmentById(UUID id, boolean shared);
 }

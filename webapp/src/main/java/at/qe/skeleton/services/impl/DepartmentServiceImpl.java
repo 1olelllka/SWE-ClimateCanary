@@ -2,16 +2,19 @@ package at.qe.skeleton.services.impl;
 
 
 import at.qe.skeleton.exceptions.ConflictException;
+import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.DepartmentRepository;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,14 +30,24 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final RoomMonitoringRepository monitoringRepository;
     private final RaspberryPiRepository raspberryPiRepository;
     private final RoomServiceImpl roomService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public Page<Department> getPageOfDepartments(Pageable pageable) {
         return departmentRepository.findAll(pageable);
     }
 
-    public Department getDepartmentById(UUID id) {
-        return departmentRepository.findById(id)
+    public Department getDepartmentById(UUID id, boolean shared) {
+        Userx authenticated = authenticatedUserService.getAuthenticatedUser();
+        Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department not found with id: " + id));
+        if (shared) {
+            department.setRooms(department.getRooms().stream().filter(room -> room.getRoomType().equals(RoomType.SHARED)).toList());
+            return department;
+        }
+        if (authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList().contains(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())) {
+            return department;
+        }
+        throw new ForbiddenException("You may not see all of the rooms.");
     }
 
     public Department createDepartment(Department department) {
