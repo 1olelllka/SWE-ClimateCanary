@@ -37,7 +37,7 @@ public:
   void nextPage();
   void previousPage();
 
-  void setFault(const String& text, const String& code);
+  void setFault(const String& text);
   void clearFault();
 
   void setWarningData(
@@ -53,4 +53,5 @@ private:
   String currentWarnText = "No warning";
   String currentThreshold = "None";
   String currentTip = "No advice";
+  String currentFaultText = "No fault";
 };

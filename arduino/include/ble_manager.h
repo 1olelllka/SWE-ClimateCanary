@@ -16,6 +16,9 @@ public:
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
 
+  unsigned long measureAndSendIntervalMs = MEASURE_AND_SEND_INTERVAL_MS;
+  
+
 private:
   friend class BLEMessageHandler;
 
