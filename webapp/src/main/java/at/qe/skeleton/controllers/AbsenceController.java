@@ -59,15 +59,12 @@ public class AbsenceController {
     public ResponseEntity<Page<AbsenceListDTO>> getAllAbsences(Authentication authentication,
                                                                Pageable pageable) {
         Set<String> authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+        Userx user = authenticatedUserService.getAuthenticatedUser();
         if (authorities.contains("ROLE_DEPARTMENT_MANAGER")) {
-            Userx user = authenticatedUserService.getAuthenticatedUser();
             Page<Absence> absences = absenceService.getAllAbsencesByDepartment(user, pageable);
             return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
-        } else if (authorities.contains("ROLE_EMPLOYEE")) {
-            Userx user = authenticatedUserService.getAuthenticatedUser();
-            return new ResponseEntity<>(absenceService.getAllAbsencesById(user.getId(), pageable).map(absenceListMapper::mapTo), HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(absenceService.getAllAbsencesById(user.getId(), pageable).map(absenceListMapper::mapTo), HttpStatus.OK);
         }
     }
 

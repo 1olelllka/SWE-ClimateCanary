@@ -172,7 +172,7 @@ export const SettingsPage: React.FC = () => {
                     </div>
 
                     <div className="settings-preference-row">
-                        <span>Day Format</span>
+                        <span>Date Format</span>
                         <select value={dayFormat} onChange={event => setDayFormat(event.target.value)}>
                             <option>DD/MM/YYYY</option>
                             <option>MM/DD/YYYY</option>

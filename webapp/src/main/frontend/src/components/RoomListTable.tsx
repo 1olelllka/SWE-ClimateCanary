@@ -75,25 +75,28 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
     };
 
     return (
-        <DataTable
-            value={rooms}
-            {...defaultTableProps}
-            onRowClick={handleRowClick}
-            rowClassName={rowClassRules}
-        >
-            <Column field="id" header="Room" sortable></Column>
-            {/* Nur rendern, wenn showDepartment true ist */}
-            {showDepartment && <Column field="department" header="Dep." sortable></Column>}
+        <div className="table-container">
+            <h3>Room List</h3>
+            <DataTable
+                value={rooms}
+                {...defaultTableProps}
+                onRowClick={handleRowClick}
+                rowClassName={rowClassRules}
+            >
+                <Column field="id" header="Room" sortable></Column>
+                {/* Nur rendern, wenn showDepartment true ist */}
+                {showDepartment && <Column field="department" header="Dep." sortable></Column>}
 
-            <Column field="type" header="Type" sortable></Column>
-            <Column field="people" header="People"></Column>
-            <Column header="CO2" body={(data) => blurTemplate(data, 'co2')}></Column>
-            <Column header="Temp" body={(data) => blurTemplate(data, 'temp')}></Column>
-            <Column header="Humidity" body={(data) => blurTemplate(data, 'humidity')}></Column>
-            <Column header="Status" body={statusTemplate}></Column>
+                <Column field="type" header="Type" sortable></Column>
+                <Column field="people" header="People"></Column>
+                <Column header="CO2" body={(data) => blurTemplate(data, 'co2')}></Column>
+                <Column header="Temp" body={(data) => blurTemplate(data, 'temp')}></Column>
+                <Column header="Humidity" body={(data) => blurTemplate(data, 'humidity')}></Column>
+                <Column header="Status" body={statusTemplate}></Column>
 
-            {/* Zahnrad rendern */}
-            {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '4rem' }}></Column>}
-        </DataTable>
+                {/* Zahnrad rendern */}
+                {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '4rem' }}></Column>}
+            </DataTable>
+        </div>
     );
 };

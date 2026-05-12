@@ -115,7 +115,7 @@ public class TipServiceUnitTests {
     class UpdateExistingTip {
 
         @Test
-        @DisplayName("updates message and returns saved tip")
+        @DisplayName("updates tip and returns saved tip")
         void updatesMessage() {
             when(tipRepository.findById(tipId)).thenReturn(Optional.of(sampleTip));
             when(tipRepository.save(sampleTip)).thenAnswer(i -> i.getArgument(0));

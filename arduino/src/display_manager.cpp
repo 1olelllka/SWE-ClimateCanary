@@ -28,6 +28,10 @@ void DisplayManager::setWarningData(
   currentTip = tip;
 }
 
+void DisplayManager::setFault(const String& text) {
+  currentFaultText = text;
+}
+
 void DisplayManager::showReading(const SensorReading& reading) {
   lcd.clear();
 
@@ -99,7 +103,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
     lcd.setCursor(0, 0);
     lcd.print("Mode: Fault");
     lcd.setCursor(0, 1);
-    lcd.print("Code: NONE");
+    lcd.print(currentFaultText.substring(0, 16));
   }
 }
 

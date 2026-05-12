@@ -1,13 +1,17 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.AbsenceListDTO;
+import at.qe.skeleton.dtos.UserxCreateDTO;
+import at.qe.skeleton.dtos.UserxDTO;
+import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.*;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import at.qe.skeleton.dtos.RoomDTO;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,14 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomType;
-import at.qe.skeleton.repositories.RoomRepository;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.List;
 
 /**
  * Userx endpoints exposed by the server.
@@ -91,7 +92,7 @@ public class UserxController {
     }
 
     @GetMapping("/me/department/rooms")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE')")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_DEPARTMENT_MEASURES')")
     public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
         Userx authenticated = userService.getByUsername(authentication.getName());
 
@@ -104,7 +105,6 @@ public class UserxController {
         List<RoomDTO> rooms = roomRepository.findAll().stream()
                 .filter(room -> room.getDepartment() != null)
                 .filter(room -> room.getDepartment().getId().equals(departmentId))
-                .filter(room -> room.getRoomType() == RoomType.SHARED)
                 .map(roomMapper::mapTo)
                 .toList();
 

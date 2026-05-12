@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class DepartmentListMapperUnitTests {
 
@@ -47,6 +46,6 @@ class DepartmentListMapperUnitTests {
         assertEquals(deptId, result.getId());
         assertEquals("Physics", result.getName());
         assertEquals(buildingId, result.getBuilding().getId());
-        assertNull(result.getRooms());
+        assertEquals(0, result.getRooms().size());
     }
 }

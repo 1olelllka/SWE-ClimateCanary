@@ -38,11 +38,6 @@ public class RoomServiceImpl implements RoomService {
 
     public Page<Room> getPageOfRooms(Pageable pageable) {return roomRepository.findAll(pageable);}
 
-//    public Room getRoomById(UUID id){
-//        return roomRepository.findById(id)
-//                .orElseThrow(() -> new NotFoundException("Room not found with id: " + id));
-//    }
-
     @Transactional
     public Room createRoom(Room room) {
         if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id " + room.getDepartment().getId() + " was not found.");
@@ -145,9 +140,4 @@ public class RoomServiceImpl implements RoomService {
         }
         monitoringRepository.deleteById(id);
     }
-//
-//    public Department getDepartmentOfRoom(UUID roomId) {
-//        Room room = getRoomById(roomId);
-//        return room.getDepartment();
-//    }
 }
