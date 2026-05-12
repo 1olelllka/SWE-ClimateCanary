@@ -48,7 +48,8 @@ public class WarningServiceImpl implements WarningService {
                 .orElseThrow(() -> new NotFoundException("There's no room with id " + roomId + "."));
 
         boolean isDeptUser = hasAuthority(user, "CAN_VIEW_OWN_DEPARTMENT_WARNINGS");
-        boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS");
+        boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS")
+                || hasAuthority(user, "CAN_VIEW_OWN_OFFICE_CLIMATE");
         if (user.getMyRoom() != null) {
             // Department-level access
             if (isDeptUser) {
@@ -70,8 +71,8 @@ public class WarningServiceImpl implements WarningService {
                         )
                 );
             }
-            // Office-level access
-            if (isOfficeUser && room.equals(user.getMyRoom()) && active) {
+            // Office-level access: employees always see only active warnings for their own room
+            if (isOfficeUser && room.equals(user.getMyRoom())) {
                 return mapToDTOs(
                         warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
                 );

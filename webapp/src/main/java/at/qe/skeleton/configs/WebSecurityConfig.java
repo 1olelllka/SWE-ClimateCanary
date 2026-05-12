@@ -91,7 +91,10 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
                                         .requestMatchers("/api/users/me/department/rooms")
-                                        .hasAuthority(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
+                                        .hasAnyAuthority(
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name()
+                                        )
 
                                         .requestMatchers("/api/users/me").authenticated()
 
