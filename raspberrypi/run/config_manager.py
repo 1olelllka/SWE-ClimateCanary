@@ -22,7 +22,7 @@ class ConfigManager:
 
         return config
 
-# full config fetch
+# Full config fetch
 
     @staticmethod
     async def fetch_and_seed(pi_id: str, server_url: str, db, auth) -> None:
@@ -42,7 +42,6 @@ class ConfigManager:
 
         sensors = remote.get('sensors', [])
         limits = remote.get('limits', {})
-        tips = remote.get('tips', {})
 
         sensor_list = [
             {
@@ -77,15 +76,12 @@ class ConfigManager:
         if sensor_list:
             await db.set_sensors(sensor_list)
 
-        if tips:
-            await db.set_tips(tips)
-
         logger.info(
             f"[Config] Seed complete: {len(sensor_list)} sensors, "
             f"room={remote.get('roomId')}, freq={remote.get('frequency')}"
         )
 
-# Live update handlers, called by WebManager endpoints 
+# Live update handlers, called by WebManager endpoints
 
     @staticmethod
     async def handle_limit_change(db, payload: dict) -> None:
@@ -178,7 +174,7 @@ class ConfigManager:
         logger.info(f"[Config] General config refreshed for pi={pi_id}.")
         return updates.get('frequency')
 
-# Internal helpers 
+# Internal helpers
 
     @staticmethod
     async def _fetch(url: str, auth, timeout_s: int = 10) -> dict:

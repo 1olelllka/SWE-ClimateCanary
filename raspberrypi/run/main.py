@@ -109,7 +109,6 @@ async def main(static_config: dict):
             processor.run(
                 sensor_name,
                 queues[sensor_name]['proc'],
-                queues[sensor_name]['inbox'],
             ),
             name=f"Proc:{sensor_name}",
         ))
