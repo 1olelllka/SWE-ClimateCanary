@@ -75,6 +75,7 @@ const UserConfigurationPage: React.FC = () => {
     const roleFilterOptions = roleDTOs.map(r => ({ label: r.name ?? '', value: r.name ?? '' }));
 
     const filteredUsers = users.filter(u => {
+        if (u.roles.some(r => r.name === 'RASPBERRY_PI')) return false;
         if (lastNameSearch && !(u.lastName ?? '').toLowerCase().includes(lastNameSearch.toLowerCase())) return false;
         if (roleFilter && !u.roles.some(r => r.name === roleFilter)) return false;
         return true;
