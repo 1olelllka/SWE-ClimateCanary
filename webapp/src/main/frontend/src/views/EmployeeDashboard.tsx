@@ -99,8 +99,13 @@ export const EmployeeDashboard: React.FC = () => {
         Promise.all([
             globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
                 .then(r => r.data).catch(() => null),
-            globalAxios.get<ActiveWarning[]>(`/api/warnings?roomId=${roomId}`)
-                .then(r => r.data).catch(() => []),
+            globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${roomId}`, {
+                params: {
+                    activeOnly: false,
+                    startDate: '2000-01-01',
+                    endDate: fmtDate(new Date()),
+                },
+            }).then(r => r.data).catch(() => []),
             globalAxios.get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
                 params: {
                     startDate: fmtDate(twentyMinAgo),
