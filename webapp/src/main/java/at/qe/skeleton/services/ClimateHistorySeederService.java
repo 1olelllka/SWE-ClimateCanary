@@ -69,7 +69,7 @@ public class ClimateHistorySeederService {
             List<ClimateStats> batch = new ArrayList<>(BATCH_SIZE);
             OffsetDateTime cursor = start;
 
-            LocalDateTime warningOnset = now.minusHours(2);
+            OffsetDateTime warningOnset = now.minusHours(2);
 
             while (!cursor.isAfter(now)) {
                 // For the most recent 2 hours elevate temperature above the 26 °C limit

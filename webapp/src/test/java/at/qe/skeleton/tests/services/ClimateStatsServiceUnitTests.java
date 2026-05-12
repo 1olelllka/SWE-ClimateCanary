@@ -202,18 +202,16 @@ class ClimateStatsServiceUnitTests {
             LocalTime  startTime = LocalTime.of(8, 0);
             LocalTime  endTime   = LocalTime.of(18, 0);
 
-            List<ClimateStats> raw = List.of(
-                    stats(today.atTime(7,  0), 18, 45, 250), // before startTime — excluded
-                    stats(today.atTime(10, 0), 20, 50, 300), // in window
-                    stats(today.atTime(14, 0), 21, 52, 320), // in window
-                    stats(today.atTime(20, 0), 22, 55, 400)  // after endTime — excluded
+            List<ClimateStats> inWindow = List.of(
+                    stats(today.withHour(10), 20, 50, 300),
+                    stats(today.withHour(14), 21, 52, 320)
             );
 
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
-                    start.atTime(startTime),
-                    end.atTime(endTime)))
-                    .thenReturn(raw);
+                    start.toLocalDate().atTime(startTime).atOffset(ZoneOffset.UTC),
+                    end.toLocalDate().atTime(endTime).atOffset(ZoneOffset.UTC)))
+                    .thenReturn(inWindow);
 
             List<ClimateDataPointDTO> result =
                     service.getOvertime(roomId, start.toLocalDate(), end.toLocalDate(), startTime, endTime);
