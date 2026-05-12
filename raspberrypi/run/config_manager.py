@@ -125,23 +125,20 @@ class ConfigManager:
 
     @staticmethod
     async def handle_sensor_add(db, auth, sensor_ids: list[str]) -> None:
-        pi_id, server_url = await ConfigManager._identity(db)
+        server_url = await db.get_config('server_url')
+        if not server_url:
+            raise RuntimeError("server_url missing from DB config.")
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/sensors", auth
+            f"{server_url}/api/sensor-stations/{sensor_ids[0]}", auth
         )
-        all_sensors = remote.get('sensors', [])
-        id_set = {str(sid) for sid in sensor_ids}
 
         to_add = [
             {
-                'id': s.get('id'),
-                'name': s.get('name'),
-                'char_uuid': s['readId'],
-                'write_uuid': s['writeId'],
+                'name': remote['name'],
+                'char_uuid': remote['readId'],
+                'write_uuid': remote['writeId'],
             }
-            for s in all_sensors
-            if str(s.get('id', '')) in id_set and s.get('name')
         ]
 
         if to_add:
@@ -182,14 +179,6 @@ class ConfigManager:
         return updates.get('frequency')
 
 # Internal helpers 
-
-    @staticmethod
-    async def _identity(db) -> tuple[str, str]:
-        pi_id = await db.get_config('raspberry_id')
-        server_url = await db.get_config('server_url')
-        if not pi_id or not server_url:
-            raise RuntimeError("raspberry_id or server_url missing from DB config.")
-        return pi_id, server_url
 
     @staticmethod
     async def _fetch(url: str, auth, timeout_s: int = 10) -> dict:
