@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -209,8 +210,8 @@ class ClimateStatsServiceUnitTests {
 
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
-                    start.toLocalDate().atTime(startTime).atOffset(ZoneOffset.UTC),
-                    end.toLocalDate().atTime(endTime).atOffset(ZoneOffset.UTC)))
+                    start.toLocalDate().atTime(startTime).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                    end.toLocalDate().atTime(endTime).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
                     .thenReturn(inWindow);
 
             List<ClimateDataPointDTO> result =
@@ -226,8 +227,8 @@ class ClimateStatsServiceUnitTests {
         void nullTimesDefaultToFullDay() {
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
-                    today.withHour(0),
-                    today.toLocalDate().atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
+                    today.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
+                    today.toLocalDate().atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
                     .thenReturn(List.of());
 
             List<ClimateDataPointDTO> result =
