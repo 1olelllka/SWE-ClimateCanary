@@ -101,7 +101,8 @@ public class WebSecurityConfig {
 
                                         .requestMatchers("/api/roles/**")
                                         .hasAuthority(Permission.CAN_MANAGE_USERS.name())
-
+                                        .requestMatchers("/api/building-trend/**")
+                                        .hasAnyAuthority(Permission.CAN_VIEW_COMPANY_AGGR.name())
                                         .requestMatchers(
                                                 "/api/rooms/*/current-climate",
                                                 "/api/rooms/*/overtime",
