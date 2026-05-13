@@ -17,8 +17,8 @@ bool BLEManager::begin(DisplayManager* display) {
   }
 
   BLE.setAdvertisingInterval(ADVERTISING_INTERVAL);
-  BLE.setLocalName(DEVICE_NAME);
-  BLE.setDeviceName(DEVICE_NAME);
+  BLE.setLocalName(DEVICE_PREFIX);
+  BLE.setDeviceName(DEVICE_PREFIX);
   BLE.setAdvertisedService(service);
 
   service.addCharacteristic(txCharacteristic);
