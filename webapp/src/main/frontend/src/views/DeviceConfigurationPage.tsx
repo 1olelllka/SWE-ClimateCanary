@@ -160,7 +160,7 @@ const DeviceConfigurationPage: React.FC = () => {
         setPiRoomId(row.room?.roomId ?? '');
         setPiIpAddress(row.ipAddress ?? '');
         setPiPort(row.port ?? 8080);
-        setPiInterval(null);
+        setPiInterval(row.frequency ?? null);
         setShowPiDialog(true);
     };
 
@@ -264,6 +264,15 @@ const DeviceConfigurationPage: React.FC = () => {
             refreshSensors();
         } catch {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
+        }
+    };
+
+    const handleRetryConnection = async (sensorId: string) => {
+        try {
+            await axios.post(`${BASE_PATH}/api/sensor-stations/${sensorId}/retry-connection`);
+            toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
+        } catch {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
         }
     };
 
@@ -383,8 +392,9 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                             />
                             <Column header="Status" body={row => statusBadge(row.status)} />
                             <Column header="Last Measurement" body={() => <span style={{ color: '#9e9e9e' }}>N/A</span>} />
-                            <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: SensorStationDTO) => (
+                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetryConnection(row.readId!)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit sensor station" onClick={() => openEditSensorDialog(row)} />
                                     <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDelete('Sensor Station', row.readId)} />
                                 </div>
@@ -451,19 +461,29 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 <Column field="name" header="Name" />
                                 <Column field="writeId" header="Write ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                                 <Column field="readId" header="Read ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                                <Column header="" style={{ width: '3.5rem' }} body={(row: SensorStationDTO) => (
-                                    <Button
-                                        icon="pi pi-trash"
-                                        rounded
-                                        text
-                                        severity="danger"
-                                        title="Remove from this Raspberry Pi"
-                                        onClick={() => {
-                                            if (globalThis.confirm(`Remove "${row.name ?? row.readId}" from this Raspberry Pi?`)) {
-                                                handleDisconnectSensor(row.readId!);
-                                            }
-                                        }}
-                                    />
+                                <Column header="" style={{ width: '6rem' }} body={(row: SensorStationDTO) => (
+                                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                        <Button
+                                            icon="pi pi-refresh"
+                                            rounded
+                                            text
+                                            severity="warning"
+                                            title="Retry connection"
+                                            onClick={() => handleRetryConnection(row.readId!)}
+                                        />
+                                        <Button
+                                            icon="pi pi-trash"
+                                            rounded
+                                            text
+                                            severity="danger"
+                                            title="Remove from this Raspberry Pi"
+                                            onClick={() => {
+                                                if (globalThis.confirm(`Remove "${row.name ?? row.readId}" from this Raspberry Pi?`)) {
+                                                    handleDisconnectSensor(row.readId!);
+                                                }
+                                            }}
+                                        />
+                                    </div>
                                 )} />
                             </DataTable>
                         </div>

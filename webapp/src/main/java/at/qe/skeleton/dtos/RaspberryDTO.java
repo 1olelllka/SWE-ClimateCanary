@@ -9,6 +9,7 @@ public record RaspberryDTO(
         String name,
         String ipAddress,
         Integer port,
+        Integer frequency,
         DeviceStatus status,
         RoomRaspberry room
 ) {

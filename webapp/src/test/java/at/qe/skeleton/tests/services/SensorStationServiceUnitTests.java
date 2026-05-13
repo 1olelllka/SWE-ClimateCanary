@@ -165,7 +165,7 @@ public class SensorStationServiceUnitTests {
         sensorService.updateExistingSensor(stationId, patch);
 
         // one SENSOR_ADD to the new room's Pi; old room has no Pi so no SENSOR_DELETE
-        verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test

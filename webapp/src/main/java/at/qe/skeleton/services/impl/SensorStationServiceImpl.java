@@ -66,7 +66,9 @@ public class SensorStationServiceImpl implements SensorStationService {
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
         return sensorRepository.findById(id).map(sensor -> {
             boolean notifyRasp = false;
-            if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId())) {
+            RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
+            if (sensorStation.getRoomMonitoring() != null &&
+                    (sensor.getRoomMonitoring() == null || !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId()))) {
                 sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
                 log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
                 notifyRasp = true;
@@ -91,7 +93,6 @@ public class SensorStationServiceImpl implements SensorStationService {
                 log.info("Pre-saved last heartbeat of sensor '{}'.", sensor.getName());
                 sensor.setLastHeartBeat(beat);
             });
-            RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             SensorStation saved = sensorRepository.save(sensor);
             if (notifyRasp) {
                 if (saved.getRoomMonitoring().getRaspberryPi() != null) {

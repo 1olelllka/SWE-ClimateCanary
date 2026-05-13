@@ -70,9 +70,13 @@ public class RaspberryServiceImpl implements RaspberryService {
     public RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi) {
         return raspberryPiRepository.findById(id).map(rasp -> {
             log.info("Updating Raspberry Pi configs: '{}' [{}:{}]", rasp.getName(), rasp.getIp(), rasp.getPort());
+            AtomicBoolean frequencyChanged = new AtomicBoolean(false);
             Optional.ofNullable(raspberryPi.getFrequency()).ifPresent(freq -> {
-                log.info("Pre-saved new frequency for Raspberry Pi sensors: {} -> {}", rasp.getFrequency(), freq);
-                rasp.setFrequency(freq);
+                if (!freq.equals(rasp.getFrequency())) {
+                    log.info("Pre-saved new frequency for Raspberry Pi sensors: {} -> {}", rasp.getFrequency(), freq);
+                    rasp.setFrequency(freq);
+                    frequencyChanged.set(true);
+                }
             });
             Optional.ofNullable(raspberryPi.getName()).ifPresent(name -> {
                 if (!rasp.getName().equals(name) && raspberryPiRepository.existsByName(name)) {
@@ -84,14 +88,18 @@ public class RaspberryServiceImpl implements RaspberryService {
             });
             AtomicBoolean ipPortChanged = new AtomicBoolean(false);
             Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
-                ipPortChanged.set(true);
-                log.info("Pre-saved new IP-address for Raspberry Pi: {} -> {}", rasp.getIp(), ip);
-                rasp.setIp(ip);
+                if (!ip.equals(rasp.getIp())) {
+                    ipPortChanged.set(true);
+                    log.info("Pre-saved new IP-address for Raspberry Pi: {} -> {}", rasp.getIp(), ip);
+                    rasp.setIp(ip);
+                }
             });
             Optional.ofNullable(raspberryPi.getPort()).ifPresent(port -> {
-                ipPortChanged.set(true);
-                log.info("Pre-saved new port for Raspberry Pi: {} -> {}", rasp.getPort(), port);
-                rasp.setPort(port);
+                if (!port.equals(rasp.getPort())) {
+                    ipPortChanged.set(true);
+                    log.info("Pre-saved new port for Raspberry Pi: {} -> {}", rasp.getPort(), port);
+                    rasp.setPort(port);
+                }
             });
             if (ipPortChanged.get()) {
                 if (raspberryPiRepository.existsByIpAndPort(rasp.getIp(), rasp.getPort())) {
@@ -100,7 +108,16 @@ public class RaspberryServiceImpl implements RaspberryService {
                 }
             }
             log.info("Successfully updated Raspberry Pi configs: '{}' [{}:{}]", rasp.getName(), rasp.getIp(), rasp.getPort());
-            return raspberryPiRepository.save(rasp);
+            RaspberryPi saved = raspberryPiRepository.save(rasp);
+            if (frequencyChanged.get()) {
+                log.info("Notifying Raspberry Pi '{}' about updated frequency config.", saved.getName());
+                eventPublisher.publishEvent(
+                        new NotifyRaspberryCommand(
+                                new ConfigRequestDTO(saved.getId(), LocalDateTime.now()),
+                                saved,
+                                notificationClient));
+            }
+            return saved;
         }).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
 
