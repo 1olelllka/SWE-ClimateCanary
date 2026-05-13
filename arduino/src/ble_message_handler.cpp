@@ -26,14 +26,15 @@ void BLEMessageHandler::handleRxMessage(
     String frequency = received.substring(10);
     frequency.trim();
 
-    unsigned long newIntervalMs = frequency.toInt();
+    unsigned long newIntervalSec = frequency.toInt() * 1000;
 
-    if(newIntervalMs > 0) {
-      manager->measureAndSendIntervalMs = newIntervalMs;
+    if(newIntervalSec > 0) {
+      manager->measureAndSendIntervalMs = newIntervalSec;
     } 
   } else if (received.startsWith("WARNTEXT:")) {
-    int thresholdIndex = received.indexOf("TRESHOLD:");
+    int thresholdIndex = received.indexOf("THRESHOLD:");
     int tipIndex = received.indexOf("TIP:");
+    int statusIndex = received.indexOf("STATUS:");
 
     if (thresholdIndex != -1 && tipIndex != -1) {
       String warnText = received.substring(9, thresholdIndex);
