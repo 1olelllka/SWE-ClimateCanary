@@ -124,7 +124,11 @@ class DatabaseManager:
     async def delete_sensors_by_ids(self, sensor_ids: list[str]):
         current = await self.get_sensors()
         id_set = {str(sid) for sid in sensor_ids}
-        remaining = [s for s in current if str(s.get('id', '')) not in id_set]
+        remaining = [
+            s for s in current
+            if str(s.get('char_uuid', '')) not in id_set
+            and str(s.get('write_uuid', '')) not in id_set
+        ]
         removed = len(current) - len(remaining)
         await self.set_sensors(remaining)
         logger.info(f"[DB] Deleted {removed} sensor(s) by id. Remaining: {[s['name'] for s in remaining]}")

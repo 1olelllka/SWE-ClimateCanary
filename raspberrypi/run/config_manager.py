@@ -31,7 +31,7 @@ class ConfigManager:
 
         try:
             remote = await ConfigManager._fetch(
-                f"{server_url}/api/raspberry/{pi_id}/config", auth
+                f"{server_url}/api/raspberry-pis/{pi_id}/config", auth
             )
         except Exception as e:
             logger.warning(
@@ -45,18 +45,18 @@ class ConfigManager:
 
         sensor_list = [
             {
-                'id': s.get('id'),
                 'name': s.get('name'),
                 'char_uuid': s['readId'],
                 'write_uuid': s['writeId'],
             }
             for s in sensors if s.get('name')
         ]
+        logger.info(f"Sensors: {sensor_list}")
 
         # Overwrite config keys unconditionally on (re-)seed
         config_updates = {
             'room_id': remote.get('roomId'),
-            'frequency': str(remote.get('frequency', 100)),
+            'frequency': str(remote.get('frequency', 5)),
         }
         for key, value in config_updates.items():
             if value is not None:
@@ -160,7 +160,7 @@ class ConfigManager:
             raise RuntimeError("server_url missing from DB — cannot fetch config.")
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/config", auth
+            f"{server_url}/api/raspberry-pis/{pi_id}/config", auth
         )
 
         updates = {

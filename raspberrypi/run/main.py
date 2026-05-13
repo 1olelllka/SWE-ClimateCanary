@@ -36,11 +36,17 @@ async def main(static_config: dict):
         username=static_config['auth']['username'],
         password=static_config['auth']['password'],
     )
-    try:
-        await auth.login()
-    except Exception as e:
-        logger.error(f"[Auth] Login failed: {e}. Cannot start without authentication.")
-        sys.exit(1)
+    
+    for attempt in range(1, 6):
+        try:
+            await auth.login()
+            break
+        except Exception as e:
+            logger.warning(f"[Auth] Login attempt {attempt}/5 failed: {e}")
+            if attempt == 5:
+                logger.error("[Auth] All 5 login attempts failed. Cannot start without authentication.")
+                sys.exit(1)
+            await asyncio.sleep(5)
 
     config_ready_event = asyncio.Event()
 
@@ -87,6 +93,8 @@ async def main(static_config: dict):
         for sensor in sensors
     }
 
+    scan_lock = asyncio.Lock()
+
     ble_managers: dict[str, BLEManager] = {
         sensor['name']: BLEManager(
             db,
@@ -94,6 +102,7 @@ async def main(static_config: dict):
             queues[sensor['name']]['proc'],
             queues[sensor['name']]['inbox'],
             web_manager.status_queue,
+            scan_lock,
         )
         for sensor in sensors
     }

@@ -19,16 +19,12 @@ SENSOR_CHECKS = [
 ]
 
 def _warning_status(actual: float, limit: float, direction: str) -> str:
-    """
-    Returns RED if the value exceeds the limit by more than 20%, ORANGE otherwise.
-    Works for both 'max' (over-limit) and 'min' (under-limit) directions.
-    """
     if direction == "max":
-        return "RED" if actual > limit * 1.20 else "ORANGE"
+        return "RED" if actual > limit * 1.20 else "BLUE"
     else:
         # under-limit: violation when actual < limit
         # 20% below the limit => actual < limit * 0.80
-        return "RED" if actual < limit * 0.80 else "ORANGE"
+        return "RED" if actual < limit * 0.80 else "BLUE"
 
 def _violation_message(sensor_key: str, direction: str, actual: float, limit: float, status: str) -> str:
     direction_word = "above" if direction == "max" else "below"
@@ -62,19 +58,14 @@ class DataProcessor:
             raw_data = await processing_queue.get()
 
             try:
+                limits = await self.db.get_all_limits()
+                privacy = limits.get('privacy_mode', 1.0)
+
                 if isinstance(raw_data, bytes):
                     raw_data = raw_data.decode('utf-8')
                 data = json.loads(raw_data)
 
-                limits = await self.db.get_all_limits()
                 room_id = await self.db.get_config('room_id')
-
-                current_occ = limits.get('current_occupancy', 0)
-                max_occ = limits.get('max_occupancy')
-
-                if max_occ is not None and current_occ > max_occ:
-                    logger.warning(f"[Processor:{sensor_name}] Occupancy exceeded ({current_occ}/{max_occ}). Discarding.")
-                    continue
 
                 time_base = data.get('time_base')
                 offset_ms = data.get('millis_offset')
@@ -84,13 +75,20 @@ class DataProcessor:
                 else:
                     timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
+                if privacy:
+                    logger.warning(f"[Processor:{sensor_name}] Privacy Mode active. Discarding.")
+                    await self._check_violations(sensor_name, data, limits, room_id, timestamp)
+                    continue
+                
+                logger.info(f"[Arduino -> Pi] Received: {raw_data}")
+
                 await self._check_violations(sensor_name, data, limits, room_id, timestamp)
 
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
                     temp=data.get('temperature'),
                     moisture=data.get('moisture'),
-                    co2=data.get('co2'),
+                    co2=data.get('iaq'),
                     timestamp=timestamp
                 )
 
@@ -104,9 +102,8 @@ class DataProcessor:
                     webapp_payload["readings"].append({"type": "TEMPERATURE", "value": data['temperature']})
                 if data.get('moisture') is not None:
                     webapp_payload["readings"].append({"type": "HUMIDITY", "value": data['moisture']})
-                if data.get('co2') is not None:
-                    webapp_payload["readings"].append({"type": "CO2", "value": data['co2']})
-
+                if data.get('iaq') is not None:
+                    webapp_payload["readings"].append({"type": "CO2", "value": data['iaq']})
                 await self.web_out_queue.put(webapp_payload)
 
             except json.JSONDecodeError:
@@ -136,7 +133,9 @@ class DataProcessor:
             over_limit = (val > limit) if direction == 'max' else (val < limit)
 
             if over_limit:
-                self._bad_streak[sensor_name][limit_key] += 1
+                self._bad_streak[sensor_name][limit_key] = min(
+                    self._bad_streak[sensor_name][limit_key] + 1, VIOLATION_THRESHOLD
+                )
                 self._good_streak[sensor_name][limit_key] = 0
 
                 bad = self._bad_streak[sensor_name][limit_key]
@@ -146,7 +145,6 @@ class DataProcessor:
                 )
 
                 if bad == VIOLATION_THRESHOLD:
-                    self._good_streak[sensor_name][limit_key] = 0
                     await self.db.register_violation(sensor_name, limit_key, limit, val)
 
                     status = _warning_status(val, limit, direction)
@@ -172,9 +170,6 @@ class DataProcessor:
                         f"{val} {'>' if direction == 'max' else '<'} {limit} "
                         f"after {VIOLATION_THRESHOLD} consecutive readings. Status={status}"
                     )
-
-                elif bad > VIOLATION_THRESHOLD:
-                    self._bad_streak[sensor_name][limit_key] = VIOLATION_THRESHOLD
 
             else:
                 self._good_streak[sensor_name][limit_key] += 1
