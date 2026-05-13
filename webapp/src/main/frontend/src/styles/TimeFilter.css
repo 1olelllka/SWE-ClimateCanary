@@ -5,6 +5,7 @@
     padding: 0.25rem;
     border-radius: 8px;
     align-items: center;
+    border: 1px solid #e2e8f0;
 }
 
 .time-filter-btn {
@@ -70,4 +71,100 @@
 .compact-calendar .p-datepicker .p-datepicker-next {
     width: 1.6rem;
     height: 1.6rem;
+}
+
+/* Dark mode */
+
+html[data-theme='dark'] .time-filters {
+    background-color: #111827 !important;
+    border-color: #334155 !important;
+}
+
+html[data-theme='dark'] .time-filter-btn {
+    background-color: transparent !important;
+    color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .time-filter-btn:hover {
+    background-color: #1f2937 !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .time-filter-btn.active {
+    background-color: #1f2937 !important;
+    color: #f8fafc !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .time-filter-btn.icon-btn {
+    color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .selected-date-text {
+    color: #f8fafc !important;
+}
+
+/* Falls DashboardCalendar innen PrimeReact Buttons/Icon verwendet */
+
+html[data-theme='dark'] .time-filters .p-button {
+    background-color: transparent !important;
+    color: #cbd5e1 !important;
+    border-color: transparent !important;
+}
+
+html[data-theme='dark'] .time-filters .p-button:hover {
+    background-color: #1f2937 !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .time-filters .pi {
+    color: #cbd5e1 !important;
+}
+
+/* Calendar popup dark */
+
+html[data-theme='dark'] .compact-calendar .p-datepicker,
+html[data-theme='dark'] .p-datepicker {
+    background-color: #1f2937 !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker-header,
+html[data-theme='dark'] .p-datepicker-header {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker-title,
+html[data-theme='dark'] .p-datepicker-title {
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker table th,
+html[data-theme='dark'] .p-datepicker table th {
+    color: #cbd5e1 !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker table td > span,
+html[data-theme='dark'] .p-datepicker table td > span {
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker table td > span:hover,
+html[data-theme='dark'] .p-datepicker table td > span:hover {
+    background-color: #334155 !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker table td.p-datepicker-today > span,
+html[data-theme='dark'] .p-datepicker table td.p-datepicker-today > span {
+    background-color: #155e75 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .compact-calendar .p-datepicker table td > span.p-highlight,
+html[data-theme='dark'] .p-datepicker table td > span.p-highlight {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
 }
