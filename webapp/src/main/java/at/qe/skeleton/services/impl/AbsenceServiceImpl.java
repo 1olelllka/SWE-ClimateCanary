@@ -123,6 +123,21 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
+    @Transactional
+    public Absence cancelAbsence(UUID absenceId, Userx user) {
+        Absence absence = absenceRepository.findById(absenceId)
+                .orElseThrow(() -> new NotFoundException("Absence with id " + absenceId + " was not found."));
+        if (!absence.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException("You are not allowed to cancel this absence.");
+        }
+        if (absence.getStatus() != AbsenceStatus.PENDING) {
+            throw new ValidationException("Only pending absences can be cancelled.");
+        }
+        absence.setStatus(AbsenceStatus.CANCELLED);
+        return absenceRepository.save(absence);
+    }
+
+    @Override
     public Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable) {
         return absenceRepository.findByAssignedTo(user.getId(), pageable);
     }

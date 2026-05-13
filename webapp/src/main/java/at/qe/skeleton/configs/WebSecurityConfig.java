@@ -91,7 +91,10 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
                                         .requestMatchers("/api/users/me/department/rooms")
-                                        .hasAuthority(Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name())
+                                        .hasAnyAuthority(
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name()
+                                        )
 
                                         .requestMatchers("/api/users/me").authenticated()
 
@@ -113,8 +116,6 @@ public class WebSecurityConfig {
                                         .requestMatchers(
                                                 org.springframework.http.HttpMethod.GET,
                                                 "/api/rooms",
-                                                "/api/rooms/*/limits",
-                                                "/api/rooms/*/climate-limits",
                                                 "/api/rooms/*/violations"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
@@ -122,21 +123,39 @@ public class WebSecurityConfig {
                                         )
 
                                         .requestMatchers(
+                                                org.springframework.http.HttpMethod.GET,
+                                                "/api/rooms/*/limits"
+                                        ).hasAnyAuthority(
+                                                Permission.CAN_VIEW_ALL_ROOMS.name(),
+                                                Permission.CAN_MANAGE_BUILDING_STRUCTURE.name(),
+                                                Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name()
+                                        )
+
+                                        .requestMatchers(
                                                 org.springframework.http.HttpMethod.PATCH,
-                                                "/api/rooms/*/limits",
-                                                "/api/rooms/*/climate-limits"
+                                                "/api/rooms/*/limits"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()
+                                        )
+
+                                        .requestMatchers(
+                                                org.springframework.http.HttpMethod.GET,
+                                                "/api/warnings/rooms/**"
+                                        ).hasAnyAuthority(
+                                                Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_OFFICE_WARNINGS.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_WARNINGS.name()
                                         )
 
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
 
                                         .requestMatchers("/api/sensor-stations/**")
-                                        .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
 
-                                        .requestMatchers("/api/tips")
+                                        .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
 
                                         .requestMatchers("/api/**").authenticated()

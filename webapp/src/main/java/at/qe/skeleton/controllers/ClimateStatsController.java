@@ -2,7 +2,6 @@ package at.qe.skeleton.controllers;
 
 import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
-import at.qe.skeleton.dtos.LimitDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
 import at.qe.skeleton.services.ClimateStatsService;
 import jakarta.validation.Valid;
@@ -67,11 +66,6 @@ public class ClimateStatsController {
         // Everyone else can view full granularity with smart timeframe defaults
         return ResponseEntity.ok(
                 climateStatsService.getClimateHistoryFull(id, timeframe, granularity));
-    }
-
-    @GetMapping("/rooms/{id}/climate-limits")
-    public ResponseEntity<LimitDTO> getRoomLimits(@PathVariable UUID id) {
-        return ResponseEntity.ok(climateStatsService.getLimits(id));
     }
 
     private boolean hasRole(String role) {

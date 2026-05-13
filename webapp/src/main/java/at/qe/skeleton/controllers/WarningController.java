@@ -26,7 +26,7 @@ public class WarningController {
     private final AuthenticatedUserService authenticatedUserService;
 
     @GetMapping("/warnings/rooms/{room_id}")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_OFFICE_WARNINGS') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS')")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_OFFICE_CLIMATE') or hasAuthority('CAN_VIEW_OWN_OFFICE_WARNINGS') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS')")
     public ResponseEntity<List<WarningDTO>> getWarningsForRoom(
             @PathVariable(name = "room_id") UUID roomId,
             @RequestParam(name = "activeOnly") Boolean active,
@@ -64,18 +64,9 @@ public class WarningController {
         return ResponseEntity.ok(warningsService.resolveWarning(id));
     }
 
-    // full violation log for UI table
-    @GetMapping("/warnings/rooms/{room_id}/violations")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS')")
-    public ResponseEntity<List<WarningDTO>> getViolationLog(
-            @PathVariable(name = "room_id") UUID id) {
-        Userx user = authenticatedUserService.getAuthenticatedUser();
-        return ResponseEntity.ok(warningsService.getViolationLog(user, id));
-    }
-
     @GetMapping("/warnings/departments/{department_id}/summary")
     @PreAuthorize("hasAuthority('CAN_VIEW_VIOLATIONS_PER_DEPARTMENT') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS')")
-    public ResponseEntity<?> getWarningsSummaryForDepartment(
+    public ResponseEntity<List<?>> getWarningsSummaryForDepartment(
             @PathVariable(name = "department_id") UUID id,
             @RequestParam(name = "onlyActive") Boolean active,
             @RequestParam(name = "startDate") LocalDate startDate,

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,6 +61,7 @@ public class DequeConsumer {
         }
     }
 
+    @Transactional
     void processCommand(Command command) {
         try {
             ResponseEntity<Void> response = command.execute();
@@ -77,6 +79,7 @@ public class DequeConsumer {
         }
     }
 
+    @Transactional
     public void handleFailure(Command command) {
         AtomicInteger attempts = this.attempts;
         log.warn("Failed attempt {} for Pi [{}:{}]", attempts.get(), command.getRaspberry().getIp(), command.getRaspberry().getPort());

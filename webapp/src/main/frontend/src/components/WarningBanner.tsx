@@ -10,7 +10,7 @@ export const WarningBanner: React.FC<WarningBannerProps> = ({ boldPart, regularP
     return (
         <div className="warning-banner-wrapper">
             <div className="warning-banner">
-                <span className="warning-icon">🌿</span>
+                <span className="warning-icon">⚠️</span>
                 <span className="warning-text">
                     <strong className="warning-bold">{boldPart}</strong>
                     <span className="warning-regular">{regularPart}</span>

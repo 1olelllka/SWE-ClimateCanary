@@ -51,7 +51,7 @@ public class TipController {
                                                      BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(""));
-            throw new jakarta.validation.ValidationException(msg);
+            throw new ValidationException(msg);
         }
         Tip tip = tipService.updateExistingTip(id, dto.message());
         return new ResponseEntity<>(mapper.mapTo(tip), HttpStatus.OK);

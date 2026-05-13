@@ -4,10 +4,12 @@ import at.qe.skeleton.dtos.UserxCreateDTO;
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.mappers.UserxCreateMapper;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.UserRoleService;
 import at.qe.skeleton.services.UserService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,37 +31,31 @@ import java.util.UUID;
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @AutoConfigureMockMvc
-public class UserxControllerIntegrationTests {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class UserxControllerIntegrationTests {
 
-    private final UserService userService;
-    private final UserRoleService userRoleService;
-    private final UserxCreateMapper userxCreateMapper;
-    private final MockMvc mockMvc;
-    private final ObjectMapper objectMapper;
+    @Autowired UserService userService;
+    @Autowired UserRoleService userRoleService;
+    @Autowired UserxCreateMapper userxCreateMapper;
+    @Autowired UserxRepository userxRepository;
+    @Autowired MockMvc mockMvc;
+    ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    public UserxControllerIntegrationTests(UserService userService,
-                                           UserxCreateMapper userxCreateMapper,
-                                           UserRoleService userRoleService,
-                                           MockMvc mockMvc) {
-        this.mockMvc = mockMvc;
-        this.userService = userService;
-        this.userxCreateMapper = userxCreateMapper;
-        this.userRoleService = userRoleService;
-        this.objectMapper = new ObjectMapper();
+    @BeforeEach
+    void setUp() {
+        userxRepository.deleteAll();
     }
 
     @Test
-    public void testThatUsersEndpointIsSecured() throws Exception {
+    void testThatUsersEndpointIsSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatGetPageOfUsersReturnsHttp200OkAndPage() throws Exception {
+    void testThatGetPageOfUsersReturnsHttp200OkAndPage() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -68,14 +64,14 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatGetSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
+    void testThatGetSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/" + UUID.randomUUID()))
                 .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatGetSpecificUserReturnsHttp200OkAndUser() throws Exception {
+    void testThatGetSpecificUserReturnsHttp200OkAndUser() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users/" + user.getId()))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -83,10 +79,9 @@ public class UserxControllerIntegrationTests {
     }
 
 
-    // for absence creation I need corresponding service
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    public void testThatGetPageOfAbsencesOfAuthenticatedUserReturnsHttp200Ok() throws Exception {
+    void testThatGetPageOfAbsencesOfAuthenticatedUserReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         TestingAuthenticationToken auth = new TestingAuthenticationToken(user, null, "CAN_MANAGE_OWN_ABSENCE");
 
@@ -97,7 +92,7 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatCreateNewUserReturnsHttp201Created() throws Exception {
+    void testThatCreateNewUserReturnsHttp201Created() throws Exception {
         UserxCreateDTO dto = TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()));
         String json = objectMapper.writeValueAsString(dto);
 
@@ -110,7 +105,7 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatCreateNewUserReturnsHttp400BadRequestIfInvalid() throws Exception {
+    void testThatCreateNewUserReturnsHttp400BadRequestIfInvalid() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
@@ -119,7 +114,7 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatPatchSpecificUserReturnsHttp200Ok() throws Exception {
+    void testThatPatchSpecificUserReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
 
         UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
@@ -135,7 +130,7 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatPatchSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
+    void testThatPatchSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
         UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
         String json = objectMapper.writeValueAsString(patchDTO);
 
@@ -148,7 +143,7 @@ public class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
-    public void testThatDeleteAnUserReturnsHttp204NoContentAndDeletesUser() throws Exception {
+    void testThatDeleteAnUserReturnsHttp204NoContentAndDeletesUser() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/users/" + user.getId()))
@@ -157,5 +152,15 @@ public class UserxControllerIntegrationTests {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/users"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void testThatGetAuthenticatedUserReturnsHttp200OkAndAuthenticatedUser() throws Exception {
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
+        TestingAuthenticationToken token = new TestingAuthenticationToken(user.getUsername(), user, "ROLE_EMPLOYEE");
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/users/me")
+                .with(SecurityMockMvcRequestPostProcessors.authentication(token)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.username").value(user.getUsername()));
     }
 }

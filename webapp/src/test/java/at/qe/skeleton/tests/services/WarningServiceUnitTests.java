@@ -211,12 +211,16 @@ class WarningServiceUnitTests {
     }
 
     @Test
-    void officeViewer_activeFalse_throws() {
+    void officeViewer_activeFalse_returnsActiveWarnings() {
         when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
+        when(warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId))
+                .thenReturn(List.of(activeWarning()));
 
-        assertThatThrownBy(() ->
-                service.getAllWarningsForRoom(officeViewer(), roomId, false, startDate, endDate))
-                .isInstanceOf(ForbiddenException.class);
+        var result = service.getAllWarningsForRoom(officeViewer(), roomId, false, startDate, endDate);
+
+        assertThat(result).hasSize(1);
+        verify(warningsRepository).findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId);
+        verify(warningsRepository, never()).findByRoomMonitoring_RoomIdAndCreatedAtBetween(any(), any(), any());
     }
 
     @Test
@@ -238,7 +242,7 @@ class WarningServiceUnitTests {
         when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createWarning(createDto()))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(roomId.toString());
 
         verify(warningsRepository, never()).save(any());
@@ -434,7 +438,7 @@ class WarningServiceUnitTests {
         when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createWarning(createDto()))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(NotFoundException.class);
     }
 
     // ───── updateWarningStatus ─────
@@ -456,7 +460,7 @@ class WarningServiceUnitTests {
 
         assertThatThrownBy(() ->
                 service.updateWarningStatus(warningId, new WarningUpdateStatusDTO(WarningStatus.RED, 30)))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(NotFoundException.class);
     }
 
     // ───── resolveWarning ─────
@@ -469,19 +473,6 @@ class WarningServiceUnitTests {
         var result = service.resolveWarning(warningId);
 
         assertThat(result.active()).isFalse();
-    }
-
-    // ───── getViolationLog ─────
-
-    @Test
-    void getViolationLog_success() {
-        when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
-        when(warningsRepository.findByRoomMonitoring_RoomId(roomId))
-                .thenReturn(List.of(activeWarning(), resolvedWarning()));
-
-        var result = service.getViolationLog(departmentViewer(), roomId);
-
-        assertThat(result).hasSize(2);
     }
 
     // ───── getViolationLogForDepartment ─────

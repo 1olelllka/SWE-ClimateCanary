@@ -28,5 +28,10 @@ public class Department {
     private Building building;
 
     @OneToMany(mappedBy = "department", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @Builder.Default
     private List<Room> rooms = new ArrayList<>();
+
+    public void addNewRoom(Room room) {
+        this.getRooms().add(room);
+    }
 }

@@ -3,39 +3,107 @@ import globalAxios from 'axios';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../utilities/routes.paths';
+import { AbsenceDetailDialog } from '../components/AbsenceDetailDialog';
+import type { AbsenceListDTO } from '../components/AbsenceDetailDialog';
+import '../styles/EmployeeAbsencesPage.css';
 
-interface AbsenceListDTO {
-    id: string;
-    typeOfAbsence: string;
-    startDate: string;
-    endDate: string;
-    status: string;
+const TOTAL_VACATION_DAYS = 25;
+const MAX_IGNORE_MINUTES = 120;
+
+const formatEnum = (value?: string | null) => {
+    if (!value) return '-';
+    return value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' ');
+};
+
+const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    });
+
+const formatDateRange = (startDate: string, endDate: string) => {
+    const start = formatDate(startDate);
+    const end = formatDate(endDate);
+    return start === end ? start : `${start} – ${end}`;
+};
+
+const calculateAbsenceDays = (startDate: string, endDate: string): number => {
+    const startDay = new Date(startDate);
+    startDay.setHours(0, 0, 0, 0);
+    const endDay = new Date(endDate);
+    endDay.setHours(0, 0, 0, 0);
+    return Math.max(
+        1,
+        Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    );
+};
+
+const calculateAbsenceHours = (startDate: string, endDate: string) =>
+    calculateAbsenceDays(startDate, endDate) * 8;
+
+const formatIgnoreTime = (minutes: number): string => {
+    if (minutes === 0) return '—';
+    if (minutes < 60) return `${minutes} min`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+    const key = status.toLowerCase();
+    const knownKeys = ['approved', 'pending', 'rejected', 'cancelled'];
+    const cls = knownKeys.includes(key) ? key : 'other';
+    return (
+        <span className={`absence-status-badge ${cls}`}>
+            {formatEnum(status)}
+        </span>
+    );
+};
+
+interface KpiCardProps {
+    title: string;
+    value: number;
+    max: number;
+    displayValue?: string;
+    barColor?: string;
 }
+
+const KpiCard = ({ title, value, max, displayValue, barColor = '#22c55e' }: KpiCardProps) => {
+    const percentage = Math.min(100, (value / max) * 100);
+    return (
+        <div className="absence-kpi-card">
+            <div className="absence-kpi-title">{title}</div>
+            <div className="absence-kpi-bar-track">
+                <div
+                    className="absence-kpi-bar-fill"
+                    style={{ width: `${percentage}%`, background: barColor }}
+                />
+            </div>
+            <div className="absence-kpi-value">{displayValue ?? value}</div>
+        </div>
+    );
+};
 
 export const EmployeeAbsencesPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [showRequestForm, setShowRequestForm] = useState(false);
+    const [selectedAbsence, setSelectedAbsence] = useState<AbsenceListDTO | null>(null);
     const [absences, setAbsences] = useState<AbsenceListDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-    const navigate = useNavigate();
     const [sortAscending, setSortAscending] = useState(false);
 
     const fetchAbsences = useCallback(() => {
         setLoading(true);
+
         globalAxios.get('/api/users/me')
-            .then(res => {
-                setCurrentUserId(res.data.id);
-            })
-            .catch(err => console.error("Konnte User nicht laden", err));
+            .then(res => setCurrentUserId(res.data.id))
+            .catch(err => console.error('Could not load user', err));
 
         globalAxios.get('/api/users/me/absences')
-            .then(res => {
-                setAbsences(res.data.content || []);
-            })
-            .catch(err => console.error("Fehler beim Laden der Abwesenheiten", err))
+            .then(res => setAbsences(res.data.content || []))
+            .catch(err => console.error('Could not load absences', err))
             .finally(() => setLoading(false));
     }, []);
 
@@ -43,173 +111,163 @@ export const EmployeeAbsencesPage: React.FC = () => {
         fetchAbsences();
     }, [fetchAbsences]);
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
+    // ── KPI computations ──────────────────────────────────────────────────────
 
-    const formatDateRange = (startDate: string, endDate: string) => {
-        const start = formatDate(startDate);
-        const end = formatDate(endDate);
+    const currentYear = new Date().getFullYear();
 
-        if (start === end) {
-            return start;
-        }
+    const usedVacationDays = useMemo(() =>
+        absences
+            .filter(a =>
+                a.status === 'APPROVED' &&
+                a.typeOfAbsence === 'VACATION' &&
+                new Date(a.startDate).getFullYear() === currentYear,
+            )
+            .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
+        [absences, currentYear],
+    );
 
-        return `${start} - ${end}`;
-    };
+    const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
 
-    const KpiCard = ({ title, value, max }: { title: string, value: number, max: number }) => {
-        const percentage = Math.min(100, (value / max) * 100);
-        return (
-            <div style={{ background: '#e2e8f0', padding: '1rem', borderRadius: '4px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ fontSize: '0.9rem', color: '#334155', minHeight: '40px' }}>{title}</div>
-                <div style={{ background: '#f1f5f9', height: '12px', width: '100%', borderRadius: '6px', overflow: 'hidden' }}>
-                    <div style={{ background: '#4ade80', height: '100%', width: `${percentage}%` }}></div>
-                </div>
-                <div style={{ textAlign: 'right', fontWeight: 'bold', color: '#0f172a' }}>{value}</div>
-            </div>
-        );
-    };
+    const oldestPendingMinutes = useMemo(() => {
+        const pending = absences
+            .filter(a => a.status === 'PENDING' && a.createdAt)
+            .map(a => ({ ...a, createdAtMs: new Date(a.createdAt!).getTime() }))
+            .sort((a, b) => a.createdAtMs - b.createdAtMs);
 
-    const formatEnum = (value?: string | null) => {
-        if (!value) return '-';
-        return value.charAt(0) + value.slice(1).toLowerCase();
-    };
+        if (pending.length === 0) return 0;
+        return Math.max(0, Math.floor((Date.now() - pending[0].createdAtMs) / 60_000));
+    }, [absences]);
 
-    const calculateAbsenceHours = (startDate: string, endDate: string) => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+    // ── Table sort ────────────────────────────────────────────────────────────
 
-        const startDay = new Date(start);
-        startDay.setHours(0, 0, 0, 0);
+    const sortedAbsences = useMemo(() =>
+        [...absences].sort((a, b) => {
+            const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+            return sortAscending ? diff : -diff;
+        }),
+        [absences, sortAscending],
+    );
 
-        const endDay = new Date(end);
-        endDay.setHours(0, 0, 0, 0);
-
-        const dayDiff =
-            Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-
-        return Math.max(dayDiff, 1) * 8;
-    };
-
-    const sortedAbsences = useMemo(() => {
-        return [...absences].sort((a, b) => {
-            const dateA = new Date(a.startDate).getTime();
-            const dateB = new Date(b.startDate).getTime();
-
-            return sortAscending ? dateA - dateB : dateB - dateA;
-        });
-    }, [absences, sortAscending]);
+    // ─────────────────────────────────────────────────────────────────────────
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f1f5f9', display: 'flex', flexDirection: 'column' }}>
+        <div className="employee-absences-page">
             <PageHeader title="My Absences" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
-            <div style={{ padding: '1.5rem', maxWidth: '800px', margin: '0 auto', width: '100%', flexGrow: 1 }}>
+            <div className="employee-absences-content">
 
-                {/* Zurück Button */}
-                <button
-                    onClick={() => navigate(ROUTES.HOME)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}
-                >
-                    <i className="pi pi-arrow-circle-left" style={{ fontSize: '2rem', color: '#0f172a' }}></i>
-                </button>
+                <p className="employee-absences-section-heading">Overview</p>
 
-                <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>Overview</h3>
-
-                {/* KPI Grid (Aktuell mit statischen Werten, da API noch keine Quoten liefert) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                    <KpiCard title="Vacation Days Remaining" value={18} max={25} />
-                    <KpiCard title="Used This Year" value={7} max={25} />
-                    <KpiCard title="Pending Requests" value={absences.filter(a => a.status === 'PENDING').length} max={10} />
+                <div className="employee-absences-kpi-grid">
+                    <KpiCard
+                        title="Vacation Days Remaining"
+                        value={vacationRemaining}
+                        max={TOTAL_VACATION_DAYS}
+                    />
+                    <KpiCard
+                        title="Used This Year"
+                        value={usedVacationDays}
+                        max={TOTAL_VACATION_DAYS}
+                    />
+                    <KpiCard
+                        title="Pending Requests"
+                        value={absences.filter(a => a.status === 'PENDING').length}
+                        max={10}
+                    />
+                    <KpiCard
+                        title="How Long Manager Ignores Me"
+                        value={Math.min(oldestPendingMinutes, MAX_IGNORE_MINUTES)}
+                        max={MAX_IGNORE_MINUTES}
+                        displayValue={formatIgnoreTime(oldestPendingMinutes)}
+                        barColor="#f59e0b"
+                    />
                 </div>
 
-                {/* Controls */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="employee-absences-controls">
                     <button
                         type="button"
+                        className="absence-sort-button"
                         onClick={() => setSortAscending(prev => !prev)}
-                        style={{ padding: '0.5rem 1rem', background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                     >
                         Sort by date {sortAscending ? '↑' : '↓'}
                     </button>
                     <button
-                        onClick={() => setShowRequestForm(!showRequestForm)}
-                        style={{ padding: '0.5rem 1rem', background: '#e2e8f0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        type="button"
+                        className="absence-request-button"
+                        onClick={() => setShowRequestForm(true)}
                     >
                         + Request Absence
                     </button>
                 </div>
 
-                {/* Overlay für das Formular */}
                 {showRequestForm && (
-                    <div style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        zIndex: 9999,
-                        padding: '1rem'
-                    }}>
-                        <div style={{ position: 'relative', width: '100%', maxWidth: '550px' }}>
-                            <CreateAbsenceForm
-                                currentUserId={currentUserId}
-                                onSuccess={() => {
-                                    setShowRequestForm(false);
-                                    fetchAbsences();
-                                }}
-                                onCancel={() => setShowRequestForm(false)}
-                            />
-                        </div>
+                    <div className="absence-dialog-overlay">
+                        <CreateAbsenceForm
+                            currentUserId={currentUserId}
+                            onSuccess={() => {
+                                setShowRequestForm(false);
+                                fetchAbsences();
+                            }}
+                            onCancel={() => setShowRequestForm(false)}
+                        />
                     </div>
                 )}
 
-                {/* Tabelle */}
-                <div style={{ overflowX: 'auto' }}>
+                {selectedAbsence && (
+                    <div className="absence-dialog-overlay">
+                        <AbsenceDetailDialog
+                            absence={selectedAbsence}
+                            onClose={() => setSelectedAbsence(null)}
+                            onCancelled={() => {
+                                setSelectedAbsence(null);
+                                fetchAbsences();
+                            }}
+                        />
+                    </div>
+                )}
+
+                <div className="employee-absences-table-wrapper">
                     {loading ? (
-                        <p>Loading absences...</p>
+                        <p className="employee-absences-loading">Loading absences...</p>
                     ) : (
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <table className="employee-absences-table">
                             <thead>
-                            <tr style={{ borderBottom: '2px solid #cbd5e1' }}>
-                                <th style={{ padding: '0.75rem 0.5rem' }}>Request</th>
-                                <th style={{ padding: '0.75rem 0.5rem' }}>Date</th>
-                                <th style={{ padding: '0.75rem 0.5rem' }}>Hours</th>
-                                <th style={{ padding: '0.75rem 0.5rem' }}>Status</th>
-                                <th style={{ padding: '0.75rem 0.5rem' }}></th>
-                            </tr>
+                                <tr>
+                                    <th>Request</th>
+                                    <th>Date</th>
+                                    <th>Hours</th>
+                                    <th>Status</th>
+                                    <th />
+                                </tr>
                             </thead>
                             <tbody>
-                            {sortedAbsences.map((abs, index) => (                                <tr key={abs.id} style={{ backgroundColor: index % 2 !== 0 ? '#94a3b8' : 'transparent', color: index % 2 !== 0 ? 'white' : 'inherit' }}>
-                                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                                        {formatEnum(abs.typeOfAbsence)}                                    </td>
-                                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                                        {formatDateRange(abs.startDate, abs.endDate)}
-                                    </td>                                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                                        {calculateAbsenceHours(abs.startDate, abs.endDate)} h
-                                    </td>
-                                    <td style={{ padding: '0.75rem 0.5rem' }}>
-                                        {formatEnum(abs.status)}                                    </td>
-                                    <td style={{ padding: '0.75rem 0.5rem', textAlign: 'right' }}>
-                                        <i className="pi pi-ellipsis-h" style={{ cursor: 'pointer' }}></i>
-                                    </td>
-                                </tr>
-                            ))}
-                            {absences.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} style={{ textAlign: 'center', padding: '1rem' }}>No absences found.</td>
-                                </tr>
-                            )}
+                                {sortedAbsences.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="employee-absences-empty-cell">
+                                            No absences found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    sortedAbsences.map(abs => (
+                                        <tr key={abs.id}>
+                                            <td>{formatEnum(abs.typeOfAbsence)}</td>
+                                            <td>{formatDateRange(abs.startDate, abs.endDate)}</td>
+                                            <td>{calculateAbsenceHours(abs.startDate, abs.endDate)} h</td>
+                                            <td><StatusBadge status={abs.status} /></td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    className="absence-detail-trigger"
+                                                    onClick={() => setSelectedAbsence(abs)}
+                                                    title="View details"
+                                                >
+                                                    <i className="pi pi-ellipsis-h" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     )}

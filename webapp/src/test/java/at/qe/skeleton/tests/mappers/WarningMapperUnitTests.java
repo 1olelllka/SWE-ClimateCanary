@@ -87,7 +87,7 @@ public class WarningMapperUnitTests {
         WarningDTO dto = new WarningDTO(
                 id, roomId, "Sensor-01", MeasurementType.TEMPERATURE,
                 WarningStatus.YELLOW, "Too hot", 28.5, 25.0,
-                createdAt, null, true);
+                createdAt, null, "Nothing", true);
 
         Warnings result = mapper.mapFrom(dto);
 
@@ -111,7 +111,7 @@ public class WarningMapperUnitTests {
         WarningDTO dto = new WarningDTO(
                 id, roomId, "Sensor-01", MeasurementType.TEMPERATURE,
                 WarningStatus.GREEN, "Resolved", 28.5, 25.0,
-                createdAt, resolvedAt, false);
+                createdAt, resolvedAt, "Nothing",false);
 
         Warnings result = mapper.mapFrom(dto);
 

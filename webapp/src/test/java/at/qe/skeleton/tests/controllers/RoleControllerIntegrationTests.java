@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -26,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
-public class RoleControllerIntegrationTests {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class RoleControllerIntegrationTests {
 
     private UserRoleService userRoleService;
     private ObjectMapper objectMapper;
@@ -41,14 +43,14 @@ public class RoleControllerIntegrationTests {
     }
 
     @Test
-    public void testThatPermissionsEndpointIsSecured() throws Exception {
+    void testThatPermissionsEndpointIsSecured() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/roles"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(authorities = {"CAN_MANAGE_USERS"})
-    public void testThatGetAllPermissionsReturnListOfPredefinedRoles() throws Exception {
+    void testThatGetAllPermissionsReturnListOfPredefinedRoles() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/roles"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").exists())
@@ -62,7 +64,7 @@ public class RoleControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = {"CAN_MANAGE_USERS"})
-    public void testThatUpdatePermissionReturnsHttp404NotFoundIfRoleDoesNotExist() throws Exception {
+    void testThatUpdatePermissionReturnsHttp404NotFoundIfRoleDoesNotExist() throws Exception {
         UserRoleCreateDTO dto = new UserRoleCreateDTO("Test", null);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/roles/"+ UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -72,7 +74,7 @@ public class RoleControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = {"CAN_MANAGE_USERS"})
-    public void testThatUpdatePermissionReturnsHttp200CreatedAndUpdatedObject() throws Exception {
+    void testThatUpdatePermissionReturnsHttp200CreatedAndUpdatedObject() throws Exception {
         UserRoleCreateDTO dto = new UserRoleCreateDTO(null, Set.of(Permission.CAN_VIEW_ALL_ROOMS));
         UUID id = userRoleService.getListOfPermissions().getFirst().getId();
         String res = mockMvc.perform(MockMvcRequestBuilders.patch("/api/roles/"+ id)

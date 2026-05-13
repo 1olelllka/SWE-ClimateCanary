@@ -17,6 +17,7 @@ public record WarningDTO(
         double activeLimitAtTime,
         LocalDateTime createdAt,
         LocalDateTime resolvedAt,   // null if still active
+        String tip,
         boolean active
 ) {
 }

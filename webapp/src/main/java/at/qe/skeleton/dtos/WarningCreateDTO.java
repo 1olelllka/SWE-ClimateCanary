@@ -8,9 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record WarningCreateDTO(
-
         @NotNull(message = "Room ID must not be null.")
-        @NotEmpty(message = "Room ID must not be empty.")
         UUID roomId,
 
         String device,
@@ -22,11 +20,9 @@ public record WarningCreateDTO(
         WarningStatus status,
 
         @NotNull(message = "Value must not be null.")
-        @NotEmpty(message = "Value must not be empty.")
         double triggeredValue,
 
         @NotNull(message = "Limit must not be null.")
-        @NotEmpty(message = "Limit must not be empty.")
         double activeLimitAtTime,
 
         @NotEmpty(message = "Message must not be empty.") //thought can be null if not set

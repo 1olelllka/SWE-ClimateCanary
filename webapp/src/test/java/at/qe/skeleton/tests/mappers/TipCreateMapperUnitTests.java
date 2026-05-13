@@ -109,7 +109,7 @@ class TipCreateMapperUnitTests {
                         type,
                         ViolatedSensor.TEMPERATURE,
                         WarningStatus.GREEN,
-                        "Some tip message."
+                        "Some tip tip."
                 );
 
                 Tip result = mapper.mapFrom(dto);
@@ -126,7 +126,7 @@ class TipCreateMapperUnitTests {
                         ViolationType.OVER,
                         sensor,
                         WarningStatus.GREEN,
-                        "Some tip message."
+                        "Some tip tip."
                 );
 
                 Tip result = mapper.mapFrom(dto);

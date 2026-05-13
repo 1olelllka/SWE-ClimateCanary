@@ -28,19 +28,22 @@ export const DashboardCalendar: React.FC<Props> = ({ dateRange, setDateRange, is
             </button>
 
             <OverlayPanel ref={op}>
-                <Calendar
-                    value={dateRange as any}
-                    onChange={(e) => {
-                        const dates = e.value as Date[];
-                        setDateRange(dates);
-                        if (dates && dates[1]) {
-                            onActivate();
-                            op.current?.hide();
-                        }
-                    }}
-                    selectionMode="range"
-                    inline
-                />
+                <div className="compact-calendar">
+                    <Calendar
+                        value={dateRange as any}
+                        onChange={(e) => {
+                            const dates = e.value as Date[];
+                            setDateRange(dates);
+                            if (dates && dates[1]) {
+                                onActivate();
+                                op.current?.hide();
+                            }
+                        }}
+                        selectionMode="range"
+                        numberOfMonths={2}
+                        inline
+                    />
+                </div>
             </OverlayPanel>
         </>
     );

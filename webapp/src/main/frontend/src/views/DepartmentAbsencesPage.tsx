@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import globalAxios from 'axios';
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from '../components/PageHeader';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '../utilities/routes.paths';
 import '../styles/DepartmentAbsencesPage.css';
 
 interface AbsenceListDTO {
@@ -47,7 +45,6 @@ export const DepartmentAbsencesPage: React.FC = () => {
     const [absences, setAbsences] = useState<AbsenceListDTO[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const navigate = useNavigate();
 
     const fetchAbsences = useCallback(() => {
         setLoading(true);
@@ -153,12 +150,6 @@ export const DepartmentAbsencesPage: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <main className="department-absences-main">
-                <button
-                    onClick={() => navigate(ROUTES.HOME)}
-                    className="department-absences-back-button"
-                >
-                    <i className="pi pi-arrow-circle-left department-absences-back-icon" />
-                </button>
 
                 <section className="department-absences-kpi-grid">
                     <KpiBox title="Today absent" value={todayAbsentCount} />
@@ -183,7 +174,7 @@ export const DepartmentAbsencesPage: React.FC = () => {
                             </AbsenceTable>
                         </section>
 
-                        <section>
+                        <section className="department-absences-section">
                             <h2>Current Absence Requests</h2>
                             <AbsenceTable>
                                 {pendingAbsences.length === 0 ? (

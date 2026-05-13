@@ -1,0 +1,92 @@
+.tip-management-page {
+    min-height: 100vh;
+    background: #f4f4f4;
+}
+
+.tip-management-content {
+    padding: 72px 56px;
+}
+
+.tip-management-card {
+    max-width: 760px;
+}
+
+.tip-management-section-title {
+    margin: 0 0 24px 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.tip-management-condition-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.tip-management-condition-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.tip-management-condition-dropdown {
+    min-width: 240px;
+}
+
+.tip-management-condition-dropdown .p-dropdown {
+    border-radius: 999px;
+}
+
+.tip-management-textarea {
+    display: block;
+    width: 100%;
+    min-height: 150px;
+    margin-bottom: 32px;
+    padding: 18px 22px;
+    font-size: 1rem;
+    border-radius: 8px;
+    resize: vertical;
+}
+
+.tip-management-save-button {
+    width: 240px;
+    height: 48px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.tip-management-info-message {
+    margin-top: 16px;
+    color: #475569;
+}
+
+.tip-management-error-message {
+    margin-top: 16px;
+    color: #dc2626;
+    font-weight: 500;
+}
+
+.tip-management-success-message {
+    margin-top: 16px;
+    color: #15803d;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .tip-management-content {
+        padding: 40px 24px;
+    }
+
+    .tip-management-condition-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .tip-management-condition-dropdown,
+    .tip-management-save-button {
+        width: 100%;
+    }
+}
