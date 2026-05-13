@@ -25,11 +25,10 @@ bool BLEManager::begin(DisplayManager* display) {
   service.addCharacteristic(rxCharacteristic);
   BLE.addService(service);
 
-  txCharacteristic.writeValue("Hello from Arduino");
   rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
 
-  BLE.advertise();
-  Serial.println("BLE advertising started");
+  //BLE.advertise();
+  //Serial.println("BLE advertising started");
 
   return true;
 }
@@ -42,8 +41,12 @@ void BLEManager::poll() {
   if (central && !currentCentral) {
     currentCentral = central;
 
-    Serial.print("Connected to: ");
-    Serial.println(currentCentral.address());
+    piConnectionEstablished = true;
+    piConnectionCount++;
+    piAddress = currentCentral.address();
+    BLE.stopAdvertise();
+
+    Serial.println("Connected to: " + currentCentral.address() + " (Historical connections: " + String(piConnectionCount) + ")");
 
     timeReceived = false;
 

@@ -9,11 +9,12 @@ public:
   bool wasPressed();
 
 private:
-  uint8_t pin;
+  uint8_t pin = 0;
+
   bool lastReading = HIGH;
-  bool stableState = HIGH;
   bool pressed = false;
 
-  unsigned long lastDebounceTime = 0;
-  static const unsigned long debounceDelay = 30;
+  unsigned long lastPressTime = 0;
+
+  static const unsigned long debounceDelayMs = 150;
 };
