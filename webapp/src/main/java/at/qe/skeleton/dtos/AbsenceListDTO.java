@@ -16,6 +16,9 @@ public record AbsenceListDTO(
         LocalDateTime endDate,
         AbsenceType typeOfAbsence,
         AbsenceStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String comment,
+        String managerFirstName,
+        String managerLastName
 ) {
 }

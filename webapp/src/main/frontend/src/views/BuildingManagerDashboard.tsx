@@ -175,8 +175,13 @@ export const BuildingManagerDashboard: React.FC = () => {
             globalAxios.get<ClimateData>(`/api/rooms/${room.id}/current-climate`)
                 .then(response => response.data)
                 .catch(() => null),
-            globalAxios.get<ActiveWarning[]>(`/api/warnings?roomId=${room.id}`)
-                .then(response => response.data)
+            globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${room.id}`, {
+                params: {
+                    activeOnly: false,
+                    startDate: '2000-01-01',
+                    endDate: new Date().toISOString().slice(0, 10),
+                },
+            }).then(response => response.data)
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
             return mapToRoomData(room, climate, warnings ?? []);

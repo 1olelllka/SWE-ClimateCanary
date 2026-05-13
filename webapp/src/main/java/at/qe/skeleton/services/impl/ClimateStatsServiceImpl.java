@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -88,13 +89,14 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                  LocalDate endDate,
                                                  LocalTime startTime,
                                                  LocalTime endTime) {
-        OffsetDateTime from = OffsetDateTime.from(startDate.atTime(startTime != null ? startTime : LocalTime.MIDNIGHT).atOffset(ZoneOffset.UTC));
-        OffsetDateTime to   = OffsetDateTime.from(endDate.atTime(endTime != null ? endTime : LocalTime.MAX).atOffset(ZoneOffset.UTC));
+        OffsetDateTime from = startDate.atTime(startTime != null ? startTime : LocalTime.MIDNIGHT)
+                .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        OffsetDateTime to   = endDate.atTime(endTime != null ? endTime : LocalTime.MAX)
+                .atZone(ZoneId.systemDefault()).toOffsetDateTime();
 
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(roomId, from, to)
                 .stream()
-                .filter(s -> isWithinTimeWindow(s.getDate().toLocalTime(), startTime, endTime))
                 .map(climateMapper::mapTo)
                 .toList();
     }
@@ -141,10 +143,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         return limitMapper.mapTo(room);
     }
 
-    private boolean isWithinTimeWindow(LocalTime time, LocalTime start, LocalTime end) {
-        return (start == null || !time.isBefore(start))
-                && (end == null || !time.isAfter(end));
-    }
 
     private LocalDate resolveFrom(String timeframe, LocalDate to) {
         return switch (timeframe) {
@@ -164,7 +162,9 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                         LocalDate to) {
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(
-                        roomId, OffsetDateTime.from(from.atStartOfDay(ZoneOffset.UTC)), OffsetDateTime.from(to.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
+                        roomId,
+                        from.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
+                        to.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime())
                 .stream()
                 .collect(Collectors.groupingBy(s ->
                         s.getDate().truncatedTo(ChronoUnit.HOURS)))
@@ -183,7 +183,9 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                        LocalDate to) {
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(
-                        roomId, OffsetDateTime.from(from.atStartOfDay(ZoneOffset.UTC)), OffsetDateTime.from(to.atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
+                        roomId,
+                        from.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
+                        to.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime())
                 .stream()
                 .collect(Collectors.groupingBy(s -> s.getDate().toLocalDate()))
                 .entrySet().stream()

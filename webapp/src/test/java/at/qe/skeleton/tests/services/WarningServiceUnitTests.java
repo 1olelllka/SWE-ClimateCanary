@@ -211,12 +211,16 @@ class WarningServiceUnitTests {
     }
 
     @Test
-    void officeViewer_activeFalse_throws() {
+    void officeViewer_activeFalse_returnsActiveWarnings() {
         when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
+        when(warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId))
+                .thenReturn(List.of(activeWarning()));
 
-        assertThatThrownBy(() ->
-                service.getAllWarningsForRoom(officeViewer(), roomId, false, startDate, endDate))
-                .isInstanceOf(ForbiddenException.class);
+        var result = service.getAllWarningsForRoom(officeViewer(), roomId, false, startDate, endDate);
+
+        assertThat(result).hasSize(1);
+        verify(warningsRepository).findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId);
+        verify(warningsRepository, never()).findByRoomMonitoring_RoomIdAndCreatedAtBetween(any(), any(), any());
     }
 
     @Test

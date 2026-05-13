@@ -25,6 +25,7 @@ public class TemperatureLimit extends LimitValues{
 
     @PrePersist
     void prePersist() {
-        setMaxVal(26);
+        setMinVal(18f);
+        setMaxVal(26f);
     }
 }

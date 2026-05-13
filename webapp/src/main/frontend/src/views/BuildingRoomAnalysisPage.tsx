@@ -44,7 +44,7 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
         setLimitsMessage(null);
 
         Promise.allSettled([
-            globalAxios.get<LimitDTO>(`/api/rooms/${roomId}/climate-limits`),
+            globalAxios.get<LimitDTO>(`/api/rooms/${roomId}/limits`),
             globalAxios.get(`/api/rooms/${roomId}/violations`),
             globalAxios.get(`/api/rooms`)
         ])

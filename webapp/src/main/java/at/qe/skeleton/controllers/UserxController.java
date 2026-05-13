@@ -7,6 +7,7 @@ import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.*;
 import at.qe.skeleton.model.Absence;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AbsenceService;
@@ -92,7 +93,7 @@ public class UserxController {
     }
 
     @GetMapping("/me/department/rooms")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_DEPARTMENT_MEASURES')")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_SHARED_CLIMATE') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_MEASURES')")
     public ResponseEntity<List<RoomDTO>> getRoomsOfAuthenticatedUsersDepartment(Authentication authentication) {
         Userx authenticated = userService.getByUsername(authentication.getName());
 
@@ -101,10 +102,13 @@ public class UserxController {
         }
 
         UUID departmentId = authenticated.getMyRoom().getDepartment().getId();
+        boolean isDeptManager = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("CAN_VIEW_OWN_DEPARTMENT_MEASURES"));
 
         List<RoomDTO> rooms = roomRepository.findAll().stream()
                 .filter(room -> room.getDepartment() != null)
                 .filter(room -> room.getDepartment().getId().equals(departmentId))
+                .filter(room -> isDeptManager || room.getRoomType() == RoomType.SHARED)
                 .map(roomMapper::mapTo)
                 .toList();
 
