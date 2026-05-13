@@ -153,7 +153,7 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
 
                                         .requestMatchers("/api/sensor-stations/**")
-                                        .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
 
                                         .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
