@@ -18,11 +18,11 @@ public:
 
   LedMode ledMode = LedMode::Off;
   void begin();
-
-private:
   void setOff();
   void setGreen();
   void setBlue();
   void setRed();
   void update();
+
+private:
 };

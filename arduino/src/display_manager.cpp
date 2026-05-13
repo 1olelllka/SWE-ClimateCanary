@@ -53,17 +53,17 @@ void DisplayManager::showReading(const SensorReading& reading) {
   if (currentMode == DisplayMode::Regular) {
     switch (currentRegularPage) {
       case RegularModeDisplay::Temperature:
-        printLine(lcd, 0, "Mode: Regular");
+        printLine(lcd, 0, "Regular Mode");
         printLine(lcd, 1, "Temp.: " + String(reading.temperatureC, 1) + "C");
         break;
 
       case RegularModeDisplay::Humidity:
-        printLine(lcd, 0, "Mode: Regular");
+        printLine(lcd, 0, "Regular Mode");
         printLine(lcd, 1, "Humidity: " + String(reading.humidityPct, 0) + "%");
         break;
 
       case RegularModeDisplay::AirQuality:
-        printLine(lcd, 0, "Mode: Regular");
+        printLine(lcd, 0, "Regular Mode");
         printLine(lcd, 1, "IAQ: " + String(reading.airQualityIndex, 0) + "%");
         break;
     }
@@ -72,24 +72,24 @@ void DisplayManager::showReading(const SensorReading& reading) {
   else if (currentMode == DisplayMode::Warning) {
     switch (currentWarningPage) {
       case WarningModeDisplay::WarnMessage:
-        printLine(lcd, 0, "Mode: Warning");
+        printLine(lcd, 0, "Warn Mode(text)");
         printLine(lcd, 1, currentWarnText);
         break;
 
       case WarningModeDisplay::ExceededThreshold:
-        printLine(lcd, 0, "Mode: Warning");
-        printLine(lcd, 1, currentThreshold);
+        printLine(lcd, 0, "Warn Mode(thres.)");
+        printLine(lcd, 1, "Threshold: " + currentThreshold);
         break;
 
       case WarningModeDisplay::AdviceMessage:
-        printLine(lcd, 0, "Mode: Warning");
+        printLine(lcd, 0, "Warn Mode(tip)");
         printLine(lcd, 1, currentTip);
         break;
     }
   }
 
   else if (currentMode == DisplayMode::Fault) {
-    printLine(lcd, 0, "Mode: Fault");
+    printLine(lcd, 0, "Fault Mode");
     printLine(lcd, 1, currentFaultText);
   }
 }

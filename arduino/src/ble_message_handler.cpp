@@ -1,5 +1,8 @@
 #include "ble_message_handler.h"
 #include "ble_manager.h"
+#include "led_manager.h"
+
+extern LedManager ledManager;
 
 void BLEMessageHandler::handleRxMessage(
   BLEManager* manager,
@@ -61,6 +64,7 @@ void BLEMessageHandler::handleRxMessage(
       threshold.trim();
       tip.trim();
       violationStatus.trim();
+      violationStatus.toUpperCase();
 
       Serial.println("Parsed warning:");
       Serial.println(warnText);
@@ -80,16 +84,23 @@ void BLEMessageHandler::handleRxMessage(
         tip
       );
 
-      if (violationStatus == "blue") {
+      if (violationStatus == "BLUE") {
         Serial.println("Violation status:blue (blue led on)");
-      } else if (violationStatus == "red") {
+        ledManager.setBlue();
+      } else if (violationStatus == "RED") {
         Serial.println("Violation status: red (red led on)");
+        ledManager.setRed();
       } else {
         Serial.println("Violation status unknown");
       }
     } else {
       Serial.println("Invalid WARNTEXT message format");
     }
+  }
+
+  else if (received.startsWith("RESOLVED:")){
+    //TODO: manager->displayManager->clearFault();
+    ledManager.setGreen();
   }
 
   else if (received == "ERROR:WEBAPP_OFFLINE") {
