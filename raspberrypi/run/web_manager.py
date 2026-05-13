@@ -11,9 +11,9 @@ SENSOR_UPDATE_TYPES = {"SENSOR_DELETE", "SENSOR_ADD", "FLUSH"}
 
 # Maps TipCreateDTO ViolationType + ViolatedSensor to an Arduino sensor name prefix.
 TIP_SENSOR_MAP = {
-    "TEMPERATURE": "temperature",
-    "HUMIDITY":    "moisture",
-    "CO2":         "co2",
+    "TEMPERATURE": "TEMPERATURE",
+    "HUMIDITY":    "MOISTURE",
+    "CO2":         "IAQ",
 }
 
 
