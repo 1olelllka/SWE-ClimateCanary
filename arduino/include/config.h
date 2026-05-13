@@ -3,8 +3,8 @@
 #define DEVICE_NAME "SensorStation"
 
 #define BLE_SERVICE_UUID "19B10000-E8F2-537E-4F6C-D104768A1214"
-#define BLE_TX_UUID "7b4849b1-0693-420a-aca8-6db0b577c651"
-#define BLE_RX_UUID "4dcf1a29-6ad9-4ad1-815f-5e9f24fd2f1c"
+#define BLE_TX_UUID "93a65c7f-ed13-45d8-ac27-c4eb40af987b" //read
+#define BLE_RX_UUID "950a0e76-c48e-4e45-a6ec-5ebc6c995172" //write
 
 #define MEASURE_AND_SEND_INTERVAL_MS  5000
 #define BME688_I2C_ADDR 0x76	

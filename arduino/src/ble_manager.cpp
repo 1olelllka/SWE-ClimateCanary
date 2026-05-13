@@ -27,9 +27,6 @@ bool BLEManager::begin(DisplayManager* display) {
 
   rxCharacteristic.setEventHandler(BLEWritten, onRxWritten);
 
-  //BLE.advertise();
-  //Serial.println("BLE advertising started");
-
   return true;
 }
 
@@ -57,6 +54,8 @@ void BLEManager::poll() {
   if (currentCentral && !currentCentral.connected()) {
     Serial.print("Disconnected from: ");
     Serial.println(currentCentral.address());
+
+    displayManager->setFault("Pi disconnected");
 
     currentCentral = BLEDevice();
     timeReceived = false;
@@ -90,10 +89,10 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   json += ",\"temperature\":";
   json += String(r.temperatureC, 2);
 
-  json += ",\"moisture\":";
+  json += ",\"humidity\":";
   json += String(r.humidityPct, 2);
 
-  json += ",\"iaq\":";
+  json += ",\"co2\":";
   json += String(r.airQualityIndex, 2);
 
   json += "}";

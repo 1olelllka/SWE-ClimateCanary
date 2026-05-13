@@ -8,10 +8,10 @@
 class DisplayManager {
 public:
   enum class DisplayMode {
-  Regular,
-  Warning,
-  Fault
-};
+    Regular,
+    Warning,
+    Fault
+  };
 
   enum class RegularModeDisplay {
     Temperature,
