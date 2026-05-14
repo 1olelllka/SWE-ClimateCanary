@@ -70,9 +70,11 @@ public class RaspberryServiceImpl implements RaspberryService {
     public RaspberryPi updateRaspberryById(UUID id, RaspberryPi raspberryPi) {
         return raspberryPiRepository.findById(id).map(rasp -> {
             log.info("Updating Raspberry Pi configs: '{}' [{}:{}]", rasp.getName(), rasp.getIp(), rasp.getPort());
+            AtomicBoolean configChanges = new AtomicBoolean(false);
             Optional.ofNullable(raspberryPi.getFrequency()).ifPresent(freq -> {
                 log.info("Pre-saved new frequency for Raspberry Pi sensors: {} -> {}", rasp.getFrequency(), freq);
                 rasp.setFrequency(freq);
+                configChanges.set(true);
             });
             Optional.ofNullable(raspberryPi.getName()).ifPresent(name -> {
                 if (!rasp.getName().equals(name) && raspberryPiRepository.existsByName(name)) {
@@ -100,7 +102,12 @@ public class RaspberryServiceImpl implements RaspberryService {
                 }
             }
             log.info("Successfully updated Raspberry Pi configs: '{}' [{}:{}]", rasp.getName(), rasp.getIp(), rasp.getPort());
-            return raspberryPiRepository.save(rasp);
+            RaspberryPi pi = raspberryPiRepository.save(rasp);
+            if (ipPortChanged.get() || configChanges.get())
+                eventPublisher.publishEvent(new NotifyRaspberryCommand(
+                        new ConfigRequestDTO(pi.getId(), LocalDateTime.now()), pi, notificationClient
+                ));
+            return pi;
         }).orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
     }
 

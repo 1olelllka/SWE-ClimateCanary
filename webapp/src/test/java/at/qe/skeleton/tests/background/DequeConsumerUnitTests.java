@@ -19,26 +19,26 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class DequeConsumerUnitTests {
+class DequeConsumerUnitTests {
 
     @Mock
     RaspberryPiRepository piRepository;
-
+    @Mock
+    private NotifyRaspberryCommand notifyCommand;
     @InjectMocks
     private DequeConsumer dequeConsumer;
 
-    private NotifyRaspberryCommand notifyCommand;
-
     @BeforeEach
     void setUp() {
-        notifyCommand = mock(NotifyRaspberryCommand.class);
-        when(notifyCommand.getRaspberry()).thenReturn(RaspberryPi.builder().ip("localhost").port(8000).name("Test Pi").build());
+        when(notifyCommand.getAttempts()).thenReturn(0);
     }
 
     @Test
     void testThatHandleFailureRequeuesCommandWhenUnderMaxAttempts() {
+        when(notifyCommand.getAttempts()).thenReturn(0); // under MAX_ATTEMPTS
+
         try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
-            dequeConsumer.handleFailure(notifyCommand);
+            dequeConsumer.handleFailure(notifyCommand, new RaspberryPi());
 
             deque.verify(() -> CommandDeque.addFirst(notifyCommand));
             verify(piRepository, never()).save(any());
@@ -47,36 +47,54 @@ public class DequeConsumerUnitTests {
 
     @Test
     void testThatHandleFailureMarksRaspberryOfflineAfterMaxAttempts() {
-        RaspberryPi pi = new RaspberryPi();
-        when(notifyCommand.getRaspberry()).thenReturn(pi);
+        when(notifyCommand.getAttempts()).thenReturn(DequeConsumer.MAX_ATTEMPTS); // at limit
+
+        RaspberryPi pi = RaspberryPi.builder()
+                .status(DeviceStatus.ONLINE)
+                .ip("localhost")
+                .port(8000)
+                .build();
 
         try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
-            // first MAX_ATTEMPTS calls re-queue, the next one triggers offline
-            for (int i = 0; i <= DequeConsumer.MAX_ATTEMPTS; i++) {
-                dequeConsumer.handleFailure(notifyCommand);
-            }
+            dequeConsumer.handleFailure(notifyCommand, pi);
 
-            verify(piRepository, atLeastOnce()).save(pi);
+            verify(piRepository).save(pi);
             assertEquals(DeviceStatus.OFFLINE, pi.getStatus());
+            deque.verify(() -> CommandDeque.addFirst(any()), never());
         }
     }
 
     @Test
     void testThatHandleFailureResetsAttemptsAfterMaxAttempts() {
-        RaspberryPi pi = new RaspberryPi();
-        when(notifyCommand.getRaspberry()).thenReturn(pi);
+        when(notifyCommand.getAttempts()).thenReturn(DequeConsumer.MAX_ATTEMPTS); // at limit
+
+        RaspberryPi pi = RaspberryPi.builder()
+                .status(DeviceStatus.ONLINE)
+                .ip("localhost")
+                .port(8000)
+                .build();
 
         try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
-            // exhaust attempts to trigger offline + reset
-            for (int i = 0; i <= DequeConsumer.MAX_ATTEMPTS; i++) {
-                dequeConsumer.handleFailure(notifyCommand);
-            }
+            dequeConsumer.handleFailure(notifyCommand, pi);
 
-            // after reset, next failure should re-queue again, not persist
-            dequeConsumer.handleFailure(notifyCommand);
+            verify(notifyCommand).resetAttempts();
+        }
+    }
 
-            // MAX_ATTEMPTS re-queues before offline, plus 1 after reset
-            deque.verify(() -> CommandDeque.addFirst(notifyCommand), times(DequeConsumer.MAX_ATTEMPTS + 1));
+    @Test
+    void testThatHandleFailureDoesNotSetOfflineWhenAlreadyOffline() {
+        when(notifyCommand.getAttempts()).thenReturn(DequeConsumer.MAX_ATTEMPTS);
+
+        RaspberryPi pi = RaspberryPi.builder()
+                .status(DeviceStatus.OFFLINE)
+                .ip("localhost")
+                .port(8000)
+                .build();
+
+        try (MockedStatic<CommandDeque> deque = mockStatic(CommandDeque.class)) {
+            dequeConsumer.handleFailure(notifyCommand, pi);
+
+            verify(piRepository, never()).save(any());
         }
     }
 }

@@ -1,6 +1,9 @@
 package at.qe.skeleton.commands;
 
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.RaspberryPi;
 import lombok.Getter;
@@ -21,6 +24,7 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     private LimitChangeNotificationDTO limitDto = null;
     private OccupancyDTO occupancyDTO = null;
     private ConfigRequestDTO configRequestDTO = null;
+    private int attempts = 0;
 
     public NotifyRaspberryCommand(StateChangeNotificationDTO dto,
                                   UUID readId,
@@ -97,6 +101,26 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     @Override
     public RaspberryPi getRaspberry() {
         return this.pi;
+    }
+
+    @Override
+    public UUID getRaspberryId() {
+        return this.pi.getId();
+    }
+
+    @Override
+    public int getAttempts() {
+        return this.attempts;
+    }
+
+    @Override
+    public void incrementAttempts() {
+        this.attempts += 1;
+    }
+
+    @Override
+    public void resetAttempts() {
+        this.attempts = 0;
     }
 
 }
