@@ -86,14 +86,18 @@ public class RaspberryServiceImpl implements RaspberryService {
             });
             AtomicBoolean ipPortChanged = new AtomicBoolean(false);
             Optional.ofNullable(raspberryPi.getIp()).ifPresent(ip -> {
-                ipPortChanged.set(true);
-                log.info("Pre-saved new IP-address for Raspberry Pi: {} -> {}", rasp.getIp(), ip);
-                rasp.setIp(ip);
+                if (!ip.equals(rasp.getIp())) {
+                    ipPortChanged.set(true);
+                    log.info("Pre-saved new IP-address for Raspberry Pi: {} -> {}", rasp.getIp(), ip);
+                    rasp.setIp(ip);
+                }
             });
             Optional.ofNullable(raspberryPi.getPort()).ifPresent(port -> {
-                ipPortChanged.set(true);
-                log.info("Pre-saved new port for Raspberry Pi: {} -> {}", rasp.getPort(), port);
-                rasp.setPort(port);
+                if (!port.equals(rasp.getPort())) {
+                    ipPortChanged.set(true);
+                    log.info("Pre-saved new port for Raspberry Pi: {} -> {}", rasp.getPort(), port);
+                    rasp.setPort(port);
+                }
             });
             if (ipPortChanged.get()) {
                 if (raspberryPiRepository.existsByIpAndPort(rasp.getIp(), rasp.getPort())) {
