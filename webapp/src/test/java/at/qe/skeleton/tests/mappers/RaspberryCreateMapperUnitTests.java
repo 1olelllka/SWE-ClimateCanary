@@ -154,7 +154,7 @@ class RaspberryCreateMapperUnitTests {
 
             // RaspberryPi uses new RaspberryPi() not builder, so @Builder.Default
             // does not apply — frequency will be 0 until set by service layer
-            assertThat(result.getFrequency()).isEqualTo(100);//default value
+            assertThat(result.getFrequency()).isEqualTo(1000);//default value
         }
 
         @Test

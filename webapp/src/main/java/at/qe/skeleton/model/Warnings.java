@@ -24,13 +24,13 @@ public class Warnings {
     private String message;
 
     @Column(nullable = false)
-    private String deviceName;
-
-    @Column(nullable = false)
     private double triggeredValue;
 
     @Column(nullable = false)
     private double activeLimitAtTime;
+
+    @Column(nullable = false)
+    private UUID sensorWriteId;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

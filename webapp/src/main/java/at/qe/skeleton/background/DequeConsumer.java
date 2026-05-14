@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -22,7 +22,6 @@ public class DequeConsumer {
 
     private volatile boolean running = true;
     private Thread consumerThread;
-    private AtomicInteger attempts = new AtomicInteger(0);
 
     private final RaspberryPiRepository raspberryPiRepository;
 
@@ -56,38 +55,55 @@ public class DequeConsumer {
                 Thread.currentThread().interrupt();
                 log.error("Consumer interrupted, shutting down...");
                 break;
+            } catch (Exception ex) {
+                log.error("Unexpected error processing command: {}", ex.getMessage(), ex);
             }
         }
     }
 
     void processCommand(Command command) {
+        UUID piId = command.getRaspberryId();
+        RaspberryPi pi = raspberryPiRepository.findById(piId)
+                .orElseThrow(() -> new IllegalStateException("Pi not found: " + piId));
         try {
             ResponseEntity<Void> response = command.execute();
+
             if (response.getStatusCode().value() >= 300) {
-                handleFailure(command);
-            }
-            if (response.getStatusCode().value() < 300) {
-                RaspberryPi pi = command.getRaspberry();
-                pi.setStatus(DeviceStatus.ONLINE);
-                raspberryPiRepository.save(pi);
+                handleFailure(command, pi);
+            } else {
+                if (pi.getStatus() == DeviceStatus.OFFLINE) {
+                    pi.setStatus(DeviceStatus.ONLINE);
+                    raspberryPiRepository.save(pi);
+                }
+                log.info("Successfully processed the Raspberry Pi command...");
             }
         } catch (Exception e) {
             log.error("Exception during execute: {}", e.getMessage(), e);
-            handleFailure(command);
+            handleFailure(command, pi);
         }
     }
 
-    public void handleFailure(Command command) {
-        AtomicInteger attempts = this.attempts;
-        log.warn("Failed attempt {} for Pi [{}:{}]", attempts.get(), command.getRaspberry().getIp(), command.getRaspberry().getPort());
-        if (attempts.get() < MAX_ATTEMPTS) {
+    public void handleFailure(Command command, RaspberryPi pi) {
+        int current = command.getAttempts();
+        log.warn("Failed attempt {} for Pi [{}:{}]", current, pi.getIp(), pi.getPort());
+
+        if (current < MAX_ATTEMPTS) {
+            command.incrementAttempts();
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                log.warn("Retry sleep interrupted: {}", ex.getMessage(), ex);
+            }
             CommandDeque.addFirst(command);
-            this.attempts.incrementAndGet();
         } else {
-            log.error("Failed to communicate with Raspberry Pi [{}:{}]. Setting to offline...", command.getRaspberry().getIp(), command.getRaspberry().getPort());
-            command.getRaspberry().setStatus(DeviceStatus.OFFLINE);
-            raspberryPiRepository.save(command.getRaspberry());
-            this.attempts.set(0);
+            log.error("Failed to communicate with Raspberry Pi [{}:{}]. Setting to offline...",
+                    pi.getIp(), pi.getPort());
+            if (pi.getStatus() == DeviceStatus.ONLINE) {
+                pi.setStatus(DeviceStatus.OFFLINE);
+                raspberryPiRepository.save(pi);
+            }
+            command.resetAttempts();
         }
     }
 }

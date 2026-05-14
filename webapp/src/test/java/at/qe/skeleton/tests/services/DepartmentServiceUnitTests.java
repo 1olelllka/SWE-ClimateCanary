@@ -1,10 +1,14 @@
 package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.exceptions.ConflictException;
+import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
+import at.qe.skeleton.model.Permission;
+import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.impl.DepartmentServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +24,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +36,8 @@ class DepartmentServiceUnitTests {
 
     @Mock
     private DepartmentRepository departmentRepository;
+    @Mock
+    private AuthenticatedUserService authenticatedUserService;
 
     @InjectMocks
     private DepartmentServiceImpl departmentService;
@@ -63,7 +70,7 @@ class DepartmentServiceUnitTests {
     @Test
     void testThatGetDepartmentByIdWhenExistsShouldReturnDepartment() {
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-
+        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
         Department result = departmentService.getDepartmentById(departmentId);
 
         assertEquals(sampleDepartment.getName(), result.getName());

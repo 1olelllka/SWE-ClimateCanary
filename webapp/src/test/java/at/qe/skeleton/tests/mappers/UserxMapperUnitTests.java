@@ -81,7 +81,7 @@ class UserxMapperUnitTests {
         UserxDTO dto = new UserxDTO(
                 UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now(),
                 "jdoe", "John", "Doe", true, null,
-                Set.of(sampleRoleDto), userRoom
+                Set.of(sampleRoleDto), userRoom, 25
         );
 
         when(roleMapper.mapFrom(sampleRoleDto)).thenReturn(sampleRole);
@@ -99,7 +99,7 @@ class UserxMapperUnitTests {
         UserxDTO dto = new UserxDTO(
                 UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now(),
                 "jdoe", "John", "Doe", true, null,
-                Set.of(sampleRoleDto), null
+                Set.of(sampleRoleDto), null, 25
         );
         when(roleMapper.mapFrom(any())).thenReturn(sampleRole);
         Userx result = userxMapper.mapFrom(dto);
