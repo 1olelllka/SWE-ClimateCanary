@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -189,4 +190,16 @@ public class AbsenceServiceImpl implements AbsenceService {
                 .map(UserClockStatus::isClockedIn)
                 .orElse(false);
     }
+
+    @Override
+    @Transactional
+    public List<Userx> getAllAvailableManagersForUser(Userx user) {
+        return userxRepository.findAllByDepartment(user.getMyRoom().getDepartment().getId())
+                .stream()
+                .filter(u -> u.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch("CAN_MANAGE_ABSENCES"::equals))
+                .toList();
+    }
+
 }

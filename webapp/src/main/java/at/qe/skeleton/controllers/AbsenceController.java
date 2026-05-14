@@ -22,6 +22,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -61,6 +62,16 @@ public class AbsenceController {
         } else {
             return new ResponseEntity<>(absenceService.getAllAbsencesById(user.getId(), pageable).map(absenceListMapper::mapTo), HttpStatus.OK);
         }
+    }
+
+    @GetMapping("/managers")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<List<UserxListDTO>> getAvailableManagersForAbsence() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        List<Userx> managers = absenceService.getAllAvailableManagersForUser(user);
+        return new ResponseEntity<>(managers.stream().map(man ->
+            new UserxListDTO(man.getId(), man.getCreateDate(), man.getUsername(), man.getFirstName(), man.getLastName())
+        ).toList(), HttpStatus.OK);
     }
 
     @PostMapping("")

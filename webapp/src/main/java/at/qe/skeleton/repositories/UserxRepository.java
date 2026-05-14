@@ -1,6 +1,5 @@
 package at.qe.skeleton.repositories;
 
-import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,11 +13,6 @@ public interface UserxRepository extends JpaRepository<Userx, UUID> {
 
     Optional<Userx> findFirstByUsername(String username);
 
-    List<Userx> findByUsernameContaining(String username);
-
-    @Query("SELECT u FROM Userx u WHERE CONCAT(u.firstName, ' ', u.lastName) = :wholeName")
-    List<Userx> findByWholeNameConcat(@Param("wholeName") String wholeName);
-
     @Query("SELECT u FROM Userx u JOIN u.userRoles r WHERE r.name = :roleName")
     List<Userx> findByRoleName(@Param("roleName") String roleName);
 
@@ -27,4 +21,6 @@ public interface UserxRepository extends JpaRepository<Userx, UUID> {
 
     boolean existsByUsername(String username);
 
+    @Query("SELECT u FROM Userx u WHERE u.myRoom.department.id = :id")
+    List<Userx> findAllByDepartment(@Param("id") UUID id);
 }
