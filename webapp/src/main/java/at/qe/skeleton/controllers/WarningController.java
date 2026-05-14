@@ -26,7 +26,8 @@ public class WarningController {
     private final AuthenticatedUserService authenticatedUserService;
 
     @GetMapping("/warnings/rooms/{room_id}")
-    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_OFFICE_CLIMATE') or hasAuthority('CAN_VIEW_OWN_OFFICE_WARNINGS') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS')")
+    @PreAuthorize("hasAuthority('CAN_VIEW_OWN_OFFICE_CLIMATE') or hasAuthority('CAN_VIEW_OWN_OFFICE_WARNINGS') or hasAuthority('CAN_VIEW_OWN_DEPARTMENT_WARNINGS') or " +
+            "hasAuthority('CAN_VIEW_ALL_ROOMS')")
     public ResponseEntity<List<WarningDTO>> getWarningsForRoom(
             @PathVariable(name = "room_id") UUID roomId,
             @RequestParam(name = "activeOnly") Boolean active,

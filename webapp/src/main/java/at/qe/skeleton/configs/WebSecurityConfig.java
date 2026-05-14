@@ -106,13 +106,8 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                         .requestMatchers("/api/building-trend/**")
                                         .hasAnyAuthority(Permission.CAN_VIEW_COMPANY_AGGR.name())
-//                                        .requestMatchers(
-//                                                "/api/rooms/*/current-climate",
-//                                                "/api/rooms/*/overtime",
-//                                                "/api/rooms/*/climate-history"
-//                                        ).authenticated()
                                         .requestMatchers(
-                                                "/api/rooms/*/overtime", "/api/rooms*/climate-history"
+                                                "/api/rooms/*/overtime", "/api/rooms/*/climate-history**", "/api/rooms/*/current-climate"
                                         ).hasAnyAuthority(Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
                                                 Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),

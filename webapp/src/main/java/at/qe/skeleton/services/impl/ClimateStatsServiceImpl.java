@@ -26,6 +26,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,11 +51,43 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     // for current climate values (only 3 latest are shown)
     @Override
     public ClimateDataPointDTO getCurrentClimate(UUID roomId) {
-        return climateStatsRepository
-                .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
-                .map(climateMapper::mapTo)
-                .orElseThrow(() -> new NotFoundException(
-                        "No climate data found for room: " + roomId));
+        Userx authenticated = authenticatedUserService.getAuthenticatedUser();
+        List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
+        if (roles.contains("CAN_VIEW_OWN_OFFICE_CLIMATE") && !roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES") && !roles.contains("CAN_VIEW_ALL_ROOMS")) {
+            if (authenticated.getMyRoom().getId().equals(room.getId()) && room.getRoomType() == RoomType.OFFICE)
+                return climateStatsRepository
+                        .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
+                        .map(climateMapper::mapTo)
+                        .orElseThrow(() -> new NotFoundException(
+                                "No climate data found for room: " + roomId));
+            else if (authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()) && room.getRoomType() == RoomType.SHARED) {
+                return climateStatsRepository
+                        .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
+                        .map(climateMapper::mapTo)
+                        .orElseThrow(() -> new NotFoundException(
+                                "No climate data found for room: " + roomId));
+            }
+            throw new ForbiddenException("You are not allowed to see other's rooms.");
+        }
+        if (roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES") && !roles.contains("CAN_VIEW_ALL_ROOMS")) {
+            if (authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
+                return climateStatsRepository
+                        .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
+                        .map(climateMapper::mapTo)
+                        .orElseThrow(() -> new NotFoundException(
+                                "No climate data found for room: " + roomId));
+            }
+            throw new ForbiddenException("You are not allowed to see other's rooms.");
+        }
+        if (roles.contains("CAN_VIEW_ALL_ROOMS")) {
+            return climateStatsRepository
+                    .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
+                    .map(climateMapper::mapTo)
+                    .orElseThrow(() -> new NotFoundException(
+                            "No climate data found for room: " + roomId));
+        }
+        throw new ForbiddenException("You are not allowed to see other's rooms.");
     }
 
     // for POST /measurements
@@ -97,6 +130,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 .atZone(ZoneId.systemDefault()).toOffsetDateTime();
         OffsetDateTime to   = endDate.atTime(endTime != null ? endTime : LocalTime.MAX)
                 .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        if (to.isBefore(from) || from.plusDays(2).isBefore(to)) throw new ValidationException("Invalid timestamps.");
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
@@ -105,11 +139,15 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                     .equals(room.getDepartment().getId());
             boolean sameRoom = authenticated.getMyRoom().getId().equals(roomId);
 
-            if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
-                throw new ForbiddenException("You are not allowed to see others' room climate.");
+            if (!roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES")) {
+                if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
+                    throw new ForbiddenException("You are not allowed to see others' room climate.");
 
-            if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
-                throw new ForbiddenException("You are not allowed to see others' room climate.");
+                if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
+                    throw new ForbiddenException("You are not allowed to see others' room climate.");
+                }
+            } else {
+                if (!sameDepartment) throw new ForbiddenException("You are not allowed to see others' room climate.");
             }
         }
         return climateStatsRepository
@@ -122,39 +160,74 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     // Full granularity
     @Override
     public List<AggregatedDataPointDTO> getClimateHistoryFull(UUID roomId,
-                                                              String timeframe,
+                                                              LocalDate from,
+                                                              LocalDate to,
                                                               String granularity) {
-        LocalDate to   = LocalDate.now();
-        LocalDate from = resolveFrom(timeframe, to);
-
-        // monthly view still uses DAY grouping (hourly over a month is visually useless)
-        boolean useHourGrouping = "HOUR".equals(granularity) && !"MONTH".equals(timeframe);
-
-        if (useHourGrouping) {
-            return groupRawByHour(roomId, from, to);
+        if (from.isAfter(to)) throw new ValidationException("Invalid timestamps.");
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
+        List<String> roles = user.getAuthorities().stream().map(role -> role.getAuthority()).toList();
+        if (!roles.contains("CAN_VIEW_ALL_ROOMS")) {
+            if (user.getMyRoom().getRoomType() == RoomType.OFFICE && !user.getMyRoom().getId().equals(room.getId()))
+                throw new ForbiddenException("You are not allowed to see other's rooms.");
+            if (user.getMyRoom().getRoomType() == RoomType.SHARED && !user.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
+                throw new ForbiddenException("You are not allowed to see other's rooms.");
         }
-        return groupRawByDay(roomId, from, to);
+        boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) < 15;
+
+        // TEMPORARY VISUALIZATIONS – Background jobs should work instead
+        List<AggregatedStats> data;
+        if (useHourGrouping)
+            return groupRawByHour(roomId, from, to);
+        else if ("DAY".equals(granularity)) {
+            data = aggregatedStatsRepository
+                    .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
+            if (!data.isEmpty()) {
+                return data.stream().map(aggregatedMapper::mapTo).toList();
+            }
+            log.info("Aggregated Data was not found.");
+            return groupRawByDay(roomId, from, to);
+        } else {
+            data = aggregatedStatsRepository
+                    .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.WEEKLY);
+            if (!data.isEmpty()) {
+                return data.stream().map(aggregatedMapper::mapTo).toList();
+            }
+            log.info("Aggregated Data was not found.");
+            return groupRawByWeek(roomId, from, to);
+        }
     }
 
     // Reduced granularity, always returns day averages (never raw data, privacy reasons)
     @Override
     public List<AggregatedDataPointDTO> getClimateHistoryReduced(UUID roomId,
-                                                                 String timeframe) {
-        LocalDate to   = LocalDate.now();
-        LocalDate from = resolveFrom(timeframe, to);
+                                                                 LocalDate from,
+                                                                 LocalDate to,
+                                                                 String granularity) {
+        if (from.isAfter(to) || ChronoUnit.DAYS.between(from, to) < 3) throw new ValidationException("Invalid timestamps.");
+        boolean weekly = "WEEK".equals(granularity) && ChronoUnit.DAYS.between(from, to) > 45;
         Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         if (!authenticatedDeptMan.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
             throw new ForbiddenException("You are not allowed to see measures for this department.");
-        List<AggregatedStats> aggregated = aggregatedStatsRepository
-                .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
+        List<AggregatedStats> aggregated;
+        if (weekly) {
+            aggregated = aggregatedStatsRepository
+                    .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.WEEKLY);
+        } else {
+            aggregated = aggregatedStatsRepository
+                    .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
+        }
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
         log.info("Aggregated Data was not found.");
 
         // this is just a fallback for now — should be removed once background job is running
-        return groupRawByDay(roomId, from, to);
+        if (weekly) {
+            return groupRawByWeek(roomId, from, to);
+        } else
+            return groupRawByDay(roomId, from, to);
     }
 
     @Override
@@ -162,16 +235,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         RoomMonitoring room = roomMonitoringRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
         return limitMapper.mapTo(room);
-    }
-
-
-    private LocalDate resolveFrom(String timeframe, LocalDate to) {
-        return switch (timeframe) {
-            case "DAY"   -> to.minusDays(1);
-            case "WEEK"  -> to.minusWeeks(1);
-            case "MONTH" -> to.minusMonths(1);
-            default -> throw new ValidationException("Invalid timeframe: " + timeframe);
-        };
     }
 
     /**
@@ -209,6 +272,23 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                         to.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime())
                 .stream()
                 .collect(Collectors.groupingBy(s -> s.getDate().toLocalDate()))
+                .entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> toAggregatedDTO(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private List<AggregatedDataPointDTO> groupRawByWeek(UUID roomId,
+                                                        LocalDate from,
+                                                        LocalDate to) {
+        return climateStatsRepository
+                .findByRoomMonitoring_RoomIdAndDateBetween(
+                        roomId,
+                        from.atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
+                        to.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime())
+                .stream()
+                .collect(Collectors.groupingBy(s -> s.getDate().toLocalDate()
+                        .with(WeekFields.ISO.dayOfWeek(), 1))) // group by Monday of that week
                 .entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> toAggregatedDTO(entry.getKey(), entry.getValue()))

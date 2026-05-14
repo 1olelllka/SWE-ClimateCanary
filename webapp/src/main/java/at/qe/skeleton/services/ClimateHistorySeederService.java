@@ -23,7 +23,7 @@ public class ClimateHistorySeederService {
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final ClimateStatsRepository climateStatsRepository;
 
-    @Value("${app.seeder.climate-history.days:35}")
+    @Value("${app.seeder.climate-history.days:140}")
     private int historyDays;
 
     private static final int BATCH_SIZE = 1000;
@@ -48,6 +48,10 @@ public class ClimateHistorySeederService {
                 .filter(r -> "ENG-103".equals(r.getRoomNumber()))
                 .findFirst()
                 .ifPresent(rooms::add);
+        allRooms.stream()
+                .filter(r -> "ENG-102".equals(r.getRoomNumber()))
+                .findFirst()
+                .ifPresent(rooms::add);
 
         if (rooms.isEmpty()) {
             log.warn("No target rooms found, skipping climate history seeding.");
@@ -63,8 +67,18 @@ public class ClimateHistorySeederService {
 
         for (int roomIndex = 0; roomIndex < rooms.size(); roomIndex++) {
             RoomMonitoring room = rooms.get(roomIndex);
-            double roomTempOffset = 0.0;
-            double roomHumOffset = 0.0;
+            double roomTempOffset = switch (roomIndex) {
+                case 0 -> 0.0;   // 101 — baseline
+                case 1 -> 1.5;   // ENG-103 — slightly warmer
+                case 2 -> -1.0;  // ENG-102 — slightly cooler
+                default -> 0.0;
+            };
+            double roomHumOffset = switch (roomIndex) {
+                case 0 -> 0.0;
+                case 1 -> -5.0;  // ENG-103 — drier
+                case 2 -> 8.0;   // ENG-102 — more humid
+                default -> 0.0;
+            };
 
             List<ClimateStats> batch = new ArrayList<>(BATCH_SIZE);
             OffsetDateTime cursor = start;

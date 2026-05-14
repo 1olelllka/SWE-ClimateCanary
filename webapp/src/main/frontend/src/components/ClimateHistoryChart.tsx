@@ -126,17 +126,47 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             const diffDays  = Math.round(
                 (dateRange[1].getTime() - dateRange[0].getTime()) / 86_400_000,
             );
-            req = globalAxios
-                .get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-                    params: { startDate, endDate },
-                })
-                .then(r => diffDays > 2 ? groupByDay(r.data) : groupByHour(r.data));
 
+            if (diffDays <= 1) {
+                // Single day — use raw overtime endpoint grouped by hour
+                req = globalAxios
+                    .get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
+                        params: { startDate, endDate },
+                    })
+                    .then(r => groupByHour(r.data));
+            } else {
+                // Multi-day — use aggregated climate-history with smart granularity
+                const granularity = diffDays <= 4
+                    ? 'HOUR'
+                    : diffDays > 4 && diffDays < 45 ? 'DAY'
+                    : diffDays <= 120
+                        ? 'WEEK'
+                        : 'MONTH';
+
+                req = globalAxios
+                    .get<AggPoint[]>(`/api/rooms/${roomId}/climate-history`, {
+                        params: { startDate, endDate, granularity },
+                    })
+                    .then(r => r.data.map(d => ({
+                        label:       d.date,
+                        temperature: d.avgTemperature,
+                        humidity:    d.avgHumidity,
+                        airQuality:  d.avgAirQuality,
+                    })));
+                req.then(setData).catch(() => setData([])).finally(() => setLoading(false));
+            }
         } else {
-            const tfMap: Record<string, string> = { Week: 'WEEK', Month: 'MONTH' };
+            // const tfMap: Record<string, string> = { Week: 'WEEK', Month: 'MONTH' };
+            let startDate;
+            if (timeFilter == 'Month') {
+                startDate = fmtDate(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 31))
+            } else {
+                startDate = fmtDate(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 7))
+            }
+
             req = globalAxios
                 .get<AggPoint[]>(`/api/rooms/${roomId}/climate-history`, {
-                    params: { timeframe: tfMap[timeFilter] ?? 'WEEK', granularity: 'DAY' },
+                    params: { endDate: fmtDate(new Date()), startDate: startDate, granularity: 'DAY' },
                 })
                 .then(r => r.data.map(d => ({
                     label:       d.date,

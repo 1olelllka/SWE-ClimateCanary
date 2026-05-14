@@ -374,8 +374,8 @@ export const DepartmentHeadDashboard: React.FC = () => {
             globalAxios.get<ClimateData>(`${BASE_PATH}/api/rooms/${room.id}/current-climate`)
                 .then(response => response.data)
                 .catch(() => null),
-
-            globalAxios.get<ActiveWarning[]>(`${BASE_PATH}/api/warnings/rooms/${room.id}/violations`)
+            // TODO: CHANGE THIS, just testing...
+            globalAxios.get<ActiveWarning[]>(`${BASE_PATH}/api/warnings/rooms/${room.id}?activeOnly=true&startDate=2025-04-04&endDate=2025-04-04`)
                 .then(response => extractArrayResponse<ActiveWarning>(response.data))
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
@@ -395,8 +395,9 @@ export const DepartmentHeadDashboard: React.FC = () => {
         }
 
         Promise.all(
+            // TODO: CHANGE THIS, just testing...
             roomsWithBackendId.map(room =>
-                globalAxios.get<WarningDTO[]>(`${BASE_PATH}/api/warnings/rooms/${room.backendId}/violations`)
+                globalAxios.get<WarningDTO[]>(`${BASE_PATH}/api/warnings/rooms/${room.backendId}?activeOnly=false&startDate=2025-04-04&endDate=2025-04-04`)
                     .then(response => {
                         const warnings = Array.isArray(response.data)
                             ? response.data
@@ -487,7 +488,6 @@ export const DepartmentHeadDashboard: React.FC = () => {
                         'Department';
                     setDepartmentName(detectedDepartmentName);
                 }
-                console.log(response)
                 if (apiRooms.length === 0) {
                     setRooms([]);
                     setThresholdViolations([]);

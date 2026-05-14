@@ -53,19 +53,24 @@ public class ClimateStatsController {
     @GetMapping("/rooms/{id}/climate-history")
     public ResponseEntity<List<AggregatedDataPointDTO>> getClimateHistory(
             @PathVariable UUID id,
-            @RequestParam String timeframe,
+//            @RequestParam String timeframe,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
             @RequestParam(defaultValue = "DAY") String granularity,
             @RequestParam(defaultValue = "false") boolean isGeneralArea) {
 
         // Department manager viewing an office forced to see day averages (privacy)
         if (hasRole("DEPARTMENT_MANAGER") && !isGeneralArea) {
-            return ResponseEntity.ok(
-                    climateStatsService.getClimateHistoryReduced(id, timeframe));
+            if (granularity.equals("DAY") || granularity.equals("WEEK"))
+                return ResponseEntity.ok(
+                    climateStatsService.getClimateHistoryReduced(id, startDate, endDate, granularity));
+            else
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         // Everyone else can view full granularity with smart timeframe defaults
         return ResponseEntity.ok(
-                climateStatsService.getClimateHistoryFull(id, timeframe, granularity));
+                climateStatsService.getClimateHistoryFull(id, startDate, endDate, granularity));
     }
 
     private boolean hasRole(String role) {
