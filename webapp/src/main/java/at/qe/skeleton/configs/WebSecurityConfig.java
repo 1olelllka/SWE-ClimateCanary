@@ -106,17 +106,23 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_USERS.name())
                                         .requestMatchers("/api/building-trend/**")
                                         .hasAnyAuthority(Permission.CAN_VIEW_COMPANY_AGGR.name())
+//                                        .requestMatchers(
+//                                                "/api/rooms/*/current-climate",
+//                                                "/api/rooms/*/overtime",
+//                                                "/api/rooms/*/climate-history"
+//                                        ).authenticated()
                                         .requestMatchers(
-                                                "/api/rooms/*/current-climate",
-                                                "/api/rooms/*/overtime",
-                                                "/api/rooms/*/climate-history"
-                                        ).authenticated()
+                                                "/api/rooms/*/overtime", "/api/rooms*/climate-history"
+                                        ).hasAnyAuthority(Permission.CAN_VIEW_ALL_ROOMS.name(),
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
 
                                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/measurements")
                                         .permitAll()
 
                                         .requestMatchers(
-                                                org.springframework.http.HttpMethod.GET,
+                                                HttpMethod.GET,
                                                 "/api/rooms",
                                                 "/api/rooms/*/violations"
                                         ).hasAnyAuthority(
@@ -135,8 +141,9 @@ public class WebSecurityConfig {
                                         )
 
                                         .requestMatchers(
-                                                org.springframework.http.HttpMethod.PATCH,
-                                                "/api/rooms/*/limits"
+                                                HttpMethod.PATCH,
+                                                "/api/rooms/*/limits",
+                                                "/api/rooms/*/climate-limits"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()

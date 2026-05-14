@@ -1,20 +1,22 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.mappers.LimitMapper;
-import at.qe.skeleton.model.AggregatedStats;
-import at.qe.skeleton.model.ClimateStats;
-import at.qe.skeleton.model.Granularity;
-import at.qe.skeleton.model.RoomMonitoring;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.ClimateStatsRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.ClimateStatsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,9 +41,11 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     private final ClimateStatsRepository climateStatsRepository;
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
+    private final RoomRepository roomRepository;
     private final ClimateDataPointMapper climateMapper;
     private final AggregatedStatsMapper  aggregatedMapper;
     private final LimitMapper            limitMapper;
+    private final AuthenticatedUserService authenticatedUserService;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -93,7 +97,21 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 .atZone(ZoneId.systemDefault()).toOffsetDateTime();
         OffsetDateTime to   = endDate.atTime(endTime != null ? endTime : LocalTime.MAX)
                 .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        Userx authenticated = authenticatedUserService.getAuthenticatedUser();
+        List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
+        if (!roles.contains("CAN_VIEW_ALL_ROOMS")) {
+            boolean sameDepartment = authenticated.getMyRoom().getDepartment().getId()
+                    .equals(room.getDepartment().getId());
+            boolean sameRoom = authenticated.getMyRoom().getId().equals(roomId);
 
+            if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
+
+            if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
+            }
+        }
         return climateStatsRepository
                 .findByRoomMonitoring_RoomIdAndDateBetween(roomId, from, to)
                 .stream()
@@ -124,7 +142,10 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                                  String timeframe) {
         LocalDate to   = LocalDate.now();
         LocalDate from = resolveFrom(timeframe, to);
-
+        Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
+        if (!authenticatedDeptMan.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
+            throw new ForbiddenException("You are not allowed to see measures for this department.");
         List<AggregatedStats> aggregated = aggregatedStatsRepository
                 .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
         if (!aggregated.isEmpty()) {
@@ -149,7 +170,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             case "DAY"   -> to.minusDays(1);
             case "WEEK"  -> to.minusWeeks(1);
             case "MONTH" -> to.minusMonths(1);
-            default -> throw new IllegalArgumentException("Invalid timeframe: " + timeframe);
+            default -> throw new ValidationException("Invalid timeframe: " + timeframe);
         };
     }
 
