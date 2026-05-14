@@ -25,7 +25,7 @@ public class BuildingTrend {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Trend trend;
-    @Column(nullable = false)
+    @Column(nullable = false, name = "trend_value")
     private Double value;
     @CreationTimestamp
     private LocalDate date;

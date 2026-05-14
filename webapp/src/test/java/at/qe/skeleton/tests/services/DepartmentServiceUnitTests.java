@@ -1,12 +1,12 @@
 package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.exceptions.ConflictException;
-import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Permission;
 import at.qe.skeleton.model.UserRole;
+import at.qe.skeleton.repositories.BuildingTrendRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.impl.DepartmentServiceImpl;
@@ -36,6 +36,8 @@ class DepartmentServiceUnitTests {
 
     @Mock
     private DepartmentRepository departmentRepository;
+    @Mock
+    private BuildingTrendRepository trendRepository;
     @Mock
     private AuthenticatedUserService authenticatedUserService;
 
@@ -129,5 +131,6 @@ class DepartmentServiceUnitTests {
     void testThatDeleteDepartmentShouldCallRepository() {
         departmentService.deleteDepartment(departmentId);
         verify(departmentRepository, times(1)).deleteById(departmentId);
+        verify(trendRepository, times(1)).deleteAllByDepartmentId(departmentId);
     }
 }

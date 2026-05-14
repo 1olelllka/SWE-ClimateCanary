@@ -10,7 +10,7 @@ import java.util.UUID;
 
 @Repository
 public interface BuildingTrendRepository extends JpaRepository<BuildingTrend, UUID> {
-    BuildingTrend findFirstByOrderByDateDesc();
+    BuildingTrend findFirstByDepartmentIdOrderByDateDesc(UUID departmentId);
     List<BuildingTrend> findAllByDepartmentIdAndDateBetweenOrderByDateAsc(UUID departmentId, LocalDate start, LocalDate end);
     void deleteAllByDepartmentId(UUID id);
 }

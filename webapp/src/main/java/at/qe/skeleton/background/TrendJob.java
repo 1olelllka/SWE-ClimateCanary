@@ -51,7 +51,7 @@ public class TrendJob {
                 }
                 value += avgFormula(roomStats.getAvgTemp(), roomStats.getAvgHumidity(), roomStats.getAvgCO2());
             }
-            BuildingTrend lastOne = trendRepository.findFirstByOrderByDateDesc();
+            BuildingTrend lastOne = trendRepository.findFirstByDepartmentIdOrderByDateDesc(department.getId());
             if (lastOne == null) {
                 trending = Trend.STABLE;
             } else {
@@ -72,7 +72,11 @@ public class TrendJob {
     }
 
     private double avgFormula(double temperature, double humidity, double co2) {
-        return 0.4 * temperature + 0.3*humidity + 0.2*co2;
+        double normalizedTemp = (temperature - 18.0) / (26.0 - 18.0);
+        double normalizedHumidity = (humidity - 30.0) / (70.0 - 30.0);
+        double normalizedCo2 = (co2 - 400.0) / (2000.0 - 400.0);
+
+        return 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
     }
 
 }
