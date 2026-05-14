@@ -97,7 +97,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
                     .then(roomResponse => {
                         const departmentRooms: RoomDTO[] = roomResponse.data.rooms || [];
                         console.log(departmentRooms)
-
+                        setRooms(departmentRooms)
                         if (departmentRooms.length === 0) {
                             setSelectedRoomId(null);
                             setExpandedRoomId(null);
