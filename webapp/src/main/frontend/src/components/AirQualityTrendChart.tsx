@@ -70,8 +70,8 @@ export const AirQualityTrendChart: React.FC = () => {
     };
 
     return (
-        <div className="table-container card" style={{ padding: '2rem', backgroundColor: '#fff', borderRadius: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="table-container card chart-card">
+            <div className="chart-card-header">
                 <h3 style={{ margin: 0 }}>Trend of Air Quality per Department</h3>
 
                 <TimeFilter

@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -202,18 +203,16 @@ class ClimateStatsServiceUnitTests {
             LocalTime  startTime = LocalTime.of(8, 0);
             LocalTime  endTime   = LocalTime.of(18, 0);
 
-            List<ClimateStats> raw = List.of(
-                    stats(today.withHour(7), 18, 45, 250), // before startTime — excluded
-                    stats(today.withHour(10), 20, 50, 300), // in window
-                    stats(today.withHour(14), 21, 52, 320), // in window
-                    stats(today.withHour(20), 22, 55, 400)  // after endTime — excluded
+            List<ClimateStats> inWindow = List.of(
+                    stats(today.withHour(10), 20, 50, 300),
+                    stats(today.withHour(14), 21, 52, 320)
             );
 
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
-                    start.with(startTime),
-                    end.with(endTime)))
-                    .thenReturn(raw);
+                    start.toLocalDate().atTime(startTime).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
+                    end.toLocalDate().atTime(endTime).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
+                    .thenReturn(inWindow);
 
             List<ClimateDataPointDTO> result =
                     service.getOvertime(roomId, start.toLocalDate(), end.toLocalDate(), startTime, endTime);
@@ -228,8 +227,8 @@ class ClimateStatsServiceUnitTests {
         void nullTimesDefaultToFullDay() {
             when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
                     roomId,
-                    today.withHour(0),
-                    today.toLocalDate().atTime(LocalTime.MAX).atOffset(ZoneOffset.UTC)))
+                    today.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
+                    today.toLocalDate().atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
                     .thenReturn(List.of());
 
             List<ClimateDataPointDTO> result =

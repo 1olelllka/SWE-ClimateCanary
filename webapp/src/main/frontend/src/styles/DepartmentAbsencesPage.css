@@ -1,13 +1,13 @@
 .department-absences-page {
     min-height: 100vh;
-    background-color: #f1f5f9;
+    background-color: var(--page-bg);
     display: flex;
     flex-direction: column;
 }
 
 .department-absences-main {
     padding: 1.5rem;
-    max-width: 850px;
+    max-width: 900px;
     width: 100%;
     margin: 0 auto;
     flex-grow: 1;
@@ -17,48 +17,77 @@
     background: none;
     border: none;
     cursor: pointer;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
 }
 
 .department-absences-back-icon {
     font-size: 2rem;
-    color: #0f172a;
+    color: var(--text-primary);
 }
+
+/* KPI grid */
 
 .department-absences-kpi-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.department-absences-section {
-    margin-bottom: 3rem;
-}
-
-.department-absences-error {
-    color: #b91c1c;
+    gap: 1rem;
+    margin-bottom: 2rem;
 }
 
 .kpi-box {
-    background-color: #d9d9d9;
-    min-height: 120px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    min-height: 110px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 1rem;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .kpi-box-title {
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
 }
 
 .kpi-box-value {
     font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
 }
+
+/* Sections */
+
+.department-absences-section {
+    margin-bottom: 2.5rem;
+}
+
+.department-absences-section h2 {
+    margin: 0 0 0.875rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+.department-absences-error {
+    color: #b91c1c;
+    padding: 1rem 0;
+    text-align: center;
+}
+
+/* Table */
 
 .absence-table-wrapper {
     overflow-x: auto;
@@ -68,32 +97,52 @@
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 0.35rem;
-    text-align: center;
+    text-align: left;
 }
 
 .absence-table th {
-    padding: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
 }
 
 .absence-table-row {
-    background-color: #d9d9d9;
+    background: var(--card-bg);
 }
 
 .absence-table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.95rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.absence-table td:first-child {
+    border-left: 1px solid var(--card-border);
+    border-radius: 8px 0 0 8px;
+}
+
+.absence-table td:last-child {
+    border-right: 1px solid var(--card-border);
+    border-radius: 0 8px 8px 0;
 }
 
 .absence-empty-row {
-    padding: 1rem;
-    color: #64748b;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
+
+/* Action buttons */
 
 .absence-action-buttons {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.5rem;
 }
 
@@ -105,12 +154,139 @@
     color: white;
     cursor: pointer;
     font-weight: 700;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s;
 }
 
 .absence-action-button.approve {
     background-color: #22c55e;
 }
 
+.absence-action-button.approve:hover {
+    background-color: #16a34a;
+}
+
 .absence-action-button.reject {
     background-color: #ef4444;
+}
+
+.absence-action-button.reject:hover {
+    background-color: #dc2626;
+}
+
+@media (max-width: 700px) {
+    .department-absences-main {
+        padding: 1rem;
+    }
+
+    .department-absences-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Dark mode for DepartmentAbsencesPage */
+html[data-theme='dark'] .department-absences-page {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .department-absences-main {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .department-absences-section h2 {
+    color: var(--app-text) !important;
+}
+
+/* KPI cards */
+html[data-theme='dark'] .department-absences-page .kpi-box {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .department-absences-page .kpi-box-title {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .kpi-box-value {
+    color: var(--app-text) !important;
+}
+
+/* Table wrapper */
+html[data-theme='dark'] .department-absences-page .absence-table-wrapper {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Table */
+html[data-theme='dark'] .department-absences-page .absence-table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table thead {
+    background-color: #111827 !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table th {
+    background-color: #111827 !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table tbody {
+    background-color: var(--app-surface-2) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table td {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table-row {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-table-row:hover td {
+    background-color: #334155 !important;
+}
+
+/* Empty row */
+html[data-theme='dark'] .department-absences-page .absence-empty-row {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Loading / error text */
+html[data-theme='dark'] .department-absences-page p {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .department-absences-error {
+    color: #f87171 !important;
+}
+
+/* Action buttons */
+html[data-theme='dark'] .department-absences-page .absence-action-button {
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-action-button.approve {
+    background-color: #16a34a !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .department-absences-page .absence-action-button.reject {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
 }

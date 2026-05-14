@@ -7,6 +7,7 @@ import at.qe.skeleton.mappers.AbsenceListMapper;
 import at.qe.skeleton.mappers.AbsenceMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import jakarta.validation.Valid;
@@ -36,18 +37,21 @@ public class AbsenceController {
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
     private AuthenticatedUserService authenticatedUserService;
+    private final UserxRepository userxRepository;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
                              AbsenceMapper absenceMapper,
-                             AuthenticatedUserService authenticatedUserService) {
+                             AuthenticatedUserService authenticatedUserService,
+                             UserxRepository userxRepository) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
         this.authenticatedUserService = authenticatedUserService;
+        this.userxRepository = userxRepository;
     }
 
     @GetMapping("")
@@ -122,6 +126,14 @@ public class AbsenceController {
         }
         Absence patched = absenceService.updateAbsenceStatus(id, dto.status());
         return new ResponseEntity<>(absenceMapper.mapTo(patched), HttpStatus.OK);
+    }
+
+    @PatchMapping("{absence_id}/cancel")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<AbsenceDTO> cancelAbsence(@PathVariable(name="absence_id") UUID id) {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        Absence cancelled = absenceService.cancelAbsence(id, user);
+        return new ResponseEntity<>(absenceMapper.mapTo(cancelled), HttpStatus.OK);
     }
 
     @DeleteMapping("{absence_id}")

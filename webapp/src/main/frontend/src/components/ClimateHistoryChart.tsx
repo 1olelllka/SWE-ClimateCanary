@@ -84,8 +84,12 @@ function groupByDay(raw: RawPoint[]): DataPoint[] {
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+
 export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
-    const [timeFilter, setTimeFilter] = useState<TimeFilter>('Week');
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
     const [data,       setData]       = useState<DataPoint[]>([]);
@@ -93,7 +97,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
     const [loading,    setLoading]    = useState(false);
 
     useEffect(() => {
-        globalAxios.get<Limits>(`/api/rooms/${roomId}/climate-limits`)
+        globalAxios.get<Limits>(`/api/rooms/${roomId}/limits`)
             .then(r => setLimits(r.data))
             .catch(() => {});
     }, [roomId]);
@@ -103,10 +107,16 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         let req: Promise<DataPoint[]>;
 
         if (timeFilter === 'Day') {
-            const today = new Date().toISOString().slice(0, 10);
+            const now     = new Date();
+            const dayAgo  = new Date(now.getTime() - 24 * 60 * 60 * 1000);
             req = globalAxios
                 .get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-                    params: { startDate: today, endDate: today },
+                    params: {
+                        startDate: fmtDate(dayAgo),
+                        endDate:   fmtDate(now),
+                        startTime: fmtTime(dayAgo),
+                        endTime:   fmtTime(now),
+                    },
                 })
                 .then(r => groupByHour(r.data));
 
@@ -148,21 +158,53 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
     const showHum  = metric === 'All' || metric === 'Humidity';
     const showAQ   = metric === 'All' || metric === 'Air Quality';
 
-    // Reference lines only when a single metric is selected (avoids Y-axis scaling conflicts)
-    const markLine = (
-        minVal: number | null,
-        maxVal: number | null,
-        color:  string,
-    ) => ({
-        silent: true,
-        symbol: ['none', 'none'],
-        lineStyle: { color, type: 'dashed' as const, width: 1, opacity: 0.75 },
-        label:     { fontSize: 10, color },
-        data: [
-            ...(minVal != null ? [{ yAxis: minVal, name: `Min ${minVal}` }] : []),
-            ...(maxVal != null ? [{ yAxis: maxVal, name: `Max ${maxVal}` }] : []),
-        ],
-    });
+    const L = limits;
+
+    // Contiguous ranges where a metric violates its limits
+    function violationRanges(
+        pts: DataPoint[],
+        getValue: (d: DataPoint) => number,
+        min: number | null,
+        max: number | null,
+    ): Array<[{ xAxis: string }, { xAxis: string }]> {
+        if (!pts.length || (min == null && max == null)) return [];
+        const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
+        let start: string | null = null;
+        for (const pt of pts) {
+            const v = getValue(pt);
+            const bad = (min != null && v < min) || (max != null && v > max);
+            if (bad && start == null) { start = pt.label; }
+            else if (!bad && start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+        }
+        if (start != null) out.push([{ xAxis: start }, { xAxis: pts[pts.length - 1].label }]);
+        return out;
+    }
+
+    function mkLimitLines(entries: Array<{ yAxis: number; name: string }>, color: string) {
+        const valid = entries.filter(e => e.yAxis != null && Number.isFinite(e.yAxis));
+        if (!valid.length) return undefined;
+        return {
+            silent:    true,
+            symbol:    ['none', 'none'] as const,
+            animation: false,
+            lineStyle: { color, type: 'dashed' as const, width: 1.5, opacity: 0.8 },
+            label:     { show: true, fontSize: 9, color, position: 'insideEndTop' as const, formatter: '{b}' },
+            data:      valid,
+        };
+    }
+
+    function mkViolationArea(
+        ranges: Array<[{ xAxis: string }, { xAxis: string }]>,
+        color: string,
+    ) {
+        if (!ranges.length) return undefined;
+        return {
+            silent:    true,
+            itemStyle: { color: color + '33', borderWidth: 0 },
+            label:     { show: false },
+            data:      ranges,
+        };
+    }
 
     const series = [
         showTemp && {
@@ -173,9 +215,14 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             lineStyle: { color: COLORS.temperature, width: 2 },
             itemStyle: { color: COLORS.temperature },
             data:      data.map(d => round2(d.temperature)),
-            markLine:  metric === 'Temperature' && limits
-                ? markLine(limits.tempMin, limits.tempMax, COLORS.temperature)
-                : undefined,
+            markLine:  L && metric === 'Temperature' ? mkLimitLines([
+                { yAxis: L.tempMin, name: `T ${L.tempMin}°C` },
+                { yAxis: L.tempMax, name: `T ${L.tempMax}°C` },
+            ], COLORS.temperature) : undefined,
+            markArea: L ? mkViolationArea(
+                violationRanges(data, d => d.temperature, L.tempMin ?? null, L.tempMax ?? null),
+                COLORS.temperature,
+            ) : undefined,
         },
         showHum && {
             name:      'Humidity (%)',
@@ -185,9 +232,14 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             lineStyle: { color: COLORS.humidity, width: 2 },
             itemStyle: { color: COLORS.humidity },
             data:      data.map(d => round2(d.humidity)),
-            markLine:  metric === 'Humidity' && limits
-                ? markLine(limits.humMin, limits.humMax, COLORS.humidity)
-                : undefined,
+            markLine:  L && metric === 'Humidity' ? mkLimitLines([
+                { yAxis: L.humMin, name: `H ${L.humMin}%` },
+                { yAxis: L.humMax, name: `H ${L.humMax}%` },
+            ], COLORS.humidity) : undefined,
+            markArea: L ? mkViolationArea(
+                violationRanges(data, d => d.humidity, L.humMin ?? null, L.humMax ?? null),
+                COLORS.humidity,
+            ) : undefined,
         },
         showAQ && {
             name:      'Air Quality (ppm)',
@@ -197,13 +249,51 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             lineStyle: { color: COLORS.airQuality, width: 2 },
             itemStyle: { color: COLORS.airQuality },
             data:      data.map(d => round2(d.airQuality)),
-            markLine:  metric === 'Air Quality' && limits
-                ? markLine(null, limits.co2Max, COLORS.airQuality)
-                : undefined,
+            markLine:  L && metric === 'Air Quality' ? mkLimitLines([
+                { yAxis: L.co2Max, name: `CO₂ ${L.co2Max}` },
+            ], COLORS.airQuality) : undefined,
+            markArea: L ? mkViolationArea(
+                violationRanges(data, d => d.airQuality, null, L.co2Max ?? null),
+                COLORS.airQuality,
+            ) : undefined,
         },
     ].filter(Boolean);
 
     const rotateLabels = timeFilter === 'Day' || timeFilter === 'Custom';
+    const showLegend   = metric === 'All';
+
+    // Rotated labels need ~44 px; legend needs ~28 px; combine when both are present
+    const gridBottom = (rotateLabels ? 44 : 20) + (showLegend ? 28 : 0);
+
+    const yAxisMax: number | undefined = (() => {
+        if (L == null || !data.length) return undefined;
+        if (metric === 'Temperature') {
+            const top = Math.max(data.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
+            return Math.ceil(top + Math.abs(top) * 0.1);
+        }
+        if (metric === 'Humidity') {
+            const top = Math.max(data.reduce((m, d) => Math.max(m, d.humidity), 0), L.humMax);
+            return Math.ceil(top * 1.1);
+        }
+        if (metric === 'Air Quality') {
+            const top = Math.max(data.reduce((m, d) => Math.max(m, d.airQuality), 0), L.co2Max);
+            return Math.ceil(top * 1.1);
+        }
+        return undefined;
+    })();
+
+    const yAxisMin: number | undefined = (() => {
+        if (L == null || !data.length) return undefined;
+        if (metric === 'Temperature') {
+            const bottom = Math.min(data.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
+            return Math.floor(bottom - Math.abs(bottom) * 0.1);
+        }
+        if (metric === 'Humidity') {
+            const bottom = Math.min(data.reduce((m, d) => Math.min(m, d.humidity), Infinity), L.humMin);
+            return Math.max(0, Math.floor(bottom * 0.9));
+        }
+        return undefined;
+    })();
 
     const option = {
         tooltip: {
@@ -211,27 +301,34 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             axisPointer: { type: 'cross' as const },
         },
         legend: {
-            show:   metric === 'All',
-            bottom: 0,
-            data:   ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
+            show:      showLegend,
+            bottom:    0,
+            data:      ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
             textStyle: { fontSize: 11 },
         },
         grid: {
             left:         48,
             right:        24,
             top:          16,
-            bottom:       metric === 'All' ? 48 : 28,
+            bottom:       gridBottom,
             containLabel: false,
         },
         xAxis: {
             type:        'category' as const,
             boundaryGap: false,
             data:        data.map(d => d.label),
-            axisLabel:   { rotate: rotateLabels ? 35 : 0, fontSize: 11 },
-            axisLine:    { lineStyle: { color: '#e2e8f0' } },
+            axisLabel: {
+                rotate:   rotateLabels ? 35 : 0,
+                fontSize: 11,
+                align:    rotateLabels ? 'right' : 'center',
+            },
+            axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
         yAxis: {
             type:      'value' as const,
+            max:       yAxisMax,
+            min:       yAxisMin,
+            nice: true,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
             axisLabel: { fontSize: 11 },
         },

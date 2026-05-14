@@ -4,6 +4,7 @@ import {
     getRoomDisplayName,
     RoomDTO
 } from '../views/EmployeeDepartmentPage';
+import '../styles/DepartmentRoomOverview.css';
 
 interface DepartmentRoomOverviewProps {
     rooms: RoomDTO[];

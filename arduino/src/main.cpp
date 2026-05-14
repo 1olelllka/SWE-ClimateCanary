@@ -4,6 +4,7 @@
 #include "display_manager.h"
 #include "config.h"
 #include "button_manager.h"
+#include "led_manager.h"
 
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
@@ -16,6 +17,7 @@ DisplayManager displayManager;
 ButtonManager modeButton;
 ButtonManager nextPageButton;
 ButtonManager previousPageButton;
+LedManager ledManager;
 
 
 unsigned long lastSensorRead = 0;
@@ -32,6 +34,7 @@ void setup() {
   modeButton.begin(MODE_BUTTON_PIN);
   nextPageButton.begin(NEXT_PAGE_BUTTON_PIN);
   previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
+  ledManager.begin();
   displayManager.begin();
   displayManager.showStartup();
 
@@ -72,7 +75,7 @@ void loop() {
 
   const unsigned long now = millis();
 
-  if (now - lastSensorRead >= MEASURE_AND_SEND_INTERVAL_MS) {
+  if (now - lastSensorRead >= bleManager.measureAndSendIntervalMs) {
     lastSensorRead = now;
 
     if (now < SENSOR_WARMUP_TIME_MS) {
@@ -95,7 +98,7 @@ void loop() {
     }
   }
 
-  if (bleManager.isConnected() && now - lastBleSend >= MEASURE_AND_SEND_INTERVAL_MS) {
+  if (bleManager.isConnected() && now - lastBleSend >= bleManager.measureAndSendIntervalMs) {
     lastBleSend = now;
 
     const SensorReading reading = sensorManager.getReading();

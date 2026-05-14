@@ -10,6 +10,7 @@ import at.qe.skeleton.mappers.UserPatchMapper;
 import at.qe.skeleton.mappers.UserxCreateMapper;
 import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.Absence;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.UserService;

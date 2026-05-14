@@ -26,6 +26,7 @@ public class HumidityLimit extends LimitValues {
 
     @PrePersist
     protected void prePersist() {
-        setMaxVal(60);
+        setMinVal(30f);
+        setMaxVal(60f);
     }
 }

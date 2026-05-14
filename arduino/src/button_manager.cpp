@@ -3,22 +3,24 @@
 void ButtonManager::begin(uint8_t p) {
   pin = p;
   pinMode(pin, INPUT_PULLUP);
+
+  lastReading = digitalRead(pin);
+  pressed = false;
+  lastPressTime = 0;
 }
 
 void ButtonManager::update() {
-  bool currentReading = digitalRead(pin);
+  const bool currentReading = digitalRead(pin);
+  const unsigned long now = millis();
 
-  if (currentReading != lastReading) {
-    lastDebounceTime = millis();
-  }
-
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (currentReading != stableState) {
-      stableState = currentReading;
-
-      if (stableState == LOW) {
-        pressed = true;
-      }
+  // INPUT_PULLUP:
+  // HIGH = button not pressed
+  // LOW  = button pressed
+  // Falling edge: HIGH -> LOW
+  if (lastReading == HIGH && currentReading == LOW) {
+    if (now - lastPressTime > debounceDelayMs) {
+      pressed = true;
+      lastPressTime = now;
     }
   }
 

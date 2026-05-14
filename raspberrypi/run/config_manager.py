@@ -22,7 +22,7 @@ class ConfigManager:
 
         return config
 
-# full config fetch
+# Full config fetch
 
     @staticmethod
     async def fetch_and_seed(pi_id: str, server_url: str, db, auth) -> None:
@@ -31,7 +31,7 @@ class ConfigManager:
 
         try:
             remote = await ConfigManager._fetch(
-                f"{server_url}/api/raspberry/{pi_id}/config", auth
+                f"{server_url}/api/raspberry-pis/{pi_id}/config", auth
             )
         except Exception as e:
             logger.warning(
@@ -42,22 +42,21 @@ class ConfigManager:
 
         sensors = remote.get('sensors', [])
         limits = remote.get('limits', {})
-        tips = remote.get('tips', {})
 
         sensor_list = [
             {
-                'id': s.get('id'),
                 'name': s.get('name'),
                 'char_uuid': s['readId'],
                 'write_uuid': s['writeId'],
             }
             for s in sensors if s.get('name')
         ]
+        logger.info(f"Sensors: {sensor_list}")
 
         # Overwrite config keys unconditionally on (re-)seed
         config_updates = {
             'room_id': remote.get('roomId'),
-            'frequency': str(remote.get('frequency', 100)),
+            'frequency': str(remote.get('frequency', 5)),
         }
         for key, value in config_updates.items():
             if value is not None:
@@ -77,15 +76,12 @@ class ConfigManager:
         if sensor_list:
             await db.set_sensors(sensor_list)
 
-        if tips:
-            await db.set_tips(tips)
-
         logger.info(
             f"[Config] Seed complete: {len(sensor_list)} sensors, "
             f"room={remote.get('roomId')}, freq={remote.get('frequency')}"
         )
 
-# Live update handlers, called by WebManager endpoints 
+# Live update handlers, called by WebManager endpoints
 
     @staticmethod
     async def handle_limit_change(db, payload: dict) -> None:
@@ -125,23 +121,20 @@ class ConfigManager:
 
     @staticmethod
     async def handle_sensor_add(db, auth, sensor_ids: list[str]) -> None:
-        pi_id, server_url = await ConfigManager._identity(db)
+        server_url = await db.get_config('server_url')
+        if not server_url:
+            raise RuntimeError("server_url missing from DB config.")
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/sensors", auth
+            f"{server_url}/api/sensor-stations/{sensor_ids[0]}", auth
         )
-        all_sensors = remote.get('sensors', [])
-        id_set = {str(sid) for sid in sensor_ids}
 
         to_add = [
             {
-                'id': s.get('id'),
-                'name': s.get('name'),
-                'char_uuid': s['readId'],
-                'write_uuid': s['writeId'],
+                'name': remote['name'],
+                'char_uuid': remote['readId'],
+                'write_uuid': remote['writeId'],
             }
-            for s in all_sensors
-            if str(s.get('id', '')) in id_set and s.get('name')
         ]
 
         if to_add:
@@ -167,7 +160,7 @@ class ConfigManager:
             raise RuntimeError("server_url missing from DB — cannot fetch config.")
 
         remote = await ConfigManager._fetch(
-            f"{server_url}/api/raspberry/{pi_id}/config", auth
+            f"{server_url}/api/raspberry-pis/{pi_id}/config", auth
         )
 
         updates = {
@@ -181,15 +174,7 @@ class ConfigManager:
         logger.info(f"[Config] General config refreshed for pi={pi_id}.")
         return updates.get('frequency')
 
-# Internal helpers 
-
-    @staticmethod
-    async def _identity(db) -> tuple[str, str]:
-        pi_id = await db.get_config('raspberry_id')
-        server_url = await db.get_config('server_url')
-        if not pi_id or not server_url:
-            raise RuntimeError("raspberry_id or server_url missing from DB config.")
-        return pi_id, server_url
+# Internal helpers
 
     @staticmethod
     async def _fetch(url: str, auth, timeout_s: int = 10) -> dict:
