@@ -50,9 +50,8 @@ public class DepartmentController {
 
     @GetMapping("{department_id}")
     @PreAuthorize("hasRole('DEPARTMENT_MANAGER') or hasRole('EMPLOYEE')")
-    public ResponseEntity<DepartmentDTO> getSpecificDepartment(@PathVariable(name = "department_id") UUID id,
-                                                               @RequestParam(name = "onlyShared") boolean shared) {
-        Department department = departmentService.getDepartmentById(id, shared);
+    public ResponseEntity<DepartmentDTO> getSpecificDepartment(@PathVariable(name = "department_id") UUID id) {
+        Department department = departmentService.getDepartmentById(id);
         return new ResponseEntity<>(departmentDetailMapper.mapTo(department), HttpStatus.OK);
     }
 

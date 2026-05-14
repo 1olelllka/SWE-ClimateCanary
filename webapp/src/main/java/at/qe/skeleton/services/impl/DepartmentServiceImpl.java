@@ -36,18 +36,14 @@ public class DepartmentServiceImpl implements DepartmentService {
         return departmentRepository.findAll(pageable);
     }
 
-    public Department getDepartmentById(UUID id, boolean shared) {
+    public Department getDepartmentById(UUID id) {
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department not found with id: " + id));
-        if (shared) {
+        if (!authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList().contains(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())) {
             department.setRooms(department.getRooms().stream().filter(room -> room.getRoomType().equals(RoomType.SHARED)).toList());
-            return department;
         }
-        if (authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList().contains(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())) {
-            return department;
-        }
-        throw new ForbiddenException("You may not see all of the rooms.");
+        return department;
     }
 
     public Department createDepartment(Department department) {
