@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -129,6 +130,21 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
+    @Transactional
+    public Absence cancelAbsence(UUID absenceId, Userx user) {
+        Absence absence = absenceRepository.findById(absenceId)
+                .orElseThrow(() -> new NotFoundException("Absence with id " + absenceId + " was not found."));
+        if (!absence.getUser().getId().equals(user.getId())) {
+            throw new ForbiddenException("You are not allowed to cancel this absence.");
+        }
+        if (absence.getStatus() != AbsenceStatus.PENDING) {
+            throw new ValidationException("Only pending absences can be cancelled.");
+        }
+        absence.setStatus(AbsenceStatus.CANCELLED);
+        return absenceRepository.save(absence);
+    }
+
+    @Override
     public Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable) {
         return absenceRepository.findByAssignedTo(user.getId(), pageable);
     }
@@ -189,4 +205,16 @@ public class AbsenceServiceImpl implements AbsenceService {
                 .map(UserClockStatus::isClockedIn)
                 .orElse(false);
     }
+
+    @Override
+    @Transactional
+    public List<Userx> getAllAvailableManagersForUser(Userx user) {
+        return userxRepository.findAllByDepartment(user.getMyRoom().getDepartment().getId())
+                .stream()
+                .filter(u -> u.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch("CAN_MANAGE_ABSENCES"::equals))
+                .toList();
+    }
+
 }

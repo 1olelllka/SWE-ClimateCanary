@@ -10,11 +10,11 @@
 }
 
 .login-mockup-card {
-    background-color: white;
+    background-color: transparent;
     width: 100%;
     max-width: 400px;
     padding: 40px 30px;
-    border-radius: 8px;
+    border-radius: 0;
     box-shadow: none;
     display: flex;
     flex-direction: column;
@@ -135,4 +135,56 @@
     margin-top: 15px;
     text-align: center;
     font-size: 14px;
+}
+
+html[data-theme='dark'] .login-page-wrapper {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+html[data-theme='dark'] .login-mockup-card {
+    background-color: transparent !important;
+    color: #f8fafc;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .brand-title {
+    color: #f8fafc;
+}
+
+html[data-theme='dark'] .brand-subtitle {
+    color: #cbd5e1;
+}
+
+html[data-theme='dark'] .login-heading {
+    color: #f8fafc;
+}
+
+html[data-theme='dark'] .mockup-input,
+html[data-theme='dark'] .p-password.password-input input {
+    background-color: #1f2937;
+    color: #f8fafc;
+    border-color: #334155;
+}
+
+html[data-theme='dark'] .mockup-input::placeholder,
+html[data-theme='dark'] .p-password.password-input input::placeholder {
+    color: #94a3b8;
+}
+
+html[data-theme='dark'] .forgot-link {
+    color: #38bdf8;
+}
+
+html[data-theme='dark'] .mockup-button {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .mockup-button:hover {
+    background-color: #0e7490 !important;
+}
+
+html[data-theme='dark'] .error-message {
+    color: #f87171;
 }

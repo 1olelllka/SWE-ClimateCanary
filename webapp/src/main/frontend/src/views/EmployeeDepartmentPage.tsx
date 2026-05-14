@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import globalAxios from 'axios';
-import { useNavigate } from 'react-router-dom';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { DepartmentRoomOverview } from '../components/DepartmentRoomOverview';
 import { DepartmentClimateSection } from '../components/DepartmentClimateSection';
 
-import { ROUTES } from '../utilities/routes.paths';
 import '../styles/EmployeeDepartmentPage.css';
 
 export interface UserRoomDTO {
@@ -76,8 +74,6 @@ export const EmployeeDepartmentPage: React.FC = () => {
     const [loadingClimate, setLoadingClimate] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const navigate = useNavigate();
-
     const fetchDepartmentRooms = useCallback(() => {
         setLoadingRooms(true);
         setError(null);
@@ -97,11 +93,10 @@ export const EmployeeDepartmentPage: React.FC = () => {
                     return;
                 }
 
-                return globalAxios.get('/api/users/me/department/rooms')
+                return globalAxios.get('/api/departments/'+departmentId)
                     .then(roomResponse => {
-                        const departmentRooms: RoomDTO[] = roomResponse.data || [];
-
-                        setRooms(departmentRooms);
+                        const departmentRooms: RoomDTO[] = roomResponse.data.rooms || [];
+                        console.log(departmentRooms)
 
                         if (departmentRooms.length === 0) {
                             setSelectedRoomId(null);
@@ -186,10 +181,6 @@ export const EmployeeDepartmentPage: React.FC = () => {
         );
     }, [rooms, searchTerm]);
 
-    const selectedRoom = useMemo(() => {
-        return rooms.find(room => room.id === selectedRoomId) || null;
-    }, [rooms, selectedRoomId]);
-
     return (
         <div className="employee-department-page">
             <PageHeader
@@ -204,14 +195,6 @@ export const EmployeeDepartmentPage: React.FC = () => {
             />
 
             <main className="employee-department-content">
-                <button
-                    className="employee-department-back-button"
-                    onClick={() => navigate(ROUTES.HOME)}
-                    aria-label="Back to home"
-                    type="button"
-                >
-                    <i className="pi pi-arrow-circle-left" />
-                </button>
 
                 <div className="employee-department-toolbar">
                     <span className="employee-department-last-updated">
@@ -256,7 +239,6 @@ export const EmployeeDepartmentPage: React.FC = () => {
                         <DepartmentClimateSection
                             rooms={rooms}
                             selectedRoomId={selectedRoomId}
-                            selectedRoom={selectedRoom}
                             onSelectRoom={setSelectedRoomId}
                         />
                     </>

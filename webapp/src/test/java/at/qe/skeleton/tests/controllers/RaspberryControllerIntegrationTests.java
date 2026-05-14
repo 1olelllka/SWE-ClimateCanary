@@ -275,7 +275,7 @@ class RaspberryControllerIntegrationTests {
         pi = raspberryService.createNewRaspberry(pi);
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId() + "/config"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.frequency").value(100));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.frequency").value(1000));
     }
 
     @Test

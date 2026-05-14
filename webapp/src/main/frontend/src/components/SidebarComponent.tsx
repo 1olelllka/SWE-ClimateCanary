@@ -5,6 +5,8 @@ import { useUser } from '../Contexts/AuthenticatedUserContext';
 import '../styles/Sidebar.css';
 import { ROUTES } from '../utilities/routes.paths';
 import ClockInOutButton from './ClockInOutButton';
+import { InputSwitch } from 'primereact/inputswitch';
+import { useTheme } from '../Contexts/ThemeContext';
 
 interface SidebarProps {
     readonly visible: boolean;
@@ -14,6 +16,7 @@ interface SidebarProps {
 const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { isDarkMode, toggleTheme } = useTheme();
 
     const {
         currentUser,
@@ -132,11 +135,37 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             </div>
 
             <div className="sidebar-footer">
-                {isEmployee && <ClockInOutButton />}
+                <div className="theme-toggle-card">
+                    <div className="theme-toggle-left">
+                        <div className="theme-toggle-icon">
+                            <i className={`pi ${isDarkMode ? 'pi-moon' : 'pi-sun'}`} aria-hidden="true"></i>
+                        </div>
+
+                        <div className="theme-toggle-text">
+                            <span className="theme-toggle-title">
+                                {isDarkMode ? 'Dark Mode' : 'Light Mode'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <InputSwitch
+                        checked={isDarkMode}
+                        onChange={() => toggleTheme()}
+                        aria-label="Toggle dark mode"
+                    />
+                </div>
+
+                {isEmployee && (
+                    <div className="sidebar-clock-wrapper">
+                        <ClockInOutButton />
+                    </div>
+                )}
+
                 <div className="user-profile">
                     <div className="user-avatar">
-                        <i className="pi pi-user" style={{ fontSize: '1.5rem' }}></i>
+                        <i className="pi pi-user" style={{ fontSize: '1.35rem' }}></i>
                     </div>
+
                     <div className="user-info">
                         <span className="user-name">{currentUser?.username || 'User'}</span>
                         <span className="user-email">Logged in</span>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
+import UserListComponent from '../components/UserListComponent';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
@@ -179,6 +180,7 @@ const SysAdminDashboard: React.FC = () => {
     const [raspberryStatusFilter, setRaspberryStatusFilter] = useState<string | null>(null);
     const [sensorStatusFilter, setSensorStatusFilter] = useState<string | null>(null);
     const [userRoleFilter, setUserRoleFilter] = useState<string | null>(null);
+    const [userRoomFilter, setUserRoomFilter] = useState<string | null>(null);
     const [roomTypeFilter, setRoomTypeFilter] = useState<string | null>(null);
     const [departmentBuildingFilter, setDepartmentBuildingFilter] = useState<string | null>(null);
 
@@ -223,9 +225,16 @@ const SysAdminDashboard: React.FC = () => {
 
     const filteredRaspberries  = filterList(raspberries,  'name',     raspberrySearch,   'status',      raspberryStatusFilter);
     const filteredSensors      = filterList(sensors,      'name',     sensorSearch,      'status',      sensorStatusFilter);
-    const filteredUsers        = users.filter(u => {
-        if (userSearch && !(u.username ?? '').toLowerCase().includes(userSearch.toLowerCase())) return false;
-        if (userRoleFilter && !u.roles.some(r => r.name === userRoleFilter)) return false;
+    const filteredUsers = users.filter(u => {
+        if (userSearch && !(u.username ?? '').toLowerCase().includes(userSearch.toLowerCase())) {
+            return false;
+        }
+        if (userRoleFilter && !u.roles.some(r => r.name === userRoleFilter)) {
+            return false;
+        }
+        if (userRoomFilter && u.myRoom?.id !== userRoomFilter) {
+            return false;
+        }
         return true;
     }).slice(0, PREVIEW_ROWS);
     const filteredRooms        = filterList(rooms,        'name',     roomSearch,        'roomType',    roomTypeFilter);
@@ -390,15 +399,16 @@ const SysAdminDashboard: React.FC = () => {
         if (Object.keys(errors).length > 0) { setDeptFormErrors(errors); return; }
         setDeptDialogLoading(true);
         try {
-            const res = await new DepartmentControllerApi().patchSpecificDepartment({
-                departmentId: editingDeptId!,
-                departmentEditWithRoomsDTO: {
-                    name: deptForm.name,
-                    buildingID: deptForm.buildingID,
-                    roomIdsToDelete: deptForm.roomIdsToDelete,
-                    existingRoomIdsToAssign: deptForm.existingRoomIds,
-                    newRooms: deptForm.rooms.map(r => ({ name: r.name, roomType: r.roomType, defaultPeopleCount: r.defaultPeopleCount })),
-                },
+            const res = await globalAxios.patch(`/api/departments/${editingDeptId}`, {
+                name: deptForm.name,
+                buildingID: deptForm.buildingID,
+                roomIdsToDelete: deptForm.roomIdsToDelete,
+                existingRoomIdsToAssign: deptForm.existingRoomIds,
+                newRooms: deptForm.rooms.map(r => ({
+                    name: r.name,
+                    roomType: r.roomType,
+                    defaultPeopleCount: r.defaultPeopleCount
+                })),
             });
             setDepartments(prev => prev.map(d => d.id === res.data.id
                 ? { ...d, name: res.data.name, buildingID: res.data.buildingID, buildingName: buildings.find(b => b.id === res.data.buildingID)?.name }
@@ -536,18 +546,38 @@ const SysAdminDashboard: React.FC = () => {
     const roomTypeOptions    = [{ label: 'Office', value: 'OFFICE' }, { label: 'Shared', value: 'SHARED' }];
     const roleFilterOptions  = roleDTOs.map(r => ({ label: r.name ?? '', value: r.name ?? '' }));
 
+    const roomFilterOptions = rooms.map(r => ({
+        label: r.departmentName
+            ? `${r.name ?? r.id} (${r.departmentName})`
+            : `${r.name ?? r.id}`,
+        value: r.id ?? '',
+    }));
+
     return (
         <div className="dashboard-layout">
             <Toast ref={toast} />
-            <PageHeader title="SysAdmin Dashboard" onMenuClick={() => setSidebarVisible(true)} />
+            <PageHeader title="Dashboard" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="dashboard-content">
 
                 {/* ── Raspberry Pi List ── */}
                 <div className="table-container">
-                    <TableHeader title="Raspberry Pi List" search={raspberrySearch} onSearch={setRaspberrySearch} searchPlaceholder="Search by name"
-                        filterEl={<Dropdown value={raspberryStatusFilter} options={statusOptions} onChange={e => setRaspberryStatusFilter(e.value)} placeholder="Status Filter" showClear style={{ borderRadius: '20px', minWidth: '160px' }} />}
+                    <TableHeader
+                        title="Raspberry Pi List"
+                        search={raspberrySearch}
+                        onSearch={setRaspberrySearch}
+                        searchPlaceholder="Search by name"
+                        filterEl={
+                            <Dropdown
+                                value={raspberryStatusFilter}
+                                options={statusOptions}
+                                onChange={e => setRaspberryStatusFilter(e.value)}
+                                placeholder="Status Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                            />
+                        }
                     />
                     <DataTable value={filteredRaspberries} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll">
                         <Column field="id" header="ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
@@ -600,25 +630,41 @@ const SysAdminDashboard: React.FC = () => {
 
                 {/* ── User List ── */}
                 <div className="table-container">
-                    <TableHeader title="User List" search={userSearch} onSearch={setUserSearch} searchPlaceholder="Search by username"
-                        filterEl={<Dropdown value={userRoleFilter} options={roleFilterOptions} onChange={e => setUserRoleFilter(e.value)} placeholder="Role Filter" showClear style={{ borderRadius: '20px', minWidth: '160px' }} />}
+                    <TableHeader
+                        title="User List"
+                        search={userSearch}
+                        onSearch={setUserSearch}
+                        searchPlaceholder="Search by username"
+                        filterEl={
+                            <>
+                                <Dropdown
+                                    value={userRoleFilter}
+                                    options={roleFilterOptions}
+                                    onChange={e => setUserRoleFilter(e.value)}
+                                    placeholder="Role Filter"
+                                    showClear
+                                    style={{ borderRadius: '20px', minWidth: '160px' }}
+                                />
+
+                                <Dropdown
+                                    value={userRoomFilter}
+                                    options={roomFilterOptions}
+                                    onChange={e => setUserRoomFilter(e.value)}
+                                    placeholder="Room Filter"
+                                    showClear
+                                    filter
+                                    style={{ borderRadius: '20px', minWidth: '180px' }}
+                                />
+                            </>
+                        }
                     />
-                    <DataTable value={filteredUsers} stripedRows emptyMessage="No users found." responsiveLayout="scroll">
-                        <Column field="id" header="ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                        <Column field="firstName" header="First Name" sortable />
-                        <Column field="lastName" header="Last Name" sortable />
-                        <Column header="Room" body={(u: FullUser) => u.myRoom
-                            ? <span>{u.myRoom.roomNumber} ({u.myRoom.departmentName})</span>
-                            : <span style={{ color: '#9e9e9e' }}>N/A</span>
-                        } />
-                        <Column header="Roles" body={(u: FullUser) => <span>{u.roles.map(r => r.name).join(', ') || '—'}</span>} />
-                        <Column header="" style={{ width: '6rem' }} exportable={false} body={(u: FullUser) => (
-                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                <Button icon="pi pi-pencil" rounded text severity="secondary" onClick={() => openEditUser(u)} title="Edit user" />
-                                <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => handleDeleteUser(u)} title="Delete user" />
-                            </div>
-                        )} />
-                    </DataTable>
+                    <UserListComponent
+                        users={filteredUsers}
+                        loading={false}
+                        onEditUser={openEditUser}
+                        onDeleteUser={handleDeleteUser}
+                        showDelete
+                    />
                 </div>
 
                 {/* ── Departments ── */}

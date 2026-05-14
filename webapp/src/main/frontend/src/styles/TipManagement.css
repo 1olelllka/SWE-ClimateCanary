@@ -1,21 +1,18 @@
-.tip-management-page {
-    min-height: 100vh;
-    background: #f4f4f4;
-}
-
-.tip-management-content {
-    padding: 72px 56px;
-}
-
 .tip-management-card {
-    max-width: 760px;
+    width: 100%;
+    max-width: 900px;
+    background-color: var(--app-surface-2, #ffffff);
+    color: var(--app-text, #111827);
+    border: 1px solid var(--app-border, #e2e8f0);
+    border-radius: 12px;
+    padding: 2rem;
 }
 
 .tip-management-section-title {
     margin: 0 0 24px 0;
     font-size: 2rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--app-text, #111827);
 }
 
 .tip-management-condition-row {
@@ -28,7 +25,7 @@
 .tip-management-condition-label {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--app-text, #111827);
 }
 
 .tip-management-condition-dropdown {
@@ -48,6 +45,9 @@
     font-size: 1rem;
     border-radius: 8px;
     resize: vertical;
+    background-color: var(--app-surface, #ffffff);
+    color: var(--app-text, #111827);
+    border: 1px solid var(--app-border, #d1d5db);
 }
 
 .tip-management-save-button {
@@ -59,7 +59,7 @@
 
 .tip-management-info-message {
     margin-top: 16px;
-    color: #475569;
+    color: var(--app-text-muted, #475569);
 }
 
 .tip-management-error-message {
@@ -74,9 +74,42 @@
     font-weight: 500;
 }
 
+html[data-theme='dark'] .tip-management-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .tip-management-section-title,
+html[data-theme='dark'] .tip-management-condition-label {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .tip-management-textarea {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .tip-management-textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .tip-management-info-message {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-management-error-message {
+    color: #f87171 !important;
+}
+
+html[data-theme='dark'] .tip-management-success-message {
+    color: #4ade80 !important;
+}
+
 @media (max-width: 768px) {
-    .tip-management-content {
-        padding: 40px 24px;
+    .tip-management-card {
+        padding: 1.5rem;
     }
 
     .tip-management-condition-row {

@@ -71,24 +71,17 @@ class DepartmentServiceUnitTests {
     void testThatGetDepartmentByIdWhenExistsShouldReturnDepartment() {
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
         when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
-        Department result = departmentService.getDepartmentById(departmentId, false);
+        Department result = departmentService.getDepartmentById(departmentId);
 
         assertEquals(sampleDepartment.getName(), result.getName());
         assertEquals(departmentId, result.getId());
     }
 
     @Test
-    void testThatGetDepartmentByIdWhenExistsButRoleIsEmployeeShouldThrowException() {
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of()).build(), null));
-        assertThrows(ForbiddenException.class, () -> departmentService.getDepartmentById(departmentId, false));
-    }
-
-    @Test
     void testThatGetDepartmentByIdWhenNotExistsShouldThrowNotFoundException() {
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> departmentService.getDepartmentById(departmentId, false));
+        assertThrows(NotFoundException.class, () -> departmentService.getDepartmentById(departmentId));
     }
 
     @Test

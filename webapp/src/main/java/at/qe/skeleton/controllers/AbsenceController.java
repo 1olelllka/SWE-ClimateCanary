@@ -7,6 +7,7 @@ import at.qe.skeleton.mappers.AbsenceListMapper;
 import at.qe.skeleton.mappers.AbsenceMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,18 +37,21 @@ public class AbsenceController {
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
     private AuthenticatedUserService authenticatedUserService;
+    private final UserxRepository userxRepository;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
                              AbsenceMapper absenceMapper,
-                             AuthenticatedUserService authenticatedUserService) {
+                             AuthenticatedUserService authenticatedUserService,
+                             UserxRepository userxRepository) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
         this.authenticatedUserService = authenticatedUserService;
+        this.userxRepository = userxRepository;
     }
 
     @GetMapping("")
@@ -61,6 +66,16 @@ public class AbsenceController {
         } else {
             return new ResponseEntity<>(absenceService.getAllAbsencesById(user.getId(), pageable).map(absenceListMapper::mapTo), HttpStatus.OK);
         }
+    }
+
+    @GetMapping("/managers")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<List<UserxListDTO>> getAvailableManagersForAbsence() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        List<Userx> managers = absenceService.getAllAvailableManagersForUser(user);
+        return new ResponseEntity<>(managers.stream().map(man ->
+            new UserxListDTO(man.getId(), man.getCreateDate(), man.getUsername(), man.getFirstName(), man.getLastName())
+        ).toList(), HttpStatus.OK);
     }
 
     @PostMapping("")
@@ -111,6 +126,14 @@ public class AbsenceController {
         }
         Absence patched = absenceService.updateAbsenceStatus(id, dto.status());
         return new ResponseEntity<>(absenceMapper.mapTo(patched), HttpStatus.OK);
+    }
+
+    @PatchMapping("{absence_id}/cancel")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
+    public ResponseEntity<AbsenceDTO> cancelAbsence(@PathVariable(name="absence_id") UUID id) {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        Absence cancelled = absenceService.cancelAbsence(id, user);
+        return new ResponseEntity<>(absenceMapper.mapTo(cancelled), HttpStatus.OK);
     }
 
     @DeleteMapping("{absence_id}")

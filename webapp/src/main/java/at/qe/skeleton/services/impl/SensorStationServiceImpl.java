@@ -66,11 +66,12 @@ public class SensorStationServiceImpl implements SensorStationService {
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
         return sensorRepository.findById(id).map(sensor -> {
             boolean notifyRasp = false;
-            if (sensorStation.getRoomMonitoring() != null && !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId())) {
-                sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
-                log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
-                notifyRasp = true;
-            }
+            if (sensorStation.getRoomMonitoring() != null && (sensor.getRoomMonitoring() == null || !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId()))) {
+                    sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
+                    log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
+                    notifyRasp = true;
+                }
+
             Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
                 if (!name.equals(sensor.getName())) {
                     if (sensorRepository.existsByName(name))

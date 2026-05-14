@@ -8,11 +8,8 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record WarningCreateDTO(
-
         @NotNull(message = "Room ID must not be null.")
         UUID roomId,
-
-        String device,
 
         @NotNull(message = "Sensor type must not be null.")
         MeasurementType measurementType,

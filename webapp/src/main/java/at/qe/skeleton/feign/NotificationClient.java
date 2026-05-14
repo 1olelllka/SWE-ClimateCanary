@@ -31,8 +31,4 @@ public interface NotificationClient {
     @PostMapping("/api/retry-sensor")
     ResponseEntity<Void> retrySensorConnection(URI baseUrl,
                                                @RequestParam UUID[] sensorIds);
-
-    @PostMapping("/api/tips")
-    ResponseEntity<Void> sendTips(URI baseUrl,
-                                  @RequestBody RaspberryTipDTO dto);
 }

@@ -81,7 +81,7 @@ class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
         roomRepository.save(TestDataUtil.createRoomEntity(saved));
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()+"?onlyShared=false"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.name").value(saved.getName()))
@@ -96,28 +96,17 @@ class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
         roomRepository.save(TestDataUtil.createRoomEntity(saved));
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()+"?onlyShared=true"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.name").value(saved.getName()))
-                .andExpect(jsonPath("$.rooms[0]").doesNotExist());
-    }
-
-    @Test
-    @WithMockUser(roles = "EMPLOYEE")
-    void testThatGetSpecificDepartmentReturnsHttp403ForbiddenIfEmployeeWantsToGetAllRooms() throws Exception {
-        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of()).build(), null));
-        Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
-        Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
-        roomRepository.save(TestDataUtil.createRoomEntity(saved));
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()+"?onlyShared=false"))
-                .andExpect(status().isForbidden());
+                .andExpect(jsonPath("$.rooms[0]").exists());
     }
 
     @Test
     @WithMockUser(roles = "DEPARTMENT_MANAGER")
     void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()+"?onlyShared=false"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
@@ -260,7 +249,7 @@ class DepartmentControllerIntegrationTests {
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
 
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/departments/" + saved.getId() + "?onlyShared=false"))
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/departments/" + saved.getId()))
                 .andExpect(status().isNoContent());
         assertEquals(0, departmentRepository.findAll().size());
     }

@@ -92,7 +92,10 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
                                         .requestMatchers("/api/users/me/department/rooms")
-                                        .hasAuthority(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
+                                        .hasAnyAuthority(
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name()
+                                        )
 
                                         .requestMatchers("/api/users/me").authenticated()
 
@@ -115,8 +118,6 @@ public class WebSecurityConfig {
                                         .requestMatchers(
                                                 org.springframework.http.HttpMethod.GET,
                                                 "/api/rooms",
-                                                "/api/rooms/*/limits",
-                                                "/api/rooms/*/climate-limits",
                                                 "/api/rooms/*/violations"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
@@ -124,9 +125,18 @@ public class WebSecurityConfig {
                                         )
 
                                         .requestMatchers(
+                                                org.springframework.http.HttpMethod.GET,
+                                                "/api/rooms/*/limits"
+                                        ).hasAnyAuthority(
+                                                Permission.CAN_VIEW_ALL_ROOMS.name(),
+                                                Permission.CAN_MANAGE_BUILDING_STRUCTURE.name(),
+                                                Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name()
+                                        )
+
+                                        .requestMatchers(
                                                 org.springframework.http.HttpMethod.PATCH,
-                                                "/api/rooms/*/limits",
-                                                "/api/rooms/*/climate-limits"
+                                                "/api/rooms/*/limits"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()

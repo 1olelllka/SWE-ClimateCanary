@@ -1,4 +1,3 @@
-import logo from '../logo.png';
 import '../styles/App.css';
 import "primereact/resources/themes/lara-light-cyan/theme.css";
 import { Message } from 'primereact/message';

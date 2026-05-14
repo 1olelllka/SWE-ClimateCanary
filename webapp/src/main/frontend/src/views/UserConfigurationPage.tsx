@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
-import { DataTable } from 'primereact/datatable';
-import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
@@ -12,6 +10,7 @@ import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO } from '
 import globalAxios from 'axios';
 import RoleManagement from '../components/RoleManagement';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
+import UserListComponent from '../components/UserListComponent';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -45,6 +44,7 @@ const UserConfigurationPage: React.FC = () => {
 
     const [lastNameSearch, setLastNameSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState<string | null>(null);
+    const [roomFilter, setRoomFilter] = useState<string | null>(null);
 
     const [showDialog, setShowDialog] = useState(false);
     const [isNewUser, setIsNewUser] = useState(true);
@@ -71,12 +71,15 @@ const UserConfigurationPage: React.FC = () => {
     useEffect(() => { fetchData(); }, []);
 
     const roomOptions = rooms.map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }));
+    const roomFilterOptions = rooms.map(r => ({label: r.departmentName ? `${r.name ?? r.id} (${r.departmentName})` : `${r.name ?? r.id}`, value: r.id ?? '',}));
     const roleOptions = roleDTOs.map(r => ({ label: r.name ?? '', value: r.id ?? '' }));
     const roleFilterOptions = roleDTOs.map(r => ({ label: r.name ?? '', value: r.name ?? '' }));
 
     const filteredUsers = users.filter(u => {
+        if (u.roles.some(r => r.name === 'RASPBERRY_PI')) return false;
         if (lastNameSearch && !(u.lastName ?? '').toLowerCase().includes(lastNameSearch.toLowerCase())) return false;
         if (roleFilter && !u.roles.some(r => r.name === roleFilter)) return false;
+        if (roomFilter && u.myRoom?.id !== roomFilter) return false;
         return true;
     });
 
@@ -165,17 +168,6 @@ const UserConfigurationPage: React.FC = () => {
             .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete user.', life: 3000 }));
     };
 
-    const actionsTemplate = (user: FullUser) => (
-        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-            <Button icon="pi pi-pencil" rounded text severity="secondary" onClick={() => openEdit(user)} title="Edit user" />
-            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => handleDelete(user)} title="Delete user" />
-        </div>
-    );
-
-    const rolesTemplate = (user: FullUser) => (
-        <span>{user.roles.map(r => r.name).join(', ') || '—'}</span>
-    );
-
     return (
         <div className="dashboard-layout">
             <Toast ref={toast} />
@@ -187,43 +179,44 @@ const UserConfigurationPage: React.FC = () => {
                 <div className="table-container">
                     <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                         <h3 style={{ margin: 0 }}>User List</h3>
-                        <Button label="Add User" icon="pi pi-user-plus" onClick={openCreate} />
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                        <span className="p-input-icon-left">
-                            <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
-                            <InputText
-                                value={lastNameSearch}
-                                onChange={e => setLastNameSearch(e.target.value)}
-                                placeholder="Search by last name"
-                                style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="p-input-icon-left">
+            <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
+            <InputText
+                value={lastNameSearch}
+                onChange={e => setLastNameSearch(e.target.value)}
+                placeholder="Search by last name"
+                style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
+            />
+        </span>
+                            <Dropdown
+                                value={roleFilter}
+                                options={roleFilterOptions}
+                                onChange={e => setRoleFilter(e.value)}
+                                placeholder="Role Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '180px' }}
                             />
-                        </span>
-                        <Dropdown
-                            value={roleFilter}
-                            options={roleFilterOptions}
-                            onChange={e => setRoleFilter(e.value)}
-                            placeholder="Role Filter"
-                            showClear
-                            style={{ borderRadius: '20px', minWidth: '180px' }}
-                        />
+                            <Dropdown
+                                value={roomFilter}
+                                options={roomFilterOptions}
+                                onChange={e => setRoomFilter(e.value)}
+                                placeholder="Room Filter"
+                                showClear
+                                filter
+                                style={{ borderRadius: '20px', minWidth: '180px' }}
+                            />
+                            <Button label="Add User" icon="pi pi-user-plus" onClick={openCreate} />
+                        </div>
                     </div>
 
-                    <DataTable value={filteredUsers} loading={loading} stripedRows emptyMessage="No users found." responsiveLayout="scroll">
-                        <Column field="id" header="ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                        <Column field="firstName" header="First Name" sortable />
-                        <Column field="lastName" header="Last Name" sortable />
-                        <Column
-                            header="Room"
-                            body={(u: FullUser) => u.myRoom
-                                ? <span>{u.myRoom.roomNumber} ({u.myRoom.departmentName})</span>
-                                : <span style={{ color: '#9e9e9e' }}>N/A</span>
-                            }
-                        />
-                        <Column header="Roles" body={rolesTemplate} />
-                        <Column header="" body={actionsTemplate} style={{ width: '6rem' }} exportable={false} />
-                    </DataTable>
+                    <UserListComponent
+                        users={filteredUsers}
+                        loading={loading}
+                        onEditUser={openEdit}
+                        onDeleteUser={handleDelete}
+                        showDelete
+                    />
                 </div>
 
                 <Divider />

@@ -1,0 +1,460 @@
+:root {
+    --app-bg: #f8fafc;
+    --app-surface: #ffffff;
+    --app-surface-2: #f1f5f9;
+    --app-text: #173f4f;
+    --app-text-muted: #64748b;
+    --app-border: #e2e8f0;
+    --app-primary: #06b6d4;
+}
+
+html[data-theme='dark'] {
+    --app-bg: #0f172a;
+    --app-surface: #111827;
+    --app-surface-2: #1f2937;
+    --app-text: #f8fafc;
+    --app-text-muted: #cbd5e1;
+    --app-border: #334155;
+    --app-primary: #22d3ee;
+}
+
+html[data-theme='dark'],
+html[data-theme='dark'] body,
+html[data-theme='dark'] #root {
+    background-color: var(--app-bg);
+    color: var(--app-text);
+}
+
+/* General page layouts */
+html[data-theme='dark'] .dashboard-layout,
+html[data-theme='dark'] .dashboard-content,
+html[data-theme='dark'] .employee-dashboard-container,
+html[data-theme='dark'] .employee-dashboard,
+html[data-theme='dark'] .settings-container,
+html[data-theme='dark'] .settings-page,
+html[data-theme='dark'] .preferences-container,
+html[data-theme='dark'] .preferences-page,
+html[data-theme='dark'] .absence-container,
+html[data-theme='dark'] .absences-container,
+html[data-theme='dark'] .department-dashboard,
+html[data-theme='dark'] .department-content,
+html[data-theme='dark'] .building-dashboard,
+html[data-theme='dark'] .building-content,
+html[data-theme='dark'] .page-content,
+html[data-theme='dark'] .main-content {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+/* Generic cards / panels */
+html[data-theme='dark'] .kpi-card,
+html[data-theme='dark'] .dashboard-card,
+html[data-theme='dark'] .card,
+html[data-theme='dark'] .table-container,
+html[data-theme='dark'] .tip-management-card,
+html[data-theme='dark'] .settings-card,
+html[data-theme='dark'] .preferences-card,
+html[data-theme='dark'] .absence-card,
+html[data-theme='dark'] .department-card,
+html[data-theme='dark'] .room-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] h1,
+html[data-theme='dark'] h2,
+html[data-theme='dark'] h3,
+html[data-theme='dark'] h4,
+html[data-theme='dark'] h5,
+html[data-theme='dark'] h6 {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] p,
+html[data-theme='dark'] label,
+html[data-theme='dark'] .settings-page span,
+html[data-theme='dark'] .settings-container span,
+html[data-theme='dark'] .preferences-page span,
+html[data-theme='dark'] .preferences-container span {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .text-muted,
+html[data-theme='dark'] .muted,
+html[data-theme='dark'] .subtitle,
+html[data-theme='dark'] .description {
+    color: var(--app-text-muted) !important;
+}
+
+/* PageHeader / top bars */
+html[data-theme='dark'] .page-header,
+html[data-theme='dark'] .header,
+html[data-theme='dark'] .topbar,
+html[data-theme='dark'] .toolbar {
+    background-color: #020617 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* PrimeReact DataTable */
+html[data-theme='dark'] .p-datatable,
+html[data-theme='dark'] .p-datatable-wrapper,
+html[data-theme='dark'] .p-datatable-table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .p-datatable .p-datatable-thead > tr > th {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr > td {
+    background-color: var(--app-surface-2) !important;
+    color: #e5e7eb !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr:nth-child(even) > td {
+    background-color: #111827 !important;
+}
+
+html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr:hover > td {
+    background-color: #334155 !important;
+}
+
+/* PrimeReact paginator */
+html[data-theme='dark'] .p-paginator {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .p-paginator .p-paginator-page,
+html[data-theme='dark'] .p-paginator .p-paginator-first,
+html[data-theme='dark'] .p-paginator .p-paginator-prev,
+html[data-theme='dark'] .p-paginator .p-paginator-next,
+html[data-theme='dark'] .p-paginator .p-paginator-last {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .p-paginator .p-highlight {
+    background-color: #155e75 !important;
+    color: #ffffff !important;
+}
+
+/* Inputs, Dropdowns, Calendar, Textarea */
+html[data-theme='dark'] .p-inputtext,
+html[data-theme='dark'] .p-dropdown,
+html[data-theme='dark'] .p-multiselect,
+html[data-theme='dark'] .p-calendar,
+html[data-theme='dark'] .p-inputnumber-input,
+html[data-theme='dark'] textarea,
+html[data-theme='dark'] input,
+html[data-theme='dark'] select {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .p-inputtext::placeholder,
+html[data-theme='dark'] input::placeholder,
+html[data-theme='dark'] textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .p-dropdown-label,
+html[data-theme='dark'] .p-dropdown-trigger,
+html[data-theme='dark'] .p-multiselect-label,
+html[data-theme='dark'] .p-multiselect-trigger {
+    color: var(--app-text) !important;
+}
+
+/* Dialogs */
+html[data-theme='dark'] .p-dialog,
+html[data-theme='dark'] .p-dialog-header,
+html[data-theme='dark'] .p-dialog-content,
+html[data-theme='dark'] .p-dialog-footer {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* PrimeReact panels / menus */
+html[data-theme='dark'] .p-dropdown-panel,
+html[data-theme='dark'] .p-multiselect-panel,
+html[data-theme='dark'] .p-datepicker,
+html[data-theme='dark'] .p-menu,
+html[data-theme='dark'] .p-overlaypanel {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .p-dropdown-item,
+html[data-theme='dark'] .p-multiselect-item {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .p-dropdown-item:hover,
+html[data-theme='dark'] .p-multiselect-item:hover {
+    background-color: #334155 !important;
+}
+
+/* Divider */
+html[data-theme='dark'] .p-divider,
+html[data-theme='dark'] .p-divider-content {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Warnings / banners */
+html[data-theme='dark'] .warning-banner,
+html[data-theme='dark'] .info-banner,
+html[data-theme='dark'] .alert-banner {
+    background-color: #422006 !important;
+    color: #fed7aa !important;
+    border-color: #92400e !important;
+}
+
+/* Charts / chart containers */
+html[data-theme='dark'] .chart-container,
+html[data-theme='dark'] .chart-card,
+html[data-theme='dark'] .climate-history-chart {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Buttons with custom secondary classes */
+html[data-theme='dark'] .btn-secondary,
+html[data-theme='dark'] .btn-secondary-small {
+    background-color: #334155 !important;
+    color: var(--app-text) !important;
+    border-color: #475569 !important;
+}
+
+html[data-theme='dark'] .btn-primary,
+html[data-theme='dark'] .btn-primary-small {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+    border-color: #0891b2 !important;
+}
+
+/* Absence pages */
+html[data-theme='dark'] .absence-page,
+html[data-theme='dark'] .absence-wrapper,
+html[data-theme='dark'] .absence-content,
+html[data-theme='dark'] .absence-overview,
+html[data-theme='dark'] .absence-list,
+html[data-theme='dark'] .employee-absences-page,
+html[data-theme='dark'] .department-absences-page {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .overview-card,
+html[data-theme='dark'] .absence-summary-card,
+html[data-theme='dark'] .absence-stat-card,
+html[data-theme='dark'] .summary-card,
+html[data-theme='dark'] .stat-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .overview-card *,
+html[data-theme='dark'] .absence-summary-card *,
+html[data-theme='dark'] .absence-stat-card *,
+html[data-theme='dark'] .summary-card *,
+html[data-theme='dark'] .stat-card * {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-table,
+html[data-theme='dark'] .absence-table-container,
+html[data-theme='dark'] .absence-list-table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Settings page */
+html[data-theme='dark'] .settings-container,
+html[data-theme='dark'] .settings-page,
+html[data-theme='dark'] .settings-content,
+html[data-theme='dark'] .preferences-container,
+html[data-theme='dark'] .preferences-page {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .settings-container *,
+html[data-theme='dark'] .settings-page *,
+html[data-theme='dark'] .settings-content *,
+html[data-theme='dark'] .preferences-container *,
+html[data-theme='dark'] .preferences-page * {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .settings-container .p-dropdown *,
+html[data-theme='dark'] .settings-page .p-dropdown *,
+html[data-theme='dark'] .preferences-container .p-dropdown *,
+html[data-theme='dark'] .preferences-page .p-dropdown * {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .settings-container input,
+html[data-theme='dark'] .settings-page input,
+html[data-theme='dark'] .preferences-container input,
+html[data-theme='dark'] .preferences-page input {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Employee absence KPI boxes */
+html[data-theme='dark'] .kpi-box {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .kpi-box-title {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .kpi-box-value {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .kpi-box .progress-bar,
+html[data-theme='dark'] .kpi-box .progress-track,
+html[data-theme='dark'] .kpi-box .bar-background {
+    background-color: #334155 !important;
+}
+
+/* Custom absence table */
+html[data-theme='dark'] .absence-table,
+html[data-theme='dark'] .absence-table-container,
+html[data-theme='dark'] .absence-list,
+html[data-theme='dark'] .absence-list-table,
+html[data-theme='dark'] .requests-table,
+html[data-theme='dark'] .request-table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-table table,
+html[data-theme='dark'] .absence-list table,
+html[data-theme='dark'] .requests-table table,
+html[data-theme='dark'] .request-table table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-table th,
+html[data-theme='dark'] .absence-table td,
+html[data-theme='dark'] .absence-list th,
+html[data-theme='dark'] .absence-list td,
+html[data-theme='dark'] .requests-table th,
+html[data-theme='dark'] .requests-table td,
+html[data-theme='dark'] .request-table th,
+html[data-theme='dark'] .request-table td {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-table-header,
+html[data-theme='dark'] .absence-table-row,
+html[data-theme='dark'] .absence-row,
+html[data-theme='dark'] .request-row {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .empty-table-message,
+html[data-theme='dark'] .empty-state,
+html[data-theme='dark'] .no-data-message {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+.chart-card {
+    padding: 2rem;
+    background-color: var(--app-surface);
+    border-radius: 8px;
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+html[data-theme='dark'] .chart-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .chart-card h3 {
+    color: var(--app-text) !important;
+}
+
+/* PrimeReact Dropdown shape fix */
+html[data-theme='dark'] .p-dropdown {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .p-dropdown:not(.p-disabled):hover {
+    border-color: #475569 !important;
+}
+
+html[data-theme='dark'] .p-dropdown:not(.p-disabled).p-focus,
+html[data-theme='dark'] .p-dropdown.p-focus {
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25) !important;
+}
+
+html[data-theme='dark'] .p-dropdown .p-dropdown-label {
+    background-color: transparent !important;
+    color: #f8fafc !important;
+    border: none !important;
+    border-radius: 999px 0 0 999px !important;
+    padding-left: 1.25rem !important;
+}
+
+html[data-theme='dark'] .p-dropdown .p-dropdown-trigger {
+    background-color: transparent !important;
+    color: #f8fafc !important;
+    border: none !important;
+    border-radius: 0 999px 999px 0 !important;
+}
+
+html[data-theme='dark'] .p-dropdown .p-dropdown-trigger-icon {
+    color: #f8fafc !important;
+}

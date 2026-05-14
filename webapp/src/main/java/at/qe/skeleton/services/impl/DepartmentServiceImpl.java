@@ -5,7 +5,10 @@ import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.repositories.RaspberryPiRepository;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.DepartmentService;
 import lombok.RequiredArgsConstructor;
@@ -28,24 +31,19 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final RaspberryPiRepository raspberryPiRepository;
     private final RoomServiceImpl roomService;
     private final AuthenticatedUserService authenticatedUserService;
-    private final BuildingTrendRepository trendRepository;
 
     public Page<Department> getPageOfDepartments(Pageable pageable) {
         return departmentRepository.findAll(pageable);
     }
 
-    public Department getDepartmentById(UUID id, boolean shared) {
+    public Department getDepartmentById(UUID id) {
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department not found with id: " + id));
-        if (shared) {
+        if (!authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList().contains(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())) {
             department.setRooms(department.getRooms().stream().filter(room -> room.getRoomType().equals(RoomType.SHARED)).toList());
-            return department;
         }
-        if (authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList().contains(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())) {
-            return department;
-        }
-        throw new ForbiddenException("You may not see all of the rooms.");
+        return department;
     }
 
     public Department createDepartment(Department department) {
@@ -138,7 +136,6 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     public void deleteDepartment(UUID id) {
         departmentRepository.deleteById(id);
-        trendRepository.deleteAllByDepartmentId(id);
     }
 
     @Override

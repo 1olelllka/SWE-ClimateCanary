@@ -24,9 +24,6 @@ public class Warnings {
     private String message;
 
     @Column(nullable = false)
-    private String deviceName;
-
-    @Column(nullable = false)
     private double triggeredValue;
 
     @Column(nullable = false)

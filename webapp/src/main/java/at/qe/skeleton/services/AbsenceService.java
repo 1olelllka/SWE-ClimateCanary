@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface AbsenceService {
@@ -20,6 +21,8 @@ public interface AbsenceService {
 
     Absence updateAbsenceStatus(UUID id, @NotNull(message = "Status must not be null.") AbsenceStatus status);
 
+    Absence cancelAbsence(UUID absenceId, Userx user);
+
     Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable);
 
     void clockIn(Userx user);
@@ -27,4 +30,6 @@ public interface AbsenceService {
     void clockOut(Userx user);
 
     boolean isClockedIn(Userx user);
+
+    List<Userx> getAllAvailableManagersForUser(Userx user);
 }
