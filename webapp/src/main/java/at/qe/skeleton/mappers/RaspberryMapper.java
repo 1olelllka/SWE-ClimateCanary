@@ -18,6 +18,7 @@ public class RaspberryMapper implements DTOMapper<RaspberryPi, RaspberryDTO> {
                 entity.getName(),
                 entity.getIp(),
                 entity.getPort(),
+                entity.getFrequency(),
                 entity.getStatus(),
                 room);
     }

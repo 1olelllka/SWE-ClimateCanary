@@ -55,6 +55,8 @@ public class SensorStationServiceUnitTests {
 
         samplePi = new RaspberryPi();
         samplePi.setId(UUID.randomUUID());
+        samplePi.setIp("127.0.0.1");
+        samplePi.setPort(8080);
 
         sampleRoom = new RoomMonitoring();
         sampleRoom.setRoomId(roomId);
@@ -165,7 +167,7 @@ public class SensorStationServiceUnitTests {
         sensorService.updateExistingSensor(stationId, patch);
 
         // one SENSOR_ADD to the new room's Pi; old room has no Pi so no SENSOR_DELETE
-        verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -174,6 +176,8 @@ public class SensorStationServiceUnitTests {
 
         RaspberryPi newPi = new RaspberryPi();
         newPi.setId(UUID.randomUUID());
+        newPi.setIp("127.0.0.2");
+        newPi.setPort(8081);
         RoomMonitoring newRoom = new RoomMonitoring();
         newRoom.setRoomId(UUID.randomUUID());
         newRoom.setRaspberryPi(newPi);

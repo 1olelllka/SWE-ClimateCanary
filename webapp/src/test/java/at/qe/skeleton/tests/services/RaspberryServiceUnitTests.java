@@ -161,6 +161,33 @@ public class RaspberryServiceUnitTests {
         assertEquals("192.168.1.100", result.getIp());
         verify(raspberryPiRepository, never()).existsByName(anyString());
         verify(raspberryPiRepository, never()).existsByIpAndPort(anyString(), anyInt());
+        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatUpdateRaspberryByIdDoesNotPublishEventWhenFrequencyUnchanged() {
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(raspberryPiRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        RaspberryPi patch = new RaspberryPi();
+        patch.setFrequency(5000); // same as setUp value
+
+        raspberryService.updateRaspberryById(piId, patch);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatUpdateRaspberryByIdDoesNotPublishEventWhenFrequencyNotProvided() {
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(raspberryPiRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        RaspberryPi patch = new RaspberryPi();
+        patch.setName("Pi-01-renamed");
+
+        raspberryService.updateRaspberryById(piId, patch);
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -331,6 +358,8 @@ public class RaspberryServiceUnitTests {
     void testThatAddNewRoomSucceeds() {
         RaspberryPi piWithNoRoom = new RaspberryPi();
         piWithNoRoom.setId(UUID.randomUUID());
+        piWithNoRoom.setIp("127.0.0.1");
+        piWithNoRoom.setPort(8080);
         piWithNoRoom.setRoomMonitoring(null);
 
         RoomMonitoring unassignedRoom = new RoomMonitoring();

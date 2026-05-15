@@ -59,7 +59,7 @@ public class BuildingSeederService {
                                 .roomNumber(prefix + "-10" + i)
                                 .roomType(type)
                                 .isActive(true)
-                                .defaultPeopleCnt(i == 3 ? 10 : 4)
+                                .defaultPeopleCnt(i == 3 ? 15 : 6)
                                 .department(dept)
                                 .build()
                 );

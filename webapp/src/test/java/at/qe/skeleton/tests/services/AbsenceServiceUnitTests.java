@@ -74,6 +74,8 @@ class AbsenceServiceUnitTests {
 
         RaspberryPi raspberry = new RaspberryPi();
         raspberry.setId(UUID.randomUUID());
+        raspberry.setIp("127.0.0.1");
+        raspberry.setPort(8080);
 
         monitoringWithPi = RoomMonitoring.builder()
                 .raspberryPi(raspberry)
