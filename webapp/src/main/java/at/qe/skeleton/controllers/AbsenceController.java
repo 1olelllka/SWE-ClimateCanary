@@ -7,7 +7,6 @@ import at.qe.skeleton.mappers.AbsenceListMapper;
 import at.qe.skeleton.mappers.AbsenceMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.AbsenceService;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import jakarta.validation.Valid;
@@ -37,30 +36,27 @@ public class AbsenceController {
     private AbsenceCreateMapper absenceCreateMapper;
     private AbsenceMapper absenceMapper;
     private AuthenticatedUserService authenticatedUserService;
-    private final UserxRepository userxRepository;
 
     @Autowired
     public AbsenceController(AbsenceService absenceService,
                              AbsenceListMapper absenceListMapper,
                              AbsenceCreateMapper absenceCreateMapper,
                              AbsenceMapper absenceMapper,
-                             AuthenticatedUserService authenticatedUserService,
-                             UserxRepository userxRepository) {
+                             AuthenticatedUserService authenticatedUserService) {
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
         this.absenceCreateMapper = absenceCreateMapper;
         this.absenceMapper = absenceMapper;
         this.authenticatedUserService = authenticatedUserService;
-        this.userxRepository = userxRepository;
     }
 
     @GetMapping("")
-    @PreAuthorize("hasRole('EMPLOYEE') or hasRole('DEPARTMENT_MANAGER')")
+    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE') or hasAuthority('CAN_VIEW_ABSENCE_VIEW')")
     public ResponseEntity<Page<AbsenceListDTO>> getAllAbsences(Authentication authentication,
                                                                Pageable pageable) {
         Set<String> authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
         Userx user = authenticatedUserService.getAuthenticatedUser();
-        if (authorities.contains("ROLE_DEPARTMENT_MANAGER")) {
+        if (authorities.contains("CAN_VIEW_ABSENCE_VIEW")) {
             Page<Absence> absences = absenceService.getAllAbsencesByDepartment(user, pageable);
             return new ResponseEntity<>(absences.map(absenceListMapper::mapTo), HttpStatus.OK);
         } else {
@@ -107,7 +103,7 @@ public class AbsenceController {
         return new ResponseEntity<>(new ClockStatusDTO(clockedIn), HttpStatus.OK);
     }
 
-    @GetMapping("{absence_id}")
+    @GetMapping("/{absence_id}")
     @PreAuthorize("hasAuthority('CAN_MANAGE_ABSENCES')")
     public ResponseEntity<AbsenceDTO> getSpecificAbsence(@PathVariable(name="absence_id") UUID id) {
         Userx manager = authenticatedUserService.getAuthenticatedUser();
@@ -115,7 +111,7 @@ public class AbsenceController {
         return new ResponseEntity<>(absenceMapper.mapTo(absence), HttpStatus.OK);
     }
 
-    @PatchMapping("{absence_id}")
+    @PatchMapping("/{absence_id}")
     @PreAuthorize("hasAuthority('CAN_MANAGE_ABSENCES')")
     public ResponseEntity<AbsenceDTO> updateStatusOfAbsence(@PathVariable(name="absence_id") UUID id,
                                                             @RequestBody @Valid AbsencePatchDTO dto,
@@ -128,21 +124,12 @@ public class AbsenceController {
         return new ResponseEntity<>(absenceMapper.mapTo(patched), HttpStatus.OK);
     }
 
-    @PatchMapping("{absence_id}/cancel")
+    @PatchMapping("/{absence_id}/cancel")
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
     public ResponseEntity<AbsenceDTO> cancelAbsence(@PathVariable(name="absence_id") UUID id) {
         Userx user = authenticatedUserService.getAuthenticatedUser();
         Absence cancelled = absenceService.cancelAbsence(id, user);
         return new ResponseEntity<>(absenceMapper.mapTo(cancelled), HttpStatus.OK);
-    }
-
-    @DeleteMapping("{absence_id}")
-    @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
-    public ResponseEntity<Void> deleteSpecificAbsence(@PathVariable(name="absence_id") UUID id,
-                                                      Authentication authentication) {
-        Userx user = authenticatedUserService.getAuthenticatedUser();
-        absenceService.deleteAbsenceById(id, user);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PostMapping("/clock-in")

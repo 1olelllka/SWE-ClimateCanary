@@ -3,6 +3,7 @@ package at.qe.skeleton.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -38,5 +39,5 @@ public class Room {
     private Department department;
 
     @OneToMany(mappedBy = "myRoom", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    private Set<Userx> users;
+    private Set<Userx> users = new HashSet<>();
 }

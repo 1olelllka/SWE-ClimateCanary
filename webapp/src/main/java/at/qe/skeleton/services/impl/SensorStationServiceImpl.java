@@ -96,6 +96,22 @@ public class SensorStationServiceImpl implements SensorStationService {
                 sensor.setLastHeartBeat(beat);
             });
             SensorStation saved = sensorRepository.save(sensor);
+            if (!notifyRasp.get() && nameChanged.get() && saved.getRoomMonitoring().getRaspberryPi() != null) {
+                    eventPublisher.publishEvent(
+                            new NotifyRaspberryCommand(
+                                    new StateChangeNotificationDTO(UpdateType.SENSOR_ADD, LocalDateTime.now()),
+                                    id,
+                                    sensor.getWriteId(),
+                                    saved.getRoomMonitoring().getRaspberryPi(),
+                                    notificationClient));
+                    eventPublisher.publishEvent(
+                            new NotifyRaspberryCommand(
+                                    new StateChangeNotificationDTO(UpdateType.SENSOR_DELETE, LocalDateTime.now()),
+                                    id,
+                                    sensor.getWriteId(),
+                                    saved.getRoomMonitoring().getRaspberryPi(),
+                                    notificationClient));
+            }
             if (notifyRasp.get()) {
                 if (saved.getRoomMonitoring().getRaspberryPi() != null) {
                     log.info("Notifying Raspberry Pi '{}' [{}:{}] of new sensor...",

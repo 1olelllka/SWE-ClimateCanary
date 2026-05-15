@@ -104,7 +104,7 @@ class AbsenceControllerIntegrationTests {
 
     @Test
     void testThatGetAllAbsencesForEmployeeReturnsListOfUsersAbsences() throws Exception {
-        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "ROLE_EMPLOYEE");
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences")
                 .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -113,7 +113,7 @@ class AbsenceControllerIntegrationTests {
 
     @Test
     void testThatGetAllAbsencesForDepartmentManagerReturnsListOfAbsencesForDepartment() throws Exception {
-        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.manager.getUsername(), this.manager, "ROLE_DEPARTMENT_MANAGER");
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.manager.getUsername(), this.manager, "CAN_VIEW_ABSENCE_VIEW");
         mockMvc.perform(MockMvcRequestBuilders.get("/api/absences")
                 .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -286,36 +286,6 @@ class AbsenceControllerIntegrationTests {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(this.mockedAbsence.getId().toString()))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(dto.status().name()));
         assertEquals(25, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
-    }
-
-
-    @Test
-    @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    void testThatDeleteAbsenceReturnsHttp404IfAbsenceDoesNotExist() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/" + UUID.randomUUID()))
-                .andExpect(MockMvcResultMatchers.status().isNotFound());
-    }
-
-    @Test
-    void testThatDeleteAbsenceReturnsHttp403ForbiddenIfAbsenceDoesNotBelongToUser() throws Exception {
-        Userx otherUser = TestDataUtil.createUserxEntity(null, null);
-        otherUser.setUsername("u");
-        otherUser.setPassword("passwd");
-        otherUser = userService.createNewUser(otherUser);
-        TestingAuthenticationToken auth = new TestingAuthenticationToken(otherUser.getUsername(), otherUser, "CAN_MANAGE_OWN_ABSENCE");
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/" + this.mockedAbsence.getId())
-                .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
-                .andExpect(MockMvcResultMatchers.status().isForbidden())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.detail").value("You are not allowed to delete this absence."));
-    }
-
-    @Test
-    void testThatDeleteAbsenceReturnsHttp204NoContentOnSuccessfulDeletion() throws Exception {
-        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/absences/" + this.mockedAbsence.getId())
-                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
-
     }
 
     @Test

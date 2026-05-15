@@ -131,8 +131,18 @@ public class DepartmentServiceImpl implements DepartmentService {
         return dept;
     }
 
+    @Transactional
     public void deleteDepartment(UUID id) {
-        departmentRepository.deleteById(id);
+        Department department = departmentRepository.findById(id).orElse(null);
+        if (department != null) {
+            List<UUID> roomIds = department.getRooms()
+                    .stream()
+                    .map(Room::getId)
+                    .toList();
+            department.setBuilding(null);
+            roomIds.forEach(roomService::deleteRoom);
+        }
+        if (department != null) departmentRepository.delete(department);
         trendRepository.deleteAllByDepartmentId(id);
     }
 

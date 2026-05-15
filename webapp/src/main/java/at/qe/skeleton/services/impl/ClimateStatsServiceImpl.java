@@ -15,7 +15,7 @@ import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.ClimateStatsService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.WeekFields;
 import java.util.List;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-@Log
+@Slf4j
 public class ClimateStatsServiceImpl implements ClimateStatsService {
 
     private final ClimateStatsRepository climateStatsRepository;
@@ -54,14 +53,27 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
-        if (roles.contains("CAN_VIEW_OWN_OFFICE_CLIMATE") && !roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES") && !roles.contains("CAN_VIEW_ALL_ROOMS")) {
-            if (authenticated.getMyRoom().getId().equals(room.getId()) && room.getRoomType() == RoomType.OFFICE)
+        boolean isDeptHead = roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES");
+        boolean isEmployee = roles.contains("CAN_VIEW_OWN_OFFICE_CLIMATE");
+        boolean isBuilding = roles.contains("CAN_VIEW_ALL_ROOMS");
+        if (isEmployee && !isDeptHead && !isBuilding) {
+            if (authenticated.getMyRoom() != null && authenticated.getMyRoom().getId().equals(room.getId()) && room.getRoomType() == RoomType.OFFICE)
                 return climateStatsRepository
                         .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                         .map(climateMapper::mapTo)
                         .orElseThrow(() -> new NotFoundException(
-                                "No climate data found for room: " + roomId));
-            else if (authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()) && room.getRoomType() == RoomType.SHARED) {
+                                "No climate data found for room: %s".formatted(roomId.toString())));
+            else if (authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()) && room.getRoomType() == RoomType.SHARED) {
+                return climateStatsRepository
+                        .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
+                        .map(climateMapper::mapTo)
+                        .orElseThrow(() -> new NotFoundException(
+                                "No climate data found for room: %s".formatted(roomId.toString())));
+            }
+            throw new ForbiddenException("You are not allowed to see other's rooms.");
+        }
+        if (isDeptHead && !isBuilding) {
+            if (authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
                 return climateStatsRepository
                         .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                         .map(climateMapper::mapTo)
@@ -70,17 +82,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             }
             throw new ForbiddenException("You are not allowed to see other's rooms.");
         }
-        if (roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES") && !roles.contains("CAN_VIEW_ALL_ROOMS")) {
-            if (authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
-                return climateStatsRepository
-                        .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
-                        .map(climateMapper::mapTo)
-                        .orElseThrow(() -> new NotFoundException(
-                                "No climate data found for room: " + roomId));
-            }
-            throw new ForbiddenException("You are not allowed to see other's rooms.");
-        }
-        if (roles.contains("CAN_VIEW_ALL_ROOMS")) {
+        if (isBuilding) {
             return climateStatsRepository
                     .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                     .map(climateMapper::mapTo)
@@ -97,7 +99,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         RoomMonitoring room = roomMonitoringRepository.findById(batch.roomId())
                 .orElseThrow(() -> new NotFoundException(
                         "RoomMonitoring not found: " + batch.roomId()));
-        log.info("The room was found.");
         double temp = 0;
         double hum = 0;
         double poll = 0;
@@ -108,7 +109,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 case CO2         -> poll = r.value();
             }
         }
-        log.info("Received: Temperature – " + temp + ", Humidity – " + hum + ", CO2 – " + poll + ".");
+        log.info("Received: Temperature – {}, Humidity – {}, CO2 – {}", temp, hum, poll);
         climateStatsRepository.save(ClimateStats.builder()
                 .roomMonitoring(room)
                 .date(batch.timestamp())
@@ -116,7 +117,6 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 .humVal(hum)
                 .pollVal(poll)
                 .build());
-        log.info("Data was saved.");
     }
 
     // to get values for a specific timeframe for a specific room
@@ -134,12 +134,14 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
-        if (!roles.contains("CAN_VIEW_ALL_ROOMS")) {
-            boolean sameDepartment = authenticated.getMyRoom().getDepartment().getId()
+        boolean isBuilding = roles.contains("CAN_VIEW_ALL_ROOMS");
+        boolean isDeptHead = roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES");
+        if (!isBuilding) {
+            boolean sameDepartment = authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId()
                     .equals(room.getDepartment().getId());
-            boolean sameRoom = authenticated.getMyRoom().getId().equals(roomId);
+            boolean sameRoom = authenticated.getMyRoom() != null && authenticated.getMyRoom().getId().equals(roomId);
 
-            if (!roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES")) {
+            if (!isDeptHead) {
                 if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
                     throw new ForbiddenException("You are not allowed to see others' room climate.");
 
@@ -167,8 +169,9 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         Userx user = authenticatedUserService.getAuthenticatedUser();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         List<String> roles = user.getAuthorities().stream().map(role -> role.getAuthority()).toList();
-        if (!roles.contains("CAN_VIEW_ALL_ROOMS")) {
-            if (room.getRoomType().equals(RoomType.SHARED) && !user.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
+        boolean isBuilding = roles.contains("CAN_VIEW_ALL_ROOMS");
+        if (!isBuilding) {
+            if (user.getMyRoom() == null || room.getRoomType().equals(RoomType.SHARED) &&!user.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
                 throw new ForbiddenException("You are not allowed to see other's rooms.");
             }
             if (room.getRoomType().equals(RoomType.OFFICE) && !user.getMyRoom().getId().equals(room.getId())) {
@@ -211,7 +214,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         boolean hourly = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 2;
         Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
-        if (!authenticatedDeptMan.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
+        if (authenticatedDeptMan.getMyRoom() == null || !authenticatedDeptMan.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
             throw new ForbiddenException("You are not allowed to see measures for this department.");
         if (!authenticatedDeptMan.getMyRoom().getId().equals(room.getId()) && room.getRoomType() != RoomType.SHARED && hourly)
             throw new ForbiddenException("You are not allowed to see detailed measures for this room.");
@@ -226,7 +229,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
-        log.info("Aggregated Data was not found.");
+        log.info("Aggregated Data not found.");
 
         // this is just a fallback for now — should be removed once background job is running
         if (hourly) {

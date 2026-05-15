@@ -21,16 +21,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RoomServiceUnitTest {
+class RoomServiceUnitTest {
 
     @Mock private RoomRepository roomRepository;
     @Mock private RoomMonitoringRepository monitoringRepository;
@@ -47,6 +45,7 @@ public class RoomServiceUnitTest {
     private RoomMonitoring sampleMonitoring;
     private UUID roomId;
     private UUID deptId;
+    private Department department;
 
     @BeforeEach
     void setUp() {
@@ -54,7 +53,7 @@ public class RoomServiceUnitTest {
         deptId = UUID.randomUUID();
 
         Building building = TestDataUtil.createBuildingEntity();
-        Department department = TestDataUtil.createDepartmentEntity(building);
+        department = TestDataUtil.createDepartmentEntity(building);
         department.setId(deptId);
 
         sampleRoom = TestDataUtil.createRoomEntity(department);
@@ -238,56 +237,95 @@ public class RoomServiceUnitTest {
                         new LimitDTO(null, null, null, null, null, null)));
     }
 
-    // ---------------- deleteRoom ----------------
+// ---------------- deleteRoom ----------------
 
     @Test
     void testThatDeleteRoomDeletesBothRoomAndMonitoring() {
-        when(monitoringRepository.findById(roomId))
-                .thenReturn(Optional.of(sampleMonitoring));
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleMonitoring));
 
         roomService.deleteRoom(roomId);
 
-        verify(roomRepository).deleteById(roomId);
+        verify(roomRepository).delete(sampleRoom);
         verify(monitoringRepository).deleteById(roomId);
+    }
+
+    @Test
+    void testThatDeleteRoomUnlinksUsersBeforeDeleting() {
+        Userx user1 = new Userx();
+        user1.setId(UUID.randomUUID());
+        user1.setMyRoom(sampleRoom);
+
+        Userx user2 = new Userx();
+        user2.setId(UUID.randomUUID());
+        user2.setMyRoom(sampleRoom);
+
+        sampleRoom.setUsers(new HashSet<>(Set.of(user1, user2)));
+
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleMonitoring));
+
+        roomService.deleteRoom(roomId);
+
+        assertNull(user1.getMyRoom());
+        assertNull(user2.getMyRoom());
+        verify(userxRepository, times(2)).save(any(Userx.class));
+    }
+
+    @Test
+    void testThatDeleteRoomRemovesRoomFromDepartmentCollection() {
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleMonitoring));
+
+        roomService.deleteRoom(roomId);
+
+        assertFalse(department.getRooms().contains(sampleRoom));
+        assertNull(sampleRoom.getDepartment());
     }
 
     @Test
     void testThatDeleteRoomUnlinksPiAndPublishesEventWhenPiLinked() {
         RaspberryPi pi = new RaspberryPi();
         pi.setId(UUID.randomUUID());
-        pi.setIp("127.0.0.1");
+        pi.setIp("localhost");
         pi.setPort(8080);
 
         sampleMonitoring.setRaspberryPi(pi);
         pi.setRoomMonitoring(sampleMonitoring);
 
-        when(monitoringRepository.findById(roomId))
-                .thenReturn(Optional.of(sampleMonitoring));
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleMonitoring));
 
         roomService.deleteRoom(roomId);
 
-        // Pi should be unlinked from monitoring
         assertNull(pi.getRoomMonitoring());
-
         verify(raspberryPiRepository).save(pi);
         verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(roomRepository).delete(sampleRoom);
+        verify(monitoringRepository).deleteById(roomId);
+    }
 
-        verify(roomRepository).deleteById(roomId);
+    @Test
+    void testThatDeleteRoomSkipsRoomCleanupWhenRoomNotFound() {
+        when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.of(sampleMonitoring));
+
+        roomService.deleteRoom(roomId);
+
+        verify(roomRepository, never()).delete(any());
+        verifyNoInteractions(userxRepository);
         verify(monitoringRepository).deleteById(roomId);
     }
 
     @Test
     void testThatDeleteRoomSkipsMonitoringCleanupWhenMonitoringMissing() {
-        when(monitoringRepository.findById(roomId))
-                .thenReturn(Optional.empty());
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(sampleRoom));
+        when(monitoringRepository.findById(roomId)).thenReturn(Optional.empty());
 
         roomService.deleteRoom(roomId);
 
-        // core deletions always happen
-        verify(roomRepository).deleteById(roomId);
+        verify(roomRepository).delete(sampleRoom);
         verify(monitoringRepository).deleteById(roomId);
-
-        // no side effects
         verifyNoInteractions(raspberryPiRepository, eventPublisher);
     }
 }
