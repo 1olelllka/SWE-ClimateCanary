@@ -99,8 +99,8 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
         {
             label: 'Tip Management',
             icon: 'pi pi-lightbulb',
-            route: '/tip-management',
-            visible: isAdmin
+            route: ROUTES.TIPMANAGEMENT,
+            visible: isBuildingManager
         },
         {
             label: 'Settings',
