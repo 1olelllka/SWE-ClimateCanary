@@ -33,7 +33,7 @@ export const ViolationsBarChart: React.FC = () => {
     };
 
     return (
-        <div className="table-container card" style={{ padding: '2rem', backgroundColor: '#fff', borderRadius: '8px' }}>
+        <div className="table-container card chart-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <h3 style={{ margin: 0 }}>Number of Violations per Department</h3>
                 <TimeFilter

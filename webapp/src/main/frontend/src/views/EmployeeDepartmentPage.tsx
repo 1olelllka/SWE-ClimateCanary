@@ -93,12 +93,11 @@ export const EmployeeDepartmentPage: React.FC = () => {
                     return;
                 }
 
-                return globalAxios.get('/api/users/me/department/rooms')
+                return globalAxios.get('/api/departments/'+departmentId)
                     .then(roomResponse => {
-                        const departmentRooms: RoomDTO[] = roomResponse.data || [];
-
-                        setRooms(departmentRooms);
-
+                        const departmentRooms: RoomDTO[] = roomResponse.data.rooms || [];
+                        console.log(departmentRooms)
+                        setRooms(departmentRooms)
                         if (departmentRooms.length === 0) {
                             setSelectedRoomId(null);
                             setExpandedRoomId(null);

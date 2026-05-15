@@ -9,7 +9,7 @@ import java.util.UUID;
 public record WarningDTO(
         UUID id,
         UUID roomId,
-        String deviceName,
+        UUID writeId,
         MeasurementType measurementType,
         WarningStatus status,
         String message,

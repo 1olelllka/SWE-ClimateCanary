@@ -18,6 +18,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +62,8 @@ public class AbsenceServiceImpl implements AbsenceService {
         UUID id = absence.getUser().getId();
         Userx user = userxRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User with id " + id + " was not found"));
+        if (user.getNumberOfAbsences() < ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate()))
+            throw new ValidationException("You don't have enough amount of absences available.");
 
         Userx managerUser = manager.get();
 
@@ -77,7 +81,7 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
 
         absence.setStatus(AbsenceStatus.PENDING);
-
+        user.setNumberOfAbsences((int) (user.getNumberOfAbsences() - ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
         return absenceRepository.save(absence);
     }
 
@@ -119,6 +123,9 @@ public class AbsenceServiceImpl implements AbsenceService {
             throw new ForbiddenException("You cannot update absence status for this employee.");
         }
         absence.setStatus(status);
+        if (status == AbsenceStatus.REJECTED) {
+            user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
+        }
         return absenceRepository.save(absence);
     }
 
@@ -198,4 +205,16 @@ public class AbsenceServiceImpl implements AbsenceService {
                 .map(UserClockStatus::isClockedIn)
                 .orElse(false);
     }
+
+    @Override
+    @Transactional
+    public List<Userx> getAllAvailableManagersForUser(Userx user) {
+        return userxRepository.findAllByDepartment(user.getMyRoom().getDepartment().getId())
+                .stream()
+                .filter(u -> u.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch("CAN_MANAGE_ABSENCES"::equals))
+                .toList();
+    }
+
 }

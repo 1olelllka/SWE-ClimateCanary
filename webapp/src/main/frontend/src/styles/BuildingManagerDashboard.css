@@ -103,3 +103,63 @@
         width: 100%;
     }
 }
+
+html[data-theme='dark'] .building-manager-dashboard {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .building-manager-kpi-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .building-manager-kpi-card h4 {
+    color: #f87171 !important;
+}
+
+html[data-theme='dark'] .building-manager-kpi-card h2 {
+    color: #f87171 !important;
+}
+
+html[data-theme='dark'] .building-manager-room-list-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .building-manager-room-list-card h2,
+html[data-theme='dark'] .building-manager-room-list-card label,
+html[data-theme='dark'] .building-manager-info-text {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .building-manager-search-input {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .building-manager-search-input::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .building-manager-department-dropdown {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+}
+
+html[data-theme='dark'] .building-manager-department-dropdown .p-dropdown-label,
+html[data-theme='dark'] .building-manager-department-dropdown .p-dropdown-trigger {
+    background-color: transparent !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .building-manager-error-text {
+    color: #f87171 !important;
+}

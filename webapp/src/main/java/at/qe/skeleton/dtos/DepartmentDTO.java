@@ -8,6 +8,6 @@ public record DepartmentDTO(
         String name,
         String buildingID,
         String buildingName,
-        List<UUID> roomNumbers
+        List<UserRoom> rooms
 ) {
 }

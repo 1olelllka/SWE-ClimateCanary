@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 SENSOR_UPDATE_TYPES = {"SENSOR_DELETE", "SENSOR_ADD", "FLUSH"}
 
-
 class WebManager:
     def __init__(self, static_config, db, web_out_queue, web_violation_queue, auth,
                  config_ready_event: asyncio.Event):
@@ -134,6 +133,48 @@ class WebManager:
 
         return web.json_response({"status": "accepted", "triggered": triggered}, status=202)
 
+    async def _handle_tip(self, data: dict):
+        violation_type   = str(data.get('measurementType', '')).upper()
+        violated_sensor  = str(data.get('deviceName', ''))
+        violation_status = str(data.get('status', '')).upper()
+        tip              = data.get('tip', '')
+    
+        if not violation_type or not violated_sensor or not violation_status or not tip:
+            logger.warning(f"[WebManager] Tip missing required fields, skipping: {data}")
+            return
+    
+        ble_msg = await self._build_ble_warn_message(violated_sensor, violation_type, violation_status, tip)
+        logger.info(f"[Pi -> Arduino] BLE message built: {ble_msg}")
+    
+        ble = self.ble_managers.get(violated_sensor)
+        if ble:
+            await ble.ble_inbox.put(ble_msg)
+            logger.info(f"[Pi -> Arduino] Tip forwarded to Arduino '{violated_sensor}'")
+        else:
+            logger.warning(f"[WebManager] No active BLE manager for '{violated_sensor}' — tip not forwarded.")
+
+    async def _build_ble_warn_message( self, sensor_name: str, violation_type: str, violation_status: str, tip: str,) -> str:
+        type_to_limit_keys = {
+            "TEMPERATURE": ["max_temp", "min_temp"],
+            "HUMIDITY": ["max_moisture", "min_moisture"],
+            "CO2": ["max_co2"],
+        }
+        limit_keys = type_to_limit_keys.get(violation_type, [])
+
+        threshold = None
+        warntext  = violation_type.lower()
+
+        active = await self.db.get_active_violations(sensor_name)
+        for v in active:
+            if v['type'] in limit_keys:
+                threshold = v['threshold_value']
+                direction = "above" if v['type'].startswith("max_") else "below"
+                warntext = f"{violation_type.lower()} {direction} limit"
+                break
+
+        threshold_str = str(threshold) if threshold is not None else "N/A"
+        return f"WARNTEXT:{warntext}THRESHOLD:{threshold_str}TIP:{tip}STATUS:{violation_status}"
+
 # Background tasks
 
     async def _task_limit_change(self, payload: dict):
@@ -154,10 +195,19 @@ class WebManager:
         try:
             if update_type == "SENSOR_ADD":
                 await ConfigManager.handle_sensor_add(self.db, self.auth, sensor_ids)
+                for _, ble in self.ble_managers.items():
+                    if ble.sensor.get('char_uuid') in sensor_ids or ble.sensor.get('write_uuid') in sensor_ids:
+                        ble.reconnect_event.set()
             elif update_type == "SENSOR_DELETE":
                 await ConfigManager.handle_sensor_delete(self.db, sensor_ids)
+                for sensor_id in sensor_ids:
+                    for _, ble in self.ble_managers.items():
+                        if ble.sensor.get('char_uuid') == sensor_id or ble.sensor.get('write_uuid') == sensor_id:
+                            ble.removal_event.set()
             elif update_type == "FLUSH":
                 await ConfigManager.handle_sensor_flush(self.db)
+                for ble in self.ble_managers.values():
+                    ble.removal_event.set()
         except Exception as e:
             logger.error(f"[WebManager] _task_sensor_change ({update_type}) failed: {e}")
             await self.db.log_event("CONFIG", f"Failed to handle sensor {update_type}: {e}", "ERROR")
@@ -189,19 +239,21 @@ class WebManager:
 
     async def run_local_server(self):
         app = web.Application()
-        app.router.add_post('/api/limits', self.handle_limits)
-        app.router.add_post('/api/occupancy', self.handle_occupancy)
-        app.router.add_post('/api/sensors', self.handle_sensors)
-        app.router.add_post('/api/config', self.handle_config)
-        app.router.add_post('/api/retry-sensor', self.handle_retry_sensor)
+        app.router.add_post('/api/limits', self.handle_limits) # works
+        app.router.add_post('/api/occupancy', self.handle_occupancy) # works
+        app.router.add_post('/api/sensors', self.handle_sensors) # should work after db fix 
+        app.router.add_post('/api/config', self.handle_config) # works
+        app.router.add_post('/api/retry-sensor', self.handle_retry_sensor) # works
 
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, '0.0.0.0', self.local_port)
         await site.start()
 
-        logger.info(f"[WebManager] Local API listening on port {self.local_port} "
-                    f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config, /api/retry-sensor)")
+        logger.info(
+            f"[WebManager] Local API listening on port {self.local_port} "
+            f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config, /api/retry-sensor, /api/tip)"
+        )
         while True:
             await asyncio.sleep(3600)
 
@@ -240,21 +292,23 @@ class WebManager:
                         if is_webapp_offline:
                             is_webapp_offline = False
                             logger.info("[WebManager] Webapp back online — notifying Arduinos.")
-                            await _broadcast_to_arduinos("ERROR:CLEAR")
+                            await _broadcast_to_arduinos("ERROR:WEBAPP_CLEAR")
                     else:
-                        failure_streak += 1
-                        logger.warning(
-                            f"[WebManager] Webapp rejected measurement payload "
-                            f"(streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 5s..."
-                        )
-                        await asyncio.sleep(5)
+                        failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
+                        if not is_webapp_offline: 
+                            logger.warning(
+                                f"[WebManager] Webapp rejected measurement payload "
+                                f"(streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 5s..."
+                            )
+                            await asyncio.sleep(5)
                         await self.web_out_queue.put(payload)
 
                 except Exception as e:
-                    failure_streak += 1
-                    logger.error(f"[WebManager] Network error (streak {failure_streak}/{OFFLINE_THRESHOLD}): {e}")
-                    await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
-                    await asyncio.sleep(10)
+                    failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
+                    if not is_webapp_offline: 
+                        logger.error(f"[WebManager] Network error (streak {failure_streak}/{OFFLINE_THRESHOLD}): {e}")
+                        await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
+                        await asyncio.sleep(10)
                     await self.web_out_queue.put(payload)
 
                 finally:
@@ -262,7 +316,6 @@ class WebManager:
                         is_webapp_offline = True
                         logger.warning("[WebManager] Webapp confirmed offline — notifying Arduinos.")
                         await _broadcast_to_arduinos("ERROR:WEBAPP_OFFLINE")
-
                     self.web_out_queue.task_done()
 
     async def run_outgoing_violation_worker(self):
@@ -297,34 +350,50 @@ class WebManager:
     async def _handle_violation_warning(self, session, event: dict):
         api_url = f"{self.server_url}/api/warnings"
         sensor_name = event["sensor_name"]
-        limit_key = event["limit_reached"]
+        limit_key   = event["limit_key"]
+
+        payload = {
+            "roomId": event["roomId"],
+            "device": event["device"],
+            "measurementType": event["measurement_type"],
+            "status": event["status"],
+            "triggeredValue": event["triggeredValue"],
+            "activeLimitAtTime": event["activeLimitAtTime"],
+            "message": event["message"],
+        }
 
         try:
-            async with session.post(api_url, json=event, headers=self.auth.get_headers()) as response:
+            async with session.post(api_url, json=payload, headers=self.auth.get_headers()) as response:
                 if response.status == 401:
                     await self.auth.refresh_if_needed()
-                    async with session.post(api_url, json=event, headers=self.auth.get_headers()) as retry:
+                    async with session.post(api_url, json=payload, headers=self.auth.get_headers()) as retry:
                         retry.raise_for_status()
                         data = await retry.json()
                 else:
                     response.raise_for_status()
                     data = await response.json()
-
+            logger.info(f"Response after warning: {data}")
             warning_id = str(data.get("id", ""))
+            await self._handle_tip(data)
             if warning_id:
                 await self.db.save_warning_id(sensor_name, limit_key, warning_id)
-                logger.info(f"[WebManager] Warning posted for {sensor_name}/{limit_key}, id={warning_id}")
+                logger.info(
+                    f"[WebManager] Warning posted for {sensor_name}/{limit_key}, "
+                    f"status={payload['status']}, id={warning_id}"
+                )
             else:
                 logger.warning(f"[WebManager] /api/warnings response had no 'id' field: {data}")
 
         except Exception as e:
-            logger.warning(f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s...")
+            logger.warning(
+                f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s..."
+            )
             await asyncio.sleep(5)
             await self.web_violation_queue.put(event)
 
     async def _handle_violation_resolve(self, session, event: dict):
         sensor_name = event["sensor_name"]
-        limit_key = event["limit_key"]
+        limit_key   = event["limit_key"]
 
         warning_id = await self.db.get_warning_id(sensor_name, limit_key)
         if not warning_id:
@@ -334,19 +403,41 @@ class WebManager:
             return
 
         api_url = f"{self.server_url}/api/warnings/{warning_id}/resolve"
+        payload = {
+            "roomId": event["roomId"],
+            "device": event["device"],
+            "measurementType": event["measurement_type"],
+            "status": "GREEN",
+            "triggeredValue": event["triggeredValue"],
+            "activeLimitAtTime": event["activeLimitAtTime"],
+            "message": event["message"],
+        }
+
         try:
-            async with session.patch(api_url, json={}, headers=self.auth.get_headers()) as response:
+            async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as response:
                 if response.status == 401:
                     await self.auth.refresh_if_needed()
-                    async with session.patch(api_url, json={}, headers=self.auth.get_headers()) as retry:
+                    async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as retry:
                         retry.raise_for_status()
                 else:
                     response.raise_for_status()
 
-            logger.info(f"[WebManager] Warning {warning_id} resolved for {sensor_name}/{limit_key}")
+            logger.info(f"[WebManager] Warning {warning_id} resolved (GREEN) for {sensor_name}/{limit_key}")
+
+            # Notify the Arduino that the condition is back within limits.
+            threshold = event["measurement_type"]
+            ble_msg = f"RESOLVED:{threshold}"
+            ble = self.ble_managers.get(sensor_name)
+            if ble:
+                await ble.ble_inbox.put(ble_msg)
+                logger.info(f"[WebManager] Sent to Arduino '{sensor_name}': {ble_msg}")
+            else:
+                logger.warning(f"[WebManager] No active BLE manager for '{sensor_name}' — RESOLVED message not sent.")
 
         except Exception as e:
-            logger.warning(f"[WebManager] Failed to resolve warning {warning_id}: {e}. Requeueing in 5s...")
+            logger.warning(
+                f"[WebManager] Failed to resolve warning {warning_id}: {e}. Requeueing in 5s..."
+            )
             await asyncio.sleep(5)
             await self.web_violation_queue.put(event)
 
@@ -382,10 +473,11 @@ class WebManager:
                             logger.info(f"[WebManager] Sensor '{sensor_name}' status={status} sent to webapp.")
 
                 except Exception as e:
-                    logger.warning(f"[WebManager] Failed to send status for {event.get('sensor_name')}: {e}. Requeueing in 5s...")
+                    logger.warning(
+                        f"[WebManager] Failed to send status for {event.get('sensor_name')}: {e}. Requeueing in 5s..."
+                    )
                     await asyncio.sleep(5)
                     await self.status_queue.put(event)
 
                 finally:
                     self.status_queue.task_done()
-

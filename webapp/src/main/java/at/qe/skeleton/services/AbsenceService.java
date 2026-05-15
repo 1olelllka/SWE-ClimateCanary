@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface AbsenceService {
@@ -29,4 +30,6 @@ public interface AbsenceService {
     void clockOut(Userx user);
 
     boolean isClockedIn(Userx user);
+
+    List<Userx> getAllAvailableManagersForUser(Userx user);
 }

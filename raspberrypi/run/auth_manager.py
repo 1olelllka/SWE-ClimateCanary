@@ -11,7 +11,7 @@ class AuthManager:
         self.token: str | None = None
 
     async def login(self):
-        url = f"{self.server_url}/api/auth/login"
+        url = f"{self.server_url}/api/login"
         timeout = aiohttp.ClientTimeout(total=10)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -21,7 +21,7 @@ class AuthManager:
                 }) as response:
                 response.raise_for_status()
                 data = await response.json()
-                self.token = data["token"]
+                self.token = data["bearerToken"]
                 logger.info("[Auth] Successfully authenticated with webapp.")
 
     def get_headers(self) -> dict:

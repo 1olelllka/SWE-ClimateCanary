@@ -68,3 +68,47 @@
         width: 100%;
     }
 }
+
+/* Dark mode for EmployeeDepartmentPage */
+html[data-theme='dark'] .employee-department-page {
+    --page-bg: var(--app-bg);
+    --card-bg: var(--app-surface-2);
+    --card-border: var(--app-border);
+    --text-primary: var(--app-text);
+    --text-secondary: var(--app-text-muted);
+
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-department-content {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-department-toolbar {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-department-last-updated {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .employee-department-search {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-department-search::placeholder {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .employee-department-info-text {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .employee-department-error-text {
+    color: #f87171 !important;
+}

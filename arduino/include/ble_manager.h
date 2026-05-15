@@ -16,6 +16,10 @@ public:
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
 
+  BLEDevice currentCentral;
+  unsigned int piConnectionCount = 0; 
+  String piAddress = "";
+
   unsigned long measureAndSendIntervalMs = MEASURE_AND_SEND_INTERVAL_MS;
   
 
@@ -41,9 +45,10 @@ private:
 
   static BLEManager* instance;
   DisplayManager* displayManager = nullptr;
-  BLEDevice currentCentral;
 
   bool timeReceived = false;
   String receivedTimestamp = "";
   unsigned long timeSyncMillis = 0;
+
+  bool piConnectionEstablished = false;
 };

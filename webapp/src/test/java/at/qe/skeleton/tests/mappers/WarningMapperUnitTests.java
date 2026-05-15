@@ -31,7 +31,7 @@ public class WarningMapperUnitTests {
         return Warnings.builder()
                 .id(id)
                 .roomMonitoring(room)
-                .deviceName("Sensor-01")
+                .sensorWriteId(UUID.randomUUID())
                 .measurementType(MeasurementType.TEMPERATURE)
                 .status(WarningStatus.YELLOW)
                 .message("Too hot")
@@ -52,7 +52,7 @@ public class WarningMapperUnitTests {
         assertAll(
                 () -> assertEquals(entity.getId(),                          result.id()),
                 () -> assertEquals(entity.getRoomMonitoring().getRoomId(),  result.roomId()),
-                () -> assertEquals(entity.getDeviceName(),                  result.deviceName()),
+                () -> assertEquals(entity.getSensorWriteId(),                  result.writeId()),
                 () -> assertEquals(entity.getMeasurementType(),             result.measurementType()),
                 () -> assertEquals(entity.getStatus(),                      result.status()),
                 () -> assertEquals(entity.getMessage(),                     result.message()),
@@ -85,7 +85,7 @@ public class WarningMapperUnitTests {
     @DisplayName("mapFrom maps all fields from DTO to entity correctly")
     void testThatMapFromMapsAllFields() {
         WarningDTO dto = new WarningDTO(
-                id, roomId, "Sensor-01", MeasurementType.TEMPERATURE,
+                id, roomId, UUID.randomUUID(), MeasurementType.TEMPERATURE,
                 WarningStatus.YELLOW, "Too hot", 28.5, 25.0,
                 createdAt, null, "Nothing", true);
 
@@ -94,7 +94,7 @@ public class WarningMapperUnitTests {
         assertAll(
                 () -> assertEquals(dto.id(),               result.getId()),
                 () -> assertEquals(dto.roomId(),           result.getRoomMonitoring().getRoomId()),
-                () -> assertEquals(dto.deviceName(),       result.getDeviceName()),
+                () -> assertEquals(dto.writeId(),       result.getSensorWriteId()),
                 () -> assertEquals(dto.measurementType(),  result.getMeasurementType()),
                 () -> assertEquals(dto.status(),           result.getStatus()),
                 () -> assertEquals(dto.message(),          result.getMessage()),
@@ -109,7 +109,7 @@ public class WarningMapperUnitTests {
     @DisplayName("mapFrom preserves resolvedAt when DTO has it set")
     void testThatMapFromPreservesResolvedAt() {
         WarningDTO dto = new WarningDTO(
-                id, roomId, "Sensor-01", MeasurementType.TEMPERATURE,
+                id, roomId, UUID.randomUUID(), MeasurementType.TEMPERATURE,
                 WarningStatus.GREEN, "Resolved", 28.5, 25.0,
                 createdAt, resolvedAt, "Nothing",false);
 

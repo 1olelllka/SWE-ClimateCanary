@@ -17,7 +17,6 @@ public class WarningCreateMapper implements DTOMapper<Warnings, WarningCreateDTO
     @Override
     public Warnings mapFrom(WarningCreateDTO dto) {
         return Warnings.builder()
-                .deviceName(dto.device())
                 .measurementType(dto.measurementType())
                 .status(dto.status())
                 .message(dto.message())
@@ -25,6 +24,7 @@ public class WarningCreateMapper implements DTOMapper<Warnings, WarningCreateDTO
                 .activeLimitAtTime(dto.activeLimitAtTime())
                 .createdAt(LocalDateTime.now())
                 .resolvedAt(null)
+                .sensorWriteId(dto.sensorWriteId())
                 .build();
     }
 }

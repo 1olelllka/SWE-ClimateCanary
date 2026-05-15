@@ -3,13 +3,11 @@ package at.qe.skeleton.tests.controllers;
 import at.qe.skeleton.dtos.DepartmentCreateDTO;
 import at.qe.skeleton.dtos.DepartmentWithRoomsCreateDTO;
 import at.qe.skeleton.dtos.NewRoomInDepartmentDTO;
-import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Department;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.RoomType;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
 import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.DepartmentService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,14 +20,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -44,6 +46,8 @@ class DepartmentControllerIntegrationTests {
     @Autowired BuildingRepository buildingRepository;
     @Autowired RoomRepository roomRepository;
     @Autowired DepartmentRepository departmentRepository;
+    @MockitoBean
+    AuthenticatedUserService authenticatedUserService;
     ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
@@ -71,19 +75,36 @@ class DepartmentControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
-    void testThatGetSpecificDepartmentReturnsHttp200WhenExists() throws Exception {
+    @WithMockUser(roles = "DEPARTMENT_MANAGER")
+    void testThatGetSpecificDepartmentReturnsHttp200WhenExistsWithAllRooms() throws Exception {
+        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
         Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
-
+        roomRepository.save(TestDataUtil.createRoomEntity(saved));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
-                .andExpect(jsonPath("$.name").value(saved.getName()));
+                .andExpect(jsonPath("$.name").value(saved.getName()))
+                .andExpect(jsonPath("$.rooms[0]").exists())
+                .andExpect(jsonPath("$.rooms[1]").doesNotExist());
     }
 
     @Test
-    @WithMockUser(authorities = "CAN_MANAGE_BUILDING_STRUCTURE")
+    @WithMockUser(roles = "DEPARTMENT_MANAGER")
+    void testThatGetSpecificDepartmentReturnsHttp200WhenExistsWithSharedRooms() throws Exception {
+        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
+        Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
+        Department saved = departmentService.createDepartment(TestDataUtil.createDepartmentEntity(b));
+        roomRepository.save(TestDataUtil.createRoomEntity(saved));
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(saved.getId().toString()))
+                .andExpect(jsonPath("$.name").value(saved.getName()))
+                .andExpect(jsonPath("$.rooms[0]").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "DEPARTMENT_MANAGER")
     void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
@@ -114,7 +135,7 @@ class DepartmentControllerIntegrationTests {
                         .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("New Dept"))
-                .andExpect(jsonPath("$.roomNumbers").isEmpty());
+                .andExpect(jsonPath("$.rooms").isEmpty());
     }
 
     @Test
@@ -130,8 +151,8 @@ class DepartmentControllerIntegrationTests {
                         .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("New Dept"))
-                .andExpect(jsonPath("$.roomNumbers").isArray())
-                .andExpect(jsonPath("$.roomNumbers[0]").exists());
+                .andExpect(jsonPath("$.rooms").isArray())
+                .andExpect(jsonPath("$.rooms[0]").exists());
     }
 
     @Test
@@ -149,8 +170,8 @@ class DepartmentControllerIntegrationTests {
                         .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("New Dept"))
-                .andExpect(jsonPath("$.roomNumbers").isArray())
-                .andExpect(jsonPath("$.roomNumbers[0]").exists());
+                .andExpect(jsonPath("$.rooms").isArray())
+                .andExpect(jsonPath("$.rooms[0]").exists());
     }
 
     @Test
@@ -169,9 +190,9 @@ class DepartmentControllerIntegrationTests {
                         .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("New Dept"))
-                .andExpect(jsonPath("$.roomNumbers").isArray())
-                .andExpect(jsonPath("$.roomNumbers[0]").exists())
-                .andExpect(jsonPath("$.roomNumbers[1]").exists());
+                .andExpect(jsonPath("$.rooms").isArray())
+                .andExpect(jsonPath("$.rooms[0]").exists())
+                .andExpect(jsonPath("$.rooms[1]").exists());
     }
 
     @Test
@@ -230,8 +251,6 @@ class DepartmentControllerIntegrationTests {
 
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/departments/" + saved.getId()))
                 .andExpect(status().isNoContent());
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + saved.getId()))
-                .andExpect(status().isNotFound());
+        assertEquals(0, departmentRepository.findAll().size());
     }
 }

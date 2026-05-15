@@ -4,6 +4,7 @@
 #include "display_manager.h"
 #include "config.h"
 #include "button_manager.h"
+#include "led_manager.h"
 
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
@@ -16,6 +17,7 @@ DisplayManager displayManager;
 ButtonManager modeButton;
 ButtonManager nextPageButton;
 ButtonManager previousPageButton;
+LedManager ledManager;
 
 
 unsigned long lastSensorRead = 0;
@@ -32,6 +34,7 @@ void setup() {
   modeButton.begin(MODE_BUTTON_PIN);
   nextPageButton.begin(NEXT_PAGE_BUTTON_PIN);
   previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
+  ledManager.begin();
   displayManager.begin();
   displayManager.showStartup();
 

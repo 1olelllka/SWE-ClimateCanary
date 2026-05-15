@@ -278,3 +278,110 @@
         align-items: stretch;
     }
 }
+
+/* Dark mode for EmployeeAbsencesPage */
+html[data-theme='dark'] .employee-absences-page {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-absences-content {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-absences-section-heading {
+    color: var(--app-text) !important;
+}
+
+/* KPI cards */
+html[data-theme='dark'] .employee-absences-page .absence-kpi-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-kpi-title {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-kpi-value {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-kpi-bar-track {
+    background-color: #334155 !important;
+}
+
+/* Controls */
+html[data-theme='dark'] .employee-absences-page .absence-sort-button {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-request-button {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+    border: 1px solid #0891b2 !important;
+}
+
+/* Table */
+html[data-theme='dark'] .employee-absences-page .employee-absences-table-wrapper {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table thead {
+    background-color: #111827 !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table th {
+    background-color: #111827 !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table tbody {
+    background-color: var(--app-surface-2) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table td {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table tbody tr {
+    background-color: var(--app-surface-2) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .employee-absences-table tbody tr:hover td {
+    background-color: #334155 !important;
+}
+
+/* Empty row */
+html[data-theme='dark'] .employee-absences-page .employee-absences-empty-cell {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Loading text */
+html[data-theme='dark'] .employee-absences-page .employee-absences-loading {
+    color: var(--app-text) !important;
+}
+
+/* Status / details button */
+html[data-theme='dark'] .employee-absences-page .absence-detail-trigger {
+    background-color: transparent !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
