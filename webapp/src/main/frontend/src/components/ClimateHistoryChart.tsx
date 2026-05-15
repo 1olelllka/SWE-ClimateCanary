@@ -270,7 +270,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             ], COLORS.humidity) : undefined,
             markArea: L ? mkViolationArea(
                 violationRanges(data, d => d.humidity, L.humMin ?? null, L.humMax ?? null),
-                COLORS.humidity,
+                COLORS.temperature,
             ) : undefined,
         },
         showAQ && {
@@ -286,7 +286,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             ], COLORS.airQuality) : undefined,
             markArea: L ? mkViolationArea(
                 violationRanges(data, d => d.airQuality, null, L.co2Max ?? null),
-                COLORS.airQuality,
+                COLORS.temperature,
             ) : undefined,
         },
     ].filter(Boolean);
