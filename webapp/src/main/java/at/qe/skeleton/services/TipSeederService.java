@@ -24,51 +24,43 @@ public class TipSeederService {
     private static final List<TipDef> TIPS = List.of(
         // Temperature too high
         new TipDef(ViolationType.OVER, ViolatedSensor.TEMPERATURE, WarningStatus.GREEN,
-            "Temperature is slightly above limit. Consider opening a window."),
+            "Consider opening a window."),
         new TipDef(ViolationType.OVER, ViolatedSensor.TEMPERATURE, WarningStatus.YELLOW,
-            "Temperature is elevated. Open windows or lower the thermostat."),
+            "Open windows."),
         new TipDef(ViolationType.OVER, ViolatedSensor.TEMPERATURE, WarningStatus.RED,
-            "Room is too hot! Open windows and activate air conditioning immediately."),
+            "Activate air conditioning immediately."),
 
         // Temperature too low
         new TipDef(ViolationType.UNDER, ViolatedSensor.TEMPERATURE, WarningStatus.GREEN,
-            "Temperature is slightly below limit. Consider closing windows."),
+            "Consider closing windows."),
         new TipDef(ViolationType.UNDER, ViolatedSensor.TEMPERATURE, WarningStatus.YELLOW,
-            "Room is cool. Close windows and increase heating."),
+            "Close windows and increase heating."),
         new TipDef(ViolationType.UNDER, ViolatedSensor.TEMPERATURE, WarningStatus.RED,
-            "Room is too cold! Turn on heating and close all windows immediately."),
+            "Turn on heating immediately."),
 
         // Humidity too high
         new TipDef(ViolationType.OVER, ViolatedSensor.HUMIDITY, WarningStatus.GREEN,
-            "Humidity is slightly high. Improve air circulation."),
+            "Improve air circulation."),
         new TipDef(ViolationType.OVER, ViolatedSensor.HUMIDITY, WarningStatus.YELLOW,
-            "Humidity is elevated. Use a dehumidifier or open windows."),
+            "Use a dehumidifier or open windows."),
         new TipDef(ViolationType.OVER, ViolatedSensor.HUMIDITY, WarningStatus.RED,
-            "Humidity is too high! Activate a dehumidifier and ventilate the room."),
+            "Ventilate the room."),
 
         // Humidity too low
         new TipDef(ViolationType.UNDER, ViolatedSensor.HUMIDITY, WarningStatus.GREEN,
-            "Air is slightly dry. Consider using a humidifier."),
+            "Consider using a humidifier."),
         new TipDef(ViolationType.UNDER, ViolatedSensor.HUMIDITY, WarningStatus.YELLOW,
-            "Air is dry. Use a humidifier to improve comfort."),
+            "Use a humidifier."),
         new TipDef(ViolationType.UNDER, ViolatedSensor.HUMIDITY, WarningStatus.RED,
-            "Air is very dry! Use a humidifier immediately to prevent discomfort."),
+            "Use a humidifier immediately."),
 
         // CO2 too high
         new TipDef(ViolationType.OVER, ViolatedSensor.AIR, WarningStatus.GREEN,
-            "CO₂ level is slightly elevated. Open a window briefly."),
+            "Open a window briefly."),
         new TipDef(ViolationType.OVER, ViolatedSensor.AIR, WarningStatus.YELLOW,
-            "CO₂ is rising. Open windows to ventilate the room."),
+            "Open windows to ventilate the room."),
         new TipDef(ViolationType.OVER, ViolatedSensor.AIR, WarningStatus.RED,
-            "CO₂ is critically high! Open all windows and ventilate immediately."),
-
-        // CO2 too low (sensor fault / unusual)
-        new TipDef(ViolationType.UNDER, ViolatedSensor.AIR, WarningStatus.GREEN,
-            "CO₂ level is unusually low. Ensure sensors are functioning correctly."),
-        new TipDef(ViolationType.UNDER, ViolatedSensor.AIR, WarningStatus.YELLOW,
-            "CO₂ level is very low. Check that sensors are calibrated."),
-        new TipDef(ViolationType.UNDER, ViolatedSensor.AIR, WarningStatus.RED,
-            "CO₂ level is extremely low. Check sensor functionality immediately.")
+            "Open all windows immediately.")
     );
 
     @Transactional
