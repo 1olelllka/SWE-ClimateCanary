@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -65,19 +66,21 @@ public class SensorStationServiceImpl implements SensorStationService {
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
         return sensorRepository.findById(id).map(sensor -> {
-            boolean notifyRasp = false;
+            AtomicBoolean notifyRasp = new AtomicBoolean(false);
+            AtomicBoolean nameChanged = new AtomicBoolean(false);
+            RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             if (sensorStation.getRoomMonitoring() != null && (sensor.getRoomMonitoring() == null || !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId()))) {
                     sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
                     log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
-                    notifyRasp = true;
-                }
-
+                    notifyRasp.set(true);
+            }
             Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
                 if (!name.equals(sensor.getName())) {
                     if (sensorRepository.existsByName(name))
                         throw new ConflictException("Sensor station with name " + sensorStation.getName() + " already exists.");
                     log.info("Pre-saved new name of sensor station: {} -> {}", sensorStation.getName(), name);
                     sensor.setName(name);
+                    nameChanged.set(true);
                 }
             });
             Optional.ofNullable(sensorStation.getStatus()).ifPresent(status -> {
@@ -92,9 +95,8 @@ public class SensorStationServiceImpl implements SensorStationService {
                 log.info("Pre-saved last heartbeat of sensor '{}'.", sensor.getName());
                 sensor.setLastHeartBeat(beat);
             });
-            RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             SensorStation saved = sensorRepository.save(sensor);
-            if (notifyRasp) {
+            if (notifyRasp.get()) {
                 if (saved.getRoomMonitoring().getRaspberryPi() != null) {
                     log.info("Notifying Raspberry Pi '{}' [{}:{}] of new sensor...",
                             saved.getRoomMonitoring().getRaspberryPi().getName(),

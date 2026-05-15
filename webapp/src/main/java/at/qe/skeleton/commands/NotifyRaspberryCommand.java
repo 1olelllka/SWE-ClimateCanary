@@ -20,7 +20,9 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     private StateChangeNotificationDTO dto;
     private UUID readId;
     private UUID writeId;
-    private final RaspberryPi pi;
+    private final String piIp;
+    private final int port;
+    private final UUID piId;
     private LimitChangeNotificationDTO limitDto = null;
     private OccupancyDTO occupancyDTO = null;
     private ConfigRequestDTO configRequestDTO = null;
@@ -34,32 +36,40 @@ public class NotifyRaspberryCommand implements Command, Serializable {
         this.dto = dto;
         this.readId = readId;
         this.writeId = writeId;
-        this.pi = pi;
         this.client = client;
+        this.port = pi.getPort();
+        this.piIp = pi.getIp();
+        this.piId = pi.getId();
     }
 
     public NotifyRaspberryCommand(LimitChangeNotificationDTO limitDto,
                                   RaspberryPi pi,
                                   NotificationClient client) {
         this.limitDto = limitDto;
-        this.pi = pi;
         this.client = client;
+        this.port = pi.getPort();
+        this.piIp = pi.getIp();
+        this.piId = pi.getId();
     }
 
     public NotifyRaspberryCommand(OccupancyDTO occupancyDTO,
                                   RaspberryPi pi,
                                   NotificationClient client) {
         this.occupancyDTO = occupancyDTO;
-        this.pi = pi;
+        this.port = pi.getPort();
+        this.piIp = pi.getIp();
         this.client = client;
+        this.piId = pi.getId();
     }
 
     public NotifyRaspberryCommand(ConfigRequestDTO requestDTO,
                                   RaspberryPi pi,
                                   NotificationClient client) {
         this.configRequestDTO = requestDTO;
-        this.pi = pi;
+        this.port = pi.getPort();
+        this.piIp = pi.getIp();
         this.client = client;
+        this.piId = pi.getId();
     }
 
     public NotifyRaspberryCommand(UUID readId, UUID writeId,
@@ -67,14 +77,16 @@ public class NotifyRaspberryCommand implements Command, Serializable {
                                   NotificationClient client) {
         this.writeId = writeId;
         this.readId = readId;
-        this.pi = pi;
+        this.port = pi.getPort();
+        this.piIp = pi.getIp();
         this.client = client;
+        this.piId = pi.getId();
     }
 
     @Override
     public ResponseEntity<Void> execute() {
         ResponseEntity<Void> response;
-        URI piUri = URI.create("http://" + pi.getIp() + ":" + pi.getPort());
+        URI piUri = URI.create("http://" + this.piIp + ":" + this.port);
         if (limitDto != null) {
             response = client.notifyRaspberryAboutLimitsChange(piUri, this.limitDto);
             return response;
@@ -99,13 +111,8 @@ public class NotifyRaspberryCommand implements Command, Serializable {
     }
 
     @Override
-    public RaspberryPi getRaspberry() {
-        return this.pi;
-    }
-
-    @Override
     public UUID getRaspberryId() {
-        return this.pi.getId();
+        return this.piId;
     }
 
     @Override

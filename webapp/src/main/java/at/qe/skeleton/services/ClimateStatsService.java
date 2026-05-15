@@ -24,12 +24,15 @@ public interface ClimateStatsService {
 
     // full granularity
     List<AggregatedDataPointDTO> getClimateHistoryFull(UUID roomId,
-                                                       String timeframe,
+                                                       LocalDate startDate,
+                                                       LocalDate endDate,
                                                        String granularity);
 
     // Reduced granularity (hourly aggregated using background job)
     List<AggregatedDataPointDTO> getClimateHistoryReduced(UUID roomId,
-                                                          String timeframe);
+                                                          LocalDate startDate,
+                                                          LocalDate endDate,
+                                                          String granularity);
 
     LimitDTO getLimits(UUID roomId);
 }

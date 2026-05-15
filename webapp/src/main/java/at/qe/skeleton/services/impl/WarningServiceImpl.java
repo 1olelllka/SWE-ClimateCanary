@@ -48,6 +48,7 @@ public class WarningServiceImpl implements WarningService {
         boolean isDeptUser = hasAuthority(user, "CAN_VIEW_OWN_DEPARTMENT_WARNINGS");
         boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS")
                 || hasAuthority(user, "CAN_VIEW_OWN_OFFICE_CLIMATE");
+        boolean isBuildingManager = hasAuthority(user, "CAN_VIEW_ALL_ROOMS");
         if (user.getMyRoom() != null) {
             // Department-level access
             if (isDeptUser) {
@@ -73,6 +74,21 @@ public class WarningServiceImpl implements WarningService {
             if (isOfficeUser && room.equals(user.getMyRoom())) {
                 return mapToDTOs(
                         warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
+                );
+            }
+        }
+        if (isBuildingManager) {
+            if (active) {
+                return mapToDTOs(
+                        warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
+                );
+            } else {
+                return mapToDTOs(
+                        warningsRepository.findByRoomMonitoring_RoomIdAndCreatedAtBetween(
+                                roomId,
+                                startOfDay(startDate),
+                                endOfDay(endDate)
+                        )
                 );
             }
         }
