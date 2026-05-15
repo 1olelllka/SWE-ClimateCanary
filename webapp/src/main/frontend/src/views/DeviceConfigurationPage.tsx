@@ -129,10 +129,28 @@ const DeviceConfigurationPage: React.FC = () => {
         return true;
     });
 
-    const handleDelete = (label: string, id?: string) => {
-        if (!id || !globalThis.confirm(`Delete ${label}?`)) return;
-        // TODO: call delete API
-        toast.current?.show({ severity: 'info', summary: 'Deleted', detail: `${label} deleted (TODO: API call)`, life: 3000 });
+    const handleDeletePi = (id?: string) => {
+        if (!id || !globalThis.confirm('Delete this Raspberry Pi?')) return;
+        new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
+                fetchData();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+            });
+    };
+
+    const handleDeleteSensor = (id?: string) => {
+        if (!id || !globalThis.confirm('Delete this Sensor Station?')) return;
+        new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
+                fetchData();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
+            });
     };
 
     const handleSettings = (label: string, id?: string) => {
@@ -140,10 +158,10 @@ const DeviceConfigurationPage: React.FC = () => {
         toast.current?.show({ severity: 'info', summary: 'Settings', detail: `Open settings for ${label} (id: ${id})`, life: 3000 });
     };
 
-    const actionsTemplate = (label: string, idField = 'id') => (row: Record<string, any>) => (
+    const actionsTemplate = (label: string, onDelete: (id?: string) => void, idField = 'id') => (row: Record<string, any>) => (
         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
             <Button icon="pi pi-cog" rounded text severity="secondary" onClick={() => handleSettings(label, row[idField])} title={`${label} settings / details`} />
-            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => handleDelete(label, row[idField])} title={`Delete ${label}`} />
+            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => onDelete(row[idField])} title={`Delete ${label}`} />
         </div>
     );
 
@@ -368,7 +386,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                             <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDelete('Raspberry Pi', row.id)} />
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
                                 </div>
                             )} />
                         </DataTable>
@@ -396,7 +414,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                                     <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetryConnection(row.readId!)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit sensor station" onClick={() => openEditSensorDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDelete('Sensor Station', row.readId)} />
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)} />
                                 </div>
                             )} />
                         </DataTable>
