@@ -40,7 +40,8 @@ public class UserxMapper implements DTOMapper<Userx, UserxDTO>{
                new UserRoom(user.getMyRoom().getId(), user.getMyRoom().getDepartment().getId(),
                        user.getMyRoom().getDepartment().getName(), user.getMyRoom().getRoomType(),
                        user.getMyRoom().getRoomNumber())
-               : null
+               : null,
+               user.getNumberOfAbsences()
        );
     }
 
@@ -53,6 +54,7 @@ public class UserxMapper implements DTOMapper<Userx, UserxDTO>{
                 .enabled(userxDto.enabled())
                 .userRoles(userxDto.roles().stream().map(roleMapper::mapFrom).collect(Collectors.toSet()))
                 .myRoom(userxDto.myRoom() != null ? Room.builder().id(userxDto.myRoom().id()).build() : null)
+                .numberOfAbsences(userxDto.numberOfAbsences())
                 .build();
     }
 }

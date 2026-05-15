@@ -72,14 +72,6 @@ class DatabaseManager:
                                   )
                               ''')
 
-        await self.db.execute('''
-                              CREATE TABLE IF NOT EXISTS tips (
-                                  sensor_key TEXT PRIMARY KEY,
-                                  tip TEXT NOT NULL,
-                                  updated_at TEXT NOT NULL
-                                  )
-                              ''')
-
         await self.db.commit()
         logger.info("[DB] Database initialized successfully with all tables.")
 
@@ -132,7 +124,11 @@ class DatabaseManager:
     async def delete_sensors_by_ids(self, sensor_ids: list[str]):
         current = await self.get_sensors()
         id_set = {str(sid) for sid in sensor_ids}
-        remaining = [s for s in current if str(s.get('id', '')) not in id_set]
+        remaining = [
+            s for s in current
+            if str(s.get('char_uuid', '')) not in id_set
+            and str(s.get('write_uuid', '')) not in id_set
+        ]
         removed = len(current) - len(remaining)
         await self.set_sensors(remaining)
         logger.info(f"[DB] Deleted {removed} sensor(s) by id. Remaining: {[s['name'] for s in remaining]}")
@@ -205,7 +201,6 @@ class DatabaseManager:
         logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
 
     async def save_warning_id(self, sensor_name: str, sensor_type: str, warning_id: str):
-        """Persist the webapp-assigned warning ID on the active violation row."""
         await self.db.execute(
             "UPDATE limit_violations SET warning_id=? WHERE sensor_name=? AND type=? AND is_active=1",
             (warning_id, sensor_name, sensor_type)
@@ -229,33 +224,6 @@ class DatabaseManager:
         async with self.db.execute("SELECT * FROM limit_violations WHERE sensor_name=? AND is_active=1", (sensor_name,)) as cursor:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
-
-# Tips
-
-    async def get_tip(self, sensor_key: str) -> str | None:
-        async with self.db.execute("SELECT tip FROM tips WHERE sensor_key = ?", (sensor_key,)) as cursor:
-            row = await cursor.fetchone()
-            return row[0] if row else None
-
-    async def get_all_tips(self) -> dict:
-        async with self.db.execute("SELECT sensor_key, tip FROM tips") as cursor:
-            rows = await cursor.fetchall()
-            return {row["sensor_key"]: row["tip"] for row in rows}
-
-    async def set_tips(self, tips: dict):
-        for sensor_key, tip_text in tips.items():
-            await self.db.execute(
-                    """
-                    INSERT INTO tips (sensor_key, tip, updated_at)
-                    VALUES (?, ?, ?)
-                    ON CONFLICT(sensor_key) DO UPDATE SET
-                    tip = excluded.tip,
-                    updated_at = excluded.updated_at
-                    """,
-                    (sensor_key, tip_text, get_current_time())
-                    )
-        await self.db.commit()
-        logger.info(f"[DB] Tips updated for keys: {list(tips.keys())}")
 
 # Logging
 

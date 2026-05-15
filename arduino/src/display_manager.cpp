@@ -10,6 +10,17 @@ void DisplayManager::begin() {
   lcd.clear();
 }
 
+static void printLine(rgb_lcd& lcd, uint8_t row, const String& text) {
+  lcd.setCursor(0, row);
+
+  String padded = text;
+  while (padded.length() < 16) {
+    padded += " ";
+  }
+
+  lcd.print(padded.substring(0, 16));
+}
+
 void DisplayManager::showStartup() {
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -33,43 +44,27 @@ void DisplayManager::setFault(const String& text) {
 }
 
 void DisplayManager::showReading(const SensorReading& reading) {
-  lcd.clear();
-
   if (!reading.valid) {
-    lcd.setCursor(0, 0);
-    lcd.print("Sensor invalid");
-    lcd.setCursor(0, 1);
-    lcd.print("Check BME688");
+    printLine(lcd, 0, "Sensor invalid");
+    printLine(lcd, 1, "Check BME688");
     return;
   }
 
   if (currentMode == DisplayMode::Regular) {
     switch (currentRegularPage) {
       case RegularModeDisplay::Temperature:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Regular");
-        lcd.setCursor(0, 1);
-        lcd.print("Temp.: ");
-        lcd.print(reading.temperatureC, 1);
-        lcd.print("C");
+        printLine(lcd, 0, "Regular Mode");
+        printLine(lcd, 1, "Temp.: " + String(reading.temperatureC, 1) + "C");
         break;
 
       case RegularModeDisplay::Humidity:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Regular");
-        lcd.setCursor(0, 1);
-        lcd.print("Humidity: ");  
-        lcd.print(reading.humidityPct, 0);
-        lcd.print("%");
+        printLine(lcd, 0, "Regular Mode");
+        printLine(lcd, 1, "Humidity: " + String(reading.humidityPct, 0) + "%");
         break;
 
       case RegularModeDisplay::AirQuality:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Regular");
-        lcd.setCursor(0, 1);
-        lcd.print("IAQ: ");
-        lcd.print(reading.airQualityIndex, 0);
-        lcd.print("%");
+        printLine(lcd, 0, "Regular Mode");
+        printLine(lcd, 1, "IAQ: " + String(reading.airQualityIndex, 0) + "%");
         break;
     }
   }
@@ -77,33 +72,25 @@ void DisplayManager::showReading(const SensorReading& reading) {
   else if (currentMode == DisplayMode::Warning) {
     switch (currentWarningPage) {
       case WarningModeDisplay::WarnMessage:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Warning");
-        lcd.setCursor(0, 1);
-        lcd.print(currentWarnText.substring(0, 16));
+        printLine(lcd, 0, "Warn Mode(text)");
+        printLine(lcd, 1, currentWarnText);
         break;
 
       case WarningModeDisplay::ExceededThreshold:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Warning");
-        lcd.setCursor(0, 1);
-        lcd.print(currentThreshold.substring(0, 16));
+        printLine(lcd, 0, "Warn Mode(thres.)");
+        printLine(lcd, 1, "Threshold: " + currentThreshold);
         break;
 
       case WarningModeDisplay::AdviceMessage:
-        lcd.setCursor(0, 0);
-        lcd.print("Mode: Warning");
-        lcd.setCursor(0, 1);
-        lcd.print(currentTip.substring(0, 16));
+        printLine(lcd, 0, "Warn Mode(tip)");
+        printLine(lcd, 1, currentTip);
         break;
     }
   }
 
   else if (currentMode == DisplayMode::Fault) {
-    lcd.setCursor(0, 0);
-    lcd.print("Mode: Fault");
-    lcd.setCursor(0, 1);
-    lcd.print(currentFaultText.substring(0, 16));
+    printLine(lcd, 0, "Fault Mode");
+    printLine(lcd, 1, currentFaultText);
   }
 }
 

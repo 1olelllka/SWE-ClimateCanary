@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 
 class BLEManager:
-    def __init__(self, db, sensor: dict, processing_queue, ble_inbox, status_queue):
+    def __init__(self, db, sensor: dict, processing_queue, ble_inbox, status_queue, scan_lock: asyncio.Lock):
         self.db = db
         self.sensor = sensor
         self.processing_queue = processing_queue  # Arduino -> Pi
@@ -18,7 +18,9 @@ class BLEManager:
         self.client = None
         self.disconnect_event = asyncio.Event()
         self.reconnect_event = asyncio.Event()
+        self.removal_event = asyncio.Event()
         self._loop = asyncio.get_event_loop()
+        self.scan_lock = scan_lock
 
     @property
     def name(self) -> str:
@@ -29,12 +31,11 @@ class BLEManager:
         return self.sensor['char_uuid']
 
     def disconnected_callback(self, client):
-        logger.warning("[BLE] Arduino disconnected unexpectedly!")
+        logger.warning("[BLE] Arduino disconnected!")
         self.disconnect_event.set()
 
-    def notification_handler(self, data):
+    def notification_handler(self, sender, data):
         message = data.decode('utf-8').strip()
-        logger.info(f"[Arduino -> Pi] Received: {message}")
 
         # thread-safe, works regardless of which thread Bleak calls this from
         self._loop.call_soon_threadsafe(self.processing_queue.put_nowait, message)
@@ -82,10 +83,11 @@ class BLEManager:
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
-                    device = await BleakScanner.find_device_by_filter(
-                            lambda d, _: d.name and target_name in d.name,
-                            timeout=15.0
-                            )
+                    async with self.scan_lock:
+                        device = await BleakScanner.find_device_by_filter(
+                                lambda d, _: d.name and d.name.startswith("G1T4:") and target_name in d.name,
+                                timeout=15.0,
+                                )
 
                     if not device:
                         logger.warning(f"[BLE] '{target_name}' not found (attempt {attempt}/5))")
@@ -104,20 +106,18 @@ class BLEManager:
 
                             self.client = client
                             self.disconnect_event.clear()
-                            connected = True 
 
                             logger.info(f"[BLE:{self.name}] connected!")
                             await self.db.log_event("BLE", f"Connected to {target_name}", "INFO")
 
                             await client.start_notify(char_uuid, self.notification_handler)
 
-                            if is_reported_offline:
-                                await self.status_queue.put({
-                                    "read_uuid": self.read_uuid,
-                                    "sensor_name": self.name,
-                                    "status": "ONLINE",
-                                })
-                                is_reported_offline = False
+                            await self.status_queue.put({
+                                "read_uuid": self.read_uuid,
+                                "sensor_name": self.name,
+                                "status": "ONLINE",
+                            })
+                            is_reported_offline = False
 
 
                             # Send current timestamp and initial frequency to Arduino immediately after connection
@@ -131,9 +131,32 @@ class BLEManager:
                             logger.info(f"[BLE:{self.name}] Frequency sync sent.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
-                            await self.disconnect_event.wait()
+                            connected = True 
+                            _, pending = await asyncio.wait(
+                                [
+                                    asyncio.create_task(self.disconnect_event.wait()),
+                                    asyncio.create_task(self.removal_event.wait()),
+                                ],
+                                return_when=asyncio.FIRST_COMPLETED
+                            )
+                            for task in pending:
+                                task.cancel()
+    
                             sender_task.cancel()
                             self.client = None
+    
+                            if self.removal_event.is_set():
+                                logger.warning(f"[BLE:{self.name}] Sensor deleted from config. Disconnecting.")
+                                await self.db.log_event("BLE", f"{target_name} removed — disconnecting.", "INFO")
+                                await self.status_queue.put({
+                                    "read_uuid": self.read_uuid,
+                                    "sensor_name": self.name,
+                                    "status": "OFFLINE",
+                                })
+                                is_reported_offline = True
+                                self.removal_event.clear()
+                                connected = False 
+                            
                             break
 
                     except BleakError as e:

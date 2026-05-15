@@ -38,3 +38,21 @@
     color: var(--text-secondary);
     margin-top: 0.25rem;
 }
+
+/* Dark mode */
+
+html[data-theme='dark'] .card-wrapper {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='dark'] .card-unit,
+html[data-theme='dark'] .card-trend {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .card-trend span {
+    color: var(--app-text-muted) !important;
+}

@@ -124,6 +124,13 @@ public class RoomServiceImpl implements RoomService {
     @Override
     @Transactional
     public void deleteRoom(UUID id) {
+        Room room = roomRepository.findById(id).orElse(null);
+        if (room != null) {
+            room.getUsers().forEach(user -> {
+                user.setMyRoom(null);
+                userxRepository.save(user);
+            });
+        }
         roomRepository.deleteById(id);
         RoomMonitoring monitoring = monitoringRepository.findById(id).orElse(null);
         if (monitoring != null && monitoring.getRaspberryPi() != null) {

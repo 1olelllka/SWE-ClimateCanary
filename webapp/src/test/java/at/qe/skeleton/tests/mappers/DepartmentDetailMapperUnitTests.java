@@ -1,10 +1,12 @@
 package at.qe.skeleton.tests.mappers;
 
 import at.qe.skeleton.dtos.DepartmentDTO;
+import at.qe.skeleton.dtos.UserRoom;
 import at.qe.skeleton.mappers.DepartmentDetailMapper;
 import at.qe.skeleton.model.Building;
 import at.qe.skeleton.model.Department;
 import at.qe.skeleton.model.Room;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +40,8 @@ class DepartmentDetailMapperUnitTests {
         assertEquals("Informatics", result.name());
         assertEquals(buildingId.toString(), result.buildingID());
         assertEquals("Technik", result.buildingName());
-        assertEquals(1, result.roomNumbers().size());
-        assertEquals(entity.getRooms().getFirst().getId(), result.roomNumbers().get(0));
+        assertEquals(1, result.rooms().size());
+        assertEquals(entity.getRooms().getFirst().getId(), result.rooms().get(0).id());
     }
 
     @Test
@@ -51,15 +53,16 @@ class DepartmentDetailMapperUnitTests {
 
         DepartmentDTO result = mapper.mapTo(entity);
 
-        assertNotNull(result.roomNumbers());
-        assertTrue(result.roomNumbers().isEmpty());
+        assertNotNull(result.rooms());
+        assertTrue(result.rooms().isEmpty());
     }
 
     @Test
     void testThatMapFromShouldReconstructEntityWithRooms() {
         UUID buildingId = UUID.randomUUID();
         UUID deptId = UUID.randomUUID();
-        DepartmentDTO dto = new DepartmentDTO(deptId, "CS", buildingId.toString(), "Technik", List.of(UUID.randomUUID()));
+        DepartmentDTO dto = new DepartmentDTO(deptId, "CS", buildingId.toString(), "Technik",
+                List.of(new UserRoom(UUID.randomUUID(), deptId, "CS", RoomType.OFFICE, "123")));
 
         Department result = mapper.mapFrom(dto);
 
@@ -67,6 +70,7 @@ class DepartmentDetailMapperUnitTests {
         assertEquals("CS", result.getName());
         assertEquals(buildingId, result.getBuilding().getId());
         assertEquals(1, result.getRooms().size());
-        assertEquals(dto.roomNumbers().getFirst(), result.getRooms().get(0).getId());
+        assertEquals(dto.rooms().getFirst().id(), result.getRooms().get(0).getId());
+        assertEquals(dto.rooms().getFirst().departmentID(), deptId);
     }
 }

@@ -1,5 +1,8 @@
 #include "ble_message_handler.h"
 #include "ble_manager.h"
+#include "led_manager.h"
+
+extern LedManager ledManager;
 
 void BLEMessageHandler::handleRxMessage(
   BLEManager* manager,
@@ -22,27 +25,46 @@ void BLEMessageHandler::handleRxMessage(
 
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);
-  } else if (received.startsWith("FREQUENCY:")) {
+  }
+
+  else if (received.startsWith("FREQUENCY:")) {
     String frequency = received.substring(10);
     frequency.trim();
 
-    unsigned long newIntervalMs = frequency.toInt();
+    //s to ms conversion: webapp sends frequency in seconds but we need it in ms for the interval
+    unsigned long newIntervalMs = frequency.toInt() * 1000UL;
 
-    if(newIntervalMs > 0) {
+    if (newIntervalMs > 0) {
       manager->measureAndSendIntervalMs = newIntervalMs;
-    } 
-  } else if (received.startsWith("WARNTEXT:")) {
-    int thresholdIndex = received.indexOf("TRESHOLD:");
-    int tipIndex = received.indexOf("TIP:");
 
-    if (thresholdIndex != -1 && tipIndex != -1) {
+      Serial.print("Updated send interval ms: ");
+      Serial.println(manager->measureAndSendIntervalMs);
+    }
+  }
+
+  else if (received.startsWith("WARNTEXT:")) {
+    int thresholdIndex = received.indexOf("THRESHOLD:");
+    int tipIndex = received.indexOf("TIP:");
+    int statusIndex = received.indexOf("STATUS:");
+
+    if (
+      thresholdIndex != -1 &&
+      tipIndex != -1 &&
+      statusIndex != -1 &&
+      thresholdIndex > 9 &&
+      tipIndex > thresholdIndex &&
+      statusIndex > tipIndex
+    ) {
       String warnText = received.substring(9, thresholdIndex);
       String threshold = received.substring(thresholdIndex + 10, tipIndex);
-      String tip = received.substring(tipIndex + 4);
+      String tip = received.substring(tipIndex + 4, statusIndex);
+      String violationStatus = received.substring(statusIndex + 7);
 
       warnText.trim();
       threshold.trim();
       tip.trim();
+      violationStatus.trim();
+      violationStatus.toUpperCase();
 
       Serial.println("Parsed warning:");
       Serial.println(warnText);
@@ -53,20 +75,45 @@ void BLEMessageHandler::handleRxMessage(
       Serial.println("Parsed tip:");
       Serial.println(tip);
 
+      Serial.println("Parsed violation status:");
+      Serial.println(violationStatus);
+
       manager->displayManager->setWarningData(
         warnText,
         threshold,
         tip
       );
-    } 
-  } else if (received.startsWith("ERROR:")) {
-      String faultText = received.substring(6);
-      faultText.trim();
 
-      if (faultText.length() > 0) {
-        Serial.println("Parsed fault: " + faultText);
-
-        manager->displayManager->setFault(faultText);
+      if (violationStatus == "BLUE") {
+        Serial.println("Violation status:blue (blue led on)");
+        ledManager.setBlue();
+      } else if (violationStatus == "RED") {
+        Serial.println("Violation status: red (red led on)");
+        ledManager.setRed();
+      } else {
+        Serial.println("Violation status unknown");
       }
+    } else {
+      Serial.println("Invalid WARNTEXT message format");
+    }
+  }
+
+  else if (received.startsWith("RESOLVED:")){
+    //TODO: manager->displayManager->clearFault();
+    ledManager.setGreen();
+  }
+
+  else if (received == "ERROR:WEBAPP_OFFLINE") {
+    Serial.println("Webapp offline error received");
+
+    manager->displayManager->setFault("Webapp offline");
+  }
+
+  else if (received == "ERROR:WEBAPP_CLEAR") {
+    Serial.println("Webapp error cleared");
+  }
+
+  else {
+    Serial.println("Unknown BLE message format");
   }
 }

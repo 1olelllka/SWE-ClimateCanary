@@ -11,7 +11,6 @@ import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.WarningService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +34,6 @@ public class WarningServiceImpl implements WarningService {
     private final WarningMapper warningMapper;
     private final WarningCreateMapper warningCreateMapper;
     private final TipRepository tipRepository;
-
 
     // get warnings for a specific room
     @Override
@@ -93,7 +91,7 @@ public class WarningServiceImpl implements WarningService {
         switch (warning.getMeasurementType()) {
             case TEMPERATURE -> {
                 Tip tip;
-                if (warning.getTriggeredValue() > room.getTempLimit().getMaxVal()) {
+                if (warning.getTriggeredValue() > warning.getActiveLimitAtTime()) {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.OVER, ViolatedSensor.TEMPERATURE).orElse(null);
                 } else {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.UNDER, ViolatedSensor.TEMPERATURE).orElse(null);
@@ -106,7 +104,7 @@ public class WarningServiceImpl implements WarningService {
             }
             case HUMIDITY -> {
                 Tip tip;
-                if (warning.getTriggeredValue() > room.getHumLimit().getMaxVal()) {
+                if (warning.getTriggeredValue() > warning.getActiveLimitAtTime()) {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.OVER, ViolatedSensor.HUMIDITY).orElse(null);
                 } else {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.UNDER, ViolatedSensor.HUMIDITY).orElse(null);
@@ -119,7 +117,7 @@ public class WarningServiceImpl implements WarningService {
             }
             default -> {
                 Tip tip;
-                if (warning.getTriggeredValue() > room.getPolLimit().getMaxVal()) {
+                if (warning.getTriggeredValue() > warning.getActiveLimitAtTime()) {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.OVER, ViolatedSensor.AIR).orElse(null);
                 } else {
                     tip = tipRepository.findByViolationStatusAndViolationTypeAndViolatedSensor(warning.getStatus(), ViolationType.UNDER, ViolatedSensor.AIR).orElse(null);

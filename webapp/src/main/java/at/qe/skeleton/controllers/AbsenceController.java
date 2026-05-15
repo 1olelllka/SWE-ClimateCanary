@@ -70,30 +70,12 @@ public class AbsenceController {
 
     @GetMapping("/managers")
     @PreAuthorize("hasAuthority('CAN_MANAGE_OWN_ABSENCE')")
-    public ResponseEntity<List<AbsenceManagerDTO>> getAbsenceManagers() {
-        Userx currentUser = authenticatedUserService.getAuthenticatedUser();
-
-        if (currentUser.getMyRoom() == null || currentUser.getMyRoom().getDepartment() == null) {
-            throw new ValidationException("User has no assigned room or department.");
-        }
-
-        UUID departmentId = currentUser.getMyRoom().getDepartment().getId();
-
-        List<AbsenceManagerDTO> managers = userxRepository.findAll().stream()
-                .filter(candidate -> candidate.getAuthorities().stream()
-                        .anyMatch(authority -> authority.getAuthority().equals("CAN_MANAGE_ABSENCES")))
-                .filter(candidate -> candidate.getMyRoom() != null
-                        && candidate.getMyRoom().getDepartment() != null
-                        && candidate.getMyRoom().getDepartment().getId().equals(departmentId))
-                .map(candidate -> new AbsenceManagerDTO(
-                        candidate.getId(),
-                        candidate.getFirstName(),
-                        candidate.getLastName(),
-                        candidate.getUsername()
-                ))
-                .toList();
-
-        return new ResponseEntity<>(managers, HttpStatus.OK);
+    public ResponseEntity<List<UserxListDTO>> getAvailableManagersForAbsence() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        List<Userx> managers = absenceService.getAllAvailableManagersForUser(user);
+        return new ResponseEntity<>(managers.stream().map(man ->
+            new UserxListDTO(man.getId(), man.getCreateDate(), man.getUsername(), man.getFirstName(), man.getLastName())
+        ).toList(), HttpStatus.OK);
     }
 
     @PostMapping("")

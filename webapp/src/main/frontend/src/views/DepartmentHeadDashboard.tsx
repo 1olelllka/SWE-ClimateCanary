@@ -8,6 +8,7 @@ import { RoomListTable, RoomData } from '../components/RoomListTable';
 import {ThresholdViolationsTable, ThresholdViolationData} from '../components/ThresholdViolationsTable';
 import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
 import {NumberOfViolationsTable, ViolationStatsData} from '../components/NumberOfViolationsTable';
+import { UserxDTO } from '../generated-skeleton-api';
 interface RoomDTO {
     id: string;
     departmentID?: string;
@@ -362,6 +363,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const [pendingRequests, setPendingRequests] = useState<PendingRequestData[]>([]);
 
     const [departmentName, setDepartmentName] = useState<string | null>(null);
+    const [departmentId, setDepartmentId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [violationsLoading, setViolationsLoading] = useState(false);
     const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
@@ -467,27 +469,30 @@ export const DepartmentHeadDashboard: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        globalAxios.get(`${BASE_PATH}/api/users/me/department/rooms`)
+        globalAxios.get("/api/users/me")
             .then(response => {
-                const apiRooms = extractArrayResponse<RoomDTO>(response.data);
-
+                const id = (response.data as UserxDTO).myRoom?.departmentID;
+                if (!id) throw new Error("User has no department assigned.");
+                setDepartmentId(id);
+                return id;
+            })
+            .then(id => globalAxios.get(`${BASE_PATH}/api/departments/${id}`))
+            .then(response => {
+                const apiRooms = extractArrayResponse<RoomDTO>(response.data.rooms);
                 if (apiRooms.length > 0) {
                     const firstRoom = apiRooms[0];
-
                     const detectedDepartmentName =
                         firstRoom.departmentName ||
                         firstRoom.department?.name ||
                         'Department';
-
                     setDepartmentName(detectedDepartmentName);
                 }
-
+                console.log(response)
                 if (apiRooms.length === 0) {
                     setRooms([]);
                     setThresholdViolations([]);
                     return;
                 }
-
                 return Promise.all(apiRooms.map(fetchRoomWithLiveData))
                     .then(roomData => {
                         setRooms(roomData);

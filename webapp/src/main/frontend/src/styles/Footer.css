@@ -8,11 +8,24 @@ footer {
     left: 0;
     bottom: 0;
     width: 100%;
-    background-color: #fff8f3;
-    color: black;
-    border-top: 1px solid lightgrey;
+    background-color: var(--footer-bg, #fff8f3);
+    color: var(--footer-text, #000000);
+    border-top: 1px solid var(--footer-border, lightgrey);
+    z-index: 100;
 }
 
 footer > span {
     padding: 0 20px;
+}
+
+html[data-theme='dark'] footer {
+    --footer-bg: #111827;
+    --footer-text: #f8fafc;
+    --footer-border: #334155;
+}
+
+html[data-theme='dark'] footer span,
+html[data-theme='dark'] footer .p-tag,
+html[data-theme='dark'] footer .p-chip {
+    color: #f8fafc;
 }
