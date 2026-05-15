@@ -421,8 +421,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 }}
                             />
                             <Column header="Status" body={row => statusBadge(row.status)} />
-                            <Column header="Last Measurement" body={() => <span style={{ color: '#9e9e9e' }}>N/A</span>} />
-                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
+<Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                                     <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetryConnection(row.readId!)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit sensor station" onClick={() => openEditSensorDialog(row)} />

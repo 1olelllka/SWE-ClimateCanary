@@ -34,7 +34,7 @@ const DepartmentTable: React.FC<Props> = ({ departments, loading, onAdd, onEdit,
                 <Button label="Add Department" icon="pi pi-plus" onClick={onAdd} />
             </div>
 
-            <div style={{ marginBottom: '1rem' }}>
+            <div style={{ padding: '0 1.5rem 1rem' }}>
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
                     <InputText
