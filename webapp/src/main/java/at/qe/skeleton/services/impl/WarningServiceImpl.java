@@ -1,9 +1,6 @@
 package at.qe.skeleton.services.impl;
 
-import at.qe.skeleton.dtos.SummaryWarningDTO;
-import at.qe.skeleton.dtos.WarningCreateDTO;
-import at.qe.skeleton.dtos.WarningDTO;
-import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.WarningCreateMapper;
@@ -12,6 +9,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +28,7 @@ public class WarningServiceImpl implements WarningService {
     private final WarningRepository warningsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final RoomRepository roomRepository;
+    private final BuildingRepository buildingRepository;
     private final DepartmentRepository departmentRepository;
     private final WarningMapper warningMapper;
     private final WarningCreateMapper warningCreateMapper;
@@ -251,6 +250,18 @@ public class WarningServiceImpl implements WarningService {
         }
 
         return mapToDTOs(warnings);
+    }
+
+    @Override
+    public ActiveViolationBuildingStats getActiveViolationsForBuilding(UUID id) {
+        Building building = buildingRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Building with ID %s was not found.".formatted(id.toString()))
+        );
+        List<UUID> roomIds = new ArrayList<>();
+        for (Department department : building.getDepartments()) {
+            department.getRooms().forEach(room -> roomIds.add(room.getId()));
+        }
+        return new ActiveViolationBuildingStats(warningsRepository.findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(roomIds).size());
     }
 
     private Warnings findActiveWarningById(UUID warningId) {

@@ -1,5 +1,6 @@
 package at.qe.skeleton.controllers;
 
+import at.qe.skeleton.dtos.ActiveViolationBuildingStats;
 import at.qe.skeleton.dtos.WarningCreateDTO;
 import at.qe.skeleton.dtos.WarningDTO;
 import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
@@ -62,6 +63,12 @@ public class WarningController {
     public ResponseEntity<WarningDTO> resolveWarning(
             @PathVariable(name = "warning_id") UUID id) {
         return ResponseEntity.ok(warningsService.resolveWarning(id));
+    }
+
+    @GetMapping("/warnings/buildings/{building_id}/active")
+    @PreAuthorize("hasAuthority('CAN_VIEW_ALL_ROOMS')")
+    public ResponseEntity<ActiveViolationBuildingStats> getActiveViolationsForBuilding(@PathVariable(name = "building_id") UUID id) {
+        return new ResponseEntity<>(warningsService.getActiveViolationsForBuilding(id), HttpStatus.OK);
     }
 
     @GetMapping("/warnings/departments/{department_id}/summary")

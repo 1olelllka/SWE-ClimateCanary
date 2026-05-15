@@ -1,9 +1,6 @@
 package at.qe.skeleton.services;
 
-import at.qe.skeleton.dtos.SummaryWarningDTO;
-import at.qe.skeleton.dtos.WarningCreateDTO;
-import at.qe.skeleton.dtos.WarningDTO;
-import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.model.Userx;
 
 import java.time.LocalDate;
@@ -26,4 +23,6 @@ public interface WarningService {
     List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, boolean active, LocalDate startDate, LocalDate endDate);
 
     List<?> getDetailedViolationLogForDepartment(Userx user, UUID id, boolean active, LocalDate startDate, LocalDate endDate);
+
+    ActiveViolationBuildingStats getActiveViolationsForBuilding(UUID id);
 }

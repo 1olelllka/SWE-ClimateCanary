@@ -25,6 +25,7 @@ public class Building {
     private String name;
 
     @OneToMany(mappedBy = "building", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Department> departments = new ArrayList<>();
 
 }
