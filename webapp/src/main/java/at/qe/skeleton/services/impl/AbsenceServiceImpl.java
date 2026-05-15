@@ -48,7 +48,7 @@ public class AbsenceServiceImpl implements AbsenceService {
     public Absence createNewAbsenceForUser(Absence absence) {
         Optional<Userx> manager = userxRepository.findById(absence.getAssignedTo());
         if (manager.isEmpty()) {
-            throw new NotFoundException("Manager with id " + absence.getAssignedTo() + " was not found.");
+            throw new NotFoundException("Manager with id %s was not found".formatted(absence.getAssignedTo()));
         }
 
         Set<String> authorities = manager.get().getAuthorities().stream()
@@ -61,7 +61,7 @@ public class AbsenceServiceImpl implements AbsenceService {
 
         UUID id = absence.getUser().getId();
         Userx user = userxRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User with id " + id + " was not found"));
+                .orElseThrow(() -> new NotFoundException("User with id %s was not found".formatted(id)));
         if (user.getNumberOfAbsences() < ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate()))
             throw new ValidationException("You don't have enough amount of absences available.");
 
@@ -95,16 +95,6 @@ public class AbsenceServiceImpl implements AbsenceService {
     }
 
     @Override
-    public void deleteAbsenceById(UUID id, Userx user) {
-        Absence absence = absenceRepository.findById(id).orElseThrow(() -> new NotFoundException("Absence with id " + id + " was not found."));
-        if (user.getId().equals(absence.getUser().getId())) {
-            absenceRepository.deleteById(id);
-            return;
-        }
-        throw new ForbiddenException("You are not allowed to delete this absence.");
-    }
-
-    @Override
     @Transactional
     public Absence updateAbsenceStatus(UUID id, AbsenceStatus status) {
         Absence absence = absenceRepository.findById(id)
@@ -119,12 +109,13 @@ public class AbsenceServiceImpl implements AbsenceService {
         }
         UUID userId = absence.getUser().getId();
         Userx user = userxRepository.findById(userId).orElseThrow(() -> new NotFoundException("User with id " + userId + " was not found"));
-        if (!user.getMyRoom().getDepartment().getId().equals(manager.get().getMyRoom().getDepartment().getId())) {
+        if (user.getMyRoom() != null && manager.get().getMyRoom() != null && !user.getMyRoom().getDepartment().getId().equals(manager.get().getMyRoom().getDepartment().getId())) {
             throw new ForbiddenException("You cannot update absence status for this employee.");
         }
         absence.setStatus(status);
         if (status == AbsenceStatus.REJECTED) {
             user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
+            userxRepository.save(user);
         }
         return absenceRepository.save(absence);
     }
@@ -141,6 +132,8 @@ public class AbsenceServiceImpl implements AbsenceService {
             throw new ValidationException("Only pending absences can be cancelled.");
         }
         absence.setStatus(AbsenceStatus.CANCELLED);
+        user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
+        userxRepository.save(user);
         return absenceRepository.save(absence);
     }
 

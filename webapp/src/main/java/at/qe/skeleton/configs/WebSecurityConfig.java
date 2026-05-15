@@ -28,13 +28,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Spring configuration for web security.
- * <p>
- * This class is part of the skeleton project provided for students of the
- * course "Software Engineering" offered by Innsbruck University.
- */
-
 @Configuration
 public class WebSecurityConfig {
 
@@ -91,12 +84,6 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/users/me/absences")
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
-                                        .requestMatchers("/api/users/me/department/rooms")
-                                        .hasAnyAuthority(
-                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
-                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name()
-                                        )
-
                                         .requestMatchers("/api/users/me").authenticated()
 
                                         .requestMatchers("/api/users/**")
@@ -113,28 +100,26 @@ public class WebSecurityConfig {
                                                 Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
                                                 Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
 
-                                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/measurements")
-                                        .permitAll()
+                                        .requestMatchers(HttpMethod.POST, "/api/measurements")
+                                        .hasAnyAuthority(Permission.CAN_SEND_MEASUREMENTS.name())
 
                                         .requestMatchers(
                                                 HttpMethod.GET,
-                                                "/api/rooms",
-                                                "/api/rooms/*/violations"
-                                        ).hasAnyAuthority(
-                                                Permission.CAN_VIEW_ALL_ROOMS.name(),
-                                                Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()
-                                        )
-
-                                        .requestMatchers(
-                                                org.springframework.http.HttpMethod.GET,
                                                 "/api/rooms/*/limits"
                                         ).hasAnyAuthority(
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name(),
                                                 Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
-                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name()
+                                                Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
+                                                Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name()
                                         )
 
+                                        .requestMatchers(HttpMethod.GET, "/api/raspberry-pis/*/config")
+                                        .hasAnyAuthority(Permission.CAN_GET_RASPBERRY_CONFIG.name())
+                                        .requestMatchers(HttpMethod.GET, "/api/raspberry-pis/*/sync/occupancy")
+                                        .hasAnyAuthority(Permission.CAN_VIEW_OCCUPANCY.name())
+                                        .requestMatchers("/api/raspberry-pis", "/api/raspberry-pis/**")
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name())
                                         .requestMatchers(
                                                 HttpMethod.PATCH,
                                                 "/api/rooms/*/limits",
@@ -143,15 +128,23 @@ public class WebSecurityConfig {
                                                 Permission.CAN_VIEW_ALL_ROOMS.name(),
                                                 Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()
                                         )
+                                        .requestMatchers(
+                                                HttpMethod.GET,
+                                                "/api/rooms").hasAnyAuthority(
+                                                Permission.CAN_VIEW_ALL_ROOMS.name(),
+                                                Permission.CAN_MANAGE_BUILDING_STRUCTURE.name()
+                                        )
                                         .requestMatchers(HttpMethod.GET, "/api/departments/*")
                                         .authenticated()
+                                        .requestMatchers(HttpMethod.GET, "/api/building", "/api/building/*")
+                                        .hasAnyAuthority(Permission.CAN_VIEW_ALL_BUILDINGS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
 
                                         .requestMatchers(HttpMethod.PATCH, "/api/sensor-stations/*")
-                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), Permission.CAN_LIMITED_MANAGE_DEVICES.name())
                                         .requestMatchers(HttpMethod.GET, "/api/sensor-stations/*")
-                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), "ROLE_RASPBERRY_PI")
+                                        .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name(), Permission.CAN_LIMITED_MANAGE_DEVICES.name())
                                         .requestMatchers("/api/sensor-stations/**")
                                         .hasAnyAuthority(Permission.CAN_MANAGE_DEVICES.name())
 

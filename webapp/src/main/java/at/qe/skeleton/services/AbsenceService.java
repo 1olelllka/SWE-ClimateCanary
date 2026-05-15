@@ -17,8 +17,6 @@ public interface AbsenceService {
 
     Absence getAbsenceById(UUID id, Userx manager);
 
-    void deleteAbsenceById(UUID id, Userx user);
-
     Absence updateAbsenceStatus(UUID id, @NotNull(message = "Status must not be null.") AbsenceStatus status);
 
     Absence cancelAbsence(UUID absenceId, Userx user);

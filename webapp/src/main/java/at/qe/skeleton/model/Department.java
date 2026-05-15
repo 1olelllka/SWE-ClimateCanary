@@ -9,11 +9,11 @@ import java.util.UUID;
 
 @Entity
 @Builder
-@Table(name = "departments")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@Table(name="departments", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "building_id"}))
 public class Department {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

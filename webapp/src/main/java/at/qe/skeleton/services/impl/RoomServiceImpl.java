@@ -40,7 +40,7 @@ public class RoomServiceImpl implements RoomService {
 
     @Transactional
     public Room createRoom(Room room) {
-        if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id " + room.getDepartment().getId() + " was not found.");
+        if (!departmentRepository.existsById(room.getDepartment().getId())) throw new NotFoundException("Department with id %s was not found".formatted(room.getDepartment().getId()));
         if (roomRepository.existsByRoomNumberAndDepartmentId(room.getRoomNumber(), room.getDepartment().getId())) {
             throw new ConflictException("Room with this name already exists in this department.");
         }
@@ -78,7 +78,7 @@ public class RoomServiceImpl implements RoomService {
             if (room.getUsers() != null) {
                 Set<Userx> foundUser = new HashSet<>();
                 for (Userx user : room.getUsers()) {
-                    Userx u = userxRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException("User with id" + user.getId() + " was not found."));
+                    Userx u = userxRepository.findById(user.getId()).orElseThrow(() -> new NotFoundException("User with id %s was not found.".formatted(user.getId())));
                     u.setMyRoom(r);
                     foundUser.add(u);
                 }
@@ -130,8 +130,10 @@ public class RoomServiceImpl implements RoomService {
                 user.setMyRoom(null);
                 userxRepository.save(user);
             });
+            room.getDepartment().getRooms().remove(room);
+            room.setDepartment(null);
         }
-        roomRepository.deleteById(id);
+        if (room != null) roomRepository.delete(room);
         RoomMonitoring monitoring = monitoringRepository.findById(id).orElse(null);
         if (monitoring != null && monitoring.getRaspberryPi() != null) {
             monitoring.getRaspberryPi().setRoomMonitoring(null);

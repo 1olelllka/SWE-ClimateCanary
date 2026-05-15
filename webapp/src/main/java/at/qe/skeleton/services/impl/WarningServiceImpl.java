@@ -1,9 +1,6 @@
 package at.qe.skeleton.services.impl;
 
-import at.qe.skeleton.dtos.SummaryWarningDTO;
-import at.qe.skeleton.dtos.WarningCreateDTO;
-import at.qe.skeleton.dtos.WarningDTO;
-import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.mappers.WarningCreateMapper;
@@ -12,6 +9,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +28,7 @@ public class WarningServiceImpl implements WarningService {
     private final WarningRepository warningsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final RoomRepository roomRepository;
+    private final BuildingRepository buildingRepository;
     private final DepartmentRepository departmentRepository;
     private final WarningMapper warningMapper;
     private final WarningCreateMapper warningCreateMapper;
@@ -38,7 +37,7 @@ public class WarningServiceImpl implements WarningService {
     // get warnings for a specific room
     @Override
     public List<WarningDTO> getAllWarningsForRoom(Userx user, UUID roomId,
-                                                  Boolean active,
+                                                  boolean active,
                                                   LocalDate startDate,
                                                   LocalDate endDate) {
 
@@ -46,10 +45,25 @@ public class WarningServiceImpl implements WarningService {
                 .orElseThrow(() -> new NotFoundException("There's no room with id " + roomId + "."));
 
         boolean isDeptUser = hasAuthority(user, "CAN_VIEW_OWN_DEPARTMENT_WARNINGS");
-        boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS")
-                || hasAuthority(user, "CAN_VIEW_OWN_OFFICE_CLIMATE");
+        boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS");
         boolean isBuildingManager = hasAuthority(user, "CAN_VIEW_ALL_ROOMS");
         if (user.getMyRoom() != null) {
+            // Building-level access (if building manager happens to have a room)
+            if (isBuildingManager) {
+                if (active) {
+                    return mapToDTOs(
+                            warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
+                    );
+                } else {
+                    return mapToDTOs(
+                            warningsRepository.findByRoomMonitoring_RoomIdAndCreatedAtBetween(
+                                    roomId,
+                                    startOfDay(startDate),
+                                    endOfDay(endDate)
+                            )
+                    );
+                }
+            }
             // Department-level access
             if (isDeptUser) {
                 if (!room.getDepartment().getId().equals(user.getMyRoom().getDepartment().getId())) {
@@ -208,7 +222,7 @@ public class WarningServiceImpl implements WarningService {
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department with id " + id + " was not found."));
 
-        if (!department.getId().equals(user.getMyRoom().getDepartment().getId())) {
+        if (user.getMyRoom() == null || !department.getId().equals(user.getMyRoom().getDepartment().getId())) {
             throw new ForbiddenException("You're not allowed to see other department's warnings");
         }
 
@@ -236,6 +250,18 @@ public class WarningServiceImpl implements WarningService {
         }
 
         return mapToDTOs(warnings);
+    }
+
+    @Override
+    public ActiveViolationBuildingStats getActiveViolationsForBuilding(UUID id) {
+        Building building = buildingRepository.findById(id).orElseThrow(
+                () -> new NotFoundException("Building with ID %s was not found.".formatted(id.toString()))
+        );
+        List<UUID> roomIds = new ArrayList<>();
+        for (Department department : building.getDepartments()) {
+            department.getRooms().forEach(room -> roomIds.add(room.getId()));
+        }
+        return new ActiveViolationBuildingStats(warningsRepository.findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(roomIds).size());
     }
 
     private Warnings findActiveWarningById(UUID warningId) {
