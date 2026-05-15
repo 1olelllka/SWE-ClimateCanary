@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import globalAxios from 'axios';
 import { Sidebar } from 'primereact/sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
@@ -27,13 +28,27 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
         isBuildingManager
     } = useUser();
 
+    const [deptManagerDeptName, setDeptManagerDeptName] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isDepartmentManager) return;
+        globalAxios.get('/api/users/me').then(res => {
+            const deptId = res.data?.myRoom?.departmentID;
+            if (!deptId) return;
+            return globalAxios.get(`/api/departments/${deptId}`).then(r => {
+                const name = r.data?.name || r.data?.departmentName || null;
+                setDeptManagerDeptName(name);
+            });
+        }).catch(() => {});
+    }, [isDepartmentManager]);
+
     const deptMatch = location.pathname.match(/^\/senior\/department\/(.+)$/);
     const currentDept = deptMatch ? decodeURIComponent(deptMatch[1]) : null;
 
     // Exakte Bezeichnungen für die Startseite je nach Rolle
     const getOverviewLabel = () => {
         if (isSeniorManager) return 'Departments Overview';
-        if (isDepartmentManager) return 'Overview Department XY';
+        if (isDepartmentManager) return 'Department Dashboard';
         if (isBuildingManager) return 'Building Overview';
         if (isEmployee) return 'My Office';
         return 'Overview'; // Für SysAdmin
@@ -43,6 +58,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     const allMenuItems = [
         {
             label: getOverviewLabel(),
+            subtitle: isDepartmentManager ? (deptManagerDeptName ?? undefined) : undefined,
             icon: 'pi-home',
             route: '/',
             visible: true // Jeder sieht eigene Startseite
@@ -64,6 +80,12 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             icon: 'pi-sitemap',
             route: ROUTES.EMPLOYEE_DEPARTMENT,
             visible: isEmployee
+        },
+        {
+            label: 'My Room',
+            icon: 'pi-home',
+            route: ROUTES.MY_ROOM,
+            visible: isDepartmentManager
         },
         {
             label: 'My Absences',
@@ -129,7 +151,10 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
                 {allowedMenuItems.map((item, index) => (
                     <button key={index} className="menu-item" onClick={() => handleNavigation(item.route)}>
                         <i className={`pi ${item.icon}`} aria-hidden="true" style={{ marginRight: '15px' }}></i>
-                        <span>{item.label}</span>
+                        <span className="menu-item-text">
+                            <span>{item.label}</span>
+                            {item.subtitle && <span className="menu-item-subtitle">{item.subtitle}</span>}
+                        </span>
                     </button>
                 ))}
             </div>

@@ -86,6 +86,23 @@
     border-bottom: none;
 }
 
+.menu-item-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.menu-item-subtitle {
+    font-size: 0.72rem;
+    font-weight: 400;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+html[data-theme='dark'] .menu-item-subtitle {
+    color: #94a3b8;
+}
+
 .menu-item:hover,
 .menu-item.active {
     background-color: #f4f6f8;
