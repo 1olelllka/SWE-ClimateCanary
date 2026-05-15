@@ -31,6 +31,14 @@ class RaspberryMapperUnitTests {
                 .build();
     }
 
+    private RaspberryPi buildPiWithFrequency(UUID id, String name, String ip,
+                                              DeviceStatus status, RoomMonitoring room, Integer frequency) {
+        return RaspberryPi.builder()
+                .id(id).name(name).ip(ip).status(status)
+                .roomMonitoring(room).frequency(frequency)
+                .build();
+    }
+
     private RoomMonitoring buildRoom(UUID roomId, String roomNumber) {
         RoomMonitoring room = new RoomMonitoring();
         room.setRoomId(roomId);
@@ -96,6 +104,24 @@ class RaspberryMapperUnitTests {
         }
 
         @Test
+        @DisplayName("maps frequency correctly when set")
+        void mapsFrequency() {
+            RaspberryPi pi = buildPiWithFrequency(UUID.randomUUID(), "Pi", "10.0.0.1",
+                    DeviceStatus.ONLINE, null, 60);
+
+            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(60);
+        }
+
+        @Test
+        @DisplayName("maps frequency as default 100 when not explicitly set")
+        void mapsFrequencyAsDefaultWhenNotSet() {
+            RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
+                    DeviceStatus.ONLINE, null);
+
+            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(1000);
+        }
+
+        @Test
         @DisplayName("throws NullPointerException when entity is null")
         void throwsOnNullEntity() {
             assertThrows(NullPointerException.class, () -> mapper.mapTo(null));
@@ -111,7 +137,7 @@ class RaspberryMapperUnitTests {
         void throwsUnsupportedOperationException() {
             RaspberryDTO dto = new RaspberryDTO(
                     UUID.randomUUID(), "Pi Lab A", "192.168.1.100", 1000,
-                    DeviceStatus.OFFLINE, null
+                    null, DeviceStatus.OFFLINE, null
             );
             assertThrows(UnsupportedOperationException.class, () -> mapper.mapFrom(dto));
         }
