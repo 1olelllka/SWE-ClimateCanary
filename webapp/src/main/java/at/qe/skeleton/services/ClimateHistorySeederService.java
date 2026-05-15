@@ -23,7 +23,7 @@ public class ClimateHistorySeederService {
     private final RoomMonitoringRepository roomMonitoringRepository;
     private final ClimateStatsRepository climateStatsRepository;
 
-    @Value("${app.seeder.climate-history.days:140}")
+    @Value("${app.seeder.climate-history.days:35}")
     private int historyDays;
 
     private static final int BATCH_SIZE = 1000;

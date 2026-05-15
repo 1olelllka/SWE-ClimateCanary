@@ -61,11 +61,8 @@ public class ClimateStatsController {
 
         // Department manager viewing an office forced to see day averages (privacy)
         if (hasRole("DEPARTMENT_MANAGER") && !isGeneralArea) {
-            if (granularity.equals("DAY") || granularity.equals("WEEK"))
                 return ResponseEntity.ok(
                     climateStatsService.getClimateHistoryReduced(id, startDate, endDate, granularity));
-            else
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
         // Everyone else can view full granularity with smart timeframe defaults

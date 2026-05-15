@@ -139,9 +139,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
                 const granularity = diffDays <= 4
                     ? 'HOUR'
                     : diffDays > 4 && diffDays < 45 ? 'DAY'
-                    : diffDays <= 120
-                        ? 'WEEK'
-                        : 'MONTH';
+                    : 'WEEK';
 
                 req = globalAxios
                     .get<AggPoint[]>(`/api/rooms/${roomId}/climate-history`, {

@@ -168,10 +168,12 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         List<String> roles = user.getAuthorities().stream().map(role -> role.getAuthority()).toList();
         if (!roles.contains("CAN_VIEW_ALL_ROOMS")) {
-            if (user.getMyRoom().getRoomType() == RoomType.OFFICE && !user.getMyRoom().getId().equals(room.getId()))
+            if (room.getRoomType().equals(RoomType.SHARED) && !user.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId())) {
                 throw new ForbiddenException("You are not allowed to see other's rooms.");
-            if (user.getMyRoom().getRoomType() == RoomType.SHARED && !user.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
+            }
+            if (room.getRoomType().equals(RoomType.OFFICE) && !user.getMyRoom().getId().equals(room.getId())) {
                 throw new ForbiddenException("You are not allowed to see other's rooms.");
+            }
         }
         boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) < 15;
 
@@ -206,10 +208,13 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                                  String granularity) {
         if (from.isAfter(to) || ChronoUnit.DAYS.between(from, to) < 3) throw new ValidationException("Invalid timestamps.");
         boolean weekly = "WEEK".equals(granularity) && ChronoUnit.DAYS.between(from, to) > 45;
+        boolean hourly = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 2;
         Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         if (!authenticatedDeptMan.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()))
             throw new ForbiddenException("You are not allowed to see measures for this department.");
+        if (!authenticatedDeptMan.getMyRoom().getId().equals(room.getId()) && room.getRoomType() != RoomType.SHARED && hourly)
+            throw new ForbiddenException("You are not allowed to see detailed measures for this room.");
         List<AggregatedStats> aggregated;
         if (weekly) {
             aggregated = aggregatedStatsRepository
@@ -224,7 +229,10 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         log.info("Aggregated Data was not found.");
 
         // this is just a fallback for now — should be removed once background job is running
-        if (weekly) {
+        if (hourly) {
+            return groupRawByHour(roomId, from, to);
+        }
+        else if (weekly) {
             return groupRawByWeek(roomId, from, to);
         } else
             return groupRawByDay(roomId, from, to);
