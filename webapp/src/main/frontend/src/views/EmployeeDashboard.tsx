@@ -4,7 +4,6 @@ import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
 import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
-import { WarningBanner } from '../components/WarningBanner';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
 
@@ -158,6 +157,10 @@ export const EmployeeDashboard: React.FC = () => {
     const humTrend  = calcTrend(climate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
     const aqTrend   = calcTrend(climate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
 
+    const tempWarning = warnings.find(w => w.measurementType === 'TEMPERATURE');
+    const humWarning  = warnings.find(w => w.measurementType === 'HUMIDITY');
+    const aqWarning   = warnings.find(w => w.measurementType === 'CO2');
+
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--page-bg)' }}>
             <PageHeader
@@ -185,6 +188,8 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={tempSparkline}
                                 trendIcon={tempTrend.icon}
                                 trendText={tempTrend.text}
+                                violated={!!tempWarning}
+                                tip={tempWarning?.tip}
                             />
                             <Cards
                                 title="Humidity"
@@ -194,6 +199,8 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={humSparkline}
                                 trendIcon={humTrend.icon}
                                 trendText={humTrend.text}
+                                violated={!!humWarning}
+                                tip={humWarning?.tip}
                             />
                             <Cards
                                 title="Air Quality (CO₂)"
@@ -203,16 +210,10 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={aqSparkline}
                                 trendIcon={aqTrend.icon}
                                 trendText={aqTrend.text}
+                                violated={!!aqWarning}
+                                tip={aqWarning?.tip}
                             />
                         </div>
-
-                        {warnings.map(w => (
-                            <WarningBanner
-                                key={w.id}
-                                boldPart={`${w.measurementType.replace(/_/g, ' ')} alert. `}
-                                regularPart={w.message + (w.tip && w.tip !== "There's no tip." ? ' ' + w.tip : '')}
-                            />
-                        ))}
 
                         {roomId && <ClimateHistoryChart roomId={roomId} />}
                     </>

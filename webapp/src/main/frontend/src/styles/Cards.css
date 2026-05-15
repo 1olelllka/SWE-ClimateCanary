@@ -4,6 +4,12 @@
     border-radius: 12px;
     padding: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.card-wrapper.card-violated {
+    border-color: #e05252;
+    box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.13), 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .card-header {
@@ -12,6 +18,53 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.card-alert-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #e05252;
+    flex-shrink: 0;
+    animation: card-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes card-dot-pulse {
+    0%, 100% { opacity: 1;   transform: scale(1);   }
+    50%       { opacity: 0.4; transform: scale(1.35); }
+}
+
+.card-alert-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #e05252;
+    background: rgba(224, 82, 82, 0.1);
+    border: 1px solid rgba(224, 82, 82, 0.3);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+.card-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid rgba(224, 82, 82, 0.18);
+    font-size: 0.72rem;
+    color: #c0392b;
+    line-height: 1.4;
+}
+
+.card-tip-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    line-height: 1.3;
 }
 
 .card-value-row {
@@ -46,6 +99,22 @@ html[data-theme='dark'] .card-wrapper {
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
     box-shadow: none !important;
+}
+
+html[data-theme='dark'] .card-wrapper.card-violated {
+    border-color: #e05252 !important;
+    box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.2) !important;
+}
+
+html[data-theme='dark'] .card-tip {
+    color: #fc8181;
+    border-top-color: rgba(224, 82, 82, 0.25);
+}
+
+html[data-theme='dark'] .card-alert-badge {
+    color: #fc8181;
+    background: rgba(224, 82, 82, 0.15);
+    border-color: rgba(224, 82, 82, 0.4);
 }
 
 html[data-theme='dark'] .card-unit,
