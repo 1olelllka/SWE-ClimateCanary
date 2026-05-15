@@ -358,6 +358,8 @@ public class RaspberryServiceUnitTests {
     void testThatAddNewRoomSucceeds() {
         RaspberryPi piWithNoRoom = new RaspberryPi();
         piWithNoRoom.setId(UUID.randomUUID());
+        piWithNoRoom.setIp("127.0.0.1");
+        piWithNoRoom.setPort(8080);
         piWithNoRoom.setRoomMonitoring(null);
 
         RoomMonitoring unassignedRoom = new RoomMonitoring();

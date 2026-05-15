@@ -118,7 +118,7 @@ class RaspberryMapperUnitTests {
             RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
                     DeviceStatus.ONLINE, null);
 
-            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(100);
+            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(1000);
         }
 
         @Test

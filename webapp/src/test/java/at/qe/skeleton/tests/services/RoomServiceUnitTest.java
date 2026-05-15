@@ -255,6 +255,8 @@ public class RoomServiceUnitTest {
     void testThatDeleteRoomUnlinksPiAndPublishesEventWhenPiLinked() {
         RaspberryPi pi = new RaspberryPi();
         pi.setId(UUID.randomUUID());
+        pi.setIp("127.0.0.1");
+        pi.setPort(8080);
 
         sampleMonitoring.setRaspberryPi(pi);
         pi.setRoomMonitoring(sampleMonitoring);
