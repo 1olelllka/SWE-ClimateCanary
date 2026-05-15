@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RaspberryServiceUnitTests {
+class RaspberryServiceUnitTests {
 
     @Mock private RaspberryPiRepository raspberryPiRepository;
     @Mock private RoomMonitoringRepository monitoringRepository;
@@ -269,7 +269,7 @@ public class RaspberryServiceUnitTests {
         assertEquals(5000, config.frequency());
         assertEquals(roomId, config.roomId());
         assertEquals(piId, config.raspberryId());
-        assertNull(config.occupancy());
+        assertNotNull(config.occupancy());
         assertTrue(config.sensors().stream()
                 .anyMatch(s -> s.readId().equals(sensorReadId) && s.writeId().equals(sensorWriteId)));
     }
@@ -329,9 +329,7 @@ public class RaspberryServiceUnitTests {
 
     @Test
     void testThatAddNewRoomSucceeds() {
-        RaspberryPi piWithNoRoom = new RaspberryPi();
-        piWithNoRoom.setId(UUID.randomUUID());
-        piWithNoRoom.setRoomMonitoring(null);
+        RaspberryPi piWithNoRoom = RaspberryPi.builder().id(UUID.randomUUID()).ip("localhost").port(8000).roomMonitoring(null).build();
 
         RoomMonitoring unassignedRoom = new RoomMonitoring();
         unassignedRoom.setRoomId(UUID.randomUUID());
@@ -490,7 +488,7 @@ public class RaspberryServiceUnitTests {
 
         PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);
 
-        assertNull(config.occupancy());
+        assertNotNull(config.occupancy());
     }
 
     @Test

@@ -1,10 +1,7 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.ConfigRequestDTO;
-import at.qe.skeleton.dtos.OccupancyDTO;
-import at.qe.skeleton.dtos.PiConfigDTO;
-import at.qe.skeleton.dtos.ReducedSensorDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
@@ -51,7 +48,7 @@ public class RaspberryServiceImpl implements RaspberryService {
     @Override
     public RaspberryPi getSpecificRaspberry(UUID id) {
         return raspberryPiRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Raspberry Pi device with id " + id + " was not found."));
+                .orElseThrow(() -> new NotFoundException("Raspberry Pi device with id %s was not found".formatted(id.toString())));
     }
 
     @Override
@@ -137,7 +134,7 @@ public class RaspberryServiceImpl implements RaspberryService {
         RaspberryPi pi = raspberryPiRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + id + " was not found."));
         if (pi.getRoomMonitoring() == null) return null;
-        return occupancyRepository.findById(pi.getRoomMonitoring().getRoomId().toString()).orElse(null);
+        return occupancyRepository.findById(pi.getRoomMonitoring().getRoomId().toString()).orElse(new RoomOccupancy(pi.getRoomMonitoring().getRoomId(), 0));
     }
 
     @Override
@@ -167,9 +164,9 @@ public class RaspberryServiceImpl implements RaspberryService {
 
     @Override
     @Transactional
-    public void retryConnection(UUID raspberry_id) {
-        RaspberryPi pi = raspberryPiRepository.findById(raspberry_id)
-                .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberry_id + " was not found."));
+    public void retryConnection(UUID raspberryPi) {
+        RaspberryPi pi = raspberryPiRepository.findById(raspberryPi)
+                .orElseThrow(() -> new NotFoundException("Raspberry Pi with id " + raspberryPi + " was not found."));
         log.info("Retrying connection with Raspberry Pi '{}' [{}:{}]", pi.getName(), pi.getIp(), pi.getPort());
         eventPublisher.publishEvent(
                 new NotifyRaspberryCommand(
@@ -189,6 +186,13 @@ public class RaspberryServiceImpl implements RaspberryService {
             throw new ConflictException("Raspberry Pi already has a room assigned. Remove the current room first.");
         }
         pi.setRoomMonitoring(monitoring);
+        if (monitoring.getRaspberryPi() != null) {
+            log.info("Overriding the room for old raspberry '{}'... Updating config for old Raspberry...", pi.getName());
+            eventPublisher.publishEvent(
+                    new NotifyRaspberryCommand(new ConfigRequestDTO(monitoring.getRaspberryPi().getId(),
+                            LocalDateTime.now()), monitoring.getRaspberryPi(), notificationClient)
+            );
+        }
         monitoring.setRaspberryPi(pi);
         monitoringRepository.save(monitoring);
         log.info("Added new room '{}' for Raspberry Pi '{}' in system.", monitoring.getRoomNumber(), pi.getName());

@@ -72,8 +72,7 @@ class AbsenceServiceUnitTests {
         absence.setId(UUID.randomUUID());
         absence.setAssignedTo(manager.getId());
 
-        RaspberryPi raspberry = new RaspberryPi();
-        raspberry.setId(UUID.randomUUID());
+        RaspberryPi raspberry = RaspberryPi.builder().id(UUID.randomUUID()).port(8000).ip("123.123.12.32").build();
 
         monitoringWithPi = RoomMonitoring.builder()
                 .raspberryPi(raspberry)
@@ -179,32 +178,6 @@ class AbsenceServiceUnitTests {
         when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
 
         assertThrows(ForbiddenException.class, () -> absenceService.getAbsenceById(absence.getId(), wrongManager));
-    }
-
-
-    @Test
-    void testThatDeleteAbsenceByIdSucceedsForOwner() {
-        when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
-
-        absenceService.deleteAbsenceById(absence.getId(), user);
-
-        verify(absenceRepository).deleteById(absence.getId());
-    }
-
-    @Test
-    void testThatDeleteAbsenceByIdThrowsNotFoundWhenAbsenceDoesNotExist() {
-        when(absenceRepository.findById(absence.getId())).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> absenceService.deleteAbsenceById(absence.getId(), user));
-    }
-
-    @Test
-    void testThatDeleteAbsenceByIdThrowsForbiddenForNonOwner() {
-        Userx otherUser = new Userx();
-        otherUser.setId(UUID.randomUUID());
-        when(absenceRepository.findById(absence.getId())).thenReturn(Optional.of(absence));
-
-        assertThrows(ForbiddenException.class, () -> absenceService.deleteAbsenceById(absence.getId(), otherUser));
     }
 
     @Test

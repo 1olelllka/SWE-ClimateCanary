@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class SensorStationServiceUnitTests {
+class SensorStationServiceUnitTests {
 
     @Mock private SensorStationRepository sensorRepository;
     @Mock private NotificationClient notificationClient;
@@ -55,13 +55,16 @@ public class SensorStationServiceUnitTests {
 
         samplePi = new RaspberryPi();
         samplePi.setId(UUID.randomUUID());
+        samplePi.setIp("192.168.1.1");   // ← needed — NotifyRaspberryCommand extracts at construction
+        samplePi.setPort(8080);
+        samplePi.setName("Pi-01");
 
         sampleRoom = new RoomMonitoring();
         sampleRoom.setRoomId(roomId);
+        sampleRoom.setRoomNumber("ENG-101");
 
         sampleStation = new SensorStation();
         sampleStation.setReadId(stationId);
-        sampleStation.setWriteId(UUID.randomUUID());
         sampleStation.setWriteId(UUID.randomUUID());
         sampleStation.setName("Station-01");
         sampleStation.setRoomMonitoring(sampleRoom);
@@ -79,7 +82,6 @@ public class SensorStationServiceUnitTests {
 
         Page<SensorStation> result = sensorService.getAllSensorStations(pageable);
 
-        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         verify(sensorRepository).findAll(pageable);
     }
@@ -107,7 +109,7 @@ public class SensorStationServiceUnitTests {
 
         sensorService.createNewSensorStation(sampleStation);
 
-        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -133,25 +135,23 @@ public class SensorStationServiceUnitTests {
     // --- updateExistingSensor ---
 
     @Test
-    void testThatUpdateExistingSensorUpdatesScalarFields() {
+    void testThatUpdateExistingSensorUpdatesScalarFieldsWithoutNotifying() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
         when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         SensorStation patch = new SensorStation();
-        patch.setName("Updated-Name");
         patch.setStatus(DeviceStatus.ONLINE);
         patch.setLastHeartBeat(LocalDateTime.now());
 
         SensorStation result = sensorService.updateExistingSensor(stationId, patch);
 
-        assertEquals("Updated-Name", result.getName());
         assertEquals(DeviceStatus.ONLINE, result.getStatus());
-        // no room change, so no event
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void testThatUpdateExistingSensorNotifiesNewPiWhenRoomChangedAndPiLinked() {
+    void testThatUpdateExistingSensorNotifiesNewPiWhenRoomChangedAndNewPiLinked() {
+        // old room has no Pi, new room has Pi
         RoomMonitoring newRoom = new RoomMonitoring();
         newRoom.setRoomId(UUID.randomUUID());
         newRoom.setRaspberryPi(samplePi);
@@ -164,16 +164,20 @@ public class SensorStationServiceUnitTests {
 
         sensorService.updateExistingSensor(stationId, patch);
 
-        // one SENSOR_ADD to the new room's Pi; old room has no Pi so no SENSOR_DELETE
-        verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        // only SENSOR_ADD to new room's Pi — old room had no Pi
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
     void testThatUpdateExistingSensorNotifiesBothPisWhenBothRoomsHavePi() {
-        sampleRoom.setRaspberryPi(samplePi);
+        sampleRoom.setRaspberryPi(samplePi); // old room has Pi
 
         RaspberryPi newPi = new RaspberryPi();
         newPi.setId(UUID.randomUUID());
+        newPi.setIp("192.168.1.2");
+        newPi.setPort(9090);
+        newPi.setName("Pi-02");
+
         RoomMonitoring newRoom = new RoomMonitoring();
         newRoom.setRoomId(UUID.randomUUID());
         newRoom.setRaspberryPi(newPi);
@@ -196,7 +200,7 @@ public class SensorStationServiceUnitTests {
         when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         SensorStation patch = new SensorStation();
-        patch.setRoomMonitoring(sampleRoom); // same room — equals() returns true, no notify
+        patch.setRoomMonitoring(sampleRoom); // same roomId — no notify
 
         sensorService.updateExistingSensor(stationId, patch);
 
@@ -204,16 +208,35 @@ public class SensorStationServiceUnitTests {
     }
 
     @Test
-    void testThatUpdateExistingSensorSkipsNameConflictCheckWhenNameIsUnchanged() {
+    void testThatUpdateExistingSensorNotifiesOnNameChangeWhenPiLinked() {
+        sampleRoom.setRaspberryPi(samplePi);
+
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.existsByName("New-Name")).thenReturn(false);
         when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         SensorStation patch = new SensorStation();
-        patch.setName("Station-01");
+        patch.setName("New-Name");
 
         sensorService.updateExistingSensor(stationId, patch);
 
-        verify(sensorRepository, never()).existsByName(anyString());
+        // SENSOR_ADD + SENSOR_DELETE for name change
+        verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatUpdateExistingSensorSkipsNotifyOnNameChangeWhenNoPiLinked() {
+        // sampleRoom has no Pi
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.existsByName("New-Name")).thenReturn(false);
+        when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation patch = new SensorStation();
+        patch.setName("New-Name");
+
+        sensorService.updateExistingSensor(stationId, patch);
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -232,7 +255,8 @@ public class SensorStationServiceUnitTests {
     void testThatUpdateExistingSensorThrowsNotFoundWhenStationMissing() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> sensorService.updateExistingSensor(stationId, new SensorStation()));
+        assertThrows(NotFoundException.class,
+                () -> sensorService.updateExistingSensor(stationId, new SensorStation()));
     }
 
     // --- getSpecificSensor ---
@@ -253,6 +277,49 @@ public class SensorStationServiceUnitTests {
         assertThrows(NotFoundException.class, () -> sensorService.getSpecificSensor(stationId));
     }
 
+    // --- disconnectFromRoom ---
+
+    @Test
+    void testThatDisconnectFromRoomClearsMonitoringAndNotifiesPi() {
+        sampleRoom.setRaspberryPi(samplePi);
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        SensorStation result = sensorService.disconnectFromRoom(stationId);
+
+        assertNull(result.getRoomMonitoring());
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
+    }
+
+    @Test
+    void testThatDisconnectFromRoomDoesNotNotifyWhenNoPiLinked() {
+        // sampleRoom has no Pi
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        sensorService.disconnectFromRoom(stationId);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatDisconnectFromRoomDoesNotNotifyWhenNoRoomLinked() {
+        sampleStation.setRoomMonitoring(null);
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+        when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        sensorService.disconnectFromRoom(stationId);
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatDisconnectFromRoomThrowsNotFoundWhenMissing() {
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> sensorService.disconnectFromRoom(stationId));
+    }
+
     // --- deleteById ---
 
     @Test
@@ -263,7 +330,7 @@ public class SensorStationServiceUnitTests {
         sensorService.deleteById(stationId);
 
         verify(sensorRepository).deleteById(stationId);
-        verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }
 
     @Test
@@ -295,25 +362,39 @@ public class SensorStationServiceUnitTests {
         verify(sensorRepository, never()).deleteById(any());
     }
 
+    // --- retryConnection ---
+
     @Test
-    void testThatRetryConnectionThrowsNotFoundExceptionIfNoSensorWasFound() {
+    void testThatRetryConnectionThrowsNotFoundWhenStationMissing() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.empty());
+
         assertThrows(NotFoundException.class, () -> sensorService.retryConnection(stationId));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void testThatRetryConnectionDoesNotTriggerEventIfSensorDoesNotHaveARoom() {
+    void testThatRetryConnectionDoesNotPublishEventWhenNoRoomLinked() {
         sampleStation.setRoomMonitoring(null);
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+
         assertDoesNotThrow(() -> sensorService.retryConnection(stationId));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void testThatRetryConnectionTriggersEventPublishingIfRoomWasFound() {
+    void testThatRetryConnectionDoesNotPublishEventWhenNoPiLinked() {
+        // sampleRoom has no Pi
+        when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+
+        assertDoesNotThrow(() -> sensorService.retryConnection(stationId));
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void testThatRetryConnectionPublishesEventWhenPiLinked() {
         sampleRoom.setRaspberryPi(samplePi);
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
+
         assertDoesNotThrow(() -> sensorService.retryConnection(stationId));
         verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
     }

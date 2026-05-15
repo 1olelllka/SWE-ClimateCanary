@@ -124,16 +124,16 @@ class RaspberryControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_VIEW_OCCUPANCY")
-    void testThatSyncOccupancyReturnsHttp200OkWithoutData() throws Exception {
+    void testThatSyncOccupancyReturnsHttp200OkWithDefaultData() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);
         raspberryService.addNewRoom(pi.getId(), this.savedRoom.getRoomId());
         when(occupancyRepository.findById(this.savedRoom.getRoomId().toString())).thenReturn(Optional.empty());
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId() + "/sync/occupancy"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.effectiveOccupancy").doesNotExist())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.roomId").doesNotExist())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.privacyMode").doesNotExist());
+                .andExpect(MockMvcResultMatchers.jsonPath("$.effectiveOccupancy").value(0))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.roomId").value(this.savedRoom.getRoomId().toString()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.privacyMode").value("true"));
     }
 
 

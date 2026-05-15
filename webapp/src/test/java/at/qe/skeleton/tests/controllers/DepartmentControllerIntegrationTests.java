@@ -75,7 +75,7 @@ class DepartmentControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(roles = "DEPARTMENT_MANAGER")
+    @WithMockUser(authorities = "CAN_VIEW_OWN_DEPARTMENT_MEASURES")
     void testThatGetSpecificDepartmentReturnsHttp200WhenExistsWithAllRooms() throws Exception {
         when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
@@ -90,7 +90,7 @@ class DepartmentControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(roles = "DEPARTMENT_MANAGER")
+    @WithMockUser(authorities = "CAN_VIEW_OWN_DEPARTMENT_MEASURES")
     void testThatGetSpecificDepartmentReturnsHttp200WhenExistsWithSharedRooms() throws Exception {
         when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
         Building b = buildingRepository.save(TestDataUtil.createBuildingEntity());
@@ -104,7 +104,7 @@ class DepartmentControllerIntegrationTests {
     }
 
     @Test
-    @WithMockUser(roles = "DEPARTMENT_MANAGER")
+    @WithMockUser(authorities = "CAN_VIEW_OWN_DEPARTMENT_MEASURES")
     void testThatGetSpecificDepartmentReturnsHttp404WhenNotExist() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());

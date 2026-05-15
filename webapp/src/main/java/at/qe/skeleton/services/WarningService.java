@@ -12,7 +12,7 @@ import java.util.UUID;
 
 public interface WarningService {
 
-    List<WarningDTO> getAllWarningsForRoom(Userx authenticated, UUID roomId, Boolean active, LocalDate startDate, LocalDate endDate);
+    List<WarningDTO> getAllWarningsForRoom(Userx authenticated, UUID roomId, boolean active, LocalDate startDate, LocalDate endDate);
 
     // where Pi reports new violation
     WarningDTO createWarning(WarningCreateDTO dto);

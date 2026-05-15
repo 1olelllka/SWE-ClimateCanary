@@ -2,14 +2,11 @@ package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.model.Building;
-import at.qe.skeleton.model.Department;
-import at.qe.skeleton.model.Permission;
-import at.qe.skeleton.model.UserRole;
-import at.qe.skeleton.repositories.BuildingTrendRepository;
-import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.impl.DepartmentServiceImpl;
+import at.qe.skeleton.services.impl.RoomServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,60 +31,92 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DepartmentServiceUnitTests {
 
-    @Mock
-    private DepartmentRepository departmentRepository;
-    @Mock
-    private BuildingTrendRepository trendRepository;
-    @Mock
-    private AuthenticatedUserService authenticatedUserService;
+    @Mock private DepartmentRepository departmentRepository;
+    @Mock private RoomRepository roomRepository;
+    @Mock private RoomMonitoringRepository monitoringRepository;
+    @Mock private RaspberryPiRepository raspberryPiRepository;
+    @Mock private BuildingTrendRepository trendRepository;
+    @Mock private RoomServiceImpl roomService;
+    @Mock private AuthenticatedUserService authenticatedUserService;
 
     @InjectMocks
     private DepartmentServiceImpl departmentService;
 
     private Department sampleDepartment;
+    private Building sampleBuilding;
     private UUID departmentId;
 
     @BeforeEach
     void setUp() {
         departmentId = UUID.randomUUID();
-        Building building = TestDataUtil.createBuildingEntity();
-        sampleDepartment = TestDataUtil.createDepartmentEntity(building);
+        sampleBuilding = TestDataUtil.createBuildingEntity();
+        sampleDepartment = TestDataUtil.createDepartmentEntity(sampleBuilding);
         sampleDepartment.setId(departmentId);
         sampleDepartment.setName("Department of Informatics");
     }
 
+    // --- getPageOfDepartments ---
+
     @Test
-    void testThatGetPageOfDepartmentsShouldReturnPage() {
+    void testThatGetPageOfDepartmentsReturnsPage() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Department> page = new PageImpl<>(List.of(sampleDepartment));
         when(departmentRepository.findAll(pageable)).thenReturn(page);
 
         Page<Department> result = departmentService.getPageOfDepartments(pageable);
 
-        assertNotNull(result);
         assertEquals(1, result.getTotalElements());
         verify(departmentRepository).findAll(pageable);
     }
 
+    // --- getDepartmentById ---
+
     @Test
-    void testThatGetDepartmentByIdWhenExistsShouldReturnDepartment() {
+    void testThatGetDepartmentByIdReturnsAllRoomsForPrivilegedUser() {
+        UserRole role = UserRole.builder()
+                .permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES))
+                .build();
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-        when(authenticatedUserService.getAuthenticatedUser()).thenReturn(TestDataUtil.createUserxEntity(UserRole.builder().permissions(Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES)).build(), null));
+        when(authenticatedUserService.getAuthenticatedUser())
+                .thenReturn(TestDataUtil.createUserxEntity(role, null));
+
         Department result = departmentService.getDepartmentById(departmentId);
 
-        assertEquals(sampleDepartment.getName(), result.getName());
         assertEquals(departmentId, result.getId());
+        assertEquals(sampleDepartment.getRooms(), result.getRooms()); // all rooms returned
     }
 
     @Test
-    void testThatGetDepartmentByIdWhenNotExistsShouldThrowNotFoundException() {
+    void testThatGetDepartmentByIdReturnsOnlySharedRoomsForUnprivilegedUser() {
+        Room sharedRoom = TestDataUtil.createRoomEntity(sampleDepartment);
+        sharedRoom.setRoomType(RoomType.SHARED);
+        Room officeRoom = TestDataUtil.createRoomEntity(sampleDepartment);
+        officeRoom.setRoomType(RoomType.OFFICE);
+        sampleDepartment.setRooms(List.of(sharedRoom, officeRoom));
+
+        UserRole role = UserRole.builder().permissions(Set.of()).build();
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(authenticatedUserService.getAuthenticatedUser())
+                .thenReturn(TestDataUtil.createUserxEntity(role, null));
+
+        Department result = departmentService.getDepartmentById(departmentId);
+
+        assertEquals(1, result.getRooms().size());
+        assertEquals(RoomType.SHARED, result.getRooms().get(0).getRoomType());
+    }
+
+    @Test
+    void testThatGetDepartmentByIdThrowsNotFoundWhenMissing() {
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
 
-        assertThrows(NotFoundException.class, () -> departmentService.getDepartmentById(departmentId));
+        assertThrows(NotFoundException.class,
+                () -> departmentService.getDepartmentById(departmentId));
     }
 
+    // --- createDepartment ---
+
     @Test
-    void testThatCreateDepartmentSuccessful() {
+    void testThatCreateDepartmentSucceeds() {
         when(departmentRepository.existsByNameAndBuildingId(any(), any())).thenReturn(false);
         when(departmentRepository.save(any())).thenReturn(sampleDepartment);
 
@@ -98,39 +127,132 @@ class DepartmentServiceUnitTests {
     }
 
     @Test
-    void testThatCreateDepartmentShouldThrowConflictIfNameExists() {
-        when(departmentRepository.existsByNameAndBuildingId(sampleDepartment.getName(), sampleDepartment.getBuilding().getId())).thenReturn(true);
+    void testThatCreateDepartmentThrowsConflictWhenNameExists() {
+        when(departmentRepository.existsByNameAndBuildingId(
+                sampleDepartment.getName(), sampleBuilding.getId())).thenReturn(true);
 
-        assertThrows(ConflictException.class, () -> departmentService.createDepartment(sampleDepartment));
+        assertThrows(ConflictException.class,
+                () -> departmentService.createDepartment(sampleDepartment));
         verify(departmentRepository, never()).save(any());
     }
 
+    // --- createDepartmentWithRooms ---
+
+    @Test
+    void testThatCreateDepartmentWithRoomsAssignsExistingRooms() {
+        UUID existingRoomId = UUID.randomUUID();
+        Room existingRoom = TestDataUtil.createRoomEntity(sampleDepartment);
+        existingRoom.setId(existingRoomId);
+
+        when(departmentRepository.existsByNameAndBuildingId(any(), any())).thenReturn(false);
+        when(departmentRepository.save(any())).thenReturn(sampleDepartment);
+        when(roomRepository.findById(existingRoomId)).thenReturn(Optional.of(existingRoom));
+        when(roomRepository.existsByRoomNumberAndDepartmentId(any(), any())).thenReturn(false);
+        when(roomRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        departmentService.createDepartmentWithRooms(sampleDepartment, List.of(existingRoomId), List.of());
+
+        assertEquals(sampleDepartment, existingRoom.getDepartment());
+        verify(roomRepository).save(existingRoom);
+    }
+
+    @Test
+    void testThatCreateDepartmentWithRoomsThrowsConflictWhenNameExists() {
+        when(departmentRepository.existsByNameAndBuildingId(any(), any())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () ->
+                departmentService.createDepartmentWithRooms(sampleDepartment, List.of(), List.of()));
+    }
+
+    @Test
+    void testThatCreateDepartmentWithRoomsThrowsNotFoundWhenExistingRoomMissing() {
+        UUID missingId = UUID.randomUUID();
+        when(departmentRepository.existsByNameAndBuildingId(any(), any())).thenReturn(false);
+        when(departmentRepository.save(any())).thenReturn(sampleDepartment);
+        when(roomRepository.findById(missingId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
+                departmentService.createDepartmentWithRooms(sampleDepartment, List.of(missingId), List.of()));
+    }
+
+    // --- patchSpecificDepartment ---
+
     @Test
     void testThatPatchSpecificDepartmentUpdatesName() {
-        Department patchData = new Department();
-        patchData.setName("New Department Name");
+        Department patch = new Department();
+        patch.setName("New Name");
 
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-        when(departmentRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
+        when(departmentRepository.existsByNameAndBuildingId("New Name", sampleBuilding.getId())).thenReturn(false);
+        when(departmentRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        Department result = departmentService.patchSpecificDepartment(departmentId, patchData);
+        Department result = departmentService.patchSpecificDepartment(departmentId, patch);
 
-        assertEquals("New Department Name", result.getName());
+        assertEquals("New Name", result.getName());
         verify(departmentRepository).save(any());
     }
 
     @Test
-    void testThatPatchSpecificDepartmentShouldThrowNotFound() {
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
+    void testThatPatchSpecificDepartmentThrowsConflictWhenNameTaken() {
+        Department patch = new Department();
+        patch.setName("Taken Name");
 
-        assertThrows(NotFoundException.class, () ->
-                departmentService.patchSpecificDepartment(departmentId, new Department()));
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(departmentRepository.existsByNameAndBuildingId("Taken Name", sampleBuilding.getId())).thenReturn(true);
+
+        assertThrows(ConflictException.class,
+                () -> departmentService.patchSpecificDepartment(departmentId, patch));
+        verify(departmentRepository, never()).save(any());
     }
 
     @Test
-    void testThatDeleteDepartmentShouldCallRepository() {
+    void testThatPatchSpecificDepartmentThrowsNotFoundWhenMissing() {
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class,
+                () -> departmentService.patchSpecificDepartment(departmentId, new Department()));
+    }
+
+    // --- deleteDepartment ---
+
+    @Test
+    void testThatDeleteDepartmentDeletesDepartmentAndTrends() {
+        sampleDepartment.setRooms(List.of()); // no rooms
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+
         departmentService.deleteDepartment(departmentId);
-        verify(departmentRepository, times(1)).deleteById(departmentId);
-        verify(trendRepository, times(1)).deleteAllByDepartmentId(departmentId);
+
+        verify(departmentRepository).delete(sampleDepartment);
+        verify(trendRepository).deleteAllByDepartmentId(departmentId);
+    }
+
+    @Test
+    void testThatDeleteDepartmentDeletesRoomsBeforeDepartment() {
+        UUID roomId1 = UUID.randomUUID();
+        UUID roomId2 = UUID.randomUUID();
+        Room room1 = TestDataUtil.createRoomEntity(sampleDepartment);
+        room1.setId(roomId1);
+        Room room2 = TestDataUtil.createRoomEntity(sampleDepartment);
+        room2.setId(roomId2);
+        sampleDepartment.setRooms(List.of(room1, room2));
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+
+        departmentService.deleteDepartment(departmentId);
+
+        verify(roomService).deleteRoom(roomId1);
+        verify(roomService).deleteRoom(roomId2);
+        verify(departmentRepository).delete(sampleDepartment);
+        verify(trendRepository).deleteAllByDepartmentId(departmentId);
+    }
+
+    @Test
+    void testThatDeleteDepartmentStillDeletesTrendsWhenDepartmentNotFound() {
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
+
+        departmentService.deleteDepartment(departmentId);
+
+        verify(departmentRepository, never()).delete(any());
+        verify(trendRepository).deleteAllByDepartmentId(departmentId);
     }
 }

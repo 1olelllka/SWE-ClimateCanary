@@ -3,13 +3,17 @@ package at.qe.skeleton.services.impl;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.Building;
+import at.qe.skeleton.model.Department;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.services.BuildingService;
+import at.qe.skeleton.services.DepartmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,10 +21,13 @@ import java.util.UUID;
 public class BuildingServiceImpl implements BuildingService {
 
     private final BuildingRepository buildingRepository;
+    private final DepartmentService departmentService;
 
     @Autowired
-    public BuildingServiceImpl(BuildingRepository buildingRepository) {
+    public BuildingServiceImpl(BuildingRepository buildingRepository,
+                               DepartmentService departmentService) {
         this.buildingRepository = buildingRepository;
+        this.departmentService = departmentService;
     }
 
     public Page<Building> getAllBuildings(Pageable pageable) {
@@ -57,7 +64,16 @@ public class BuildingServiceImpl implements BuildingService {
         }).orElseThrow(() -> new NotFoundException("Building with id " + id + " was not found."));
     }
 
+    @Transactional
     public void deleteBuilding(UUID id) {
+        Building building = buildingRepository.findById(id).orElse(null);
+        if (building != null) {
+            List<UUID> departmentIds = building.getDepartments()
+                    .stream()
+                    .map(Department::getId)
+                    .toList();
+            departmentIds.forEach(departmentService::deleteDepartment);
+        }
         buildingRepository.deleteById(id);
     }
 }
