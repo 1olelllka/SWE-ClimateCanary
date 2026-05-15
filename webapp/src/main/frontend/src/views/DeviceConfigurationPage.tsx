@@ -9,7 +9,6 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
-import axios from 'axios';
 import {
     RaspberryControllerApi,
     SensorStationControllerApi,
@@ -18,7 +17,6 @@ import {
     SensorStationDTO,
     RoomDTO,
 } from '../generated-skeleton-api';
-import { BASE_PATH } from '../generated-skeleton-api/base';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -138,6 +136,17 @@ const DeviceConfigurationPage: React.FC = () => {
             })
             .catch(() => {
                 toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+            });
+    };
+
+    const handleRetryPiConnection = (id?: string) => {
+        if (!id) return;
+        new RaspberryControllerApi().retryDevicesConnection({ raspberryId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
             });
     };
 
@@ -275,23 +284,25 @@ const DeviceConfigurationPage: React.FC = () => {
             .catch(() => {});
     };
 
-    const handleDisconnectSensor = async (sensorId: string) => {
-        try {
-            await axios.delete(`${BASE_PATH}/api/sensor-stations/${sensorId}/room`);
-            toast.current?.show({ severity: 'success', summary: 'Disconnected', detail: 'Sensor station disconnected from Pi.', life: 3000 });
-            refreshSensors();
-        } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
-        }
+    const handleDisconnectSensor = (sensorId: string) => {
+        new SensorStationControllerApi().disconnectSensorFromRoom({ sensorId })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Disconnected', detail: 'Sensor station disconnected from Pi.', life: 3000 });
+                refreshSensors();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
+            });
     };
 
-    const handleRetryConnection = async (sensorId: string) => {
-        try {
-            await axios.post(`${BASE_PATH}/api/sensor-stations/${sensorId}/retry-connection`);
-            toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
-        } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
-        }
+    const handleRetryConnection = (sensorId: string) => {
+        new SensorStationControllerApi().retrySensorStation({ sensorId })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
+            });
     };
 
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
@@ -383,8 +394,9 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 }}
                             />
                             <Column header="Status" body={(row: RaspberryDTOReal) => statusBadge(row.status)} />
-                            <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
+                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
                                     <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
                                 </div>
