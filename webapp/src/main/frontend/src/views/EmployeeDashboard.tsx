@@ -20,6 +20,8 @@ interface ActiveWarning {
     measurementType: string;
     message: string;
     active: boolean;
+    createdAt: string;
+    tip: string;
 }
 
 interface RawPoint {
@@ -116,7 +118,13 @@ export const EmployeeDashboard: React.FC = () => {
             }).then(r => r.data).catch(() => []),
         ]).then(([climateData, warningData, histData]) => {
             setClimate(climateData);
-            setWarnings((warningData ?? []).filter(w => w.active));
+            const deduped = new Map<string, ActiveWarning>();
+            for (const w of (warningData ?? []).filter(w => w.active)) {
+                const existing = deduped.get(w.measurementType);
+                if (!existing || new Date(w.createdAt) > new Date(existing.createdAt))
+                    deduped.set(w.measurementType, w);
+            }
+            setWarnings([...deduped.values()]);
             setHistoryPoints(histData ?? []);
             setLoading(false);
         });
@@ -130,7 +138,6 @@ export const EmployeeDashboard: React.FC = () => {
         return () => clearInterval(interval);
     }, [roomId, fetchLiveData]);
 
-    const activeWarning = warnings[0] ?? null;
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
@@ -199,12 +206,13 @@ export const EmployeeDashboard: React.FC = () => {
                             />
                         </div>
 
-                        {activeWarning && (
+                        {warnings.map(w => (
                             <WarningBanner
-                                boldPart={`${activeWarning.measurementType.replace(/_/g, ' ')} alert. `}
-                                regularPart={activeWarning.message}
+                                key={w.id}
+                                boldPart={`${w.measurementType.replace(/_/g, ' ')} alert. `}
+                                regularPart={w.message + (w.tip && w.tip !== "There's no tip." ? ' ' + w.tip : '')}
                             />
-                        )}
+                        ))}
 
                         {roomId && <ClimateHistoryChart roomId={roomId} />}
                     </>
