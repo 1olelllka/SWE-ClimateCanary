@@ -30,48 +30,30 @@ export interface TipConditionOption {
 }
 
 export const tipConditionOptions: TipConditionOption[] = [
-    {
-        label: 'CO2 > Max',
-        violationType: 'OVER',
-        violatedSensor: 'AIR',
-        violationStatus: 'RED',
-        defaultMessage: 'Please open Windows for 5 Minutes.'
-    },
-    {
-        label: 'CO2 slightly high',
-        violationType: 'OVER',
-        violatedSensor: 'AIR',
-        violationStatus: 'YELLOW',
-        defaultMessage: 'Please ventilate the room soon.'
-    },
-    {
-        label: 'Temperature > Max',
-        violationType: 'OVER',
-        violatedSensor: 'TEMPERATURE',
-        violationStatus: 'RED',
-        defaultMessage: 'Please lower the room temperature or ventilate the room.'
-    },
-    {
-        label: 'Temperature < Min',
-        violationType: 'UNDER',
-        violatedSensor: 'TEMPERATURE',
-        violationStatus: 'RED',
-        defaultMessage: 'Please increase the room temperature.'
-    },
-    {
-        label: 'Humidity > Max',
-        violationType: 'OVER',
-        violatedSensor: 'HUMIDITY',
-        violationStatus: 'RED',
-        defaultMessage: 'Please ventilate the room to reduce humidity.'
-    },
-    {
-        label: 'Humidity < Min',
-        violationType: 'UNDER',
-        violatedSensor: 'HUMIDITY',
-        violationStatus: 'RED',
-        defaultMessage: 'Please increase humidity or avoid excessive heating.'
-    }
+    // CO₂ too high
+    { label: 'CO₂ slightly elevated', violationType: 'OVER', violatedSensor: 'AIR', violationStatus: 'GREEN',  defaultMessage: 'Open a window briefly.' },
+    { label: 'CO₂ moderately high',   violationType: 'OVER', violatedSensor: 'AIR', violationStatus: 'YELLOW', defaultMessage: 'Open windows to ventilate.' },
+    { label: 'CO₂ critically high',   violationType: 'OVER', violatedSensor: 'AIR', violationStatus: 'RED',    defaultMessage: 'Open all windows immediately.' },
+
+    // Temperature too high
+    { label: 'Temperature slightly high', violationType: 'OVER', violatedSensor: 'TEMPERATURE', violationStatus: 'GREEN',  defaultMessage: 'Consider opening a window.' },
+    { label: 'Temperature moderately high', violationType: 'OVER', violatedSensor: 'TEMPERATURE', violationStatus: 'YELLOW', defaultMessage: 'Open windows.' },
+    { label: 'Temperature critically high', violationType: 'OVER', violatedSensor: 'TEMPERATURE', violationStatus: 'RED',    defaultMessage: 'Activate air conditioning.' },
+
+    // Temperature too low
+    { label: 'Temperature slightly low',   violationType: 'UNDER', violatedSensor: 'TEMPERATURE', violationStatus: 'GREEN',  defaultMessage: 'Consider closing windows.' },
+    { label: 'Temperature moderately low', violationType: 'UNDER', violatedSensor: 'TEMPERATURE', violationStatus: 'YELLOW', defaultMessage: 'Close windows, increase heating.' },
+    { label: 'Temperature critically low', violationType: 'UNDER', violatedSensor: 'TEMPERATURE', violationStatus: 'RED',    defaultMessage: 'Turn on heating immediately.' },
+
+    // Humidity too high
+    { label: 'Humidity slightly high',   violationType: 'OVER', violatedSensor: 'HUMIDITY', violationStatus: 'GREEN',  defaultMessage: 'Improve air circulation.' },
+    { label: 'Humidity moderately high', violationType: 'OVER', violatedSensor: 'HUMIDITY', violationStatus: 'YELLOW', defaultMessage: 'Use a dehumidifier or open windows.' },
+    { label: 'Humidity critically high', violationType: 'OVER', violatedSensor: 'HUMIDITY', violationStatus: 'RED',    defaultMessage: 'Ventilate the room.' },
+
+    // Humidity too low
+    { label: 'Humidity slightly low',   violationType: 'UNDER', violatedSensor: 'HUMIDITY', violationStatus: 'GREEN',  defaultMessage: 'Consider using a humidifier.' },
+    { label: 'Humidity moderately low', violationType: 'UNDER', violatedSensor: 'HUMIDITY', violationStatus: 'YELLOW', defaultMessage: 'Use a humidifier.' },
+    { label: 'Humidity critically low', violationType: 'UNDER', violatedSensor: 'HUMIDITY', violationStatus: 'RED',    defaultMessage: 'Use a humidifier immediately.' },
 ];
 
 export const getTipConditionKey = (

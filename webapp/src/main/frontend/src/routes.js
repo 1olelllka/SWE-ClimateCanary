@@ -85,6 +85,6 @@ export const BuildingRoomAnalysisRoute = {
 }
 
 export const TipManagementRoute = {
-    url: '/tip-management',
+    url: '/tipmanagement',
     component: TipManagement
 }
