@@ -5,7 +5,7 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: #ffffff;
+    background-color: var(--page-bg, #f0f4f8);
     font-family: Arial, sans-serif;
 }
 
@@ -36,13 +36,14 @@
     font-size: 34px;
     font-weight: normal;
     font-family: 'Protest Riot', sans-serif;
+    color: var(--text-primary, #1a3a4a);
     margin: 10px 0;
     line-height: 1.2;
 }
 
 .brand-subtitle {
     font-size: 13px;
-    color: #333;
+    color: var(--text-secondary, #64748b);
     margin: 0;
 }
 
@@ -54,6 +55,7 @@
 .login-heading {
     font-size: 20px;
     font-weight: normal;
+    color: var(--text-primary, #1a3a4a);
     margin-bottom: 15px;
     text-align: left;
 }
@@ -73,7 +75,7 @@
      width: 100%;
      padding: 12px 15px;
      border-radius: 8px;
-     border: 1px solid #aaa;
+     border: 1px solid var(--card-border, #e8eef4);
      font-size: 14px;
      box-sizing: border-box;
  }
@@ -86,7 +88,7 @@
      width: 100%;
      padding: 12px 15px;
      border-radius: 8px;
-     border: 1px solid #aaa;
+     border: 1px solid var(--card-border, #e8eef4);
      font-size: 14px;
      box-sizing: border-box;
  }
@@ -101,7 +103,7 @@
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    color: #0088cc;
+    color: var(--muted-blue, #7fb3c8);
     text-decoration: none;
     font-size: 14px;
     background: none;
@@ -115,7 +117,7 @@
 }
 
 .mockup-button {
-    background-color: #003366 !important;
+    background-color: var(--nav-bg, #1a3a4a) !important;
     border: none !important;
     border-radius: 6px !important;
     padding: 12px !important;
@@ -127,62 +129,62 @@
 }
 
 .mockup-button:hover {
-    background-color: #002244 !important;
+    background-color: #0f2535 !important;
 }
 
 .error-message {
-    color: red;
+    color: var(--red, #e05252);
     margin-top: 15px;
     text-align: center;
     font-size: 14px;
 }
 
 html[data-theme='dark'] .login-page-wrapper {
-    background-color: #0f172a;
-    color: #f8fafc;
+    background-color: var(--app-bg, #0f172a);
+    color: var(--app-text, #f8fafc);
 }
 
 html[data-theme='dark'] .login-mockup-card {
     background-color: transparent !important;
-    color: #f8fafc;
+    color: var(--app-text, #f8fafc);
     box-shadow: none !important;
 }
 
 html[data-theme='dark'] .brand-title {
-    color: #f8fafc;
+    color: var(--app-text, #f8fafc);
 }
 
 html[data-theme='dark'] .brand-subtitle {
-    color: #cbd5e1;
+    color: var(--app-text-muted, #cbd5e1);
 }
 
 html[data-theme='dark'] .login-heading {
-    color: #f8fafc;
+    color: var(--app-text, #f8fafc);
 }
 
 html[data-theme='dark'] .mockup-input,
 html[data-theme='dark'] .p-password.password-input input {
-    background-color: #1f2937;
-    color: #f8fafc;
-    border-color: #334155;
+    background-color: var(--app-surface-2, #1f2937);
+    color: var(--app-text, #f8fafc);
+    border-color: var(--app-border, #334155);
 }
 
 html[data-theme='dark'] .mockup-input::placeholder,
 html[data-theme='dark'] .p-password.password-input input::placeholder {
-    color: #94a3b8;
+    color: var(--app-text-muted, #94a3b8);
 }
 
 html[data-theme='dark'] .forgot-link {
-    color: #38bdf8;
+    color: var(--app-primary, #22d3ee);
 }
 
 html[data-theme='dark'] .mockup-button {
-    background-color: #0891b2 !important;
-    color: #ffffff !important;
+    background-color: var(--app-primary, #22d3ee) !important;
+    color: #0f172a !important;
 }
 
 html[data-theme='dark'] .mockup-button:hover {
-    background-color: #0e7490 !important;
+    background-color: #06b6d4 !important;
 }
 
 html[data-theme='dark'] .error-message {
