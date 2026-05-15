@@ -51,9 +51,11 @@ const mean = (nums: number[]) =>
     nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
 
 function groupByHour(raw: RawPoint[]): DataPoint[] {
+    const p2 = (n: number) => String(n).padStart(2, '0');
     const groups = new Map<string, RawPoint[]>();
     raw.forEach(p => {
-        const key = p.timestamp.slice(0, 13); // "2024-06-15T10"
+        const d = new Date(p.timestamp);
+        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}`;
         groups.set(key, [...(groups.get(key) ?? []), p]);
     });
     return [...groups.entries()]
@@ -67,9 +69,11 @@ function groupByHour(raw: RawPoint[]): DataPoint[] {
 }
 
 function groupByDay(raw: RawPoint[]): DataPoint[] {
+    const p2 = (n: number) => String(n).padStart(2, '0');
     const groups = new Map<string, RawPoint[]>();
     raw.forEach(p => {
-        const key = p.timestamp.slice(0, 10);
+        const d = new Date(p.timestamp);
+        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
         groups.set(key, [...(groups.get(key) ?? []), p]);
     });
     return [...groups.entries()]
