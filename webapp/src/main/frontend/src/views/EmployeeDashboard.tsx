@@ -70,6 +70,7 @@ export const EmployeeDashboard: React.FC = () => {
     const [roomId, setRoomId] = useState<string | null>(null);
     const [roomName, setRoomName] = useState('My Office');
     const [noRoom, setNoRoom] = useState(false);
+    const [serverOffline, setServerOffline] = useState(false);
     const [climate, setClimate] = useState<ClimateData | null>(null);
     const [warnings, setWarnings] = useState<ActiveWarning[]>([]);
     const [historyPoints, setHistoryPoints] = useState<RawPoint[]>([]);
@@ -88,7 +89,7 @@ export const EmployeeDashboard: React.FC = () => {
                     setLoading(false);
                 }
             })
-            .catch(() => { setNoRoom(true); setLoading(false); });
+            .catch(() => { setServerOffline(true); setLoading(false); });
     }, []);
 
     const fetchLiveData = useCallback(() => {
@@ -173,7 +174,11 @@ export const EmployeeDashboard: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="employee-dashboard-container" style={{ flexGrow: 1 }}>
-                {noRoom ? (
+                {serverOffline ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                        Server is not reachable. Please try again later.
+                    </div>
+                ) : noRoom ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                         No room is assigned to your account. Please contact your system administrator.
                     </div>
