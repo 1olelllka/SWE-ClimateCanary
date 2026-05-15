@@ -331,6 +331,28 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            formatter: (params: any[]) => {
+                if (!params.length) return '';
+                let out = `<div style="margin-bottom:4px;font-weight:600">${params[0].name}</div>`;
+                for (const p of params) {
+                    const v = p.value as number;
+                    let violated = false;
+                    if (L) {
+                        if (p.seriesName === 'Temperature (°C)')
+                            violated = (L.tempMin != null && v < L.tempMin) || (L.tempMax != null && v > L.tempMax);
+                        else if (p.seriesName === 'Humidity (%)')
+                            violated = (L.humMin != null && v < L.humMin) || (L.humMax != null && v > L.humMax);
+                        else if (p.seriesName === 'Air Quality (ppm)')
+                            violated = L.co2Max != null && v > L.co2Max;
+                    }
+                    const color = violated ? '#ef4444' : 'inherit';
+                    out += `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
+                        <span style="color:${color}">${p.seriesName}:&nbsp;<b>${v}</b></span>
+                    </div>`;
+                }
+                return out;
+            },
         },
         legend: {
             show:      showLegend,
