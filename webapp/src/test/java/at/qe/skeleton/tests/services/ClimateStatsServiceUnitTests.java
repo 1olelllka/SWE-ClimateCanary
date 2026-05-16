@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ClimateStatsServiceImplTest {
+class ClimateStatsServiceUnitTests {
 
     @Mock private ClimateStatsRepository climateStatsRepository;
     @Mock private AggregatedStatsRepository aggregatedStatsRepository;
