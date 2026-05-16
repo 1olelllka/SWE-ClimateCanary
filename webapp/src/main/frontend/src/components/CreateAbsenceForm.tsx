@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import globalAxios from 'axios';
+import { Calendar } from 'primereact/calendar';
+import { Dropdown } from 'primereact/dropdown';
 import '../styles/CreateAbsenceForm.css';
 
 interface CreateAbsenceFormProps {
@@ -15,14 +17,35 @@ interface ManagerDTO {
     username: string;
 }
 
+type AbsenceReason = 'VACATION' | 'ILLNESS' | 'OTHER';
+
+interface DropdownOption {
+    label: string;
+    value: string;
+}
+
+const reasonOptions: DropdownOption[] = [
+    { label: 'Vacation', value: 'VACATION' },
+    { label: 'Illness', value: 'ILLNESS' },
+    { label: 'Other', value: 'OTHER' },
+];
+
+const formatDateForBackend = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
 export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
-    currentUserId,
-    onSuccess,
-    onCancel,
-}) => {
-    const [reason, setReason] = useState<'VACATION' | 'ILLNESS' | 'OTHER'>('VACATION');
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+                                                                        currentUserId,
+                                                                        onSuccess,
+                                                                        onCancel,
+                                                                    }) => {
+    const [reason, setReason] = useState<AbsenceReason>('VACATION');
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
     const [includeTime, setIncludeTime] = useState(false);
     const [startTime, setStartTime] = useState('07:00');
     const [endTime, setEndTime] = useState('15:00');
@@ -34,6 +57,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
     useEffect(() => {
         setManagerLoading(true);
+
         globalAxios.get('/api/absences/managers')
             .then(res => setManagers(res.data || []))
             .catch(err => {
@@ -43,11 +67,23 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
             .finally(() => setManagerLoading(false));
     }, []);
 
+    const managerOptions = useMemo<DropdownOption[]>(() => {
+        return managers.map(manager => ({
+            label: `${manager.firstName} ${manager.lastName}`,
+            value: manager.id,
+        }));
+    }, [managers]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!currentUserId) {
             alert('Error: User ID not found. Please log in again.');
+            return;
+        }
+
+        if (!startDate || !endDate) {
+            alert('Please select start and end date.');
             return;
         }
 
@@ -58,13 +94,21 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
         setIsSubmitting(true);
 
-        const startIso = includeTime ? `${startDate}T${startTime}:00` : `${startDate}T00:00:00`;
-        const endIso   = includeTime ? `${endDate}T${endTime}:00`   : `${endDate}T23:59:59`;
+        const startDateString = formatDateForBackend(startDate);
+        const endDateString = formatDateForBackend(endDate);
+
+        const startIso = includeTime
+            ? `${startDateString}T${startTime}:00`
+            : `${startDateString}T00:00:00`;
+
+        const endIso = includeTime
+            ? `${endDateString}T${endTime}:00`
+            : `${endDateString}T23:59:59`;
 
         globalAxios.post('/api/absences', {
-            userId:     currentUserId,
-            startDate:  startIso,
-            endDate:    endIso,
+            userId: currentUserId,
+            startDate: startIso,
+            endDate: endIso,
             reason,
             comment,
             assignedTo: managerId,
@@ -90,36 +134,49 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
             <form className="absence-form-body" onSubmit={handleSubmit}>
                 <div className="absence-form-field">
                     <label className="absence-form-label">Reason of absence</label>
-                    <select
-                        className="absence-form-select"
+
+                    <Dropdown
                         value={reason}
-                        onChange={e => setReason(e.target.value as 'VACATION' | 'ILLNESS' | 'OTHER')}
-                    >
-                        <option value="VACATION">Vacation</option>
-                        <option value="ILLNESS">Illness</option>
-                        <option value="OTHER">Other</option>
-                    </select>
+                        options={reasonOptions}
+                        onChange={(e) => setReason(e.value as AbsenceReason)}
+                        className="absence-form-dropdown"
+                        panelClassName="absence-form-dropdown-panel"
+                        appendTo={document.body}
+                    />
                 </div>
 
                 <div className="absence-form-date-row">
                     <div className="absence-form-field">
                         <label className="absence-form-label">Start Date</label>
-                        <input
-                            className="absence-form-input"
-                            type="date"
+
+                        <Calendar
                             value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            required
+                            onChange={(e) => setStartDate(e.value as Date | null)}
+                            dateFormat="dd.mm.yy"
+                            showIcon
+                            placeholder="tt.mm.jjjj"
+                            className="absence-form-calendar"
+                            inputClassName="absence-form-input"
+                            panelClassName="absence-form-calendar-panel"
+                            appendTo={document.body}
+                            baseZIndex={12000}
                         />
                     </div>
+
                     <div className="absence-form-field">
                         <label className="absence-form-label">End Date</label>
-                        <input
-                            className="absence-form-input"
-                            type="date"
+
+                        <Calendar
                             value={endDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            required
+                            onChange={(e) => setEndDate(e.value as Date | null)}
+                            dateFormat="dd.mm.yy"
+                            showIcon
+                            placeholder="tt.mm.jjjj"
+                            className="absence-form-calendar"
+                            inputClassName="absence-form-input"
+                            panelClassName="absence-form-calendar-panel"
+                            appendTo={document.body}
+                            baseZIndex={12000}
                         />
                     </div>
                 </div>
@@ -132,6 +189,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                         checked={includeTime}
                         onChange={e => setIncludeTime(e.target.checked)}
                     />
+
                     <label className="absence-form-checkbox-label" htmlFor="includeTime">
                         Include time
                     </label>
@@ -140,13 +198,16 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 {includeTime && (
                     <div className="absence-form-time-row">
                         <label className="absence-form-time-label">From</label>
+
                         <input
                             className="absence-form-input"
                             type="time"
                             value={startTime}
                             onChange={e => setStartTime(e.target.value)}
                         />
+
                         <label className="absence-form-time-label">Till</label>
+
                         <input
                             className="absence-form-input"
                             type="time"
@@ -158,30 +219,28 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
                 <div className="absence-form-field">
                     <label className="absence-form-label">Select your manager</label>
-                    <select
-                        className="absence-form-select"
+
+                    <Dropdown
                         value={managerId}
-                        onChange={e => setManagerId(e.target.value)}
-                        required
-                        disabled={managerLoading || managers.length === 0}
-                    >
-                        <option value="" disabled>
-                            {managerLoading
+                        options={managerOptions}
+                        onChange={(e) => setManagerId(e.value)}
+                        placeholder={
+                            managerLoading
                                 ? 'Loading managers...'
                                 : managers.length === 0
                                     ? 'No manager available'
-                                    : 'Select a manager...'}
-                        </option>
-                        {managers.map(manager => (
-                            <option key={manager.id} value={manager.id}>
-                                {manager.firstName} {manager.lastName}
-                            </option>
-                        ))}
-                    </select>
+                                    : 'Select a manager...'
+                        }
+                        disabled={managerLoading || managers.length === 0}
+                        className="absence-form-dropdown"
+                        panelClassName="absence-form-dropdown-panel"
+                        appendTo={document.body}
+                    />
                 </div>
 
                 <div className="absence-form-field">
                     <label className="absence-form-label">Optional message</label>
+
                     <textarea
                         className="absence-form-textarea"
                         value={comment}
@@ -199,6 +258,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                     >
                         Cancel
                     </button>
+
                     <button
                         type="submit"
                         className="absence-form-submit-btn"
