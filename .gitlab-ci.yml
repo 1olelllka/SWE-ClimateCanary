@@ -5,7 +5,7 @@ stages:
 # global pipeline configuration
 workflow:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "backend_tests"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_MERGE_REQUEST_ID' # rule to run pipeline on merge requests (or at least parts of it)
     - when: never # don't run pipeline on other branches/in other cases
 
@@ -40,7 +40,7 @@ backend-unit-tests:
       # for sonar-scanner in next stage
       - webapp/target
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "backend_tests"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_MERGE_REQUEST_ID'
 
 # SonarQube Analysis for Frontend and Backend
@@ -56,5 +56,5 @@ sonarqube-analysis:
     - job: backend-unit-tests
       artifacts: true
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "backend_tests"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
