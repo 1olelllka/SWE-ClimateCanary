@@ -168,3 +168,74 @@ html[data-theme='dark'] .p-datepicker table td > span.p-highlight {
     background-color: #0891b2 !important;
     color: #ffffff !important;
 }
+
+/* Mobile calendar overlay */
+
+@media (max-width: 768px) {
+    .compact-calendar-overlay {
+        max-width: calc(100vw - 2rem) !important;
+        width: calc(100vw - 2rem) !important;
+        left: 1rem !important;
+        right: 1rem !important;
+        transform: none !important;
+    }
+
+    .compact-calendar-overlay .p-overlaypanel-content {
+        padding: 0.75rem !important;
+        overflow-x: hidden !important;
+    }
+
+    .compact-calendar {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .compact-calendar .p-datepicker {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .compact-calendar .p-datepicker-group-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        display: block !important;
+    }
+
+    .compact-calendar .p-datepicker-group {
+        width: 100% !important;
+        max-width: 100% !important;
+        border: none !important;
+    }
+
+    .compact-calendar .p-datepicker table {
+        width: 100% !important;
+        table-layout: fixed;
+    }
+
+    .compact-calendar .p-datepicker table th,
+    .compact-calendar .p-datepicker table td {
+        text-align: center;
+        padding: 0.1rem !important;
+    }
+
+    .compact-calendar .p-datepicker table td > span {
+        width: 2rem !important;
+        height: 2rem !important;
+        font-size: 0.8rem !important;
+        margin: 0 auto;
+    }
+
+    .compact-calendar .p-datepicker-header {
+        padding: 0.35rem 0.5rem !important;
+    }
+
+    .compact-calendar .p-datepicker-header .p-datepicker-title {
+        font-size: 0.9rem !important;
+    }
+
+    .compact-calendar-overlay::before,
+    .compact-calendar-overlay::after {
+        display: none !important;
+    }
+}
