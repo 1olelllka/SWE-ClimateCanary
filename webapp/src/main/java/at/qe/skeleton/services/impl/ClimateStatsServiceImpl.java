@@ -135,21 +135,16 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         boolean isBuilding = roles.contains("CAN_VIEW_ALL_ROOMS");
-        boolean isDeptHead = roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES");
         if (!isBuilding) {
             boolean sameDepartment = authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId()
                     .equals(room.getDepartment().getId());
             boolean sameRoom = authenticated.getMyRoom() != null && authenticated.getMyRoom().getId().equals(roomId);
 
-            if (!isDeptHead) {
-                if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
-                    throw new ForbiddenException("You are not allowed to see others' room climate.");
+            if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
 
-                if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
-                    throw new ForbiddenException("You are not allowed to see others' room climate.");
-                }
-            } else {
-                if (!sameDepartment) throw new ForbiddenException("You are not allowed to see others' room climate.");
+            if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
             }
         }
         return climateStatsRepository
