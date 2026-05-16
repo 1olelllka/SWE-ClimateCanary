@@ -189,3 +189,106 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Dark mode */
+
+html[data-theme='dark'] .absence-form-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme='dark'] .absence-form-title {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-form-label,
+html[data-theme='dark'] .absence-form-checkbox-label,
+html[data-theme='dark'] .absence-form-time-label {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .absence-form-input,
+html[data-theme='dark'] .absence-form-select,
+html[data-theme='dark'] .absence-form-textarea {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-input::placeholder,
+html[data-theme='dark'] .absence-form-textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .absence-form-select option {
+    background-color: #111827;
+    color: var(--app-text);
+}
+
+html[data-theme='dark'] .absence-form-input:focus,
+html[data-theme='dark'] .absence-form-select:focus,
+html[data-theme='dark'] .absence-form-textarea:focus {
+    border-color: var(--app-primary) !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35) !important;
+    outline: none !important;
+}
+
+html[data-theme='dark'] .absence-form-checkbox {
+    accent-color: var(--app-primary);
+}
+
+html[data-theme='dark'] .absence-form-cancel-btn {
+    background-color: #334155 !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-cancel-btn:hover {
+    background-color: #475569 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+    border: 1px solid #0891b2 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn:hover:not(:disabled) {
+    background-color: #0e7490 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn:disabled {
+    background-color: #334155 !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+    cursor: not-allowed;
+}
+
+html[data-theme='dark'] .absence-form-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23cbd5e1' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+}
+
+html[data-theme='dark'] .absence-form-input[readonly],
+html[data-theme='dark'] .absence-form-textarea[readonly] {
+    background-color: #0f172a !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border: 1px solid #dc2626 !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn:hover:not(:disabled) {
+    background-color: #b91c1c !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn:disabled {
+    background-color: #334155 !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+}
