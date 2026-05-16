@@ -178,13 +178,13 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 throw new ForbiddenException("You are not allowed to see other's rooms.");
             }
         }
-        boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) < 15;
-
+        boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 4;
+        boolean useDayGrouping = "DAY".equals(granularity) || ChronoUnit.DAYS.between(from, to) > 4 && ChronoUnit.DAYS.between(from, to) < 45;
         // TEMPORARY VISUALIZATIONS – Background jobs should work instead
         List<AggregatedStats> data;
         if (useHourGrouping)
             return groupRawByHour(roomId, from, to);
-        else if ("DAY".equals(granularity)) {
+        else if (useDayGrouping && !"WEEK".equals(granularity)) {
             data = aggregatedStatsRepository
                     .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
             if (!data.isEmpty()) {
@@ -209,7 +209,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                                  LocalDate from,
                                                                  LocalDate to,
                                                                  String granularity) {
-        if (from.isAfter(to) || ChronoUnit.DAYS.between(from, to) < 3) throw new ValidationException("Invalid timestamps.");
+        if (from.isAfter(to)) throw new ValidationException("Invalid timestamps.");
         boolean weekly = "WEEK".equals(granularity) && ChronoUnit.DAYS.between(from, to) > 45;
         boolean hourly = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 2;
         Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
