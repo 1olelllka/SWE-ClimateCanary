@@ -3,6 +3,7 @@
 #include "ble_message_handler.h"
 #include "fault_manager.h"
 #include "led_manager.h"
+#include "reading_buffer.h"
 
 #define JSON_BUFFER_SIZE 128
 #define ADVERTISING_INTERVAL 32
@@ -11,6 +12,7 @@
 BLEManager* BLEManager::instance = nullptr;
 extern FaultManager faultManager;
 extern LedManager ledManager;
+extern ReadingBuffer readingBuffer;
 
 bool BLEManager::begin(DisplayManager* display) {
   instance = this;

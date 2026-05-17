@@ -15,6 +15,8 @@ public:
   void poll();
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
+  void flushBufferedReadings();
+  String serializeBufferedReading(const BufferedReading& buffered) const;
 
   BLEDevice currentCentral;
   unsigned int piConnectionCount = 0; 

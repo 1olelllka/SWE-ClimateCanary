@@ -6,6 +6,7 @@
 #include "button_manager.h"
 #include "led_manager.h"
 #include "fault_manager.h"
+#include "reading_buffer.h"
 
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
@@ -20,6 +21,7 @@ ButtonManager nextPageButton;
 ButtonManager previousPageButton;
 LedManager ledManager;
 FaultManager faultManager;
+ReadingBuffer readingBuffer;
 
 bool fatalStartupFault = false;
 unsigned long lastSensorRead = 0;
