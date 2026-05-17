@@ -1,12 +1,14 @@
 #pragma once
+
 #include <Arduino.h>
 
-enum class FaultType : uint8_t {
-  WebappOffline = 0,
-  PiDisconnected = 1,
-  SensorReadFailed = 2,
-  BleInitFailed = 3,
-  SensorInitFailed = 4
+enum class FaultType {
+  None,
+  WebappOffline,
+  PiDisconnected,
+  SensorReadFailed,
+  BleInitFailed,
+  SensorInitFailed
 };
 
 class FaultManager {
@@ -14,15 +16,15 @@ public:
   void set(FaultType fault);
   void clear(FaultType fault);
 
-  bool isActive(FaultType fault) const;
   bool hasAny() const;
 
-  uint8_t count() const;
-  String textAt(uint8_t index) const;
+  FaultType activeFault() const;
+  String activeText() const;
 
 private:
-  uint32_t activeFaults = 0;
-
-  uint32_t mask(FaultType fault) const;
-  String textFor(FaultType fault) const;
+  bool webappOffline = false;
+  bool piDisconnected = false;
+  bool sensorReadFailed = false;
+  bool bleInitFailed = false;
+  bool sensorInitFailed = false;
 };

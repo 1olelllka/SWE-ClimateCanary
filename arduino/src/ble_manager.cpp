@@ -1,12 +1,14 @@
 #include "ble_manager.h"
 #include "display_manager.h"
 #include "ble_message_handler.h"
+#include "fault_manager.h"
 
 #define JSON_BUFFER_SIZE 128
 #define ADVERTISING_INTERVAL 32
 #define TIMESTAMP_MAX_LENGTH 19
 
 BLEManager* BLEManager::instance = nullptr;
+extern FaultManager faultManager;
 
 bool BLEManager::begin(DisplayManager* display) {
   instance = this;
@@ -45,8 +47,8 @@ void BLEManager::poll() {
 
     Serial.println("Connected to: " + currentCentral.address() + " (Historical connections: " + String(piConnectionCount) + ")");
     
-    //TODO: clear fault on display
-    //displayManager->clearFault();
+    faultManager.clear(FaultType::PiDisconnected);
+    displayManager->updateFault(faultManager.activeText());
 
     timeReceived = false;
 
@@ -57,8 +59,8 @@ void BLEManager::poll() {
   if (currentCentral && !currentCentral.connected()) {
     Serial.println("Disconnected from: " + currentCentral.address());
 
-    //TODO: set fault on display
-    //displayManager->setFault("Pi disconnected");
+    faultManager.set(FaultType::PiDisconnected);
+    displayManager->updateFault(faultManager.activeText());
 
     currentCentral = BLEDevice();
     timeReceived = false;

@@ -30,15 +30,15 @@ public:
   };
 
   void begin(); 
-  void showStartup();
+  void showStabilizing(unsigned long remainingMs);
+  void showFillingBuffer(uint8_t currentSamples, uint8_t requiredSamples);
   void showReading(const SensorReading& reading);
 
   void nextMode();
   void nextPage();
   void previousPage();
 
-  void setFault(const String& text);
-  void clearFault();
+  void updateFault(const String& faultText);
 
   void setWarningData(
     const String& warnText,

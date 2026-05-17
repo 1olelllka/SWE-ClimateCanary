@@ -1,8 +1,10 @@
 #include "ble_message_handler.h"
 #include "ble_manager.h"
 #include "led_manager.h"
+#include "fault_manager.h"
 
 extern LedManager ledManager;
+extern FaultManager faultManager;
 
 void BLEMessageHandler::handleRxMessage(
   BLEManager* manager,
@@ -89,12 +91,14 @@ void BLEMessageHandler::handleRxMessage(
 
   else if (received == "ERROR:WEBAPP_OFFLINE") {
     ledManager.setOff();
-    manager->displayManager->setFault("Webapp offline");
+    faultManager.set(FaultType::WebappOffline);
+    manager->displayManager->updateFault(faultManager.activeText());
   }
 
   else if (received == "ERROR:WEBAPP_CLEAR") {
     ledManager.setGreen();
-    manager->displayManager->clearFault();
+    faultManager.clear(FaultType::WebappOffline);
+    manager->displayManager->updateFault(faultManager.activeText());
   }
 
   else {

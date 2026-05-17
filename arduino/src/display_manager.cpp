@@ -21,12 +21,16 @@ static void printLine(rgb_lcd& lcd, uint8_t row, const String& text) {
   lcd.print(padded.substring(0, 16));
 }
 
-void DisplayManager::showStartup() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Starting...");
-  lcd.setCursor(0, 1);
-  lcd.print("Collecting data");
+void DisplayManager::showStabilizing(unsigned long remainingMs) {
+  const unsigned long remainingSec = (remainingMs + 999) / 1000;
+
+  printLine(lcd, 0, "Stabilizing...");
+  printLine(lcd, 1, "Wait: " + String(remainingSec) + "s");
+}
+
+void DisplayManager::showFillingBuffer(uint8_t currentSamples, uint8_t requiredSamples) {
+  printLine(lcd, 0, "Filling buffer");
+  printLine(lcd, 1, "Samples " + String(currentSamples) + "/" + String(requiredSamples));
 }
 
 void DisplayManager::setWarningData(
@@ -45,12 +49,13 @@ void DisplayManager::clearWarningData() {
   currentTip = "";
 }
 
-void DisplayManager::setFault(const String& text) {
-  currentFaultText = text;
-}
+void DisplayManager::updateFault(const String& faultText) {
+  currentFaultText = faultText;
 
-void DisplayManager::clearFault() {
-  currentFaultText = "";
+  if (currentMode == DisplayMode::Fault) {
+    printLine(lcd, 0, "Fault Mode");
+    printLine(lcd, 1, currentFaultText);
+  }
 }
 
 void DisplayManager::showReading(const SensorReading& reading) {

@@ -1,67 +1,110 @@
 #include "fault_manager.h"
 
-uint32_t FaultManager::mask(FaultType fault) const {
-  return 1UL << static_cast<uint8_t>(fault);
-}
-
 void FaultManager::set(FaultType fault) {
-  activeFaults |= mask(fault);
+  switch (fault) {
+    case FaultType::WebappOffline:
+      webappOffline = true;
+      break;
+
+    case FaultType::PiDisconnected:
+      piDisconnected = true;
+      break;
+
+    case FaultType::SensorReadFailed:
+      sensorReadFailed = true;
+      break;
+
+    case FaultType::BleInitFailed:
+      bleInitFailed = true;
+      break;
+
+    case FaultType::SensorInitFailed:
+      sensorInitFailed = true;
+      break;
+
+    case FaultType::None:
+      break;
+  }
 }
 
 void FaultManager::clear(FaultType fault) {
-  activeFaults &= ~mask(fault);
-}
+  switch (fault) {
+    case FaultType::WebappOffline:
+      webappOffline = false;
+      break;
 
-bool FaultManager::isActive(FaultType fault) const {
-  return (activeFaults & mask(fault)) != 0;
+    case FaultType::PiDisconnected:
+      piDisconnected = false;
+      break;
+
+    case FaultType::SensorReadFailed:
+      sensorReadFailed = false;
+      break;
+
+    case FaultType::BleInitFailed:
+      bleInitFailed = false;
+      break;
+
+    case FaultType::SensorInitFailed:
+      sensorInitFailed = false;
+      break;
+
+    case FaultType::None:
+      break;
+  }
 }
 
 bool FaultManager::hasAny() const {
-  return activeFaults != 0;
+  return webappOffline ||
+         piDisconnected ||
+         sensorReadFailed ||
+         bleInitFailed ||
+         sensorInitFailed;
 }
 
-uint8_t FaultManager::count() const {
-  uint8_t result = 0;
-
-  for (uint8_t i = 0; i < 5; i++) {
-    if ((activeFaults & (1UL << i)) != 0) {
-      result++;
-    }
+FaultType FaultManager::activeFault() const {
+  if (sensorInitFailed) {
+    return FaultType::SensorInitFailed;
   }
 
-  return result;
+  if (bleInitFailed) {
+    return FaultType::BleInitFailed;
+  }
+
+  if (sensorReadFailed) {
+    return FaultType::SensorReadFailed;
+  }
+
+  if (piDisconnected) {
+    return FaultType::PiDisconnected;
+  }
+
+  if (webappOffline) {
+    return FaultType::WebappOffline;
+  }
+
+  return FaultType::None;
 }
 
-String FaultManager::textFor(FaultType fault) const {
-  switch (fault) {
-    case FaultType::WebappOffline:
-      return "Webapp offline";
-    case FaultType::PiDisconnected:
-      return "Pi disconnected";
-    case FaultType::SensorReadFailed:
-      return "Sensor failed";
-    case FaultType::BleInitFailed:
-      return "BLE init failed";
+String FaultManager::activeText() const {
+  switch (activeFault()) {
     case FaultType::SensorInitFailed:
       return "BME init failed";
-  }
 
-  return "Unknown fault";
-}
+    case FaultType::BleInitFailed:
+      return "BLE init failed";
 
-String FaultManager::textAt(uint8_t index) const {
-  uint8_t seen = 0;
+    case FaultType::SensorReadFailed:
+      return "Sensor failed";
 
-  for (uint8_t i = 0; i < 5; i++) {
-    if ((activeFaults & (1UL << i)) == 0) {
-      continue;
-    }
+    case FaultType::PiDisconnected:
+      return "Pi disconnected";
 
-    if (seen == index) {
-      return textFor(static_cast<FaultType>(i));
-    }
+    case FaultType::WebappOffline:
+      return "Webapp offline";
 
-    seen++;
+    case FaultType::None:
+      return "No faults";
   }
 
   return "No faults";

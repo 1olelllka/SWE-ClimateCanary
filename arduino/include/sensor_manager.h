@@ -5,6 +5,8 @@
 #include <Adafruit_BME680.h>
 #include <ctime>
 
+#define SENSOR_STABILIZATION_TIME_MS 30000 
+
 struct SensorReading {
   float temperatureC;
   float humidityPct;
@@ -17,6 +19,8 @@ class SensorManager {
 public:
   bool begin();
   bool update();
+  uint8_t getSampleCount() const;
+  uint8_t getRequiredSamples() const;
   SensorReading getReading() const;
 
 private:

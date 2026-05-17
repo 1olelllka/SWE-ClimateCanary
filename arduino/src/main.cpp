@@ -5,6 +5,7 @@
 #include "config.h"
 #include "button_manager.h"
 #include "led_manager.h"
+#include "fault_manager.h"
 
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
@@ -18,6 +19,7 @@ ButtonManager modeButton;
 ButtonManager nextPageButton;
 ButtonManager previousPageButton;
 LedManager ledManager;
+FaultManager faultManager;
 
 
 unsigned long lastSensorRead = 0;
@@ -36,19 +38,20 @@ void setup() {
   previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
   ledManager.begin();
   displayManager.begin();
-  displayManager.showStartup();
 
   if (!sensorManager.begin()) {
-    //TODO: set fault on display
-    //displayManager.setFault("BME688 init failed");
+    faultManager.set(FaultType::SensorInitFailed);          //TODO: check if working correctly
+    displayManager.updateFault(faultManager.activeText());  //TODO: check if working correctly
+    ledManager.setOff();                                    //TODO: check if working correctly
     Serial.println("BME688 init failed");
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
-    //TODO: set fault on display
-    //displayManager.setFault("BLE init failed");
-    Serial.println("BLE init failed");
+    faultManager.set(FaultType::BleInitFailed);             //TODO: check if working correctly 
+    displayManager.updateFault(faultManager.activeText());  //TODO: check if working correctly
+    ledManager.setOff();                                    //TODO: check if working correctly
+    Serial.println("BLE init failed");  
     return;
   }
 
@@ -83,6 +86,7 @@ void loop() {
     lastSensorRead = now;
 
     if (now < SENSOR_WARMUP_TIME_MS) {
+      displayManager.showStabilizing(SENSOR_WARMUP_TIME_MS - now);
       Serial.println("Still in gas sensor warm-up period, skipping sensor read");
     } else if (sensorManager.update()) {
       const SensorReading reading = sensorManager.getReading();
@@ -95,6 +99,7 @@ void loop() {
           isAdvertising = true;
         }
       } else {
+        displayManager.showFillingBuffer(sensorManager.getSampleCount(), sensorManager.getRequiredSamples());
         Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
       }
     } else {
