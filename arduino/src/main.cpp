@@ -39,11 +39,15 @@ void setup() {
   displayManager.showStartup();
 
   if (!sensorManager.begin()) {
-    Serial.println("BME680 init failed");
+    //TODO: set fault on display
+    //displayManager.setFault("BME688 init failed");
+    Serial.println("BME688 init failed");
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
+    //TODO: set fault on display
+    //displayManager.setFault("BLE init failed");
     Serial.println("BLE init failed");
     return;
   }

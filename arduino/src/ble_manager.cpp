@@ -44,6 +44,9 @@ void BLEManager::poll() {
     BLE.stopAdvertise();
 
     Serial.println("Connected to: " + currentCentral.address() + " (Historical connections: " + String(piConnectionCount) + ")");
+    
+    //TODO: clear fault on display
+    //displayManager->clearFault();
 
     timeReceived = false;
 
@@ -52,10 +55,10 @@ void BLEManager::poll() {
   } 
 
   if (currentCentral && !currentCentral.connected()) {
-    Serial.print("Disconnected from: ");
-    Serial.println(currentCentral.address());
+    Serial.println("Disconnected from: " + currentCentral.address());
 
-    displayManager->setFault("Pi disconnected");
+    //TODO: set fault on display
+    //displayManager->setFault("Pi disconnected");
 
     currentCentral = BLEDevice();
     timeReceived = false;

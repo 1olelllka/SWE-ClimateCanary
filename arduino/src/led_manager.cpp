@@ -4,6 +4,8 @@ void LedManager::begin() {
   pinMode(LED_RED_PIN, OUTPUT);
   pinMode(LED_BLUE_PIN, OUTPUT);
   pinMode(LED_GREEN_PIN, OUTPUT);
+
+  setOff();
 }
 
 void LedManager::setOff() {

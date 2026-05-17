@@ -66,18 +66,6 @@ void BLEMessageHandler::handleRxMessage(
       violationStatus.trim();
       violationStatus.toUpperCase();
 
-      Serial.println("Parsed warning:");
-      Serial.println(warnText);
-
-      Serial.println("Parsed threshold:");
-      Serial.println(threshold);
-
-      Serial.println("Parsed tip:");
-      Serial.println(tip);
-
-      Serial.println("Parsed violation status:");
-      Serial.println(violationStatus);
-
       manager->displayManager->setWarningData(
         warnText,
         threshold,
@@ -85,13 +73,9 @@ void BLEMessageHandler::handleRxMessage(
       );
 
       if (violationStatus == "BLUE") {
-        Serial.println("Violation status:blue (blue led on)");
         ledManager.setBlue();
       } else if (violationStatus == "RED") {
-        Serial.println("Violation status: red (red led on)");
         ledManager.setRed();
-      } else {
-        Serial.println("Violation status unknown");
       }
     } else {
       Serial.println("Invalid WARNTEXT message format");
@@ -99,18 +83,18 @@ void BLEMessageHandler::handleRxMessage(
   }
 
   else if (received.startsWith("RESOLVED:")){
-    //TODO: manager->displayManager->clearFault();
     ledManager.setGreen();
+    manager->displayManager->clearWarningData();
   }
 
   else if (received == "ERROR:WEBAPP_OFFLINE") {
-    Serial.println("Webapp offline error received");
-
+    ledManager.setOff();
     manager->displayManager->setFault("Webapp offline");
   }
 
   else if (received == "ERROR:WEBAPP_CLEAR") {
-    Serial.println("Webapp error cleared");
+    ledManager.setGreen();
+    manager->displayManager->clearFault();
   }
 
   else {

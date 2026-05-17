@@ -39,8 +39,18 @@ void DisplayManager::setWarningData(
   currentTip = tip;
 }
 
+void DisplayManager::clearWarningData() {
+  currentWarnText = "";
+  currentThreshold = "";
+  currentTip = "";
+}
+
 void DisplayManager::setFault(const String& text) {
   currentFaultText = text;
+}
+
+void DisplayManager::clearFault() {
+  currentFaultText = "";
 }
 
 void DisplayManager::showReading(const SensorReading& reading) {

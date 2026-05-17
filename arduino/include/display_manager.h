@@ -45,13 +45,19 @@ public:
     const String& threshold,
     const String& tip
   );
+
+  void clearWarningData() {
+    currentWarnText = "";
+    currentThreshold = "";
+    currentTip = "";
+  }
   
 
 private:
   rgb_lcd lcd;
 
-  String currentWarnText = "No warning";
-  String currentThreshold = "None";
-  String currentTip = "No advice";
-  String currentFaultText = "No fault";
+  String currentWarnText = "";
+  String currentThreshold = "";
+  String currentTip = "";
+  String currentFaultText = "";
 };
