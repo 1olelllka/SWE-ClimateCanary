@@ -75,9 +75,9 @@ void BLEMessageHandler::handleRxMessage(
       );
 
       if (violationStatus == "BLUE") {
-        ledManager.setBlue();
+        ledManager.update(LedManager::LedMode::Blue);
       } else if (violationStatus == "RED") {
-        ledManager.setRed();
+        ledManager.update(LedManager::LedMode::Red);
       }
     } else {
       Serial.println("Invalid WARNTEXT message format");
@@ -85,18 +85,18 @@ void BLEMessageHandler::handleRxMessage(
   }
 
   else if (received.startsWith("RESOLVED:")){
-    ledManager.setGreen();
+    ledManager.update(LedManager::LedMode::Green);
     manager->displayManager->clearWarningData();
   }
 
   else if (received == "ERROR:WEBAPP_OFFLINE") {
-    ledManager.setOff();
+    ledManager.update(LedManager::LedMode::Off);
     faultManager.set(FaultType::WebappOffline);
     manager->displayManager->updateFault(faultManager.activeText());
   }
 
   else if (received == "ERROR:WEBAPP_CLEAR") {
-    ledManager.setGreen();
+    ledManager.update(LedManager::LedMode::Green);
     faultManager.clear(FaultType::WebappOffline);
     manager->displayManager->updateFault(faultManager.activeText());
   }

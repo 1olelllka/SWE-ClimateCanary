@@ -2,6 +2,7 @@
 #include "display_manager.h"
 #include "ble_message_handler.h"
 #include "fault_manager.h"
+#include "led_manager.h"
 
 #define JSON_BUFFER_SIZE 128
 #define ADVERTISING_INTERVAL 32
@@ -9,6 +10,7 @@
 
 BLEManager* BLEManager::instance = nullptr;
 extern FaultManager faultManager;
+extern LedManager ledManager;
 
 bool BLEManager::begin(DisplayManager* display) {
   instance = this;
@@ -49,6 +51,7 @@ void BLEManager::poll() {
     
     faultManager.clear(FaultType::PiDisconnected);
     displayManager->updateFault(faultManager.activeText());
+    ledManager.update(LedManager::LedMode::Green);
 
     timeReceived = false;
 

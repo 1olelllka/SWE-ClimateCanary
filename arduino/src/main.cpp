@@ -41,8 +41,7 @@ void setup() {
   if (!sensorManager.begin()) {
     fatalStartupFault = true;
     faultManager.set(FaultType::SensorInitFailed);  
-    displayManager.showSetupFault(faultManager.activeText());       
-    ledManager.setOff();                                    
+    displayManager.showSetupFault(faultManager.activeText());                                         
     Serial.println("BME688 init failed");
     return;
   }
@@ -100,7 +99,10 @@ void loop() {
           isAdvertising = true;
         }
       } else {
-        displayManager.showFillingBuffer(sensorManager.getSampleCount(), sensorManager.getRequiredSamples());
+        displayManager.showFillingBuffer( 
+          sensorManager.getSampleCount(), 
+          sensorManager.getRequiredSamples()
+        );
         Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
       }
     }
