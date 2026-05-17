@@ -38,6 +38,7 @@ public:
   void nextPage();
   void previousPage();
 
+  void showSetupFault(const String& faultText);
   void updateFault(const String& faultText);
 
   void setWarningData(
@@ -46,11 +47,7 @@ public:
     const String& tip
   );
 
-  void clearWarningData() {
-    currentWarnText = "";
-    currentThreshold = "";
-    currentTip = "";
-  }
+  void clearWarningData();
   
 
 private:

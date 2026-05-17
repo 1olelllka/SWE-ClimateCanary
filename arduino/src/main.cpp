@@ -21,10 +21,9 @@ ButtonManager previousPageButton;
 LedManager ledManager;
 FaultManager faultManager;
 
-
+bool fatalStartupFault = false;
 unsigned long lastSensorRead = 0;
 unsigned long lastBleSend = 0;
-
 bool isAdvertising = false;
 
 void setup() {
@@ -40,17 +39,15 @@ void setup() {
   displayManager.begin();
 
   if (!sensorManager.begin()) {
-    faultManager.set(FaultType::SensorInitFailed);          //TODO: check if working correctly
-    displayManager.updateFault(faultManager.activeText());  //TODO: check if working correctly
-    ledManager.setOff();                                    //TODO: check if working correctly
+    fatalStartupFault = true;
+    faultManager.set(FaultType::SensorInitFailed);  
+    displayManager.showSetupFault(faultManager.activeText());       
+    ledManager.setOff();                                    
     Serial.println("BME688 init failed");
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
-    faultManager.set(FaultType::BleInitFailed);             //TODO: check if working correctly 
-    displayManager.updateFault(faultManager.activeText());  //TODO: check if working correctly
-    ledManager.setOff();                                    //TODO: check if working correctly
     Serial.println("BLE init failed");  
     return;
   }
@@ -59,6 +56,10 @@ void setup() {
 }
 
 void loop() {
+  if (fatalStartupFault) {
+    return;
+  }
+
   bleManager.poll();
 
   modeButton.update();
@@ -102,8 +103,6 @@ void loop() {
         displayManager.showFillingBuffer(sensorManager.getSampleCount(), sensorManager.getRequiredSamples());
         Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
       }
-    } else {
-      Serial.println("Sensor read failed");
     }
   }
 
