@@ -1,6 +1,7 @@
 package at.qe.skeleton.repositories;
 
 
+import at.qe.skeleton.model.MeasurementType;
 import at.qe.skeleton.model.Warnings;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,9 @@ public interface WarningRepository extends JpaRepository<Warnings, UUID> {
     // all active warnings across all rooms
     @Query("SELECT w FROM Warnings w WHERE w.resolvedAt IS NULL")
     List<Warnings> findAllActive();
+
+    @Query("SELECT w FROM Warnings w WHERE w.resolvedAt IS NULL AND w.measurementType = :type")
+    List<Warnings> findAllActiveByType(MeasurementType type);
 
     List<Warnings> findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(List<UUID> rooms);
     List<Warnings> findByRoomMonitoring_RoomIdInAndResolvedAtIsNullAndCreatedAtBetween(List<UUID> rooms, LocalDateTime startDate, LocalDateTime endDate);

@@ -141,7 +141,6 @@ class WarningServiceUnitTests {
     private Warnings resolvedWarning() {
         return activeWarning().toBuilder()
                 .resolvedAt(now.minusHours(1))
-                .status(WarningStatus.GREEN)
                 .build();
     }
 
@@ -504,11 +503,13 @@ class WarningServiceUnitTests {
     @Test
     void resolveWarning_success() {
         when(warningsRepository.findById(warningId)).thenReturn(Optional.of(activeWarning()));
+        when(warningsRepository.findAllActiveByType(MeasurementType.TEMPERATURE)).thenReturn(List.of(activeWarning()));
         when(warningsRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         var result = service.resolveWarning(warningId);
 
         assertThat(result.active()).isFalse();
+        verify(warningsRepository, times(1)).save(any(Warnings.class));
     }
 
     // ───── getViolationLogForDepartment ─────
