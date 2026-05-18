@@ -411,7 +411,6 @@ export const BuildingManagerDashboard: React.FC = () => {
                                 rooms={currentRooms}
                                 showDepartment={false}
                                 showSettings={false}
-                                disablePrivacyMask={true}
                                 onRowClick={handleRoomClick}
                             />
                         )}
