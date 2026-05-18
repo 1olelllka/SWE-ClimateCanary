@@ -168,11 +168,15 @@ export const EmployeeDashboard: React.FC = () => {
     }, [warnings]);
 
 
+    const isClimateStale = climate !== null
+        && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+    const currentClimate = isClimateStale ? null : climate;
+
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
 
-    const updatedAt = climate
-        ? new Date(climate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const updatedAt = currentClimate
+        ? new Date(currentClimate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : '--:--';
 
     // Sparkline: display only the last 10 minutes; trend uses full historyPoints to find 10-min-ago reference
@@ -183,9 +187,9 @@ export const EmployeeDashboard: React.FC = () => {
     const aqSparkline   = last10min.map(p => p.airQuality);
 
     // Trend text: current value vs 10 min ago
-    const tempTrend = calcTrend(climate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
-    const humTrend  = calcTrend(climate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
-    const aqTrend   = calcTrend(climate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
+    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
+    const humTrend  = calcTrend(currentClimate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
+    const aqTrend   = calcTrend(currentClimate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
 
     const tempWarning = warnings.find(w => w.measurementType === 'TEMPERATURE');
     const humWarning  = warnings.find(w => w.measurementType === 'HUMIDITY');
@@ -217,7 +221,7 @@ export const EmployeeDashboard: React.FC = () => {
                         <div className="card-grid">
                             <Cards
                                 title="Temperature"
-                                value={fmt(climate?.temperature)}
+                                value={fmt(currentClimate?.temperature)}
                                 unit="°C"
                                 color="#e05252"
                                 dataPoints={tempSparkline}
@@ -228,7 +232,7 @@ export const EmployeeDashboard: React.FC = () => {
                             />
                             <Cards
                                 title="Humidity"
-                                value={fmt(climate?.humidity)}
+                                value={fmt(currentClimate?.humidity)}
                                 unit="%"
                                 color="#26a69a"
                                 dataPoints={humSparkline}
@@ -239,7 +243,7 @@ export const EmployeeDashboard: React.FC = () => {
                             />
                             <Cards
                                 title="Air Quality (CO₂)"
-                                value={fmt(climate?.airQuality, 0)}
+                                value={fmt(currentClimate?.airQuality, 0)}
                                 unit="ppm"
                                 color="#d4891a"
                                 dataPoints={aqSparkline}
