@@ -21,12 +21,22 @@ static void printLine(rgb_lcd& lcd, uint8_t row, const String& text) {
   lcd.print(padded.substring(0, 16));
 }
 
-void DisplayManager::showStartup() {
+void DisplayManager::showSetupFault(const String& faultText) {
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Starting...");
-  lcd.setCursor(0, 1);
-  lcd.print("Collecting data");
+  printLine(lcd, 0, "Setup Fault");
+  printLine(lcd, 1, faultText);
+}
+
+void DisplayManager::showStabilizing(unsigned long remainingMs) {
+  const unsigned long remainingSec = (remainingMs + 999) / 1000;
+
+  printLine(lcd, 0, "Stabilize Sensor");
+  printLine(lcd, 1, "Wait: " + String(remainingSec) + "s");
+}
+
+void DisplayManager::showFillingBuffer(uint8_t currentSamples, uint8_t requiredSamples) {
+  printLine(lcd, 0, "Filling buffer");
+  printLine(lcd, 1, "Samples: " + String(currentSamples) + "/" + String(requiredSamples));
 }
 
 void DisplayManager::setWarningData(
@@ -39,8 +49,19 @@ void DisplayManager::setWarningData(
   currentTip = tip;
 }
 
-void DisplayManager::setFault(const String& text) {
-  currentFaultText = text;
+void DisplayManager::clearWarningData() {
+  currentWarnText = "";
+  currentThreshold = "";
+  currentTip = "";
+}
+
+void DisplayManager::updateFault(const String& faultText) {
+  currentFaultText = faultText;
+
+  if (currentMode == DisplayMode::Fault) {
+    printLine(lcd, 0, "Fault Mode");
+    printLine(lcd, 1, currentFaultText);
+  }
 }
 
 void DisplayManager::showReading(const SensorReading& reading) {
@@ -77,7 +98,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
         break;
 
       case WarningModeDisplay::ExceededThreshold:
-        printLine(lcd, 0, "Warn Mode(thres.)");
+        printLine(lcd, 0, "Warn Mode");
         printLine(lcd, 1, "Threshold: " + currentThreshold);
         break;
 
