@@ -397,9 +397,90 @@ class WarningRepositoryDataJPATests {
         }
     }
 
+    // ── findAllActiveByType ──────────────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("findAllActiveByType")
+    class FindAllActiveByType {
+
+        @Test
+        @DisplayName("returns only active warnings matching the given type")
+        void returnsActiveForMatchingType() {
+            persist(roomA, now, null, MeasurementType.TEMPERATURE);
+            persist(roomB, now, null, MeasurementType.TEMPERATURE);
+            persist(roomA, now, null, MeasurementType.HUMIDITY);
+            em.flush();
+
+            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+
+            assertThat(result).hasSize(2)
+                    .allMatch(w -> w.getMeasurementType() == MeasurementType.TEMPERATURE)
+                    .allMatch(w -> w.getResolvedAt() == null);
+        }
+
+        @Test
+        @DisplayName("does not return resolved warnings even if type matches")
+        void excludesResolvedWithMatchingType() {
+            persist(roomA, now, now.minusHours(1), MeasurementType.TEMPERATURE);
+            em.flush();
+
+            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("does not return active warnings of a different type")
+        void excludesActiveWithDifferentType() {
+            persist(roomA, now, null, MeasurementType.HUMIDITY);
+            em.flush();
+
+            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns empty list when no warnings exist at all")
+        void returnsEmptyOnCleanDatabase() {
+            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns active warnings for the queried type across multiple rooms")
+        void returnsAcrossRooms() {
+            persist(roomA, now, null, MeasurementType.TEMPERATURE);
+            persist(roomB, now, null, MeasurementType.TEMPERATURE);
+            em.flush();
+
+            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+
+            assertThat(result).hasSize(2)
+                    .map(Warnings::getRoomMonitoring)
+                    .containsExactlyInAnyOrder(roomA, roomB);
+        }
+
+        @Test
+        @DisplayName("does not mix active and resolved across different types")
+        void mixedStatusAndTypesReturnOnlyActiveMatchingType() {
+            persist(roomA, now, null,              MeasurementType.TEMPERATURE); // active + correct type  ✓
+            persist(roomA, now, now.minusHours(1), MeasurementType.TEMPERATURE); // resolved + correct type ✗
+            persist(roomB, now, null,              MeasurementType.HUMIDITY);    // active + wrong type     ✗
+            persist(roomB, now, now.minusHours(1), MeasurementType.HUMIDITY);    // resolved + wrong type   ✗
+            em.flush();
+
+            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getMeasurementType()).isEqualTo(MeasurementType.TEMPERATURE);
+            assertThat(result.get(0).getResolvedAt()).isNull();
+        }
+    }
+
     // ── helper ───────────────────────────────────────────────────────────────────
 
     private void persist(RoomMonitoring room, LocalDateTime createdAt, LocalDateTime resolvedAt) {
+        persist(room, createdAt, resolvedAt, MeasurementType.TEMPERATURE);
+    }
+
+    private void persist(RoomMonitoring room, LocalDateTime createdAt, LocalDateTime resolvedAt,
+                         MeasurementType type) {
         em.persist(Warnings.builder()
                 .message("Test warning")
                 .sensorWriteId(UUID.randomUUID())
@@ -408,9 +489,8 @@ class WarningRepositoryDataJPATests {
                 .createdAt(createdAt)
                 .resolvedAt(resolvedAt)
                 .status(resolvedAt == null ? WarningStatus.RED : WarningStatus.GREEN)
-                .measurementType(MeasurementType.TEMPERATURE)
+                .measurementType(type)
                 .roomMonitoring(room)
-                .sensorWriteId(UUID.randomUUID())
                 .build());
     }
 }
