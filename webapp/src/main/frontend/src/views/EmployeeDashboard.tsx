@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import globalAxios from 'axios';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
@@ -6,6 +6,7 @@ import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
+import { Toast } from 'primereact/toast';
 
 interface ClimateData {
     timestamp: string;
@@ -66,6 +67,9 @@ function calcTrend(
 
 export const EmployeeDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
+
+    const toastRef = useRef<Toast>(null);
+    const shownWarningIds = useRef<Set<string>>(new Set());
 
     const [roomId, setRoomId] = useState<string | null>(null);
     const [roomName, setRoomName] = useState('My Office');
@@ -138,6 +142,29 @@ export const EmployeeDashboard: React.FC = () => {
         return () => clearInterval(interval);
     }, [roomId, fetchLiveData]);
 
+    // Show a toast the first time each unique warning (by ID) is observed
+    useEffect(() => {
+        if (!toastRef.current || warnings.length === 0) return;
+
+        for (const warning of warnings) {
+            if (shownWarningIds.current.has(warning.id)) continue;
+            shownWarningIds.current.add(warning.id);
+
+            const label =
+                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+
+            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+
+            toastRef.current.show({
+                severity: 'warn',
+                summary: `${label}: ${warning.message}`,
+                detail: hasTip ? warning.tip : undefined,
+                life: 5000,
+            });
+        }
+    }, [warnings]);
+
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
@@ -164,6 +191,7 @@ export const EmployeeDashboard: React.FC = () => {
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--page-bg)' }}>
+            <Toast ref={toastRef} position="top-right" />
             <PageHeader
                 title={roomName}
                 subtitle="My Office"
