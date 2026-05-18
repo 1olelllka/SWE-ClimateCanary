@@ -1,10 +1,9 @@
 package at.qe.skeleton.services;
 
 import at.qe.skeleton.exceptions.NotFoundException;
-import at.qe.skeleton.model.Room;
-import at.qe.skeleton.model.UserRole;
-import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.RoleRepository;
+import at.qe.skeleton.repositories.RoomOccupancyRepository;
 import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +27,7 @@ public class UserSeederService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoomRepository roomRepository;
+    private final RoomOccupancyRepository occupancyRepository;
 
     @Value("${app.seeder.default-password}")
     private String defaultSeedPassword;
@@ -110,7 +110,8 @@ public class UserSeederService {
         if (roomNumber != null) {
             Room room = roomRepository.findByRoomNumber(roomNumber)
                     .orElseThrow(() -> new NotFoundException("Room not found: " + roomNumber));
-
+            if (room.getRoomType() == RoomType.OFFICE)
+                occupancyRepository.save(RoomOccupancy.builder().roomId(room.getId()).peopleCnt(4).build());
             user.setMyRoom(room);
         }
 
