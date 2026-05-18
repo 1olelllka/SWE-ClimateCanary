@@ -24,6 +24,11 @@ class WebManager:
 
         self.config_ready_event = config_ready_event
 
+        self.processor = None
+        self.queues: dict[str, dict[str, asyncio.Queue]] = {}
+        self.scan_lock: asyncio.Lock | None = None
+        self._running_tasks: list[asyncio.Task] = []
+
 # Webapp -> Pi
 
     async def handle_limits(self, request: web.Request) -> web.Response:
@@ -125,7 +130,8 @@ class WebManager:
                 logger.info(f"[Web -> Pi] /api/retry-sensor: reconnect_event set for '{name}'")
 
         if not triggered:
-            logger.warning(f"[Web -> Pi] /api/retry-sensor: no matching sensor for ids={sensor_ids}")
+            logger.warning(f"[Web -> Pi] /api/retry-sensor: no matching sensor for ids={sensor_ids}. "
+                           f"Known managers: {list(self.ble_managers.keys())}")
             return web.json_response(
                 {"status": "error", "message": f"No sensor matched sensorIds={raw_ids}"},
                 status=404
@@ -135,23 +141,28 @@ class WebManager:
 
     async def _handle_tip(self, data: dict):
         violation_type   = str(data.get('measurementType', '')).upper()
-        violated_sensor  = str(data.get('deviceName', ''))
+        violated_sensor_wId  = str(data.get('writeId', ''))
         violation_status = str(data.get('status', '')).upper()
-        tip              = data.get('tip', '')
+        tip = data.get('tip', '')
     
-        if not violation_type or not violated_sensor or not violation_status or not tip:
+        if not violation_type or not violated_sensor_wId or not violation_status or not tip:
             logger.warning(f"[WebManager] Tip missing required fields, skipping: {data}")
             return
     
-        ble_msg = await self._build_ble_warn_message(violated_sensor, violation_type, violation_status, tip)
+        ble = next(
+            (b for b in self.ble_managers.values() if b.sensor.get('write_uuid') == violated_sensor_wId),
+            None
+        )
+    
+        if not ble:
+            logger.warning(f"[WebManager] No active BLE manager for write_uuid='{violated_sensor_wId}' — tip not forwarded.")
+            return
+    
+        ble_msg = await self._build_ble_warn_message(ble.name, violation_type, violation_status, tip)
         logger.info(f"[Pi -> Arduino] BLE message built: {ble_msg}")
     
-        ble = self.ble_managers.get(violated_sensor)
-        if ble:
-            await ble.ble_inbox.put(ble_msg)
-            logger.info(f"[Pi -> Arduino] Tip forwarded to Arduino '{violated_sensor}'")
-        else:
-            logger.warning(f"[WebManager] No active BLE manager for '{violated_sensor}' — tip not forwarded.")
+        await ble.ble_inbox.put(ble_msg)
+        logger.info(f"[Pi -> Arduino] Tip forwarded to Arduino '{ble.name}'")
 
     async def _build_ble_warn_message( self, sensor_name: str, violation_type: str, violation_status: str, tip: str,) -> str:
         type_to_limit_keys = {
@@ -195,19 +206,59 @@ class WebManager:
         try:
             if update_type == "SENSOR_ADD":
                 await ConfigManager.handle_sensor_add(self.db, self.auth, sensor_ids)
-                for _, ble in self.ble_managers.items():
-                    if ble.sensor.get('char_uuid') in sensor_ids or ble.sensor.get('write_uuid') in sensor_ids:
-                        ble.reconnect_event.set()
+
+                all_sensors = await self.db.get_sensors()
+
+                for sensor in all_sensors:
+                    name = sensor['name']
+
+                    if name in self.ble_managers:
+                        ble = self.ble_managers[name]
+                        if not ble.reconnect_event.is_set():
+                            ble.reconnect_event.set()
+                            logger.info(f"[WebManager] SENSOR_ADD: woke existing BLE manager for '{name}'")
+                    else:
+                        if self.processor is None or self.scan_lock is None:
+                            logger.error(
+                                f"[WebManager] SENSOR_ADD: cannot spawn tasks for '{name}' - "
+                                "processor/scan_lock not yet set on WebManager."
+                            )
+                            continue
+
+                        q = {'proc': asyncio.Queue(), 'inbox': asyncio.Queue()}
+                        self.queues[name] = q
+
+                        ble = BLEManager(
+                            self.db,
+                            sensor,
+                            q['proc'],
+                            q['inbox'],
+                            self.status_queue,
+                            self.scan_lock,
+                        )
+                        self.ble_managers[name] = ble
+
+                        t1 = asyncio.create_task(ble.run(), name=f"BLE:{name}")
+                        t2 = asyncio.create_task(
+                            self.processor.run(name, q['proc'], sensor['write_uuid']), name=f"Proc:{name}"
+                        )
+                        self._running_tasks.extend([t1, t2])
+                        logger.info(
+                            f"[WebManager] SENSOR_ADD: started BLE + Processor tasks for '{name}'"
+                        )
+
             elif update_type == "SENSOR_DELETE":
                 await ConfigManager.handle_sensor_delete(self.db, sensor_ids)
                 for sensor_id in sensor_ids:
                     for _, ble in self.ble_managers.items():
                         if ble.sensor.get('char_uuid') == sensor_id or ble.sensor.get('write_uuid') == sensor_id:
                             ble.removal_event.set()
+
             elif update_type == "FLUSH":
                 await ConfigManager.handle_sensor_flush(self.db)
                 for ble in self.ble_managers.values():
                     ble.removal_event.set()
+
         except Exception as e:
             logger.error(f"[WebManager] _task_sensor_change ({update_type}) failed: {e}")
             await self.db.log_event("CONFIG", f"Failed to handle sensor {update_type}: {e}", "ERROR")
@@ -218,7 +269,19 @@ class WebManager:
             await self.auth.refresh_if_needed()
 
             server_url = self.static_config['webapp']['server_url']
-            await ConfigManager.fetch_and_seed(pi_id, server_url, self.db, self.auth)
+            missing = await ConfigManager.fetch_and_seed(pi_id, server_url, self.db, self.auth)
+
+            if missing:
+                logger.critical(
+                    f"[WebManager] /api/config processed but critical fields are null: {missing}. "
+                    "Holding boot gate — waiting for a complete config from the webapp."
+                )
+                await self.db.log_event(
+                    "CONFIG",
+                    f"Config received with null fields {missing} - boot gate not unblocked.",
+                    "WARNING",
+                )
+                return
 
             new_freq = await self.db.get_config('frequency')
             if new_freq:
@@ -239,11 +302,11 @@ class WebManager:
 
     async def run_local_server(self):
         app = web.Application()
-        app.router.add_post('/api/limits', self.handle_limits) # works
-        app.router.add_post('/api/occupancy', self.handle_occupancy) # works
-        app.router.add_post('/api/sensors', self.handle_sensors) # should work after db fix 
-        app.router.add_post('/api/config', self.handle_config) # works
-        app.router.add_post('/api/retry-sensor', self.handle_retry_sensor) # works
+        app.router.add_post('/api/limits', self.handle_limits)
+        app.router.add_post('/api/occupancy', self.handle_occupancy)
+        app.router.add_post('/api/sensors', self.handle_sensors)
+        app.router.add_post('/api/config', self.handle_config)
+        app.router.add_post('/api/retry-sensor', self.handle_retry_sensor)
 
         runner = web.AppRunner(app)
         await runner.setup()
@@ -252,7 +315,7 @@ class WebManager:
 
         logger.info(
             f"[WebManager] Local API listening on port {self.local_port} "
-            f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config, /api/retry-sensor, /api/tip)"
+            f"(routes: /api/limits, /api/occupancy, /api/sensors, /api/config, /api/retry-sensor)"
         )
         while True:
             await asyncio.sleep(3600)
@@ -354,12 +417,12 @@ class WebManager:
 
         payload = {
             "roomId": event["roomId"],
-            "device": event["device"],
             "measurementType": event["measurement_type"],
             "status": event["status"],
             "triggeredValue": event["triggeredValue"],
             "activeLimitAtTime": event["activeLimitAtTime"],
             "message": event["message"],
+            "sensorWriteId": event["sensorWriteId"],
         }
 
         try:
@@ -403,21 +466,12 @@ class WebManager:
             return
 
         api_url = f"{self.server_url}/api/warnings/{warning_id}/resolve"
-        payload = {
-            "roomId": event["roomId"],
-            "device": event["device"],
-            "measurementType": event["measurement_type"],
-            "status": "GREEN",
-            "triggeredValue": event["triggeredValue"],
-            "activeLimitAtTime": event["activeLimitAtTime"],
-            "message": event["message"],
-        }
 
         try:
-            async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as response:
+            async with session.patch(api_url, headers=self.auth.get_headers()) as response:
                 if response.status == 401:
                     await self.auth.refresh_if_needed()
-                    async with session.patch(api_url, json=payload, headers=self.auth.get_headers()) as retry:
+                    async with session.patch(api_url, headers=self.auth.get_headers()) as retry:
                         retry.raise_for_status()
                 else:
                     response.raise_for_status()
@@ -432,7 +486,7 @@ class WebManager:
                 await ble.ble_inbox.put(ble_msg)
                 logger.info(f"[WebManager] Sent to Arduino '{sensor_name}': {ble_msg}")
             else:
-                logger.warning(f"[WebManager] No active BLE manager for '{sensor_name}' — RESOLVED message not sent.")
+                logger.warning(f"[WebManager] No active BLE manager for '{sensor_name}' - RESOLVED message not sent.")
 
         except Exception as e:
             logger.warning(
