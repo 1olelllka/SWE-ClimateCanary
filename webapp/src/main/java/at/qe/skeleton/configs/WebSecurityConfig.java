@@ -136,7 +136,7 @@ public class WebSecurityConfig {
                                         )
                                         .requestMatchers(HttpMethod.GET, "/api/departments/*")
                                         .authenticated()
-                                        .requestMatchers(HttpMethod.GET, "/api/building", "/api/building/*", "/api/departments", "/api/departments/*")
+                                        .requestMatchers(HttpMethod.GET, "/api/buildings", "/api/buildings/*", "/api/departments", "/api/departments/*")
                                         .hasAnyAuthority(Permission.CAN_VIEW_ALL_BUILDINGS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
