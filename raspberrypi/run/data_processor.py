@@ -13,18 +13,16 @@ VIOLATION_THRESHOLD = 4
 SENSOR_CHECKS = [
     ("temperature", "max_temp",     "max", "TEMPERATURE"),
     ("temperature", "min_temp",     "min", "TEMPERATURE"),
-    ("moisture",    "max_moisture", "max", "HUMIDITY"),
-    ("moisture",    "min_moisture", "min", "HUMIDITY"),
-    ("co2",         "max_co2",      "max", "CO2"),
+    ("humidity",    "max_moisture", "max", "HUMIDITY"),
+    ("humidity",    "min_moisture", "min", "HUMIDITY"),
+    ("iaq",         "max_co2",      "max", "CO2"),
 ]
 
 def _warning_status(actual: float, limit: float, direction: str) -> str:
     if direction == "max":
-        return "RED" if actual > limit * 1.20 else "BLUE"
+        return "RED" if actual > limit * 1.25 else "YELLOW" if actual > limit * 1.10 else "GREEN"
     else:
-        # under-limit: violation when actual < limit
-        # 20% below the limit => actual < limit * 0.80
-        return "RED" if actual < limit * 0.80 else "BLUE"
+        return "RED" if actual < limit * 0.75 else "YELLOW" if actual < limit * 0.90 else "GREEN"
 
 def _violation_message(sensor_key: str, direction: str, actual: float, limit: float, status: str) -> str:
     direction_word = "above" if direction == "max" else "below"
@@ -32,7 +30,6 @@ def _violation_message(sensor_key: str, direction: str, actual: float, limit: fl
         f"{sensor_key.capitalize()} {direction_word} limit: "
         f"{actual} ({'>' if direction == 'max' else '<'} {limit}) [{status}]"
     )
-
 
 class DataProcessor:
 
@@ -50,7 +47,7 @@ class DataProcessor:
             self._bad_streak[sensor_name]  = {k: 0 for k in limit_keys}
             self._good_streak[sensor_name] = {k: 0 for k in limit_keys}
 
-    async def run(self, sensor_name: str, processing_queue: asyncio.Queue):
+    async def run(self, sensor_name: str, processing_queue: asyncio.Queue, sensorWriteId):
         logger.info(f"[Processor:{sensor_name}] Worker started.")
         self._init_sensor_state(sensor_name)
 
@@ -77,17 +74,17 @@ class DataProcessor:
 
                 if privacy:
                     logger.warning(f"[Processor:{sensor_name}] Privacy Mode active. Discarding.")
-                    await self._check_violations(sensor_name, data, limits, room_id, timestamp)
+                    await self._check_violations(sensor_name, data, limits, room_id, timestamp, sensorWriteId)
                     continue
                 
                 logger.info(f"[Arduino -> Pi] Received: {raw_data}")
 
-                await self._check_violations(sensor_name, data, limits, room_id, timestamp)
-
+                await self._check_violations(sensor_name, data, limits, room_id, timestamp, sensorWriteId)
+                
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
                     temp=data.get('temperature'),
-                    moisture=data.get('moisture'),
+                    moisture=data.get('humidity'),
                     co2=data.get('iaq'),
                     timestamp=timestamp
                 )
@@ -100,8 +97,8 @@ class DataProcessor:
                 }
                 if data.get('temperature') is not None:
                     webapp_payload["readings"].append({"type": "TEMPERATURE", "value": data['temperature']})
-                if data.get('moisture') is not None:
-                    webapp_payload["readings"].append({"type": "HUMIDITY", "value": data['moisture']})
+                if data.get('humidity') is not None:
+                    webapp_payload["readings"].append({"type": "HUMIDITY", "value": data['humidity']})
                 if data.get('iaq') is not None:
                     webapp_payload["readings"].append({"type": "CO2", "value": data['iaq']})
                 await self.web_out_queue.put(webapp_payload)
@@ -120,6 +117,7 @@ class DataProcessor:
         limits: dict,
         room_id: str,
         timestamp: str,
+        sensorWriteId,
     ):
         any_newly_resolved = False
 
@@ -153,15 +151,14 @@ class DataProcessor:
                     violation_report = {
                         "type": "violation_warning",
                         "roomId": room_id,
-                        "device": sensor_name,
                         "sensor_name": sensor_name,
-                        "measurement_type": measurement_type,
                         "limit_key": limit_key,
+                        "measurement_type": measurement_type,
                         "status": status,
                         "triggeredValue": val,
                         "activeLimitAtTime": limit,
                         "message": message,
-                        "timestamp": timestamp,
+                        "sensorWriteId": sensorWriteId,
                     }
                     await self.web_violation_queue.put(violation_report)
 
@@ -192,7 +189,6 @@ class DataProcessor:
                             "sensor_name": sensor_name,
                             "measurement_type": measurement_type,
                             "limit_key": limit_key,
-                            "status": "GREEN",
                             "triggeredValue": val,
                             "activeLimitAtTime": limit,
                             "message": f"{sensor_key.capitalize()} back within limits.",

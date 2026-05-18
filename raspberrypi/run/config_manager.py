@@ -38,7 +38,6 @@ class ConfigManager:
                 f"[Config] Could not reach webapp for full config fetch: {e}. "
                 "Continuing with existing DB config."
             )
-            # Cannot validate — treat as non-fatal; caller keeps whatever is in DB.
             return []
 
         missing: list[str] = []
@@ -78,7 +77,7 @@ class ConfigManager:
         occupancy = remote.get('occupancy')
         if occupancy:
             effective = occupancy.get('effectiveOccupancy')
-            privacy   = occupancy.get('privacyMode')
+            privacy = occupancy.get('privacyMode')
 
             if effective is not None:
                 await db.set_limit('current_occupancy', float(effective))

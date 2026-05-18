@@ -113,7 +113,11 @@ async def main(static_config: dict):
     web_manager.queues = queues
     web_manager.scan_lock = scan_lock
 
-    for sensor_name, ble_manager in ble_managers.items():
+    for sensor in sensors:
+        sensor_name = sensor['name']
+        write_uuid = sensor['write_uuid']
+        ble_manager = ble_managers[sensor_name]
+
         tasks.append(asyncio.create_task(
             ble_manager.run(),
             name=f"BLE:{sensor_name}",
@@ -122,6 +126,7 @@ async def main(static_config: dict):
             processor.run(
                 sensor_name,
                 queues[sensor_name]['proc'],
+                write_uuid
             ),
             name=f"Proc:{sensor_name}",
         ))

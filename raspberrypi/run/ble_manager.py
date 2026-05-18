@@ -90,7 +90,7 @@ class BLEManager:
                                 )
 
                     if not device:
-                        logger.warning(f"[BLE] '{target_name}' not found (attempt {attempt}/5))")
+                        logger.warning(f"[BLE] '{target_name}' not found (attempt {attempt}/5)")
                         if attempt < 5:
                             await asyncio.sleep(3)
                         continue
