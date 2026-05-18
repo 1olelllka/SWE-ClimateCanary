@@ -122,13 +122,15 @@ export const EmployeeDashboard: React.FC = () => {
             }).then(r => r.data).catch(() => []),
         ]).then(([climateData, warningData, histData]) => {
             setClimate(climateData);
-            const deduped = new Map<string, ActiveWarning>();
-            for (const w of (warningData ?? []).filter(w => w.active)) {
-                const existing = deduped.get(w.measurementType);
+            // Find the latest warning per measurement type regardless of status,
+            // then keep only those where the latest is still active (not resolved).
+            const latestPerType = new Map<string, ActiveWarning>();
+            for (const w of (warningData ?? [])) {
+                const existing = latestPerType.get(w.measurementType);
                 if (!existing || new Date(w.createdAt) > new Date(existing.createdAt))
-                    deduped.set(w.measurementType, w);
+                    latestPerType.set(w.measurementType, w);
             }
-            setWarnings([...deduped.values()]);
+            setWarnings([...latestPerType.values()].filter(w => w.active));
             setHistoryPoints(histData ?? []);
             setLoading(false);
         });
