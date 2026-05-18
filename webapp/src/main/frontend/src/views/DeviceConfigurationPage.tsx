@@ -68,6 +68,7 @@ const DeviceConfigurationPage: React.FC = () => {
     // Pi dialog
     const [showPiDialog, setShowPiDialog] = useState(false);
     const [editingPiId, setEditingPiId] = useState<string | null>(null);
+    const [editingPiOriginalRoomId, setEditingPiOriginalRoomId] = useState<string>('');
     const [piLoading, setPiLoading] = useState(false);
     const [piName, setPiName] = useState('');
     const [piRoomId, setPiRoomId] = useState('');
@@ -105,6 +106,21 @@ const DeviceConfigurationPage: React.FC = () => {
     ];
 
     const roomOptions = rooms.map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }));
+
+    // Server may return room as nested { room: { roomId } } or flat { roomId }
+    const getPiRoomId = (pi: RaspberryDTOReal): string =>
+        pi.room?.roomId ?? (pi as any).roomId ?? '';
+
+    const takenRoomIds = new Set(raspberries.map(getPiRoomId).filter(Boolean));
+    const availableRoomOptions = roomOptions.filter(o => !takenRoomIds.has(o.value));
+
+    const editAvailableRoomOptions = editingPiId
+        ? roomOptions.filter(o =>
+            !raspberries
+                .filter(pi => pi.id !== editingPiId)
+                .some(pi => getPiRoomId(pi) === o.value)
+        )
+        : [];
 
     const getRoomName = (roomId?: string) =>
         rooms.find(r => r.id === roomId)?.name ?? roomId ?? 'N/A';
@@ -182,9 +198,11 @@ const DeviceConfigurationPage: React.FC = () => {
     };
 
     const openEditPiDialog = (row: RaspberryDTOReal) => {
+        const roomId = getPiRoomId(row);
         setEditingPiId(row.id ?? null);
+        setEditingPiOriginalRoomId(roomId);
         setPiName(row.name ?? '');
-        setPiRoomId(row.room?.roomId ?? '');
+        setPiRoomId(roomId);
         setPiIpAddress(row.ipAddress ?? '');
         setPiPort(row.port ?? 8080);
         setPiInterval(row.frequency ?? null);
@@ -221,6 +239,17 @@ const DeviceConfigurationPage: React.FC = () => {
                         frequency: piInterval ?? undefined,
                     },
                 });
+                if (piRoomId !== editingPiOriginalRoomId) {
+                    const api = new RaspberryControllerApi();
+                    const currentRoomId = editingPiOriginalRoomId
+                        || getPiRoomId(raspberries.find(pi => pi.id === editingPiId)!);
+                    if (currentRoomId) {
+                        await api.removeRoomFromRaspberry({ raspberryId: editingPiId, roomId: currentRoomId });
+                    }
+                    if (piRoomId) {
+                        await api.addRoomToRaspberry({ raspberryId: editingPiId, roomId: piRoomId });
+                    }
+                }
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Raspberry Pi updated successfully.', life: 3000 });
                 setShowPiDialog(false);
                 fetchData();
@@ -455,15 +484,19 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                     {!editingPiId ? (
                         <div>
                             <label htmlFor="pi-room" style={labelStyle}>Room *</label>
-                            <Dropdown inputId="pi-room" value={piRoomId} options={roomOptions} onChange={e => setPiRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
+                            <Dropdown inputId="pi-room" value={piRoomId} options={availableRoomOptions} onChange={e => setPiRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                         </div>
                     ) : (
                         <div>
-                            <label style={labelStyle}>Room</label>
-                            <InputText
-                                value={rooms.find(r => r.id === piRoomId)?.name ?? piRoomId ?? 'N/A'}
-                                readOnly
-                                style={{ width: '100%', background: '#f5f5f5', cursor: 'default' }}
+                            <label htmlFor="pi-room-edit" style={labelStyle}>Room</label>
+                            <Dropdown
+                                inputId="pi-room-edit"
+                                value={piRoomId}
+                                options={editAvailableRoomOptions}
+                                onChange={e => setPiRoomId(e.value)}
+                                placeholder="Select room"
+                                style={{ width: '100%' }}
+                                filter
                             />
                         </div>
                     )}
