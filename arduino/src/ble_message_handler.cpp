@@ -27,6 +27,8 @@ void BLEMessageHandler::handleRxMessage(
 
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);
+
+    manager->flushBufferedReadings();
   }
 
   else if (received.startsWith("FREQUENCY:")) {

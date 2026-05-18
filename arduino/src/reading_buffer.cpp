@@ -1,11 +1,16 @@
 #include "reading_buffer.h"
 
-bool ReadingBuffer::push(const SensorReading& reading, unsigned long millisOffset) {
+bool ReadingBuffer::push(
+  const SensorReading& reading,
+  const String& timestamp,
+  unsigned long millisOffset
+) {
   if (!reading.valid) {
     return false;
   }
 
   buffer[head].reading = reading;
+  buffer[head].timestamp = timestamp;
   buffer[head].millisOffset = millisOffset;
 
   head = (head + 1) % BUFFER_SIZE;
@@ -13,7 +18,8 @@ bool ReadingBuffer::push(const SensorReading& reading, unsigned long millisOffse
   if (count < BUFFER_SIZE) {
     count++;
   } else {
-    tail = (tail + 1) % BUFFER_SIZE;    //overwrite oldest entry, move tail forward
+    tail = (tail + 1) % BUFFER_SIZE;
+    Serial.println("ReadingBuffer full: overwriting oldest reading");
   }
 
   return true;

@@ -110,7 +110,7 @@ void loop() {
     }
   }
 
-  if (bleManager.isConnected() && now - lastBleSend >= bleManager.measureAndSendIntervalMs) {
+  if (now - lastBleSend >= bleManager.measureAndSendIntervalMs) {
     lastBleSend = now;
 
     const SensorReading reading = sensorManager.getReading();

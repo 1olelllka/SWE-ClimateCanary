@@ -5,6 +5,7 @@
 
 struct BufferedReading {
   SensorReading reading;
+  String timestamp;
   unsigned long millisOffset;
 };
 
@@ -12,7 +13,12 @@ class ReadingBuffer {
 public:
   static constexpr uint8_t BUFFER_SIZE = 100;
 
-  bool push(const SensorReading& reading, unsigned long millisOffset);
+  bool push(
+    const SensorReading& reading,
+    const String& timestamp,
+    unsigned long millisOffset
+  );
+
   bool pop(BufferedReading& outReading);
 
   bool isEmpty() const;
