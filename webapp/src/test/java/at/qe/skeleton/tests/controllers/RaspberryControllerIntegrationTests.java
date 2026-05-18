@@ -157,7 +157,7 @@ class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     void testThatCreateNewRaspberryReturnsHttp400IfValidationFails() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null, null);
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("", null, null, null, 1);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
@@ -169,7 +169,7 @@ class RaspberryControllerIntegrationTests {
     void testThatCreateNewRaspberryReturnsHttp409IfSuchNameExists() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi);
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, UUID.randomUUID());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, UUID.randomUUID(), 1);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -181,7 +181,7 @@ class RaspberryControllerIntegrationTests {
     void testThatCreateNewRaspberryReturnsHttp409IfSuchConnectionCredentialsExist() throws Exception {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         raspberryService.createNewRaspberry(pi);
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID(), 1);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -191,7 +191,7 @@ class RaspberryControllerIntegrationTests {
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_DEVICES")
     void testThatCreateNewRaspberryReturnsHttp201IfSuccessful() throws Exception {
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, this.savedRoom.getRoomId());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry", "127.0.0.1", 1000, this.savedRoom.getRoomId(), 1);
         mockMvc.perform(MockMvcRequestBuilders.post("/api/raspberry-pis")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -227,7 +227,7 @@ class RaspberryControllerIntegrationTests {
         RaspberryPi pi = RaspberryPi.builder().name("Test Raspberry").ip("127.0.0.1").port(1000).status(DeviceStatus.OFFLINE).build();
         pi = raspberryService.createNewRaspberry(pi);
         raspberryService.createNewRaspberry(RaspberryPi.builder().name("Test Raspberry 2").ip("localhost").port(1000).status(DeviceStatus.OFFLINE).build());
-        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID());
+        RaspberryCreateDTO dto = new RaspberryCreateDTO("Test Raspberry 2", "127.0.0.1", 1000, UUID.randomUUID(), 1);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/raspberry-pis/" + pi.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -275,7 +275,7 @@ class RaspberryControllerIntegrationTests {
         pi = raspberryService.createNewRaspberry(pi);
         mockMvc.perform(MockMvcRequestBuilders.get("/api/raspberry-pis/" + pi.getId() + "/config"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.frequency").value(1000));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.frequency").value(1));
     }
 
     @Test

@@ -225,7 +225,7 @@ const DeviceConfigurationPage: React.FC = () => {
     const handleSavePi = async () => {
         if (editingPiId) {
             if (!piName || !piIpAddress || piPort == null) {
-                toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Name, IP address, and port are required.', life: 3000 });
+                toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Name, IP address, port and frequency are required.', life: 3000 });
                 return;
             }
             setPiLoading(true);
@@ -259,14 +259,14 @@ const DeviceConfigurationPage: React.FC = () => {
                 setPiLoading(false);
             }
         } else {
-            if (!piName || !piRoomId || !piIpAddress || piPort == null) {
+            if (!piName || !piRoomId || !piIpAddress || piPort == null || piInterval == null) {
                 toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Name, IP address, port, and room are required.', life: 3000 });
                 return;
             }
             setPiLoading(true);
             try {
                 await new RaspberryControllerApi().createNewRaspberry({
-                    raspberryCreateDTO: { name: piName, ipAddress: piIpAddress, port: piPort, roomId: piRoomId },
+                    raspberryCreateDTO: { name: piName, ipAddress: piIpAddress, port: piPort, roomId: piRoomId, frequency: piInterval },
                 });
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'Raspberry Pi created successfully.', life: 3000 });
                 setShowPiDialog(false);
