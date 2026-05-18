@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import globalAxios from 'axios';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
 import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
-import { WarningBanner } from '../components/WarningBanner';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
+import { Toast } from 'primereact/toast';
 
 interface ClimateData {
     timestamp: string;
@@ -20,6 +20,8 @@ interface ActiveWarning {
     measurementType: string;
     message: string;
     active: boolean;
+    createdAt: string;
+    tip: string;
 }
 
 interface RawPoint {
@@ -66,9 +68,13 @@ function calcTrend(
 export const EmployeeDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
+    const toastRef = useRef<Toast>(null);
+    const shownWarningIds = useRef<Set<string>>(new Set());
+
     const [roomId, setRoomId] = useState<string | null>(null);
     const [roomName, setRoomName] = useState('My Office');
     const [noRoom, setNoRoom] = useState(false);
+    const [serverOffline, setServerOffline] = useState(false);
     const [climate, setClimate] = useState<ClimateData | null>(null);
     const [warnings, setWarnings] = useState<ActiveWarning[]>([]);
     const [historyPoints, setHistoryPoints] = useState<RawPoint[]>([]);
@@ -87,7 +93,7 @@ export const EmployeeDashboard: React.FC = () => {
                     setLoading(false);
                 }
             })
-            .catch(() => { setNoRoom(true); setLoading(false); });
+            .catch(() => { setServerOffline(true); setLoading(false); });
     }, []);
 
     const fetchLiveData = useCallback(() => {
@@ -116,7 +122,15 @@ export const EmployeeDashboard: React.FC = () => {
             }).then(r => r.data).catch(() => []),
         ]).then(([climateData, warningData, histData]) => {
             setClimate(climateData);
-            setWarnings((warningData ?? []).filter(w => w.active));
+            // Find the latest warning per measurement type regardless of status,
+            // then keep only those where the latest is still active (not resolved).
+            const latestPerType = new Map<string, ActiveWarning>();
+            for (const w of (warningData ?? [])) {
+                const existing = latestPerType.get(w.measurementType);
+                if (!existing || new Date(w.createdAt) > new Date(existing.createdAt))
+                    latestPerType.set(w.measurementType, w);
+            }
+            setWarnings([...latestPerType.values()].filter(w => w.active));
             setHistoryPoints(histData ?? []);
             setLoading(false);
         });
@@ -130,13 +144,39 @@ export const EmployeeDashboard: React.FC = () => {
         return () => clearInterval(interval);
     }, [roomId, fetchLiveData]);
 
-    const activeWarning = warnings[0] ?? null;
+    // Show a toast the first time each unique warning (by ID) is observed
+    useEffect(() => {
+        if (!toastRef.current || warnings.length === 0) return;
+
+        for (const warning of warnings) {
+            if (shownWarningIds.current.has(warning.id)) continue;
+            shownWarningIds.current.add(warning.id);
+
+            const label =
+                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+
+            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+
+            toastRef.current.show({
+                severity: 'warn',
+                summary: `${label}: ${warning.message}`,
+                detail: hasTip ? warning.tip : undefined,
+                life: 5000,
+            });
+        }
+    }, [warnings]);
+
+
+    const isClimateStale = climate !== null
+        && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+    const currentClimate = isClimateStale ? null : climate;
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
 
-    const updatedAt = climate
-        ? new Date(climate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const updatedAt = currentClimate
+        ? new Date(currentClimate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : '--:--';
 
     // Sparkline: display only the last 10 minutes; trend uses full historyPoints to find 10-min-ago reference
@@ -147,12 +187,17 @@ export const EmployeeDashboard: React.FC = () => {
     const aqSparkline   = last10min.map(p => p.airQuality);
 
     // Trend text: current value vs 10 min ago
-    const tempTrend = calcTrend(climate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
-    const humTrend  = calcTrend(climate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
-    const aqTrend   = calcTrend(climate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
+    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
+    const humTrend  = calcTrend(currentClimate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
+    const aqTrend   = calcTrend(currentClimate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
+
+    const tempWarning = warnings.find(w => w.measurementType === 'TEMPERATURE');
+    const humWarning  = warnings.find(w => w.measurementType === 'HUMIDITY');
+    const aqWarning   = warnings.find(w => w.measurementType === 'CO2');
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--page-bg)' }}>
+            <Toast ref={toastRef} position="top-right" />
             <PageHeader
                 title={roomName}
                 subtitle="My Office"
@@ -163,7 +208,11 @@ export const EmployeeDashboard: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="employee-dashboard-container" style={{ flexGrow: 1 }}>
-                {noRoom ? (
+                {serverOffline ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                        Server is not reachable. Please try again later.
+                    </div>
+                ) : noRoom ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
                         No room is assigned to your account. Please contact your system administrator.
                     </div>
@@ -172,39 +221,38 @@ export const EmployeeDashboard: React.FC = () => {
                         <div className="card-grid">
                             <Cards
                                 title="Temperature"
-                                value={fmt(climate?.temperature)}
+                                value={fmt(currentClimate?.temperature)}
                                 unit="°C"
                                 color="#e05252"
                                 dataPoints={tempSparkline}
                                 trendIcon={tempTrend.icon}
                                 trendText={tempTrend.text}
+                                violated={!!tempWarning}
+                                tip={tempWarning?.tip}
                             />
                             <Cards
                                 title="Humidity"
-                                value={fmt(climate?.humidity)}
+                                value={fmt(currentClimate?.humidity)}
                                 unit="%"
                                 color="#26a69a"
                                 dataPoints={humSparkline}
                                 trendIcon={humTrend.icon}
                                 trendText={humTrend.text}
+                                violated={!!humWarning}
+                                tip={humWarning?.tip}
                             />
                             <Cards
                                 title="Air Quality (CO₂)"
-                                value={fmt(climate?.airQuality, 0)}
+                                value={fmt(currentClimate?.airQuality, 0)}
                                 unit="ppm"
                                 color="#d4891a"
                                 dataPoints={aqSparkline}
                                 trendIcon={aqTrend.icon}
                                 trendText={aqTrend.text}
+                                violated={!!aqWarning}
+                                tip={aqWarning?.tip}
                             />
                         </div>
-
-                        {activeWarning && (
-                            <WarningBanner
-                                boldPart={`${activeWarning.measurementType.replace(/_/g, ' ')} alert. `}
-                                regularPart={activeWarning.message}
-                            />
-                        )}
 
                         {roomId && <ClimateHistoryChart roomId={roomId} />}
                     </>

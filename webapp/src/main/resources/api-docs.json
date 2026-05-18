@@ -801,6 +801,61 @@
         }
       }
     },
+    "/api/sensor-stations/{sensor_id}/room": {
+      "delete": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "disconnectSensorFromRoom",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SensorStationDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sensor-stations/{sensor_id}/retry-connection": {
+      "post": {
+        "tags": [
+          "sensor-station-controller"
+        ],
+        "operationId": "retrySensorStation",
+        "parameters": [
+          {
+            "name": "sensor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/rooms/{room_id}": {
       "delete": {
         "tags": [

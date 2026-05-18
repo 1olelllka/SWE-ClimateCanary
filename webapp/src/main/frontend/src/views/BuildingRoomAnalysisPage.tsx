@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import globalAxios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Toast } from 'primereact/toast';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -24,75 +25,46 @@ import '../styles/BuildingRoomAnalysisPage.css';
 export const BuildingRoomAnalysisPage: React.FC = () => {
     const { roomId } = useParams<{ roomId: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const toast = useRef<Toast>(null);
 
     const [sidebarVisible, setSidebarVisible] = useState(false);
-
     const [violations, setViolations] = useState<ViolationDTO[]>([]);
     const [limits, setLimits] = useState<LimitState>(emptyLimits);
     const [roomLabel, setRoomLabel] = useState('Room');
-
     const [loading, setLoading] = useState(true);
     const [savingLimits, setSavingLimits] = useState(false);
-    const [limitsMessage, setLimitsMessage] = useState<string | null>(null);
 
     const fetchRoomAnalysisData = useCallback(() => {
-        if (!roomId) {
-            return;
-        }
-
+        if (!roomId) return;
         setLoading(true);
-        setLimitsMessage(null);
 
         Promise.allSettled([
             globalAxios.get<LimitDTO>(`/api/rooms/${roomId}/limits`),
-            globalAxios.get(`/api/rooms/${roomId}/violations`),
-            globalAxios.get(`/api/rooms`)
-        ])
-            .then(results => {
-                const [
-                    limitsResult,
-                    violationsResult,
-                    roomsResult
-                ] = results;
+            globalAxios.get(`/api/warnings/rooms/${roomId}`, {
+                params: {
+                    activeOnly: false,
+                    startDate: '2000-01-01',
+                    endDate: new Date().toISOString().slice(0, 10),
+                },
+            }),
+            globalAxios.get('/api/rooms'),
+        ]).then(([limitsResult, warningsResult, roomsResult]) => {
+            if (roomsResult.status === 'fulfilled') {
+                const rooms = extractArrayResponse<RoomDTO>(roomsResult.value.data, []);
+                setRoomLabel(getRoomDisplayName(rooms.find(r => r.id === roomId), `Room ${roomId}`));
+            } else {
+                setRoomLabel(`Room ${roomId}`);
+            }
 
-                if (roomsResult.status === 'fulfilled') {
-                    const rooms = extractArrayResponse<RoomDTO>(
-                        roomsResult.value.data,
-                        []
-                    );
+            setLimits(limitsResult.status === 'fulfilled'
+                ? mapLimitDtoToState(limitsResult.value.data)
+                : emptyLimits);
 
-                    const currentRoom = rooms.find(room => room.id === roomId);
-
-                    setRoomLabel(
-                        getRoomDisplayName(currentRoom, `Room ${roomId}`)
-                    );
-                } else {
-                    console.warn('Could not load room name', roomsResult.reason);
-                    setRoomLabel(`Room ${roomId}`);
-                }
-
-                if (limitsResult.status === 'fulfilled') {
-                    setLimits(mapLimitDtoToState(limitsResult.value.data));
-                } else {
-                    console.warn('Could not load limits', limitsResult.reason);
-                    setLimits(emptyLimits);
-                }
-
-                if (violationsResult.status === 'fulfilled') {
-                    setViolations(
-                        extractArrayResponse<ViolationDTO>(
-                            violationsResult.value.data,
-                            []
-                        )
-                    );
-                } else {
-                    console.warn('Could not load violations', violationsResult.reason);
-                    setViolations([]);
-                }
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+            setViolations(warningsResult.status === 'fulfilled'
+                ? extractArrayResponse<ViolationDTO>(warningsResult.value.data, [])
+                : []);
+        }).finally(() => setLoading(false));
     }, [roomId]);
 
     useEffect(() => {
@@ -100,95 +72,62 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
     }, [fetchRoomAnalysisData]);
 
     const handleLimitChange = (key: keyof LimitState, value: string) => {
-        if (key === 'airQualityMin') {
-            return;
-        }
-
-        setLimits(previous => ({
-            ...previous,
-            [key]: value
-        }));
+        if (key === 'airQualityMin') return;
+        setLimits(prev => ({ ...prev, [key]: value }));
     };
 
     const handleSaveLimits = () => {
-        if (!roomId) {
-            return;
-        }
-
+        if (!roomId) return;
         setSavingLimits(true);
-        setLimitsMessage(null);
 
-        const payload = mapLimitStateToDto(roomId, limits);
-
-        globalAxios.patch<LimitDTO>(`/api/rooms/${roomId}/limits`, payload)
+        globalAxios.patch<LimitDTO>(`/api/rooms/${roomId}/limits`, mapLimitStateToDto(roomId, limits))
             .then(response => {
                 setLimits(mapLimitDtoToState(response.data));
-                setLimitsMessage('Limits saved.');
+                toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Limits saved successfully.', life: 3000 });
             })
             .catch(error => {
-                console.error(
-                    'Could not save room limits',
-                    error.response?.status,
-                    error.response?.data || error
-                );
-
-                setLimitsMessage(
-                    getApiErrorMessage(
-                        error,
-                        'Room limits could not be saved.'
-                    )
-                );
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: getApiErrorMessage(error, 'Room limits could not be saved.'),
+                    life: 4000,
+                });
             })
-            .finally(() => {
-                setSavingLimits(false);
-            });
+            .finally(() => setSavingLimits(false));
     };
 
     return (
-        <div className="building-room-analysis-page">
-            <PageHeader
-                title="Analysis & Settings"
-                subtitle={roomLabel}
-                onMenuClick={() => setSidebarVisible(true)}
-            />
+        <div className="bra-page">
+            <Toast ref={toast} />
+            <PageHeader title="Room Analysis" subtitle={roomLabel} onMenuClick={() => setSidebarVisible(true)} />
+            <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
-            <SidebarComponent
-                visible={sidebarVisible}
-                onHide={() => setSidebarVisible(false)}
-            />
-
-            <main className="building-room-analysis-container">
-                <button
-                    type="button"
-                    className="building-room-analysis-back-button"
-                    onClick={() => navigate(ROUTES.HOME)}
-                    aria-label="Back"
-                >
-                    <i className="pi pi-arrow-circle-left" />
+            <div className="bra-content">
+                <button type="button" className="bra-back-btn" onClick={() => navigate(ROUTES.HOME, { state: location.state })}>
+                    <i className="pi pi-arrow-left" />
+                    Back to rooms
                 </button>
 
-                <div className="building-room-analysis-grid">
-                    {roomId && (
-                        <RoomSensorHistoryCard roomId={roomId} />
-                    )}
+                {loading && <p className="bra-loading">Loading room data…</p>}
 
-                    <RoomViolationLogTable violations={violations} />
+                <p className="bra-section-heading">Climate History</p>
+                <div className="bra-card">
+                    {roomId && <RoomSensorHistoryCard roomId={roomId} />}
+                </div>
 
+                <p className="bra-section-heading">Warning Log</p>
+                <RoomViolationLogTable violations={violations} />
+
+                <p className="bra-section-heading">Limit Settings</p>
+                <div className="bra-card">
                     <RoomLimitSettings
                         limits={limits}
                         saving={savingLimits}
-                        message={limitsMessage}
                         onLimitChange={handleLimitChange}
                         onSaveLimits={handleSaveLimits}
                     />
                 </div>
-
-                {loading && (
-                    <p className="room-analysis-loading-note">
-                        Loading room analysis data...
-                    </p>
-                )}
-            </main>
+            </div>
 
             <FooterComponent />
         </div>

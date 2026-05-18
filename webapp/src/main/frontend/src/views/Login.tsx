@@ -110,9 +110,6 @@ const Login = () => {
                                 placeholder="Password"
                                 className="password-input"
                             />
-                            <button type="button" className="forgot-link">
-                                Forgot?
-                            </button>
                         </div>
 
                         <Button

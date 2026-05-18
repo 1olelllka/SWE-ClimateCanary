@@ -12,100 +12,78 @@ export interface LimitState {
 interface RoomLimitSettingsProps {
     readonly limits: LimitState;
     readonly saving: boolean;
-    readonly message: string | null;
     readonly onLimitChange: (key: keyof LimitState, value: string) => void;
     readonly onSaveLimits: () => void;
 }
 
 export const RoomLimitSettings: React.FC<RoomLimitSettingsProps> = ({
-                                                                        limits,
-                                                                        saving,
-                                                                        message,
-                                                                        onLimitChange,
-                                                                        onSaveLimits
-                                                                    }) => {
+    limits,
+    saving,
+    onLimitChange,
+    onSaveLimits,
+}) => {
     return (
-        <section className="room-analysis-section">
-            <h2>Limit Settings</h2>
-
-            <div className="room-analysis-limits-table">
-                <div className="room-analysis-limits-header">
-                    <span>Sensor Type</span>
-                    <span>Min</span>
-                    <span>Max</span>
-                </div>
-
-                <div className="room-analysis-limit-row">
-                    <span>Temperature</span>
-
-                    <input
-                        value={limits.temperatureMin}
-                        onChange={event =>
-                            onLimitChange('temperatureMin', event.target.value)
-                        }
-                    />
-
-                    <input
-                        value={limits.temperatureMax}
-                        onChange={event =>
-                            onLimitChange('temperatureMax', event.target.value)
-                        }
-                    />
-                </div>
-
-                <div className="room-analysis-limit-row">
-                    <span>Humidity</span>
-
-                    <input
-                        value={limits.humidityMin}
-                        onChange={event =>
-                            onLimitChange('humidityMin', event.target.value)
-                        }
-                    />
-
-                    <input
-                        value={limits.humidityMax}
-                        onChange={event =>
-                            onLimitChange('humidityMax', event.target.value)
-                        }
-                    />
-                </div>
-
-                <div className="room-analysis-limit-row">
-                    <span>Air Quality</span>
-
-                    <input
-                        value="-"
-                        disabled
-                        aria-label="Air quality minimum is not configurable"
-                    />
-
-                    <input
-                        value={limits.airQualityMax}
-                        onChange={event =>
-                            onLimitChange('airQualityMax', event.target.value)
-                        }
-                    />
-                </div>
+        <div>
+            <div className="bra-limits-head-row">
+                <span>Sensor</span>
+                <span>Min</span>
+                <span>Max</span>
             </div>
 
-            <div className="room-analysis-save-row">
+            <div className="bra-limit-row">
+                <span className="bra-limit-label">Temperature (°C)</span>
+                <input
+                    className="bra-limit-input"
+                    value={limits.temperatureMin}
+                    onChange={e => onLimitChange('temperatureMin', e.target.value)}
+                />
+                <input
+                    className="bra-limit-input"
+                    value={limits.temperatureMax}
+                    onChange={e => onLimitChange('temperatureMax', e.target.value)}
+                />
+            </div>
+
+            <div className="bra-limit-row">
+                <span className="bra-limit-label">Humidity (%)</span>
+                <input
+                    className="bra-limit-input"
+                    value={limits.humidityMin}
+                    onChange={e => onLimitChange('humidityMin', e.target.value)}
+                />
+                <input
+                    className="bra-limit-input"
+                    value={limits.humidityMax}
+                    onChange={e => onLimitChange('humidityMax', e.target.value)}
+                />
+            </div>
+
+            <div className="bra-limit-row">
+                <span className="bra-limit-label">CO₂ (ppm)</span>
+                <input
+                    className="bra-limit-input"
+                    value="—"
+                    disabled
+                    aria-label="CO₂ minimum is not configurable"
+                />
+                <input
+                    className="bra-limit-input"
+                    value={limits.airQualityMax}
+                    onChange={e => onLimitChange('airQualityMax', e.target.value)}
+                />
+            </div>
+
+            <div className="bra-save-row">
                 <button
                     type="button"
-                    className="room-analysis-save-button"
+                    className="bra-save-btn"
                     onClick={onSaveLimits}
                     disabled={saving}
                 >
-                    {saving ? 'Saving...' : 'Save Limits'}
+                    {saving ? 'Saving…' : 'Save Limits'}
                 </button>
-
-                {message && (
-                    <span className="room-analysis-message">
-                        {message}
-                    </span>
-                )}
             </div>
-        </section>
+        </div>
     );
 };
 

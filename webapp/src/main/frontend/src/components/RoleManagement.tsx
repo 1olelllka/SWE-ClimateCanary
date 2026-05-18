@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
-import { Tag } from 'primereact/tag';
+import { Toast } from 'primereact/toast';
 import { UserRoleControllerApi, UserRoleDTO, UserRoleDTOPermissionsEnum } from '../generated-skeleton-api';
+import '../styles/Tables.css';
 
 const ALL_PERMISSIONS = Object.values(UserRoleDTOPermissionsEnum);
 
@@ -21,9 +22,8 @@ const RoleManagement: React.FC<Props> = ({ roleDTOs, onRoleDTOsChange }) => {
     const [selectedRoleDTO, setSelectedRoleDTO] = useState<UserRoleDTO | null>(null);
     const [editedPermissions, setEditedPermissions] = useState<UserRoleDTOPermissionsEnum[]>([]);
     const [addPermission, setAddPermission] = useState<UserRoleDTOPermissionsEnum | null>(null);
-    const [status, setStatus] = useState<'saved' | 'error' | null>(null);
-    const [statusMsg, setStatusMsg] = useState('');
     const [saveLoading, setSaveLoading] = useState(false);
+    const toast = useRef<Toast>(null);
 
     const roleDTOOptions = roleDTOs.map(r => ({ label: r.name ?? r.id ?? '', value: r }));
 
@@ -35,20 +35,16 @@ const RoleManagement: React.FC<Props> = ({ roleDTOs, onRoleDTOsChange }) => {
         setSelectedRoleDTO(dto);
         setEditedPermissions(Array.from(dto.permissions ?? []) as UserRoleDTOPermissionsEnum[]);
         setAddPermission(null);
-        setStatus(null);
-        setStatusMsg('');
     };
 
     const handleRemove = (perm: UserRoleDTOPermissionsEnum) => {
         setEditedPermissions(prev => prev.filter(p => p !== perm));
-        setStatus(null);
     };
 
     const handleAdd = () => {
         if (!addPermission || editedPermissions.includes(addPermission)) return;
         setEditedPermissions(prev => [...prev, addPermission]);
         setAddPermission(null);
-        setStatus(null);
     };
 
     const handleSave = async () => {
@@ -67,28 +63,32 @@ const RoleManagement: React.FC<Props> = ({ roleDTOs, onRoleDTOsChange }) => {
                     ? { ...r, permissions: new Set(editedPermissions) }
                     : r
             ));
-            setStatus('saved');
-            setStatusMsg('Changes are saved.');
+            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Role updated successfully.', life: 3000 });
+            setSelectedRoleDTO(null);
+            setEditedPermissions([]);
+            setAddPermission(null);
         } catch {
-            setStatus('error');
-            setStatusMsg('Failed to save changes. Please try again.');
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to save changes. Please try again.', life: 3000 });
         } finally {
             setSaveLoading(false);
         }
     };
 
     const handleCancel = () => {
-        if (selectedRoleDTO) {
-            setEditedPermissions(Array.from(selectedRoleDTO.permissions ?? []) as UserRoleDTOPermissionsEnum[]);
-        }
-        setStatus(null);
-        setStatusMsg('');
+        setSelectedRoleDTO(null);
+        setEditedPermissions([]);
+        setAddPermission(null);
     };
 
     return (
+        <>
+        <Toast ref={toast} />
         <div className="table-container">
-            <h3 style={{ marginBottom: '1.25rem' }}>Role Management</h3>
+            <div className="flex-header">
+                <h3 style={{ margin: 0 }}>Role Management</h3>
+            </div>
 
+            <div style={{ padding: '1.25rem 1.5rem' }}>
             <div style={{ marginBottom: '1.25rem', maxWidth: '360px' }}>
                 <label htmlFor="role-select" style={{ ...labelStyle, display: 'block', marginBottom: '0.35rem' }}>
                     Role
@@ -112,23 +112,16 @@ const RoleManagement: React.FC<Props> = ({ roleDTOs, onRoleDTOsChange }) => {
                                 <span style={{ color: '#9e9e9e', fontSize: '0.9rem' }}>No rights assigned.</span>
                             )}
                             {editedPermissions.map(perm => (
-                                <Tag
-                                    key={perm}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.25rem 0.6rem' }}
-                                >
-                                    <span style={{ fontSize: '0.8rem' }}>{perm}</span>
+                                <span key={perm} className="permission-tag">
+                                    {perm}
                                     <button
+                                        className="permission-tag-remove"
                                         aria-label={`Remove ${perm}`}
                                         onClick={() => handleRemove(perm)}
-                                        style={{
-                                            background: 'none', border: 'none', cursor: 'pointer',
-                                            padding: 0, lineHeight: 1, color: 'inherit',
-                                            display: 'flex', alignItems: 'center',
-                                        }}
                                     >
-                                        <i className="pi pi-times" style={{ fontSize: '0.7rem' }} />
+                                        <i className="pi pi-times" style={{ fontSize: '0.65rem' }} />
                                     </button>
-                                </Tag>
+                                </span>
                             ))}
                         </div>
                     </div>
@@ -156,16 +149,12 @@ const RoleManagement: React.FC<Props> = ({ roleDTOs, onRoleDTOsChange }) => {
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <Button label="Save" icon="pi pi-check" loading={saveLoading} onClick={handleSave} />
                         <Button label="Cancel" severity="secondary" outlined onClick={handleCancel} />
-                        {status === 'saved' && (
-                            <span style={{ color: '#4caf50', fontWeight: 500, fontSize: '0.9rem' }}>{statusMsg}</span>
-                        )}
-                        {status === 'error' && (
-                            <span style={{ color: '#e05252', fontWeight: 500, fontSize: '0.9rem' }}>{statusMsg}</span>
-                        )}
                     </div>
                 </>
             )}
+            </div>
         </div>
+        </>
     );
 };
 

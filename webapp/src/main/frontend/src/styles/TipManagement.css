@@ -1,125 +1,346 @@
-.tip-management-card {
-    width: 100%;
+/* ── Page layout ── */
+.tip-mgmt-page {
+    min-height: 100vh;
+    background-color: var(--page-bg);
+    display: flex;
+    flex-direction: column;
+}
+
+.tip-mgmt-content {
+    padding: 1.5rem;
     max-width: 900px;
-    background-color: var(--app-surface-2, #ffffff);
-    color: var(--app-text, #111827);
-    border: 1px solid var(--app-border, #e2e8f0);
-    border-radius: 12px;
-    padding: 2rem;
+    width: 100%;
+    margin: 0 auto;
+    flex-grow: 1;
 }
 
-.tip-management-section-title {
-    margin: 0 0 24px 0;
-    font-size: 2rem;
+/* ── Section heading ── */
+.tip-mgmt-section-heading {
+    margin: 0 0 0.875rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    color: var(--app-text, #111827);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
 }
 
-.tip-management-condition-row {
+/* ── Controls row ── */
+.tip-mgmt-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
 }
 
-.tip-management-condition-label {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--app-text, #111827);
+.tip-mgmt-filter-group {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
 }
 
-.tip-management-condition-dropdown {
-    min-width: 240px;
+.tip-mgmt-filter-group + .tip-mgmt-filter-group {
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--card-border, #e2e8f0);
 }
 
-.tip-management-condition-dropdown .p-dropdown {
-    border-radius: 999px;
-}
-
-.tip-management-textarea {
-    display: block;
-    width: 100%;
-    min-height: 150px;
-    margin-bottom: 32px;
-    padding: 18px 22px;
-    font-size: 1rem;
-    border-radius: 8px;
-    resize: vertical;
-    background-color: var(--app-surface, #ffffff);
-    color: var(--app-text, #111827);
-    border: 1px solid var(--app-border, #d1d5db);
-}
-
-.tip-management-save-button {
-    width: 240px;
-    height: 48px;
-    border-radius: 999px;
+/* shared pill style */
+.tip-filter-btn,
+.tip-sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.8rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 20px;
+    font-size: 0.8rem;
     font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+    white-space: nowrap;
 }
 
-.tip-management-info-message {
-    margin-top: 16px;
-    color: var(--app-text-muted, #475569);
+.tip-filter-btn:hover,
+.tip-sort-btn:hover {
+    border-color: #94a3b8;
 }
 
-.tip-management-error-message {
-    margin-top: 16px;
-    color: #dc2626;
-    font-weight: 500;
+.tip-filter-btn.active,
+.tip-sort-btn.active {
+    background: var(--nav-bg, #1a3a4a);
+    border-color: var(--nav-bg, #1a3a4a);
+    color: #ffffff;
 }
 
-.tip-management-success-message {
-    margin-top: 16px;
-    color: #15803d;
-    font-weight: 500;
+.tip-sort-btn {
+    margin-left: auto;
 }
 
-html[data-theme='dark'] .tip-management-card {
+.tip-filter-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* ── Table ── */
+.tip-mgmt-table-wrapper {
+    overflow-x: auto;
+}
+
+.tip-mgmt-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.35rem;
+    text-align: left;
+}
+
+.tip-mgmt-table thead th {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+.tip-col-message-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.tip-col-message-header:hover {
+    color: var(--text-primary);
+}
+
+.tip-mgmt-table tbody tr {
+    background: var(--card-bg);
+}
+
+.tip-mgmt-table tbody td {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.tip-mgmt-table tbody td:first-child {
+    border-left: 1px solid var(--card-border);
+    border-radius: 8px 0 0 8px;
+}
+
+.tip-mgmt-table tbody td:last-child {
+    border-right: 1px solid var(--card-border);
+    border-radius: 0 8px 8px 0;
+    text-align: right;
+}
+
+/* Status dot in cell */
+.tip-status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+/* Muted "No tip set yet" */
+.tip-no-message {
+    color: var(--text-secondary) !important;
+    font-style: italic;
+    font-size: 0.82rem !important;
+}
+
+/* Empty / loading */
+.tip-mgmt-empty {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.tip-mgmt-loading {
+    padding: 1rem 0;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+
+/* ── Edit trigger button ── */
+.tip-edit-trigger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.tip-edit-trigger:hover {
+    background: var(--page-bg);
+    color: var(--text-primary);
+}
+
+/* ── Edit dialog ── */
+.tip-edit-dialog {
+    width: 480px;
+    max-width: 95vw;
+}
+
+.tip-edit-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+}
+
+.tip-edit-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.tip-edit-input {
+    width: 100%;
+}
+
+.tip-edit-char-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.tip-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 8px;
+}
+
+.tip-edit-cancel-btn {
+    padding: 0.45rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.tip-edit-cancel-btn:hover { border-color: #94a3b8; }
+
+.tip-edit-save-btn {
+    padding: 0.45rem 1.1rem;
+    background: var(--nav-bg, #1a3a4a);
+    border: 1px solid var(--nav-bg, #1a3a4a);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.tip-edit-save-btn:hover:not(:disabled) { background: #14303f; }
+.tip-edit-save-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+/* ── Dark mode ── */
+html[data-theme='dark'] .tip-mgmt-page {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-content {
+    background-color: var(--app-bg) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-section-heading {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-filter-btn,
+html[data-theme='dark'] .tip-sort-btn {
     background-color: var(--app-surface-2) !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
 }
 
-html[data-theme='dark'] .tip-management-section-title,
-html[data-theme='dark'] .tip-management-condition-label {
+html[data-theme='dark'] .tip-filter-btn.active,
+html[data-theme='dark'] .tip-sort-btn.active {
+    background-color: #1e4d6b !important;
+    border-color: #1e4d6b !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-filter-group + .tip-mgmt-filter-group {
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-table tbody tr {
+    background-color: var(--app-surface-2) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-table thead th {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-table tbody td {
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+    background-color: var(--app-surface-2) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-table tbody tr:hover td {
+    background-color: #334155 !important;
+}
+
+html[data-theme='dark'] .tip-no-message {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-mgmt-empty,
+html[data-theme='dark'] .tip-mgmt-loading {
+    color: var(--app-text-muted) !important;
+}
+
+
+html[data-theme='dark'] .tip-edit-trigger {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-edit-trigger:hover {
+    background: #334155 !important;
     color: var(--app-text) !important;
 }
 
-html[data-theme='dark'] .tip-management-textarea {
-    background-color: #111827 !important;
+html[data-theme='dark'] .tip-edit-label {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .tip-edit-char-count {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .tip-edit-cancel-btn {
+    background-color: var(--app-surface-2) !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
 }
 
-html[data-theme='dark'] .tip-management-textarea::placeholder {
-    color: #94a3b8 !important;
+html[data-theme='dark'] .tip-edit-save-btn {
+    background-color: #1e4d6b !important;
+    border-color: #1e4d6b !important;
 }
 
-html[data-theme='dark'] .tip-management-info-message {
-    color: var(--app-text-muted) !important;
-}
-
-html[data-theme='dark'] .tip-management-error-message {
-    color: #f87171 !important;
-}
-
-html[data-theme='dark'] .tip-management-success-message {
-    color: #4ade80 !important;
-}
-
-@media (max-width: 768px) {
-    .tip-management-card {
-        padding: 1.5rem;
-    }
-
-    .tip-management-condition-row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .tip-management-condition-dropdown,
-    .tip-management-save-button {
-        width: 100%;
-    }
+html[data-theme='dark'] .tip-edit-save-btn:hover:not(:disabled) {
+    background-color: #256080 !important;
 }

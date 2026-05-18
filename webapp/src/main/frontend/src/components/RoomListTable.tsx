@@ -21,6 +21,8 @@ interface RoomListTableProps {
     readonly rooms: RoomData[];
     readonly showDepartment?: boolean;
     readonly showSettings?: boolean;
+    readonly disablePrivacyMask?: boolean;
+    readonly onRowClick?: (roomId: string) => void;
     readonly onSettingsClick?: (roomId: string) => void;
 }
 
@@ -28,10 +30,13 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
                                                                 rooms,
                                                                 showDepartment = false,
                                                                 showSettings = false,
+                                                                disablePrivacyMask = false,
+                                                                onRowClick,
                                                                 onSettingsClick
                                                             }) => {
 
     const isPrivacyMasked = (peopleStr: string) => {
+        if (disablePrivacyMask) return false;
         const currentPeople = parseInt(peopleStr.split('/')[0], 10);
         return currentPeople < 5;
     };
@@ -40,7 +45,7 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
         const room = e.data as RoomData;
         if (isPrivacyMasked(room.people)) return;
         if (e.originalEvent.target.closest('.p-button')) return;
-        alert(`Navigiere zu: Overview Bureau ${room.id}`);
+        if (onRowClick) onRowClick(room.id);
     };
 
     // Templates
@@ -76,7 +81,6 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
 
     return (
         <div className="table-container">
-            <h3>Room List</h3>
             <DataTable
                 value={rooms}
                 {...defaultTableProps}
@@ -88,7 +92,6 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
                 {showDepartment && <Column field="department" header="Dep." sortable></Column>}
 
                 <Column field="type" header="Type" sortable></Column>
-                <Column field="people" header="People"></Column>
                 <Column header="CO2" body={(data) => blurTemplate(data, 'co2')}></Column>
                 <Column header="Temp" body={(data) => blurTemplate(data, 'temp')}></Column>
                 <Column header="Humidity" body={(data) => blurTemplate(data, 'humidity')}></Column>

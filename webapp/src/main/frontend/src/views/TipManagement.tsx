@@ -10,20 +10,18 @@ export const TipManagement: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     return (
-        <div className="dashboard-layout">
+        <div className="tip-mgmt-page">
             <PageHeader
                 title="Tip Management"
                 onMenuClick={() => setSidebarVisible(true)}
             />
-
             <SidebarComponent
                 visible={sidebarVisible}
                 onHide={() => setSidebarVisible(false)}
             />
-
-            <main className="dashboard-content">
+            <div className="tip-mgmt-content">
                 <TipManagementForm />
-            </main>
+            </div>
         </div>
     );
 };

@@ -1,308 +1,474 @@
-.building-room-analysis-page {
+/* ── Page layout (employee style) ── */
+.bra-page {
     min-height: 100vh;
+    background-color: var(--page-bg);
     display: flex;
     flex-direction: column;
-    background-color: var(--page-bg);
 }
 
-.building-room-analysis-container {
-    flex-grow: 1;
+.bra-content {
     padding: 1.5rem;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    flex-grow: 1;
 }
 
-.building-room-analysis-back-button {
-    width: fit-content;
+/* ── Section heading ── */
+.bra-section-heading {
+    margin: 0 0 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+/* ── Card ── */
+.bra-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.75rem;
+}
+
+.bra-card--no-pad {
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ── Back button ── */
+.bra-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     background: none;
     border: none;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--nav-bg, #1a3a4a);
     cursor: pointer;
-    padding: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    transition: background-color 0.15s;
 }
 
-.building-room-analysis-back-button i {
-    font-size: 2.4rem;
-    color: #0f172a;
+.bra-back-btn:hover {
+    background: rgba(26, 58, 74, 0.08);
 }
 
-.building-room-analysis-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
+/* ── Loading ── */
+.bra-loading {
+    padding: 0.75rem 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
 
-.room-analysis-section {
-    background-color: #ffffff;
-    border-radius: 16px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+/* normalize table-container spacing to match bra-card */
+.bra-content .table-container {
+    margin-bottom: 1.75rem;
 }
 
-.room-analysis-section h2 {
-    font-size: 1.25rem;
-    margin: 0 0 1rem;
-    font-weight: 700;
-    color: #0f172a;
+/* filter bar inside table-container */
+.bra-table-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid var(--card-border, #e8eef4);
+    background-color: var(--card-bg);
 }
 
-.room-analysis-chart-section {
-    padding-bottom: 1.5rem;
-}
+/* ──────────────────────────────
+   Warning Log
+   ────────────────────────────── */
 
-.room-analysis-section-header {
+.bra-log-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
 }
 
-.room-analysis-section-header h2 {
-    margin-bottom: 0;
+.bra-log-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
 }
 
-.room-analysis-filter-select {
+.bra-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* dropdown pill */
+.bra-filter-select {
     appearance: none;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.4rem 2rem 0.4rem 0.75rem;
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 20px;
+    padding: 0.35rem 1.9rem 0.35rem 0.85rem;
     font-size: 0.8rem;
     font-weight: 600;
-    color: #475569;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
+    color: var(--text-primary);
+    background: var(--card-bg)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E")
+        no-repeat right 0.65rem center;
     cursor: pointer;
     outline: none;
     transition: border-color 0.15s;
 }
 
-.room-analysis-filter-select:focus {
-    border-color: #94a3b8;
+.bra-filter-select:focus { border-color: #94a3b8; }
+
+/* active-only toggle pill */
+.bra-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.85rem;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+    white-space: nowrap;
 }
 
-/* =========================
-   Violation Table
-   ========================= */
+.bra-toggle-btn:hover { border-color: #94a3b8; }
 
-.room-analysis-table-wrapper {
-    overflow-x: auto;
+.bra-toggle-btn.active {
+    background: var(--nav-bg, #1a3a4a);
+    border-color: var(--nav-bg, #1a3a4a);
+    color: #ffffff;
 }
 
-.room-analysis-table {
+/* warning table */
+.bra-table-wrapper { overflow-x: auto; }
+
+.bra-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0 0.3rem;
     text-align: left;
 }
 
-.room-analysis-table th {
-    padding: 0.65rem 0.5rem;
-    font-size: 0.9rem;
+.bra-table thead th {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
 }
 
-.room-analysis-table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.9rem;
+.bra-table tbody td {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    border-top: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--card-border);
+    background: var(--page-bg);
 }
 
-.room-analysis-table tbody tr {
-    background-color: #f1f5f9;
-    border-bottom: 6px solid #ffffff;
+.bra-table tbody td:first-child {
+    border-left: 1px solid var(--card-border);
+    border-radius: 8px 0 0 8px;
 }
 
-.room-analysis-empty-row {
-    text-align: center;
-    color: #64748b;
+.bra-table tbody td:last-child {
+    border-right: 1px solid var(--card-border);
+    border-radius: 0 8px 8px 0;
 }
 
-/* =========================
-   Limit Settings
-   ========================= */
-
-.room-analysis-limits-table {
-    width: 100%;
+.bra-table-empty {
+    text-align: center !important;
+    color: var(--text-secondary) !important;
+    padding: 1.5rem 0.75rem !important;
+    border-left: 1px solid var(--card-border) !important;
+    border-right: 1px solid var(--card-border) !important;
+    border-radius: 8px !important;
 }
 
-.room-analysis-limits-header,
-.room-analysis-limit-row {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr;
+.bra-status-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.bra-active-text {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ── Pagination ── */
+.bra-pagination {
+    display: flex;
     align-items: center;
-    column-gap: 1.25rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--card-border);
 }
 
-.room-analysis-limits-header {
-    padding: 0 1.25rem 0.75rem 1.25rem;
-    background: transparent;
-    color: #334155;
+.bra-pagination-size {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.bra-pagination-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.bra-pagination-info {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-right: 0.25rem;
+}
+
+.bra-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.bra-page-btn:hover:not(:disabled) {
+    border-color: #94a3b8;
+    background: var(--page-bg);
+}
+
+.bra-page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+/* ──────────────────────────────
+   Limit Settings
+   ────────────────────────────── */
+
+.bra-limits-head-row,
+.bra-limit-row {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.6rem 0;
+}
+
+.bra-limits-head-row span {
+    font-size: 0.7rem;
     font-weight: 700;
-    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+    padding: 0 0.25rem;
 }
 
-.room-analysis-limit-row {
-    min-height: 72px;
-    padding: 0.75rem 1.25rem;
-    background-color: #f1f5f9;
-    border-bottom: 0.75rem solid #ffffff;
+.bra-limit-row {
+    border-top: 1px solid var(--card-border);
 }
 
-.room-analysis-limit-row:last-child {
-    border-bottom: none;
+.bra-limit-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 0 0.25rem;
 }
 
-.room-analysis-limit-row > span:first-child {
-    font-weight: 700;
-    color: #0f172a;
-    font-size: 1rem;
-}
-
-.room-analysis-limit-row input {
+.bra-limit-input {
     width: 100%;
-    height: 44px;
-    border: none;
-    border-radius: 999px;
-    background-color: #ffffff;
-    text-align: center;
-    font-size: 1rem;
-    color: #0f172a;
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    background: var(--card-bg);
     outline: none;
     box-sizing: border-box;
+    transition: border-color 0.15s;
 }
 
-.room-analysis-limit-row input:focus {
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-}
+.bra-limit-input:focus { border-color: #94a3b8; }
 
-.room-analysis-limit-row input:disabled {
-    background-color: #ffffff;
-    color: #64748b;
+.bra-limit-input:disabled {
+    color: var(--text-secondary);
     cursor: not-allowed;
-    opacity: 1;
+    opacity: 0.6;
 }
 
-
-/* =========================
-   Save Buttons / Messages
-   ========================= */
-
-.room-analysis-save-row {
+.bra-save-row {
     display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 1rem;
+    justify-content: flex-end;
     margin-top: 1.25rem;
 }
 
-.room-analysis-save-button {
-    border: none;
-    background-color: #3478f6;
+.bra-save-btn {
+    padding: 0.45rem 1.25rem;
+    background: var(--nav-bg, #1a3a4a);
+    border: 1px solid var(--nav-bg, #1a3a4a);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #ffffff;
-    border-radius: 999px;
-    padding: 0.85rem 1.8rem;
-    min-width: 180px;
     cursor: pointer;
-    font-weight: 700;
+    transition: background-color 0.15s;
 }
 
-.room-analysis-save-button:hover:not(:disabled) {
-    background-color: #2563eb;
-}
+.bra-save-btn:hover:not(:disabled) { background: #14303f; border-color: #14303f; }
+.bra-save-btn:disabled { opacity: 0.65; cursor: not-allowed; }
 
-.room-analysis-save-button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .bra-content { padding: 1rem; }
 
-.room-analysis-message {
-    font-size: 0.85rem;
-    color: #334155;
-}
-
-.room-analysis-loading-note {
-    margin-top: 1rem;
-    color: #64748b;
-}
-
-/* =========================
-   Desktop Layout
-   ========================= */
-
-@media (min-width: 900px) {
-    .building-room-analysis-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .building-room-analysis-grid > :first-child,
-    .building-room-analysis-grid > :nth-child(2) {
-        grid-column: 1 / -1;
+    .bra-limits-head-row,
+    .bra-limit-row {
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 0.5rem;
     }
 }
 
-/* =========================
-   Mobile
-   ========================= */
+/* ── Dark mode ── */
+html[data-theme='dark'] .bra-back-btn {
+    color: var(--muted-blue, #7fb3c8) !important;
+}
 
-@media (max-width: 700px) {
-    .building-room-analysis-container {
-        padding: 1rem;
-    }
+html[data-theme='dark'] .bra-back-btn:hover {
+    background: rgba(127, 179, 200, 0.1) !important;
+}
 
-    .building-room-analysis-grid {
-        gap: 1rem;
-    }
+html[data-theme='dark'] .bra-page {
+    background-color: var(--app-bg) !important;
+}
 
-    .room-analysis-section {
-        padding: 1rem;
-        border-radius: 14px;
-    }
+html[data-theme='dark'] .bra-section-heading {
+    color: var(--app-text-muted) !important;
+}
 
-    .room-analysis-section h2 {
-        font-size: 1.15rem;
-    }
+html[data-theme='dark'] .bra-card {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+    box-shadow: none !important;
+}
 
-    .room-analysis-section-header {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+html[data-theme='dark'] .bra-loading {
+    color: var(--app-text-muted) !important;
+}
 
-    .room-analysis-filter-select {
-        width: 100%;
-    }
+html[data-theme='dark'] .bra-table-controls {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+}
 
-    .room-analysis-table th,
-    .room-analysis-table td {
-        white-space: nowrap;
-    }
+html[data-theme='dark'] .bra-filter-select {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
 
-    .room-analysis-limits-header {
-        display: none;
-    }
+html[data-theme='dark'] .bra-toggle-btn {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
 
-    .room-analysis-limit-row {
-        grid-template-columns: 1fr;
-        row-gap: 0.5rem;
-        padding: 1rem;
-        min-height: auto;
-    }
+html[data-theme='dark'] .bra-toggle-btn.active {
+    background-color: #1e4d6b !important;
+    border-color: #1e4d6b !important;
+    color: #ffffff !important;
+}
 
-    .room-analysis-limit-row > span:first-child {
-        font-size: 1rem;
-        margin-bottom: 0.25rem;
-    }
+html[data-theme='dark'] .bra-table thead th {
+    color: var(--app-text-muted) !important;
+}
 
-    .room-analysis-limit-row input {
-        height: 42px;
-        font-size: 0.95rem;
-    }
+html[data-theme='dark'] .bra-table tbody td {
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+    background-color: #1f2937 !important;
+}
 
-    .room-analysis-save-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
+html[data-theme='dark'] .bra-limits-head-row span {
+    color: var(--app-text-muted) !important;
+}
 
-    .room-analysis-save-button {
-        width: 100%;
-        min-width: 0;
-    }
+html[data-theme='dark'] .bra-limit-label {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .bra-limit-input {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .bra-limit-row {
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .bra-save-btn {
+    background-color: #1e4d6b !important;
+    border-color: #1e4d6b !important;
+}
+
+html[data-theme='dark'] .bra-save-btn:hover:not(:disabled) {
+    background-color: #256080 !important;
+    border-color: #256080 !important;
+}
+
+html[data-theme='dark'] .bra-active-text {
+    color: #f87171 !important;
+}
+
+html[data-theme='dark'] .bra-pagination {
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .bra-pagination-size,
+html[data-theme='dark'] .bra-pagination-info {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .bra-page-btn {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .bra-page-btn:hover:not(:disabled) {
+    border-color: #4b5563 !important;
+    background-color: #374151 !important;
 }

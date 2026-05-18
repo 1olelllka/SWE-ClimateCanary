@@ -359,16 +359,7 @@ const BuildingConfigurationPage: React.FC = () => {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            style={{
-                                padding: '0.5rem 1.25rem',
-                                borderRadius: '20px',
-                                border: '1px solid var(--primary-color, #6366f1)',
-                                background: activeTab === tab ? 'var(--primary-color, #6366f1)' : 'transparent',
-                                color: activeTab === tab ? '#fff' : 'var(--primary-color, #6366f1)',
-                                cursor: 'pointer',
-                                fontWeight: 500,
-                                fontSize: '0.9rem',
-                            }}
+                            className={`admin-tab-btn${activeTab === tab ? ' active' : ''}`}
                         >
                             {TAB_LABELS[tab]}
                         </button>

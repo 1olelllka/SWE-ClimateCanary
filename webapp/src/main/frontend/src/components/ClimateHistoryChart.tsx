@@ -51,9 +51,11 @@ const mean = (nums: number[]) =>
     nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
 
 function groupByHour(raw: RawPoint[]): DataPoint[] {
+    const p2 = (n: number) => String(n).padStart(2, '0');
     const groups = new Map<string, RawPoint[]>();
     raw.forEach(p => {
-        const key = p.timestamp.slice(0, 13); // "2024-06-15T10"
+        const d = new Date(p.timestamp);
+        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}`;
         groups.set(key, [...(groups.get(key) ?? []), p]);
     });
     return [...groups.entries()]
@@ -67,9 +69,11 @@ function groupByHour(raw: RawPoint[]): DataPoint[] {
 }
 
 function groupByDay(raw: RawPoint[]): DataPoint[] {
+    const p2 = (n: number) => String(n).padStart(2, '0');
     const groups = new Map<string, RawPoint[]>();
     raw.forEach(p => {
-        const key = p.timestamp.slice(0, 10);
+        const d = new Date(p.timestamp);
+        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
         groups.set(key, [...(groups.get(key) ?? []), p]);
     });
     return [...groups.entries()]
@@ -83,6 +87,22 @@ function groupByDay(raw: RawPoint[]): DataPoint[] {
 }
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
+
+function findNoDataZones(pts: DataPoint[]): Array<[{ xAxis: string }, { xAxis: string }]> {
+    const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
+    let start: string | null = null;
+    for (const pt of pts) {
+        const empty = Math.abs(pt.temperature) < 0.001
+                   && Math.abs(pt.humidity) < 0.001
+                   && Math.abs(pt.airQuality) < 0.001;
+        if (empty && start == null) { start = pt.label; }
+        else if (!empty && start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+    }
+    if (start != null && pts.length > 0) {
+        out.push([{ xAxis: start }, { xAxis: pts[pts.length - 1].label }]);
+    }
+    return out;
+}
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -234,7 +254,29 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         };
     }
 
+    const noDataZones = findNoDataZones(data);
+
     const series = [
+        // Phantom series — only used to render the no-data grey zones across all metrics
+        {
+            name: '__nodata__',
+            type: 'line' as const,
+            data: [],
+            lineStyle: { opacity: 0 },
+            itemStyle: { opacity: 0 },
+            markArea: noDataZones.length > 0 ? {
+                silent: true,
+                itemStyle: { color: 'rgba(148, 163, 184, 0.18)', borderWidth: 0 },
+                label: {
+                    show: true,
+                    position: 'insideTop' as const,
+                    color: '#94a3b8',
+                    fontSize: 10,
+                    formatter: () => 'No data',
+                },
+                data: noDataZones,
+            } : undefined,
+        },
         showTemp && {
             name:      'Temperature (°C)',
             type:      'line',
@@ -266,7 +308,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             ], COLORS.humidity) : undefined,
             markArea: L ? mkViolationArea(
                 violationRanges(data, d => d.humidity, L.humMin ?? null, L.humMax ?? null),
-                COLORS.humidity,
+                COLORS.temperature,
             ) : undefined,
         },
         showAQ && {
@@ -282,7 +324,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
             ], COLORS.airQuality) : undefined,
             markArea: L ? mkViolationArea(
                 violationRanges(data, d => d.airQuality, null, L.co2Max ?? null),
-                COLORS.airQuality,
+                COLORS.temperature,
             ) : undefined,
         },
     ].filter(Boolean);
@@ -327,6 +369,29 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            formatter: (params: any[]) => {
+                if (!params.length) return '';
+                let out = `<div style="margin-bottom:4px;font-weight:600">${params[0].name}</div>`;
+                for (const p of params) {
+                    if (p.seriesName === '__nodata__') continue;
+                    const v = p.value as number;
+                    let violated = false;
+                    if (L) {
+                        if (p.seriesName === 'Temperature (°C)')
+                            violated = (L.tempMin != null && v < L.tempMin) || (L.tempMax != null && v > L.tempMax);
+                        else if (p.seriesName === 'Humidity (%)')
+                            violated = (L.humMin != null && v < L.humMin) || (L.humMax != null && v > L.humMax);
+                        else if (p.seriesName === 'Air Quality (ppm)')
+                            violated = L.co2Max != null && v > L.co2Max;
+                    }
+                    const color = violated ? '#ef4444' : 'inherit';
+                    out += `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color}"></span>
+                        <span style="color:${color}">${p.seriesName}:&nbsp;<b>${v}</b></span>
+                    </div>`;
+                }
+                return out;
+            },
         },
         legend: {
             show:      showLegend,

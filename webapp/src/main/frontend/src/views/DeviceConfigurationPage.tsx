@@ -9,7 +9,6 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dropdown } from 'primereact/dropdown';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
-import axios from 'axios';
 import {
     RaspberryControllerApi,
     SensorStationControllerApi,
@@ -18,7 +17,6 @@ import {
     SensorStationDTO,
     RoomDTO,
 } from '../generated-skeleton-api';
-import { BASE_PATH } from '../generated-skeleton-api/base';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -129,10 +127,39 @@ const DeviceConfigurationPage: React.FC = () => {
         return true;
     });
 
-    const handleDelete = (label: string, id?: string) => {
-        if (!id || !globalThis.confirm(`Delete ${label}?`)) return;
-        // TODO: call delete API
-        toast.current?.show({ severity: 'info', summary: 'Deleted', detail: `${label} deleted (TODO: API call)`, life: 3000 });
+    const handleDeletePi = (id?: string) => {
+        if (!id || !globalThis.confirm('Delete this Raspberry Pi?')) return;
+        new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
+                fetchData();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+            });
+    };
+
+    const handleRetryPiConnection = (id?: string) => {
+        if (!id) return;
+        new RaspberryControllerApi().retryDevicesConnection({ raspberryId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
+            });
+    };
+
+    const handleDeleteSensor = (id?: string) => {
+        if (!id || !globalThis.confirm('Delete this Sensor Station?')) return;
+        new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
+                fetchData();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
+            });
     };
 
     const handleSettings = (label: string, id?: string) => {
@@ -140,10 +167,10 @@ const DeviceConfigurationPage: React.FC = () => {
         toast.current?.show({ severity: 'info', summary: 'Settings', detail: `Open settings for ${label} (id: ${id})`, life: 3000 });
     };
 
-    const actionsTemplate = (label: string, idField = 'id') => (row: Record<string, any>) => (
+    const actionsTemplate = (label: string, onDelete: (id?: string) => void, idField = 'id') => (row: Record<string, any>) => (
         <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
             <Button icon="pi pi-cog" rounded text severity="secondary" onClick={() => handleSettings(label, row[idField])} title={`${label} settings / details`} />
-            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => handleDelete(label, row[idField])} title={`Delete ${label}`} />
+            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => onDelete(row[idField])} title={`Delete ${label}`} />
         </div>
     );
 
@@ -257,23 +284,25 @@ const DeviceConfigurationPage: React.FC = () => {
             .catch(() => {});
     };
 
-    const handleDisconnectSensor = async (sensorId: string) => {
-        try {
-            await axios.delete(`${BASE_PATH}/api/sensor-stations/${sensorId}/room`);
-            toast.current?.show({ severity: 'success', summary: 'Disconnected', detail: 'Sensor station disconnected from Pi.', life: 3000 });
-            refreshSensors();
-        } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
-        }
+    const handleDisconnectSensor = (sensorId: string) => {
+        new SensorStationControllerApi().disconnectSensorFromRoom({ sensorId })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Disconnected', detail: 'Sensor station disconnected from Pi.', life: 3000 });
+                refreshSensors();
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
+            });
     };
 
-    const handleRetryConnection = async (sensorId: string) => {
-        try {
-            await axios.post(`${BASE_PATH}/api/sensor-stations/${sensorId}/retry-connection`);
-            toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
-        } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
-        }
+    const handleRetryConnection = (sensorId: string) => {
+        new SensorStationControllerApi().retrySensorStation({ sensorId })
+            .then(() => {
+                toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 });
+            })
+            .catch(() => {
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
+            });
     };
 
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
@@ -365,10 +394,11 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 }}
                             />
                             <Column header="Status" body={(row: RaspberryDTOReal) => statusBadge(row.status)} />
-                            <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
+                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDelete('Raspberry Pi', row.id)} />
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
                                 </div>
                             )} />
                         </DataTable>
@@ -391,12 +421,11 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 }}
                             />
                             <Column header="Status" body={row => statusBadge(row.status)} />
-                            <Column header="Last Measurement" body={() => <span style={{ color: '#9e9e9e' }}>N/A</span>} />
-                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
+<Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
                                 <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
                                     <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetryConnection(row.readId!)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit sensor station" onClick={() => openEditSensorDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDelete('Sensor Station', row.readId)} />
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)} />
                                 </div>
                             )} />
                         </DataTable>
