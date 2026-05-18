@@ -2,10 +2,7 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.RoleRepository;
-import at.qe.skeleton.repositories.RoomOccupancyRepository;
-import at.qe.skeleton.repositories.RoomRepository;
-import at.qe.skeleton.repositories.UserxRepository;
+import at.qe.skeleton.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +25,7 @@ public class UserSeederService {
     private final PasswordEncoder passwordEncoder;
     private final RoomRepository roomRepository;
     private final RoomOccupancyRepository occupancyRepository;
+    private final UserSettingsRepository userSettingsRepository;
 
     @Value("${app.seeder.default-password}")
     private String defaultSeedPassword;
@@ -115,7 +113,8 @@ public class UserSeederService {
             user.setMyRoom(room);
         }
 
-        userxRepository.save(user);
+        Userx u = userxRepository.save(user);
+        userSettingsRepository.save(UserSettings.builder().userId(u.getId()).build());
         log.info("Saved new user '{} {}' - {}", user.getFirstName(), user.getLastName(), user.getUsername());
     }
 }

@@ -1,8 +1,10 @@
 package at.qe.skeleton.tests.controllers;
 
+import at.qe.skeleton.dtos.UserSettingsPatchDTO;
 import at.qe.skeleton.dtos.UserxCreateDTO;
 import at.qe.skeleton.dtos.UserxPatchDTO;
 import at.qe.skeleton.mappers.UserxCreateMapper;
+import at.qe.skeleton.model.DateFormat;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.UserRoleService;
@@ -162,5 +164,34 @@ class UserxControllerIntegrationTests {
                 .with(SecurityMockMvcRequestPostProcessors.authentication(token)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.username").value(user.getUsername()));
+    }
+
+    @Test
+    void testThatGetUserSettingsReturnsHttp200Ok() throws Exception {
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
+        TestingAuthenticationToken token = new TestingAuthenticationToken(user.getUsername(), user, "ROLE_EMPLOYEE");
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/users/settings")
+                .with(SecurityMockMvcRequestPostProcessors.authentication(token)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.darkMode").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.fahrenheit").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.twelveHourFormat").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.format").value(DateFormat.DD_MM_YYYY.name()));
+    }
+
+    @Test
+    void testThatPatchUserSettingsReturnsHttp200Ok() throws Exception {
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
+        TestingAuthenticationToken token = new TestingAuthenticationToken(user.getUsername(), user, "ROLE_EMPLOYEE");
+        UserSettingsPatchDTO dto = new UserSettingsPatchDTO(true, null, null, true);
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/users/settings")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.darkMode").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.fahrenheit").value(false))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.twelveHourFormat").value(true))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.format").value(DateFormat.DD_MM_YYYY.name()));
     }
 }

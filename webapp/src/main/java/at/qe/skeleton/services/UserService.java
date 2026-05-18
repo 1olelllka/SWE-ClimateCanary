@@ -1,6 +1,9 @@
 package at.qe.skeleton.services;
 
+import at.qe.skeleton.dtos.UserSettingsPatchDTO;
+import at.qe.skeleton.model.UserSettings;
 import at.qe.skeleton.model.Userx;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -18,4 +21,8 @@ public interface UserService {
     Userx updateUser(UUID id, Userx dto);
 
     Userx createNewUser(Userx userx);
+
+    UserSettings getUserSettings(UUID id);
+
+    UserSettings updateUserSettings(UUID id, UserSettingsPatchDTO dto);
 }

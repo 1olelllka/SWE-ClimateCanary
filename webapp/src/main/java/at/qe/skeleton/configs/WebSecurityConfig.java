@@ -84,7 +84,7 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/users/me/absences")
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
-                                        .requestMatchers("/api/users/me").authenticated()
+                                        .requestMatchers("/api/users/me", "/api/users/settings").authenticated()
 
                                         .requestMatchers("/api/users/**")
                                         .hasAuthority(Permission.CAN_MANAGE_USERS.name())
