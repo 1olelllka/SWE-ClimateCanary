@@ -3,6 +3,7 @@ package at.qe.skeleton.controllers;
 import at.qe.skeleton.dtos.AggregatedDataPointDTO;
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.MeasurementBatchDTO;
+import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.services.ClimateStatsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +11,14 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -26,7 +29,12 @@ public class ClimateStatsController {
 
     @PostMapping("/measurements")
     public ResponseEntity<Void> postMeasurements(
-            @Valid @RequestBody MeasurementBatchDTO batch) {
+            @Valid @RequestBody MeasurementBatchDTO batch,
+            BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            String msg = bindingResult.getAllErrors().stream().map(err -> err.getDefaultMessage()).collect(Collectors.joining(" "));
+            throw new ValidationException(msg);
+        }
         climateStatsService.saveMeasurementBatch(batch);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

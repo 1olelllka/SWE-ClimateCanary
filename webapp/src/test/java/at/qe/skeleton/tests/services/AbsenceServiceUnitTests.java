@@ -524,4 +524,97 @@ class AbsenceServiceUnitTests {
         boolean res = absenceService.isClockedIn(user);
         assertFalse(res);
     }
+
+    @Test
+    void testThatCancelAbsenceSucceedsWhenValid() {
+        UUID absenceId = absence.getId();
+        absence.setStatus(AbsenceStatus.PENDING);
+        int initialAbsences = user.getNumberOfAbsences();
+        long absenceDays = ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate());
+
+        when(absenceRepository.findById(absenceId)).thenReturn(Optional.of(absence));
+        when(userxRepository.save(any(Userx.class))).thenAnswer(i -> i.getArgument(0));
+        when(absenceRepository.save(any(Absence.class))).thenAnswer(i -> i.getArgument(0));
+
+        Absence result = absenceService.cancelAbsence(absenceId, user);
+
+        assertNotNull(result);
+        assertEquals(AbsenceStatus.CANCELLED, result.getStatus());
+        Integer left = (int) (initialAbsences + absenceDays);
+        assertEquals(left, user.getNumberOfAbsences());
+        verify(userxRepository).save(user);
+        verify(absenceRepository).save(absence);
+    }
+
+    @Test
+    void testThatCancelAbsenceThrowsNotFoundWhenAbsenceDoesNotExist() {
+        UUID missingId = UUID.randomUUID();
+        when(absenceRepository.findById(missingId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> absenceService.cancelAbsence(missingId, user));
+        verify(userxRepository, never()).save(any());
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatCancelAbsenceThrowsForbiddenWhenUserDoesNotOwnAbsence() {
+        UUID absenceId = absence.getId();
+        Userx unauthorizedUser = new Userx();
+        unauthorizedUser.setId(UUID.randomUUID()); // Different ID from the absence owner
+
+        when(absenceRepository.findById(absenceId)).thenReturn(Optional.of(absence));
+
+        assertThrows(ForbiddenException.class, () -> absenceService.cancelAbsence(absenceId, unauthorizedUser));
+        verify(userxRepository, never()).save(any());
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatCancelAbsenceThrowsValidationExceptionWhenStatusIsNotPending() {
+        UUID absenceId = absence.getId();
+        absence.setStatus(AbsenceStatus.APPROVED);
+
+        when(absenceRepository.findById(absenceId)).thenReturn(Optional.of(absence));
+
+        assertThrows(ValidationException.class, () -> absenceService.cancelAbsence(absenceId, user));
+        verify(userxRepository, never()).save(any());
+        verify(absenceRepository, never()).save(any());
+    }
+
+
+    @Test
+    void testThatGetAllAvailableManagersForUserReturnsOnlyManagersWithCorrectAuthority() {
+        UUID deptId = dept.getId();
+
+        Userx eligibleManager = mock(Userx.class);
+        Userx ineligibleEmployee = mock(Userx.class);
+
+        org.springframework.security.core.GrantedAuthority managerAuth = () -> "CAN_MANAGE_ABSENCES";
+        org.springframework.security.core.GrantedAuthority employeeAuth = () -> "CAN_VIEW_MEASURES";
+
+        when(eligibleManager.getAuthorities()).thenAnswer(i -> Set.of(managerAuth));
+        when(ineligibleEmployee.getAuthorities()).thenAnswer(i -> Set.of(employeeAuth));
+        when(userxRepository.findAllByDepartment(deptId)).thenReturn(List.of(eligibleManager, ineligibleEmployee));
+
+        List<Userx> result = absenceService.getAllAvailableManagersForUser(user);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.contains(eligibleManager));
+        assertFalse(result.contains(ineligibleEmployee));
+        verify(userxRepository).findAllByDepartment(deptId);
+    }
+
+    @Test
+    void testThatGetAllAvailableManagersForUserReturnsEmptyListWhenNoManagersExist() {
+
+        UUID deptId = dept.getId();
+        when(userxRepository.findAllByDepartment(deptId)).thenReturn(Collections.emptyList());
+
+        List<Userx> result = absenceService.getAllAvailableManagersForUser(user);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(userxRepository).findAllByDepartment(deptId);
+    }
 }

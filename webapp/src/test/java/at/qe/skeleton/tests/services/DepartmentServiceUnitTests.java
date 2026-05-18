@@ -205,6 +205,139 @@ class DepartmentServiceUnitTests {
         verify(departmentRepository, never()).save(any());
     }
 
+    // --- editDepartmentWithRooms ---
+
+    @Test
+    void testThatEditDepartmentWithRoomsSucceedsWithAllOperations() {
+        // Arrange
+        Department updatedDept = new Department();
+        updatedDept.setName("Updated Informatics");
+        updatedDept.setBuilding(sampleBuilding);
+
+        UUID roomIdToDelete = UUID.randomUUID();
+        UUID existingRoomIdToAssign = UUID.randomUUID();
+
+        Room monitoringRoom = new Room();
+        monitoringRoom.setId(roomIdToDelete);
+
+        RaspberryPi mockPi = mock(RaspberryPi.class);
+        RoomMonitoring mockMonitoring = mock(RoomMonitoring.class);
+        when(mockMonitoring.getRaspberryPi()).thenReturn(mockPi);
+
+        Room existingRoom = new Room();
+        existingRoom.setId(existingRoomIdToAssign);
+        existingRoom.setRoomNumber("101");
+
+        Room newRoom = new Room();
+        newRoom.setRoomNumber("202");
+        Room savedNewRoom = new Room();
+        savedNewRoom.setId(UUID.randomUUID());
+        savedNewRoom.setRoomNumber("202");
+
+        // Mocking Department operations
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(departmentRepository.existsByNameAndBuildingId("Updated Informatics", sampleBuilding.getId())).thenReturn(false);
+        when(departmentRepository.save(any(Department.class))).thenAnswer(i -> i.getArgument(0));
+
+        // Mocking Room deletions
+        when(monitoringRepository.findById(roomIdToDelete)).thenReturn(Optional.of(mockMonitoring));
+
+        // Mocking Room assignments
+        when(roomRepository.findById(existingRoomIdToAssign)).thenReturn(Optional.of(existingRoom));
+        when(roomRepository.existsByRoomNumberAndDepartmentId("101", departmentId)).thenReturn(false);
+        when(roomRepository.save(existingRoom)).thenReturn(existingRoom);
+
+        // Mocking New Room creations
+        when(roomRepository.existsByRoomNumberAndDepartmentId("202", departmentId)).thenReturn(false);
+        when(roomRepository.save(newRoom)).thenReturn(savedNewRoom);
+
+        // Act
+        Department result = departmentService.editDepartmentWithRooms(
+                departmentId, updatedDept, List.of(roomIdToDelete), List.of(existingRoomIdToAssign), List.of(newRoom)
+        );
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Updated Informatics", result.getName());
+
+        // Verify deletion steps
+        verify(mockPi).setRoomMonitoring(null);
+        verify(raspberryPiRepository).save(mockPi);
+        verify(monitoringRepository).deleteById(roomIdToDelete);
+        verify(roomRepository).deleteById(roomIdToDelete);
+
+        // Verify assignment steps
+        assertEquals(sampleDepartment, existingRoom.getDepartment());
+        verify(roomRepository).save(existingRoom);
+
+        // Verify new room steps
+        assertEquals(sampleDepartment, newRoom.getDepartment());
+        verify(roomRepository).save(newRoom);
+        verify(monitoringRepository).save(any(RoomMonitoring.class));
+    }
+
+    @Test
+    void testThatEditDepartmentWithRoomsThrowsNotFoundWhenDepartmentMissing() {
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
+                departmentService.editDepartmentWithRooms(departmentId, sampleDepartment, List.of(), List.of(), List.of())
+        );
+    }
+
+    @Test
+    void testThatEditDepartmentWithRoomsThrowsConflictWhenNewNameExists() {
+        Department updatedDept = new Department();
+        updatedDept.setName("Conflicting Name");
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(departmentRepository.existsByNameAndBuildingId("Conflicting Name", sampleBuilding.getId())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () ->
+                departmentService.editDepartmentWithRooms(departmentId, updatedDept, List.of(), List.of(), List.of())
+        );
+    }
+
+    @Test
+    void testThatEditDepartmentWithRoomsThrowsNotFoundWhenAssignedRoomMissing() {
+        UUID missingRoomId = UUID.randomUUID();
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(roomRepository.findById(missingRoomId)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () ->
+                departmentService.editDepartmentWithRooms(departmentId, sampleDepartment, List.of(), List.of(missingRoomId), List.of())
+        );
+    }
+
+    @Test
+    void testThatEditDepartmentWithRoomsThrowsConflictWhenAssignedRoomNumberAlreadyExistsInDept() {
+        UUID assignedRoomId = UUID.randomUUID();
+        Room existingRoom = new Room();
+        existingRoom.setId(assignedRoomId);
+        existingRoom.setRoomNumber("303");
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(roomRepository.findById(assignedRoomId)).thenReturn(Optional.of(existingRoom));
+        when(roomRepository.existsByRoomNumberAndDepartmentId("303", departmentId)).thenReturn(true);
+
+        assertThrows(ConflictException.class, () ->
+                departmentService.editDepartmentWithRooms(departmentId, sampleDepartment, List.of(), List.of(assignedRoomId), List.of())
+        );
+    }
+
+    @Test
+    void testThatEditDepartmentWithRoomsThrowsConflictWhenNewRoomNumberAlreadyExistsInDept() {
+        Room newRoom = new Room();
+        newRoom.setRoomNumber("404");
+
+        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
+        when(roomRepository.existsByRoomNumberAndDepartmentId("404", departmentId)).thenReturn(true);
+
+        assertThrows(ConflictException.class, () ->
+                departmentService.editDepartmentWithRooms(departmentId, sampleDepartment, List.of(), List.of(), List.of(newRoom))
+        );
+    }
+
     @Test
     void testThatPatchSpecificDepartmentThrowsNotFoundWhenMissing() {
         when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());

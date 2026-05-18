@@ -317,6 +317,40 @@ class AbsenceControllerIntegrationTests {
     }
 
     @Test
+    void testThatCancelAbsenceReturnsHttp404NotFoundIfAbsenceNotFound() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + UUID.randomUUID() + "/cancel")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    void testThatCancelAbsenceReturnsHttp403ForbiddenIfAbsenceDoesNotBelongToUser() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.manager.getUsername(), this.manager, "CAN_MANAGE_OWN_ABSENCE");
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + this.mockedAbsence.getId() + "/cancel")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
+    void testThatCancelAbsenceReturnsHttp400BadRequestIfAbsenceIsNotPending() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        absenceService.updateAbsenceStatus(this.mockedAbsence.getId(), AbsenceStatus.APPROVED);
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + this.mockedAbsence.getId() + "/cancel")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void testThatCancelAbsenceReturnsHttp200OkIfSuccessfullyCanceled() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/absences/" + this.mockedAbsence.getId() + "/cancel")
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
     void testThatClockInReturnsHttp409ConflictIfUserHasAlreadyClockedIn() throws Exception {
 
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
@@ -482,6 +516,16 @@ class AbsenceControllerIntegrationTests {
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.clockedIn").value("false"));
+    }
+
+    @Test
+    void testThatGetAvailableManagersForAbsenceReturnsHttp200OkAndListOfAvailableManagers() throws Exception {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                this.user.getUsername(), this.user, "CAN_MANAGE_OWN_ABSENCE");
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/absences/managers")
+                .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").exists());
     }
 
 }
