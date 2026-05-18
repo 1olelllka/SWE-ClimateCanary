@@ -76,7 +76,9 @@ void BLEMessageHandler::handleRxMessage(
         tip
       );
 
-      if (violationStatus == "BLUE") {
+      if (violationStatus == "GREEN") {
+        ledManager.update(LedManager::LedMode::Green);
+      } else if (violationStatus == "YELLOW") {
         ledManager.update(LedManager::LedMode::Blue);
       } else if (violationStatus == "RED") {
         ledManager.update(LedManager::LedMode::Red);
@@ -87,18 +89,19 @@ void BLEMessageHandler::handleRxMessage(
   }
 
   else if (received.startsWith("RESOLVED:")){
-    ledManager.update(LedManager::LedMode::Green);
+    ledManager.update(LedManager::LedMode::White);
     manager->displayManager->clearWarningData();
   }
 
   else if (received == "ERROR:WEBAPP_OFFLINE") {
+    Serial.println("Webapp offline");
     ledManager.update(LedManager::LedMode::Off);
     faultManager.set(FaultType::WebappOffline);
     manager->displayManager->updateFault(faultManager.activeText());
   }
 
   else if (received == "ERROR:WEBAPP_CLEAR") {
-    ledManager.update(LedManager::LedMode::Green);
+    ledManager.update(LedManager::LedMode::White);
     faultManager.clear(FaultType::WebappOffline);
     manager->displayManager->updateFault(faultManager.activeText());
   }

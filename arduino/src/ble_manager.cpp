@@ -5,7 +5,7 @@
 #include "led_manager.h"
 #include "reading_buffer.h"
 
-#define JSON_BUFFER_SIZE 128
+#define JSON_BUFFER_SIZE 192
 #define ADVERTISING_INTERVAL 32
 #define TIMESTAMP_MAX_LENGTH 19
 
@@ -53,7 +53,7 @@ void BLEManager::poll() {
     
     faultManager.clear(FaultType::PiDisconnected);
     displayManager->updateFault(faultManager.activeText());
-    ledManager.update(LedManager::LedMode::Green);
+    ledManager.update(LedManager::LedMode::White);
 
     timeReceived = false;
 
@@ -66,6 +66,7 @@ void BLEManager::poll() {
 
     faultManager.set(FaultType::PiDisconnected);
     displayManager->updateFault(faultManager.activeText());
+    ledManager.update(LedManager::LedMode::Off);
 
     currentCentral = BLEDevice();
     timeReceived = false;
@@ -102,7 +103,7 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   json += ",\"humidity\":";
   json += String(r.humidityPct, 2);
 
-  json += ",\"co2\":";
+  json += ",\"iaq\":";
   json += String(r.airQualityIndex, 2);
 
   json += "}";
@@ -129,7 +130,7 @@ String BLEManager::serializeBufferedReading(const BufferedReading& buffered) con
   json += ",\"humidity\":";
   json += String(buffered.reading.humidityPct, 2);
 
-  json += ",\"co2\":";
+  json += ",\"iaq\":";
   json += String(buffered.reading.airQualityIndex, 2);
 
   json += "}";
@@ -143,7 +144,7 @@ void BLEManager::sendReading(const SensorReading& reading) {
   }
 
   if (!timeReceived) {
-    Serial.println("Skipping reading: no time sync available");
+    Serial.println("Cannot send reading: time sync not established");
     return;
   }
 

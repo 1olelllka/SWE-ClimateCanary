@@ -37,13 +37,13 @@ private:
   BLEStringCharacteristic txCharacteristic{
     BLE_TX_UUID,
     BLERead | BLENotify,
-    128
+    192
   };
 
   BLEStringCharacteristic rxCharacteristic{
     BLE_RX_UUID,
     BLEWriteWithoutResponse,
-    128
+    192
   };
 
   static BLEManager* instance;

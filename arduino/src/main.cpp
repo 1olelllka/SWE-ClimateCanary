@@ -89,7 +89,7 @@ void loop() {
 
     if (now < SENSOR_WARMUP_TIME_MS) {
       displayManager.showStabilizing(SENSOR_WARMUP_TIME_MS - now);
-      Serial.println("Still in gas sensor warm-up period, skipping sensor read");
+      Serial.println("Stabilizing sensor, skipping sensor read");
     } else if (sensorManager.update()) {
       const SensorReading reading = sensorManager.getReading();
       if (reading.valid) {
