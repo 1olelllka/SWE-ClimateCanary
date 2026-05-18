@@ -97,7 +97,7 @@ public class WarningSeederService {
                 .sensorWriteId(UUID.randomUUID())
                 .message(message)
                 .createdAt(LocalDateTime.now().minusMinutes(minutesAgo))
-                .resolvedAt(null)
+                .resolvedAt(LocalDateTime.now().plusMinutes(5))
                 .tip(tip)
                 .build();
     }
