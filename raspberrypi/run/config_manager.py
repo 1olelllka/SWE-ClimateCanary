@@ -25,7 +25,7 @@ class ConfigManager:
 # Full config fetch
 
     @staticmethod
-    async def fetch_and_seed(pi_id: str, server_url: str, db, auth) -> None:
+    async def fetch_and_seed(pi_id: str, server_url: str, db, auth) -> list[str]:
         await db.set_config('raspberry_id', pi_id)
         await db.set_config('server_url', server_url)
 
@@ -38,11 +38,61 @@ class ConfigManager:
                 f"[Config] Could not reach webapp for full config fetch: {e}. "
                 "Continuing with existing DB config."
             )
-            return
+            # Cannot validate — treat as non-fatal; caller keeps whatever is in DB.
+            return []
+
+        missing: list[str] = []
+
+        room_id = remote.get('roomId')
+        if room_id:
+            await db.set_config('room_id', room_id)
+        else:
+            missing.append('roomId')
+
+        frequency = remote.get('frequency')
+        if frequency is not None:
+            await db.set_config('frequency', str(frequency))
+        else:
+            missing.append('frequency')
+
+        limits = remote.get('limits')
+        if limits:
+            limit_updates = {
+                'max_temp': limits.get('tempMax'),
+                'min_temp': limits.get('tempMin'),
+                'max_moisture': limits.get('humMax'),
+                'min_moisture': limits.get('humMin'),
+                'max_co2': limits.get('co2Max'),
+            }
+            null_limit_keys = []
+            for key, value in limit_updates.items():
+                if value is not None:
+                    await db.set_limit(key, float(value))
+                else:
+                    null_limit_keys.append(key)
+            if null_limit_keys:
+                missing.append(f"limits({', '.join(null_limit_keys)})")
+        else:
+            missing.append('limits')
+
+        occupancy = remote.get('occupancy')
+        if occupancy:
+            effective = occupancy.get('effectiveOccupancy')
+            privacy   = occupancy.get('privacyMode')
+
+            if effective is not None:
+                await db.set_limit('current_occupancy', float(effective))
+            else:
+                missing.append('occupancy.effectiveOccupancy')
+
+            if privacy is not None:
+                await db.set_limit('privacy_mode', 1.0 if privacy else 0.0)
+            else:
+                missing.append('occupancy.privacyMode')
+        else:
+            missing.append('occupancy')
 
         sensors = remote.get('sensors', [])
-        limits = remote.get('limits', {})
-
         sensor_list = [
             {
                 'name': s.get('name'),
@@ -51,35 +101,22 @@ class ConfigManager:
             }
             for s in sensors if s.get('name')
         ]
-        logger.info(f"Sensors: {sensor_list}")
+        await db.set_sensors(sensor_list)
 
-        # Overwrite config keys unconditionally on (re-)seed
-        config_updates = {
-            'room_id': remote.get('roomId'),
-            'frequency': str(remote.get('frequency', 5)),
-        }
-        for key, value in config_updates.items():
-            if value is not None:
-                await db.set_config(key, value)
+        if missing:
+            logger.warning(
+                f"[Config] Seed completed with missing/null critical fields: {missing}. "
+                f"Sensors seeded: {len(sensor_list)}"
+            )
+        else:
+            logger.info(
+                f"[Config] Seed complete: {len(sensor_list)} sensors, "
+                f"room={room_id}, freq={frequency}, "
+                f"occupancy={occupancy.get('effectiveOccupancy')}, "
+                f"privacy={occupancy.get('privacyMode')}"
+            )
 
-        limit_updates = {
-            'max_temp': limits.get('tempMax'),
-            'min_temp': limits.get('tempMin'),
-            'max_moisture': limits.get('humMax'),
-            'min_moisture': limits.get('humMin'),
-            'max_co2': limits.get('co2Max'),
-        }
-        for key, value in limit_updates.items():
-            if value is not None:
-                await db.set_limit(key, float(value))
-
-        if sensor_list:
-            await db.set_sensors(sensor_list)
-
-        logger.info(
-            f"[Config] Seed complete: {len(sensor_list)} sensors, "
-            f"room={remote.get('roomId')}, freq={remote.get('frequency')}"
-        )
+        return missing
 
 # Live update handlers, called by WebManager endpoints
 
@@ -141,7 +178,7 @@ class ConfigManager:
             await db.add_sensors(to_add)
             logger.info(f"[Config] Sensors added: {[s['name'] for s in to_add]}")
         else:
-            logger.warning(f"[Config] SENSOR_ADD: none of the requested ids found in webapp response.")
+            logger.warning("[Config] SENSOR_ADD: none of the requested ids found in webapp response.")
 
     @staticmethod
     async def handle_sensor_delete(db, sensor_ids: list[str]) -> None:
@@ -164,7 +201,7 @@ class ConfigManager:
         )
 
         updates = {
-            'room_id': remote.get('roomId'),
+            'room_id':   remote.get('roomId'),
             'frequency': str(remote['frequency']) if remote.get('frequency') else None,
         }
         for key, value in updates.items():

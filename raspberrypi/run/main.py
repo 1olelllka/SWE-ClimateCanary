@@ -109,6 +109,10 @@ async def main(static_config: dict):
 
     web_manager.ble_managers = ble_managers
 
+    web_manager.processor = processor
+    web_manager.queues = queues
+    web_manager.scan_lock = scan_lock
+
     for sensor_name, ble_manager in ble_managers.items():
         tasks.append(asyncio.create_task(
             ble_manager.run(),
