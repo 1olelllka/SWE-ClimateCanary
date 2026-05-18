@@ -89,17 +89,17 @@ export const DepartmentRoomOverview: React.FC<DepartmentRoomOverviewProps> = ({
                                     <div className="department-room-values">
                                         <div>
                                             <span>Current Temperature</span>
-                                            <strong>{formatTemperature(currentClimate?.temperature)}</strong>
+                                            <strong>{currentClimate ? formatTemperature(currentClimate.temperature) : 'N/A'}</strong>
                                         </div>
 
                                         <div>
                                             <span>Current Humidity</span>
-                                            <strong>{formatHumidity(currentClimate?.humidity)}</strong>
+                                            <strong>{currentClimate ? formatHumidity(currentClimate.humidity) : 'N/A'}</strong>
                                         </div>
 
                                         <div>
                                             <span>Current Air Quality</span>
-                                            <strong>{formatAirQuality(currentClimate?.airQuality)}</strong>
+                                            <strong>{currentClimate ? formatAirQuality(currentClimate.airQuality) : 'N/A'}</strong>
                                         </div>
                                     </div>
                                 )}
