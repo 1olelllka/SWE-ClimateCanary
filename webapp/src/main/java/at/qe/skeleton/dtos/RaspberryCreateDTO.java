@@ -21,6 +21,9 @@ public record RaspberryCreateDTO(
         Integer port,
 
         @NotNull(message = "Room must not be null.")
-        UUID roomId
+        UUID roomId,
+
+        @NotNull(message = "Frequency must not be null.")
+        Integer frequency
 ) {
 }

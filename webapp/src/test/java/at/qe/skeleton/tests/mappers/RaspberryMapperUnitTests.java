@@ -113,12 +113,12 @@ class RaspberryMapperUnitTests {
         }
 
         @Test
-        @DisplayName("maps frequency as default 100 when not explicitly set")
+        @DisplayName("maps frequency as default 1 when not explicitly set")
         void mapsFrequencyAsDefaultWhenNotSet() {
             RaspberryPi pi = buildPi(UUID.randomUUID(), "Pi", "10.0.0.1",
                     DeviceStatus.ONLINE, null);
 
-            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(1000);
+            assertThat(mapper.mapTo(pi).frequency()).isEqualTo(1);
         }
 
         @Test
