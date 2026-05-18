@@ -5,6 +5,7 @@
 #include "config.h"
 #include "sensor_manager.h"
 #include "display_manager.h"
+#include "reading_buffer.h"
 
 class DisplayManager;
 class BLEMessageHandler;
@@ -15,6 +16,8 @@ public:
   void poll();
   bool isConnected() const;
   void sendReading(const SensorReading& reading);
+  String serializeBufferedReading(const BufferedReading& buffered) const;
+  void flushBufferedReadings();
 
   BLEDevice currentCentral;
   unsigned int piConnectionCount = 0; 

@@ -5,6 +5,8 @@
 #include "config.h"
 #include "button_manager.h"
 #include "led_manager.h"
+#include "fault_manager.h"
+#include "reading_buffer.h"
 
 #define MODE_BUTTON_PIN D2
 #define NEXT_PAGE_BUTTON_PIN D3
@@ -18,11 +20,12 @@ ButtonManager modeButton;
 ButtonManager nextPageButton;
 ButtonManager previousPageButton;
 LedManager ledManager;
+FaultManager faultManager;
+ReadingBuffer readingBuffer;
 
-
+bool fatalStartupFault = false;
 unsigned long lastSensorRead = 0;
 unsigned long lastBleSend = 0;
-
 bool isAdvertising = false;
 
 void setup() {
@@ -36,15 +39,17 @@ void setup() {
   previousPageButton.begin(PREVIOUS_PAGE_BUTTON_PIN);
   ledManager.begin();
   displayManager.begin();
-  displayManager.showStartup();
 
   if (!sensorManager.begin()) {
-    Serial.println("BME680 init failed");
+    fatalStartupFault = true;
+    faultManager.set(FaultType::SensorInitFailed);  
+    displayManager.showSetupFault(faultManager.activeText());                                         
+    Serial.println("BME688 init failed");
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
-    Serial.println("BLE init failed");
+    Serial.println("BLE init failed");  
     return;
   }
 
@@ -52,6 +57,10 @@ void setup() {
 }
 
 void loop() {
+  if (fatalStartupFault) {
+    return;
+  }
+
   bleManager.poll();
 
   modeButton.update();
@@ -79,6 +88,7 @@ void loop() {
     lastSensorRead = now;
 
     if (now < SENSOR_WARMUP_TIME_MS) {
+      displayManager.showStabilizing(SENSOR_WARMUP_TIME_MS - now);
       Serial.println("Still in gas sensor warm-up period, skipping sensor read");
     } else if (sensorManager.update()) {
       const SensorReading reading = sensorManager.getReading();
@@ -91,14 +101,16 @@ void loop() {
           isAdvertising = true;
         }
       } else {
+        displayManager.showFillingBuffer( 
+          sensorManager.getSampleCount(), 
+          sensorManager.getRequiredSamples()
+        );
         Serial.println("Collecting sensor data in buffer, waiting for valid reading...");
       }
-    } else {
-      Serial.println("Sensor read failed");
     }
   }
 
-  if (bleManager.isConnected() && now - lastBleSend >= bleManager.measureAndSendIntervalMs) {
+  if (now - lastBleSend >= bleManager.measureAndSendIntervalMs) {
     lastBleSend = now;
 
     const SensorReading reading = sensorManager.getReading();

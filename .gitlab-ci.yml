@@ -5,7 +5,7 @@ stages:
 # global pipeline configuration
 workflow:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"' # rule to always run the pipeline on main branch
+    - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_MERGE_REQUEST_ID' # rule to run pipeline on merge requests (or at least parts of it)
     - when: never # don't run pipeline on other branches/in other cases
 

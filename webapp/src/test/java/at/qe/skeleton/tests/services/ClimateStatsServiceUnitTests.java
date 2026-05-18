@@ -1,441 +1,905 @@
-//package at.qe.skeleton.tests.services;
-//
-//import at.qe.skeleton.dtos.*;
-//import at.qe.skeleton.exceptions.NotFoundException;
-//import at.qe.skeleton.mappers.AggregatedStatsMapper;
-//import at.qe.skeleton.mappers.ClimateDataPointMapper;
-//import at.qe.skeleton.mappers.LimitMapper;
-//import at.qe.skeleton.model.*;
-//import at.qe.skeleton.repositories.AggregatedStatsRepository;
-//import at.qe.skeleton.repositories.ClimateStatsRepository;
-//import at.qe.skeleton.repositories.RoomMonitoringRepository;
-//import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
-//import org.junit.jupiter.api.DisplayName;
-//import org.junit.jupiter.api.Nested;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.extension.ExtendWith;
-//import org.mockito.ArgumentCaptor;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.Spy;
-//import org.mockito.junit.jupiter.MockitoExtension;
-//
-//import java.time.LocalDateTime;
-//import java.time.LocalTime;
-//import java.time.OffsetDateTime;
-//import java.time.ZoneId;
-//import java.time.ZoneOffset;
-//import java.util.List;
-//import java.util.Optional;
-//import java.util.UUID;
-//
-//import static org.assertj.core.api.Assertions.assertThat;
-//import static org.assertj.core.api.Assertions.assertThatThrownBy;
-//import static org.mockito.Mockito.*;
-//
-//@ExtendWith(MockitoExtension.class)
-//@DisplayName("ClimateStatsService")
-//class ClimateStatsServiceUnitTests {
-//
-//    @Mock ClimateStatsRepository    climateStatsRepository;
-//    @Mock AggregatedStatsRepository aggregatedStatsRepository;
-//    @Mock RoomMonitoringRepository  roomMonitoringRepository;
-//
-//
-//    @Spy ClimateDataPointMapper climateMapper    = new ClimateDataPointMapper();
-//    @Spy AggregatedStatsMapper  aggregatedMapper = new AggregatedStatsMapper();
-//    @Spy LimitMapper            limitMapper      = new LimitMapper();
-//
-//    @InjectMocks ClimateStatsServiceImpl service;
-//
-//
-//
-//    private final UUID          roomId = UUID.randomUUID();
-//    private final OffsetDateTime base   = OffsetDateTime.of(LocalDateTime.of(2024, 6, 15, 12, 0), ZoneOffset.UTC);
-//    private final OffsetDateTime today  = OffsetDateTime.of(LocalDateTime.of(2024, 6, 15, 12, 0), ZoneOffset.UTC);
-//
-//    private RoomMonitoring room() {
-//        return RoomMonitoring.builder().roomId(roomId).roomNumber("A101").build();
-//    }
-//
-//    private ClimateStats stats(OffsetDateTime date, double temp, double hum, double poll) {
-//        return ClimateStats.builder()
-//                .date(date).tempVal(temp).humVal(hum).pollVal(poll)
-//                .roomMonitoring(room()).build();
-//    }
-//
-//
-//    @Nested
-//    @DisplayName("getCurrentClimate")
-//    class GetCurrentClimate {
-//
-//        @Test
-//        @DisplayName("returns mapped DTO for the latest entry")
-//        void returnsLatestMapped() {
-//            ClimateStats entity = stats(base, 22, 55, 400);
-//            when(climateStatsRepository
-//                    .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
-//                    .thenReturn(Optional.of(entity));
-//
-//            ClimateDataPointDTO result = service.getCurrentClimate(roomId);
-//
-//            assertThat(result.timestamp()).isEqualTo(base);
-//            assertThat(result.temperature()).isEqualTo(22);
-//            assertThat(result.humidity()).isEqualTo(55);
-//            assertThat(result.airQuality()).isEqualTo(400);
-//        }
-//
-//        @Test
-//        @DisplayName("throws NotFoundException when no data exists")
-//        void throwsWhenEmpty() {
-//            when(climateStatsRepository
-//                    .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
-//                    .thenReturn(Optional.empty());
-//
-//            assertThatThrownBy(() -> service.getCurrentClimate(roomId))
-//                    .isInstanceOf(NotFoundException.class)
-//                    .hasMessageContaining(roomId.toString());
-//        }
-//    }
-//
-//
-//
-//    @Nested
-//    @DisplayName("saveMeasurementBatch")
-//    class SaveMeasurementBatch {
-//
-//        @Test
-//        @DisplayName("saves a ClimateStats entity with correct values from batch")
-//        void savesCorrectEntity() {
-//            MeasurementBatchDTO batch = new MeasurementBatchDTO(
-//                    roomId, base,
-//                    List.of(
-//                            new ReadingDTO(MeasurementType.TEMPERATURE, 22.5),
-//                            new ReadingDTO(MeasurementType.HUMIDITY,    55.0),
-//                            new ReadingDTO(MeasurementType.CO2,         400.0)
-//                    ));
-//            when(roomMonitoringRepository.findById(roomId))
-//                    .thenReturn(Optional.of(room()));
-//            when(climateStatsRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-//
-//            service.saveMeasurementBatch(batch);
-//
-//            ArgumentCaptor<ClimateStats> captor = ArgumentCaptor.forClass(ClimateStats.class);
-//            verify(climateStatsRepository).save(captor.capture());
-//            ClimateStats saved = captor.getValue();
-//
-//            assertThat(saved.getTempVal()).isEqualTo(22.5);
-//            assertThat(saved.getHumVal()).isEqualTo(55.0);
-//            assertThat(saved.getPollVal()).isEqualTo(400.0);
-//            assertThat(saved.getDate()).isEqualTo(base);
-//            assertThat(saved.getRoomMonitoring().getRoomId()).isEqualTo(roomId);
-//        }
-//
-//        @Test
-//        @DisplayName("last reading of each type wins when duplicates are present")
-//        void lastReadingWins() {
-//            MeasurementBatchDTO batch = new MeasurementBatchDTO(
-//                    roomId, base,
-//                    List.of(
-//                            new ReadingDTO(MeasurementType.TEMPERATURE, 20.0),
-//                            new ReadingDTO(MeasurementType.TEMPERATURE, 25.0), // wins
-//                            new ReadingDTO(MeasurementType.HUMIDITY,    50.0),
-//                            new ReadingDTO(MeasurementType.CO2,         300.0)
-//                    ));
-//            when(roomMonitoringRepository.findById(roomId))
-//                    .thenReturn(Optional.of(room()));
-//            when(climateStatsRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-//
-//            service.saveMeasurementBatch(batch);
-//
-//            ArgumentCaptor<ClimateStats> captor = ArgumentCaptor.forClass(ClimateStats.class);
-//            verify(climateStatsRepository).save(captor.capture());
-//            assertThat(captor.getValue().getTempVal()).isEqualTo(25.0);
-//        }
-//
-//        @Test
-//        @DisplayName("missing reading type defaults to 0.0")
-//        void missingReadingDefaultsToZero() {
-//            MeasurementBatchDTO batch = new MeasurementBatchDTO(
-//                    roomId, base,
-//                    List.of(new ReadingDTO(MeasurementType.TEMPERATURE, 22.0))
-//            );
-//            when(roomMonitoringRepository.findById(roomId))
-//                    .thenReturn(Optional.of(room()));
-//            when(climateStatsRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-//
-//            service.saveMeasurementBatch(batch);
-//
-//            ArgumentCaptor<ClimateStats> captor = ArgumentCaptor.forClass(ClimateStats.class);
-//            verify(climateStatsRepository).save(captor.capture());
-//            assertThat(captor.getValue().getHumVal()).isZero();
-//            assertThat(captor.getValue().getPollVal()).isZero();
-//        }
-//
-//        @Test
-//        @DisplayName("throws NotFoundException when room does not exist")
-//        void throwsWhenRoomNotFound() {
-//            MeasurementBatchDTO batch = new MeasurementBatchDTO(
-//                    roomId, base,
-//                    List.of(new ReadingDTO(MeasurementType.TEMPERATURE, 22.0))
-//            );
-//            when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
-//
-//            assertThatThrownBy(() -> service.saveMeasurementBatch(batch))
-//                    .isInstanceOf(NotFoundException.class)
-//                    .hasMessageContaining(roomId.toString());
-//
-//            verify(climateStatsRepository, never()).save(any());
-//        }
-//    }
-//
-//
-//
-//    @Nested
-//    @DisplayName("getOvertime")
-//    class GetOvertime {
-//
-//        @Test
-//        @DisplayName("returns entries within date and time window")
-//        void filtersCorrectly() {
-//            OffsetDateTime  start     = today;
-//            OffsetDateTime  end       = today;
-//            LocalTime  startTime = LocalTime.of(8, 0);
-//            LocalTime  endTime   = LocalTime.of(18, 0);
-//
-//            List<ClimateStats> inWindow = List.of(
-//                    stats(today.withHour(10), 20, 50, 300),
-//                    stats(today.withHour(14), 21, 52, 320)
-//            );
-//
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    roomId,
-//                    start.toLocalDate().atTime(startTime).atZone(ZoneId.systemDefault()).toOffsetDateTime(),
-//                    end.toLocalDate().atTime(endTime).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
-//                    .thenReturn(inWindow);
-//
-//            List<ClimateDataPointDTO> result =
-//                    service.getOvertime(roomId, start.toLocalDate(), end.toLocalDate(), startTime, endTime);
-//
-//            assertThat(result).hasSize(2)
-//                    .extracting(ClimateDataPointDTO::temperature)
-//                    .containsExactly(20.0, 21.0);
-//        }
-//
-//        @Test
-//        @DisplayName("uses MIDNIGHT and LocalTime.MAX when times are null")
-//        void nullTimesDefaultToFullDay() {
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    roomId,
-//                    today.toLocalDate().atStartOfDay(ZoneId.systemDefault()).toOffsetDateTime(),
-//                    today.toLocalDate().atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toOffsetDateTime()))
-//                    .thenReturn(List.of());
-//
-//            List<ClimateDataPointDTO> result =
-//                    service.getOvertime(roomId, today.toLocalDate(), today.withHour(23).withMinute(59).toLocalDate(), null, null);
-//
-//            assertThat(result).isEmpty();
-//        }
-//
-//        @Test
-//        @DisplayName("returns empty list when repository returns no data")
-//        void returnsEmptyWhenNoData() {
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    any(), any(), any()))
-//                    .thenReturn(List.of());
-//
-//            assertThat(service.getOvertime(roomId, today.toLocalDate(), today.toLocalDate(), null, null)).isEmpty();
-//        }
-//    }
-//
-//
-//    @Nested
-//    @DisplayName("getClimateHistoryFull")
-//    class GetClimateHistoryFull {
-//
-//        @Test
-//        @DisplayName("groups by hour when granularity is HOUR and timeframe is not MONTH")
-//        void groupsByHourForWeek() {
-//            List<ClimateStats> raw = List.of(
-//                    stats(today.withHour(10), 20, 50, 300),
-//                    stats(today.withHour(10).withMinute(30), 22, 54, 320), // same hour
-//                    stats(today.withHour(11), 24, 58, 340)
-//            );
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    eq(roomId), any(), any()))
-//                    .thenReturn(raw);
-//
-//            List<AggregatedDataPointDTO> result =
-//                    service.getClimateHistoryFull(roomId, "WEEK", "HOUR");
-//
-//            // 10:00 and 10:30 collapse into one hourly bucket
-//            assertThat(result).hasSize(2);
-//            assertThat(result.get(0).avgTemperature()).isEqualTo(21.0); // (20+22)/2
-//        }
-//
-//        @Test
-//        @DisplayName("groups by day when granularity is DAY")
-//        void groupsByDayForWeek() {
-//            List<ClimateStats> raw = List.of(
-//                    stats(today.minusDays(1).withHour(10), 18, 45, 250),
-//                    stats(today.minusDays(1).withHour(14), 20, 50, 300), // same day
-//                    stats(today.withHour(10),              22, 55, 400)
-//            );
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    eq(roomId), any(), any()))
-//                    .thenReturn(raw);
-//
-//            List<AggregatedDataPointDTO> result =
-//                    service.getClimateHistoryFull(roomId, "WEEK", "DAY");
-//
-//            assertThat(result).hasSize(2);
-//            assertThat(result.get(0).avgTemperature()).isEqualTo(19.0); // (18+20)/2
-//        }
-//
-//        @Test
-//        @DisplayName("uses DAY grouping for MONTH timeframe even if granularity is HOUR")
-//        void monthTimeframeAlwaysUsesDay() {
-//            List<ClimateStats> raw = List.of(
-//                    stats(today.withHour(10), 20, 50, 300),
-//                    stats(today.withHour(10).withMinute(30), 22, 54, 320)  // same day
-//            );
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    eq(roomId), any(), any()))
-//                    .thenReturn(raw);
-//
-//            List<AggregatedDataPointDTO> result =
-//                    service.getClimateHistoryFull(roomId, "MONTH", "HOUR");
-//
-//            // forced to DAY grouping — both entries collapse into one day bucket
-//            assertThat(result).hasSize(1);
-//            assertThat(result.get(0).avgTemperature()).isEqualTo(21.0);
-//        }
-//
-//        @Test
-//        @DisplayName("throws IllegalArgumentException for unknown timeframe")
-//        void throwsForInvalidTimeframe() {
-//            assertThatThrownBy(() -> service.getClimateHistoryFull(roomId, "YEAR", "DAY"))
-//                    .isInstanceOf(IllegalArgumentException.class)
-//                    .hasMessageContaining("YEAR");
-//        }
-//
-//        @Test
-//        @DisplayName("returns empty list when no data exists")
-//        void returnsEmptyWhenNoData() {
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    any(), any(), any()))
-//                    .thenReturn(List.of());
-//
-//            assertThat(service.getClimateHistoryFull(roomId, "DAY", "HOUR")).isEmpty();
-//        }
-//    }
-//
-//
-//    @Nested
-//    @DisplayName("getClimateHistoryReduced")
-//    class GetClimateHistoryReduced {
-//
-//        @Test
-//        @DisplayName("returns aggregated stats when pre-aggregated data exists")
-//        void usesAggregatedData() {
-//            AggregatedStats agg = AggregatedStats.builder()
-//                    .roomId(roomId).date(today.toLocalDate()).granularity(Granularity.DAILY)
-//                    .avgTemp(21).avgHumidity(53).avgCO2(350)
-//                    .build();
-//            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
-//                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
-//                    .thenReturn(List.of(agg));
-//
-//            List<AggregatedDataPointDTO> result =
-//                    service.getClimateHistoryReduced(roomId, "WEEK");
-//
-//            assertThat(result).hasSize(1);
-//            assertThat(result.get(0).avgTemperature()).isEqualTo(21.0f);
-//            verify(climateStatsRepository, never())
-//                    .findByRoomMonitoring_RoomIdAndDateBetween(any(), any(), any());
-//        }
-//
-//        @Test
-//        @DisplayName("falls back to raw grouping when no aggregated data exists")
-//        void fallsBackToRaw() {
-//            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
-//                    eq(roomId), any(), any(), eq(Granularity.DAILY)))
-//                    .thenReturn(List.of());
-//            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(
-//                    eq(roomId), any(), any()))
-//                    .thenReturn(List.of(stats(today.withHour(10), 20, 50, 300)));
-//
-//            List<AggregatedDataPointDTO> result =
-//                    service.getClimateHistoryReduced(roomId, "WEEK");
-//
-//            assertThat(result).hasSize(1);
-//            verify(climateStatsRepository)
-//                    .findByRoomMonitoring_RoomIdAndDateBetween(any(), any(), any());
-//        }
-//
-//        @Test
-//        @DisplayName("throws IllegalArgumentException for unknown timeframe")
-//        void throwsForInvalidTimeframe() {
-//            assertThatThrownBy(() -> service.getClimateHistoryReduced(roomId, "DECADE"))
-//                    .isInstanceOf(IllegalArgumentException.class)
-//                    .hasMessageContaining("DECADE");
-//        }
-//    }
-//
-//
-//    @Nested
-//    @DisplayName("getLimits")
-//    class GetLimits {
-//
-//        private RoomMonitoring roomWithLimits() {
-//            return RoomMonitoring.builder()
-//                    .roomId(roomId)
-//                    .tempLimit(TemperatureLimit.builder().minVal(18f).maxVal(26f).build())
-//                    .humLimit(HumidityLimit.builder().minVal(30f).maxVal(70f).build())
-//                    .polLimit(PollutionLimit.builder().maxVal(800f).build())
-//                    .build();
-//        }
-//
-//        @Test
-//        @DisplayName("returns LimitDTO with correct values when room exists")
-//        void returnsLimitsForKnownRoom() {
-//            when(roomMonitoringRepository.findById(roomId))
-//                    .thenReturn(Optional.of(roomWithLimits()));
-//
-//            LimitDTO result = service.getLimits(roomId);
-//
-//            assertThat(result.roomId()).isEqualTo(roomId);
-//            assertThat(result.tempMin()).isEqualTo(18f);
-//            assertThat(result.tempMax()).isEqualTo(26f);
-//            assertThat(result.humMin()).isEqualTo(30f);
-//            assertThat(result.humMax()).isEqualTo(70f);
-//            assertThat(result.co2Max()).isEqualTo(800f);
-//        }
-//
-//        @Test
-//        @DisplayName("returns defaults when room has no limits configured")
-//        void returnsDefaultsWhenLimitsNull() {
-//            RoomMonitoring noLimits = RoomMonitoring.builder().roomId(roomId).build();
-//            when(roomMonitoringRepository.findById(roomId))
-//                    .thenReturn(Optional.of(noLimits));
-//
-//            LimitDTO result = service.getLimits(roomId);
-//
-//            assertThat(result.tempMin()).isEqualTo(18f);
-//            assertThat(result.tempMax()).isEqualTo(26f);
-//            assertThat(result.humMin()).isEqualTo(30f);
-//            assertThat(result.humMax()).isEqualTo(70f);
-//            assertThat(result.co2Max()).isEqualTo(800f);
-//        }
-//
-//        @Test
-//        @DisplayName("throws NotFoundException when room does not exist")
-//        void throwsWhenRoomNotFound() {
-//            when(roomMonitoringRepository.findById(roomId)).thenReturn(Optional.empty());
-//
-//            assertThatThrownBy(() -> service.getLimits(roomId))
-//                    .isInstanceOf(NotFoundException.class)
-//                    .hasMessageContaining(roomId.toString());
-//        }
-//    }
-//}
+package at.qe.skeleton.tests.services;
+
+import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.exceptions.ForbiddenException;
+import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.exceptions.ValidationException;
+import at.qe.skeleton.mappers.AggregatedStatsMapper;
+import at.qe.skeleton.mappers.ClimateDataPointMapper;
+import at.qe.skeleton.mappers.LimitMapper;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.AggregatedStatsRepository;
+import at.qe.skeleton.repositories.ClimateStatsRepository;
+import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.services.AuthenticatedUserService;
+import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.time.*;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class ClimateStatsServiceUnitTests {
+
+    @Mock private ClimateStatsRepository climateStatsRepository;
+    @Mock private AggregatedStatsRepository aggregatedStatsRepository;
+    @Mock private RoomMonitoringRepository roomMonitoringRepository;
+    @Mock private RoomRepository roomRepository;
+    @Mock private ClimateDataPointMapper climateMapper;
+    @Mock private AggregatedStatsMapper aggregatedMapper;
+    @Mock private LimitMapper limitMapper;
+    @Mock private AuthenticatedUserService authenticatedUserService;
+    @Mock private Userx user;
+
+    @InjectMocks
+    private ClimateStatsServiceImpl climateStatsService;
+
+    // Shared fixtures
+    private UUID roomId;
+    private Room officeRoom;
+    private Room sharedRoom;
+    private Department department;
+    private Department otherDepartment;
+    private Room userRoom;
+
+    @BeforeEach
+    void setUp() {
+        roomId = UUID.randomUUID();
+
+        department = new Department();
+        department.setId(UUID.randomUUID());
+
+        otherDepartment = new Department();
+        otherDepartment.setId(UUID.randomUUID());
+
+        officeRoom = new Room();
+        officeRoom.setId(roomId);
+        officeRoom.setDepartment(department);
+        officeRoom.setRoomType(RoomType.OFFICE);
+
+        sharedRoom = new Room();
+        sharedRoom.setId(UUID.randomUUID());
+        sharedRoom.setDepartment(department);
+        sharedRoom.setRoomType(RoomType.SHARED);
+
+        userRoom = new Room();
+        userRoom.setId(roomId);
+        userRoom.setDepartment(department);
+        userRoom.setRoomType(RoomType.OFFICE);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getCurrentClimate
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class GetCurrentClimate {
+
+        @Test
+        void buildingManager_canViewAnyRoom() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 22.0, 50.0, 400.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(climateStatsRepository.findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
+                    .thenReturn(Optional.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            ClimateDataPointDTO result = climateStatsService.getCurrentClimate(roomId);
+
+            assertNotNull(result);
+            assertEquals(dto, result);
+        }
+
+        @Test
+        void buildingManager_throwsNotFound_whenNoData() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(climateStatsRepository.findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
+                    .thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class,
+                    () -> climateStatsService.getCurrentClimate(roomId));
+        }
+
+        @Test
+        void deptHead_canViewOwnDepartmentRoom() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 21.0, 48.0, 390.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_DEPARTMENT_MEASURES")));
+            when(user.getMyRoom()).thenReturn(userRoom); // same department
+            when(climateStatsRepository.findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
+                    .thenReturn(Optional.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            ClimateDataPointDTO result = climateStatsService.getCurrentClimate(roomId);
+
+            assertEquals(dto, result);
+        }
+
+        @Test
+        void deptHead_throwsForbidden_whenDifferentDepartment() {
+            Room foreignRoom = new Room();
+            foreignRoom.setId(UUID.randomUUID());
+            foreignRoom.setDepartment(otherDepartment);
+            foreignRoom.setRoomType(RoomType.OFFICE);
+
+            Room myRoom = new Room();
+            myRoom.setId(UUID.randomUUID());
+            myRoom.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignRoom.getId())).thenReturn(Optional.of(foreignRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_DEPARTMENT_MEASURES")));
+            when(user.getMyRoom()).thenReturn(myRoom);
+
+            assertThrows(ForbiddenException.class,
+                    () -> climateStatsService.getCurrentClimate(foreignRoom.getId()));
+        }
+
+        @Test
+        void deptHead_throwsForbidden_whenMyRoomIsNull() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_DEPARTMENT_MEASURES")));
+            when(user.getMyRoom()).thenReturn(null);
+
+            assertThrows(ForbiddenException.class,
+                    () -> climateStatsService.getCurrentClimate(roomId));
+        }
+
+        @Test
+        void employee_canViewOwnOffice() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 20.0, 55.0, 410.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom); // same room id
+            when(climateStatsRepository.findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId))
+                    .thenReturn(Optional.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            ClimateDataPointDTO result = climateStatsService.getCurrentClimate(roomId);
+
+            assertEquals(dto, result);
+        }
+
+        @Test
+        void employee_canViewSharedRoomInOwnDepartment() {
+            UUID sharedId = sharedRoom.getId();
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 20.0, 55.0, 410.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(sharedId)).thenReturn(Optional.of(sharedRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom); // same department, different room
+            when(climateStatsRepository.findTopByRoomMonitoring_RoomIdOrderByDateDesc(sharedId))
+                    .thenReturn(Optional.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            ClimateDataPointDTO result = climateStatsService.getCurrentClimate(sharedId);
+
+            assertEquals(dto, result);
+        }
+
+        @Test
+        void employee_throwsForbidden_whenRequestingOtherOffice() {
+            UUID otherRoomId = UUID.randomUUID();
+            Room otherRoom = new Room();
+            otherRoom.setId(otherRoomId);
+            otherRoom.setRoomType(RoomType.OFFICE);
+            otherRoom.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(otherRoomId)).thenReturn(Optional.of(otherRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom); // different room id
+
+            assertThrows(ForbiddenException.class,
+                    () -> climateStatsService.getCurrentClimate(otherRoomId));
+        }
+
+        @Test
+        void employee_throwsForbidden_whenRequestingSharedRoomInOtherDepartment() {
+            Room foreignShared = new Room();
+            foreignShared.setId(UUID.randomUUID());
+            foreignShared.setRoomType(RoomType.SHARED);
+            foreignShared.setDepartment(otherDepartment);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignShared.getId())).thenReturn(Optional.of(foreignShared));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class,
+                    () -> climateStatsService.getCurrentClimate(foreignShared.getId()));
+        }
+
+        @Test
+        void noMatchingRole_throwsForbidden() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn((Collection) List.of());
+
+            assertThrows(ForbiddenException.class,
+                    () -> climateStatsService.getCurrentClimate(roomId));
+        }
+
+        @Test
+        void throwsNotFound_whenRoomDoesNotExist() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class,
+                    () -> climateStatsService.getCurrentClimate(roomId));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // saveMeasurementBatch
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class SaveMeasurementBatch {
+
+        @Test
+        void persistsAllThreeMeasurementTypes() {
+            UUID monitoringId = UUID.randomUUID();
+            RoomMonitoring monitoring = new RoomMonitoring();
+            monitoring.setRoomId(monitoringId);
+
+            MeasurementBatchDTO batch = new MeasurementBatchDTO(
+                    monitoringId,
+                    OffsetDateTime.now(),
+                    List.of(
+                            new ReadingDTO(MeasurementType.TEMPERATURE, 23.5),
+                            new ReadingDTO(MeasurementType.HUMIDITY, 55.0),
+                            new ReadingDTO(MeasurementType.CO2, 420.0)
+                    )
+            );
+
+            when(roomMonitoringRepository.findById(monitoringId)).thenReturn(Optional.of(monitoring));
+
+            climateStatsService.saveMeasurementBatch(batch);
+
+            verify(climateStatsRepository).save(argThat(stats ->
+                    stats.getTempVal() == 23.5 &&
+                            stats.getHumVal() == 55.0 &&
+                            stats.getPollVal() == 420.0 &&
+                            stats.getRoomMonitoring().equals(monitoring)
+            ));
+        }
+
+        @Test
+        void throwsNotFound_whenRoomMonitoringMissing() {
+            UUID monitoringId = UUID.randomUUID();
+            MeasurementBatchDTO batch = new MeasurementBatchDTO(
+                    monitoringId,
+                    OffsetDateTime.now(),
+                    List.of(new ReadingDTO(MeasurementType.TEMPERATURE, 20.0))
+            );
+
+            when(roomMonitoringRepository.findById(monitoringId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class,
+                    () -> climateStatsService.saveMeasurementBatch(batch));
+            verify(climateStatsRepository, never()).save(any());
+        }
+
+        @Test
+        void handlesPartialReadings_missingCO2() {
+            UUID monitoringId = UUID.randomUUID();
+            RoomMonitoring monitoring = new RoomMonitoring();
+            monitoring.setRoomId(monitoringId);
+
+            MeasurementBatchDTO batch = new MeasurementBatchDTO(
+                    monitoringId,
+                    OffsetDateTime.now(),
+                    List.of(
+                            new ReadingDTO(MeasurementType.TEMPERATURE, 21.0),
+                            new ReadingDTO(MeasurementType.HUMIDITY, 60.0)
+                    )
+            );
+
+            when(roomMonitoringRepository.findById(monitoringId)).thenReturn(Optional.of(monitoring));
+
+            climateStatsService.saveMeasurementBatch(batch);
+
+            // CO2 defaults to 0 since no reading was provided
+            verify(climateStatsRepository).save(argThat(stats ->
+                    stats.getTempVal() == 21.0 &&
+                            stats.getHumVal() == 60.0 &&
+                            stats.getPollVal() == 0.0
+            ));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getOvertime
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class GetOvertime {
+
+        private final LocalDate start = LocalDate.now().minusDays(1);
+        private final LocalDate end   = LocalDate.now();
+
+        @Test
+        void buildingManager_returnsData() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 21.0, 45.0, 350.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            List<ClimateDataPointDTO> result = climateStatsService.getOvertime(
+                    roomId, start, end, LocalTime.MIN, LocalTime.MAX);
+
+            assertEquals(1, result.size());
+            assertEquals(dto, result.get(0));
+        }
+
+        @Test
+        void deptHead_canViewOwnDepartmentOffice() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 19.0, 43.0, 330.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_DEPARTMENT_MEASURES")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            List<ClimateDataPointDTO> result = climateStatsService.getOvertime(
+                    roomId, start, end, null, null);
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void deptHead_throwsForbidden_whenDifferentDepartment() {
+            Room foreignRoom = new Room();
+            foreignRoom.setId(UUID.randomUUID());
+            foreignRoom.setDepartment(otherDepartment);
+            foreignRoom.setRoomType(RoomType.OFFICE);
+
+            Room myRoom = new Room();
+            myRoom.setId(UUID.randomUUID());
+            myRoom.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignRoom.getId())).thenReturn(Optional.of(foreignRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_DEPARTMENT_MEASURES")));
+            when(user.getMyRoom()).thenReturn(myRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getOvertime(foreignRoom.getId(), start, end, null, null));
+        }
+
+        @Test
+        void employee_canViewOwnOfficeOvertime() {
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 20.0, 50.0, 400.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            List<ClimateDataPointDTO> result = climateStatsService.getOvertime(
+                    roomId, start, end, null, null);
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void employee_canViewSharedRoomInOwnDepartment() {
+            UUID sharedId = sharedRoom.getId();
+            ClimateStats stats = ClimateStats.builder().build();
+            ClimateDataPointDTO dto = new ClimateDataPointDTO(OffsetDateTime.now(), 20.0, 50.0, 400.0);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(sharedId)).thenReturn(Optional.of(sharedRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(sharedId), any(), any()))
+                    .thenReturn(List.of(stats));
+            when(climateMapper.mapTo(stats)).thenReturn(dto);
+
+            List<ClimateDataPointDTO> result = climateStatsService.getOvertime(
+                    sharedId, start, end, null, null);
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void employee_throwsForbidden_whenRequestingOtherOffice() {
+            UUID otherRoomId = UUID.randomUUID();
+            Room otherRoom = new Room();
+            otherRoom.setId(otherRoomId);
+            otherRoom.setRoomType(RoomType.OFFICE);
+            otherRoom.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(otherRoomId)).thenReturn(Optional.of(otherRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getOvertime(otherRoomId, start, end, null, null));
+        }
+
+        @Test
+        void employee_throwsForbidden_whenSharedRoomDifferentDepartment() {
+            Room foreignShared = new Room();
+            foreignShared.setId(UUID.randomUUID());
+            foreignShared.setRoomType(RoomType.SHARED);
+            foreignShared.setDepartment(otherDepartment);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignShared.getId())).thenReturn(Optional.of(foreignShared));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_OWN_OFFICE_CLIMATE")));
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getOvertime(foreignShared.getId(), start, end, null, null));
+        }
+
+        @Test
+        void throwsValidation_whenEndBeforeStart() {
+            assertThrows(ValidationException.class, () ->
+                    climateStatsService.getOvertime(roomId, end, start, null, null));
+        }
+
+        @Test
+        void throwsValidation_whenRangeExceedsTwoDays() {
+            LocalDate farFuture = LocalDate.now().plusDays(5);
+            assertThrows(ValidationException.class, () ->
+                    climateStatsService.getOvertime(roomId, start, farFuture, null, null));
+        }
+
+        @Test
+        void throwsNotFound_whenRoomDoesNotExist() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () ->
+                    climateStatsService.getOvertime(roomId, start, end, null, null));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getClimateHistoryFull
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class GetClimateHistoryFull {
+
+        @Test
+        void buildingManager_returnsAggregatedDailyData() {
+            AggregatedStats stats = new AggregatedStats();
+            AggregatedDataPointDTO dto = new AggregatedDataPointDTO(LocalDate.now(), 22.0, 50.0, 400.0);
+
+            LocalDate from = LocalDate.now().minusDays(5);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.DAILY)).thenReturn(List.of(stats));
+            when(aggregatedMapper.mapTo(stats)).thenReturn(dto);
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "DAY");
+
+            assertEquals(1, result.size());
+            assertEquals(dto, result.get(0));
+        }
+
+        @Test
+        void buildingManager_returnsAggregatedWeeklyData() {
+            AggregatedStats stats = new AggregatedStats();
+            AggregatedDataPointDTO dto = new AggregatedDataPointDTO(LocalDate.now(), 21.0, 48.0, 390.0);
+
+            LocalDate from = LocalDate.now().minusDays(60);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.WEEKLY)).thenReturn(List.of(stats));
+            when(aggregatedMapper.mapTo(stats)).thenReturn(dto);
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "WEEK");
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void buildingManager_hourGranularity_shortRange_groupsRawByHour() {
+            OffsetDateTime ts = LocalDate.now().atTime(10, 0)
+                    .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+            ClimateStats stats = ClimateStats.builder()
+                    .date(ts).tempVal(20.0).humVal(50.0).pollVal(400.0).build();
+
+            LocalDate from = LocalDate.now().minusDays(1);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "HOUR");
+
+            assertEquals(1, result.size());
+            assertEquals(20.0, result.get(0).avgTemperature());
+        }
+
+        @Test
+        void buildingManager_fallsBackToRawDay_whenAggregatedEmpty() {
+            OffsetDateTime ts = LocalDate.now().minusDays(3).atStartOfDay()
+                    .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+            ClimateStats stats = ClimateStats.builder()
+                    .date(ts).tempVal(19.0).humVal(47.0).pollVal(380.0).build();
+
+            LocalDate from = LocalDate.now().minusDays(5);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.DAILY)).thenReturn(List.of());
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "DAY");
+
+            assertFalse(result.isEmpty());
+            assertEquals(19.0, result.get(0).avgTemperature());
+        }
+
+        @Test
+        void buildingManager_fallsBackToRawWeek_whenAggregatedEmpty() {
+            OffsetDateTime ts = LocalDate.now().minusDays(50).atStartOfDay()
+                    .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+            ClimateStats stats = ClimateStats.builder()
+                    .date(ts).tempVal(18.0).humVal(46.0).pollVal(370.0).build();
+
+            LocalDate from = LocalDate.now().minusDays(60);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn(
+                    (Collection) List.of(new SimpleGrantedAuthority("CAN_VIEW_ALL_ROOMS")));
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.WEEKLY)).thenReturn(List.of());
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "WEEK");
+
+            assertFalse(result.isEmpty());
+        }
+
+        @Test
+        void employee_canViewOwnOfficeHistory() {
+            AggregatedStats stats = new AggregatedStats();
+            AggregatedDataPointDTO dto = new AggregatedDataPointDTO(LocalDate.now(), 22.0, 50.0, 400.0);
+
+            LocalDate from = LocalDate.now().minusDays(5);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getAuthorities()).thenReturn((Collection) List.of());
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.DAILY)).thenReturn(List.of(stats));
+            when(aggregatedMapper.mapTo(stats)).thenReturn(dto);
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryFull(roomId, from, to, "DAY");
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void employee_throwsForbidden_whenAccessingOtherOffice() {
+            UUID otherId = UUID.randomUUID();
+            Room otherOffice = new Room();
+            otherOffice.setId(otherId);
+            otherOffice.setRoomType(RoomType.OFFICE);
+            otherOffice.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(otherId)).thenReturn(Optional.of(otherOffice));
+            when(user.getAuthorities()).thenReturn((Collection) List.of());
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getClimateHistoryFull(otherId,
+                            LocalDate.now().minusDays(5), LocalDate.now(), "DAY"));
+        }
+
+        @Test
+        void employee_throwsForbidden_whenAccessingSharedInOtherDept() {
+            Room foreignShared = new Room();
+            foreignShared.setId(UUID.randomUUID());
+            foreignShared.setRoomType(RoomType.SHARED);
+            foreignShared.setDepartment(otherDepartment);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignShared.getId())).thenReturn(Optional.of(foreignShared));
+            when(user.getAuthorities()).thenReturn((Collection) List.of());
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getClimateHistoryFull(foreignShared.getId(),
+                            LocalDate.now().minusDays(5), LocalDate.now(), "DAY"));
+        }
+
+        @Test
+        void throwsValidation_whenFromAfterTo() {
+            assertThrows(ValidationException.class, () ->
+                    climateStatsService.getClimateHistoryFull(roomId,
+                            LocalDate.now(), LocalDate.now().minusDays(5), "DAY"));
+        }
+
+        @Test
+        void throwsNotFound_whenRoomDoesNotExist() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () ->
+                    climateStatsService.getClimateHistoryFull(roomId,
+                            LocalDate.now().minusDays(5), LocalDate.now(), "DAY"));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getClimateHistoryReduced
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class GetClimateHistoryReduced {
+
+        @Test
+        void deptHead_returnsDailyAggregated_forOwnDepartment() {
+            AggregatedStats stats = new AggregatedStats();
+            AggregatedDataPointDTO dto = new AggregatedDataPointDTO(LocalDate.now(), 22.0, 50.0, 400.0);
+
+            LocalDate from = LocalDate.now().minusDays(10);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.DAILY)).thenReturn(List.of(stats));
+            when(aggregatedMapper.mapTo(stats)).thenReturn(dto);
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryReduced(roomId, from, to, "DAY");
+
+            assertEquals(1, result.size());
+            assertEquals(dto, result.get(0));
+        }
+
+        @Test
+        void deptHead_returnsWeeklyAggregated_forLongRange() {
+            AggregatedStats stats = new AggregatedStats();
+            AggregatedDataPointDTO dto = new AggregatedDataPointDTO(LocalDate.now(), 21.0, 49.0, 395.0);
+
+            LocalDate from = LocalDate.now().minusDays(60);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.WEEKLY)).thenReturn(List.of(stats));
+            when(aggregatedMapper.mapTo(stats)).thenReturn(dto);
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryReduced(roomId, from, to, "WEEK");
+
+            assertEquals(1, result.size());
+        }
+
+        @Test
+        void deptHead_canViewHourly_forOwnOffice() {
+            OffsetDateTime ts = LocalDate.now().atTime(9, 0)
+                    .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+            ClimateStats stats = ClimateStats.builder()
+                    .date(ts).tempVal(22.0).humVal(51.0).pollVal(405.0).build();
+
+            LocalDate from = LocalDate.now().minusDays(1);
+            LocalDate to   = LocalDate.now();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getMyRoom()).thenReturn(userRoom); // same room → hourly allowed
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    roomId, from, to, Granularity.DAILY)).thenReturn(List.of());
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(roomId), any(), any()))
+                    .thenReturn(List.of(stats));
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryReduced(roomId, from, to, "HOUR");
+
+            assertFalse(result.isEmpty());
+        }
+
+        @Test
+        void deptHead_throwsForbidden_whenHourly_forOtherOfficeInDept() {
+            UUID otherId = UUID.randomUUID();
+            Room otherOffice = new Room();
+            otherOffice.setId(otherId);
+            otherOffice.setRoomType(RoomType.OFFICE);
+            otherOffice.setDepartment(department);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(otherId)).thenReturn(Optional.of(otherOffice));
+            when(user.getMyRoom()).thenReturn(userRoom); // same dept but different room
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getClimateHistoryReduced(otherId,
+                            LocalDate.now().minusDays(1), LocalDate.now(), "HOUR"));
+        }
+
+        @Test
+        void deptHead_canViewHourly_forSharedRoomInDept() {
+            UUID sharedId = sharedRoom.getId();
+            OffsetDateTime ts = LocalDate.now().atTime(11, 0)
+                    .atZone(ZoneId.systemDefault()).toOffsetDateTime();
+            ClimateStats stats = ClimateStats.builder()
+                    .date(ts).tempVal(21.0).humVal(50.0).pollVal(400.0).build();
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(sharedId)).thenReturn(Optional.of(sharedRoom));
+            when(user.getMyRoom()).thenReturn(userRoom);
+            when(aggregatedStatsRepository.findByRoomIdAndDateBetweenAndGranularity(
+                    sharedId, LocalDate.now().minusDays(1), LocalDate.now(), Granularity.DAILY))
+                    .thenReturn(List.of());
+            when(climateStatsRepository.findByRoomMonitoring_RoomIdAndDateBetween(eq(sharedId), any(), any()))
+                    .thenReturn(List.of(stats));
+
+            List<AggregatedDataPointDTO> result =
+                    climateStatsService.getClimateHistoryReduced(sharedId,
+                            LocalDate.now().minusDays(1), LocalDate.now(), "HOUR");
+
+            assertFalse(result.isEmpty());
+        }
+
+        @Test
+        void throwsForbidden_whenDifferentDepartment() {
+            Room foreignRoom = new Room();
+            foreignRoom.setId(UUID.randomUUID());
+            foreignRoom.setDepartment(otherDepartment);
+            foreignRoom.setRoomType(RoomType.OFFICE);
+
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(foreignRoom.getId())).thenReturn(Optional.of(foreignRoom));
+            when(user.getMyRoom()).thenReturn(userRoom);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getClimateHistoryReduced(foreignRoom.getId(),
+                            LocalDate.now().minusDays(10), LocalDate.now(), "DAY"));
+        }
+
+        @Test
+        void throwsForbidden_whenMyRoomIsNull() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.of(officeRoom));
+            when(user.getMyRoom()).thenReturn(null);
+
+            assertThrows(ForbiddenException.class, () ->
+                    climateStatsService.getClimateHistoryReduced(roomId,
+                            LocalDate.now().minusDays(10), LocalDate.now(), "DAY"));
+        }
+
+        @Test
+        void throwsValidation_whenFromAfterTo() {
+
+            assertThrows(ValidationException.class, () ->
+                    climateStatsService.getClimateHistoryReduced(roomId,
+                            LocalDate.now(), LocalDate.now().minusDays(10), "DAY"));
+        }
+
+        @Test
+        void throwsNotFound_whenRoomDoesNotExist() {
+            when(authenticatedUserService.getAuthenticatedUser()).thenReturn(user);
+            when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () ->
+                    climateStatsService.getClimateHistoryReduced(roomId,
+                            LocalDate.now().minusDays(10), LocalDate.now(), "DAY"));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // getLimits
+    // ─────────────────────────────────────────────────────────────────────────
+    @Nested
+    class GetLimits {
+
+        @Test
+        void returnsLimitDTO_whenMonitoringExists() {
+            UUID monitoringId = UUID.randomUUID();
+            RoomMonitoring monitoring = new RoomMonitoring();
+            monitoring.setRoomId(monitoringId);
+            LimitDTO dto = new LimitDTO(monitoringId, 25.f, 60.f, 1000.f, 2000.f, 200.f);
+
+            when(roomMonitoringRepository.findById(monitoringId)).thenReturn(Optional.of(monitoring));
+            when(limitMapper.mapTo(monitoring)).thenReturn(dto);
+
+            LimitDTO result = climateStatsService.getLimits(monitoringId);
+
+            assertEquals(dto, result);
+        }
+
+        @Test
+        void throwsNotFound_whenMonitoringMissing() {
+            UUID monitoringId = UUID.randomUUID();
+
+            when(roomMonitoringRepository.findById(monitoringId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class,
+                    () -> climateStatsService.getLimits(monitoringId));
+        }
+    }
+}

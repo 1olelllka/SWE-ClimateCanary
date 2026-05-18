@@ -23,8 +23,9 @@ bool SensorManager::begin() {
 }
 
 bool SensorManager::update() {
-  //warm-up time for gas sensor
-  if (millis() < 30000) {
+  // Ignore gas readings during startup stabilization period.
+  // This does not keep the heater on continuously.
+  if (millis() < SENSOR_STABILIZATION_TIME_MS) {
     return false;
   }
 
@@ -94,6 +95,14 @@ bool SensorManager::update() {
   reading.valid = (sampleCount == NUM_SAMPLES) && baselineInitialized;
 
   return true;
+}
+
+uint8_t SensorManager::getSampleCount() const {
+  return sampleCount;
+}
+
+uint8_t SensorManager::getRequiredSamples() const {
+  return NUM_SAMPLES;
 }
 
 SensorReading SensorManager::getReading() const {

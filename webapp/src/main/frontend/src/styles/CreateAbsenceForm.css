@@ -37,7 +37,6 @@
 }
 
 .absence-form-input,
-.absence-form-select,
 .absence-form-textarea {
     width: 100%;
     padding: 0.6rem 0.875rem;
@@ -47,28 +46,18 @@
     font-size: 0.9rem;
     color: var(--text-primary);
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
     font-family: inherit;
 }
 
 .absence-form-input:focus,
-.absence-form-select:focus,
 .absence-form-textarea:focus {
     border-color: #94a3b8;
 }
 
 .absence-form-textarea {
     resize: vertical;
-}
-
-.absence-form-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    padding-right: 2.25rem;
-    cursor: pointer;
 }
 
 .absence-form-date-row {
@@ -78,6 +67,7 @@
 
 .absence-form-date-row .absence-form-field {
     flex: 1;
+    min-width: 0;
 }
 
 .absence-form-checkbox-row {
@@ -120,6 +110,7 @@
 .absence-form-actions {
     display: flex;
     justify-content: space-between;
+    gap: 1rem;
     margin-top: 0.5rem;
 }
 
@@ -145,17 +136,120 @@
 }
 
 .absence-form-submit-btn {
-    background: var(--nav-bg);
+    background: #0891b2;
     color: #ffffff;
 }
 
 .absence-form-submit-btn:hover:not(:disabled) {
-    background: #14303f;
+    background: #0e7490;
 }
 
 .absence-form-submit-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* PrimeReact Dropdown: replaces native select so mobile dropdown stays inside viewport */
+
+.absence-form-dropdown {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.absence-form-dropdown:not(.p-disabled):hover {
+    border-color: var(--card-border);
+}
+
+.absence-form-dropdown.p-focus,
+.absence-form-dropdown:not(.p-disabled).p-focus {
+    border-color: #94a3b8;
+    box-shadow: none;
+}
+
+.absence-form-dropdown .p-dropdown-label {
+    padding: 0.6rem 0.875rem;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: transparent;
+}
+
+.absence-form-dropdown .p-dropdown-trigger {
+    width: 2.75rem;
+    color: var(--text-secondary);
+    background: transparent;
+}
+
+.absence-form-dropdown-panel {
+    max-width: min(420px, calc(100vw - 2rem));
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 12000 !important;
+}
+
+.absence-form-dropdown-panel .p-dropdown-items {
+    padding: 0.35rem;
+}
+
+.absence-form-dropdown-panel .p-dropdown-item {
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.9rem;
+    white-space: normal;
+}
+
+/* PrimeReact Calendar: same form look, only replaces native date picker */
+
+.absence-form-calendar {
+    width: 100%;
+    display: flex;
+}
+
+.absence-form-calendar .p-inputtext {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 0.6rem 0.875rem;
+    border-radius: 8px 0 0 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--card-border);
+    font-size: 0.9rem;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.absence-form-calendar .p-button {
+    width: 2.75rem;
+    flex-shrink: 0;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--card-border);
+    border-left: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+}
+
+.absence-form-calendar .p-button:enabled:hover {
+    background: var(--page-bg);
+    border-color: var(--card-border);
+    color: var(--text-primary);
+}
+
+.absence-form-calendar .p-button:focus,
+.absence-form-calendar .p-inputtext:focus {
+    box-shadow: none;
+}
+
+.absence-form-calendar-panel {
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 12000 !important;
 }
 
 /* Read-only fields in detail dialog */
@@ -166,7 +260,7 @@
     cursor: default;
 }
 
-/* Cancel-request (destructive) button used in detail dialog */
+/* Cancel-request button used in detail dialog */
 
 .absence-detail-cancel-btn {
     padding: 0.6rem 1.75rem;
@@ -188,4 +282,263 @@
 .absence-detail-cancel-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Dark mode */
+
+html[data-theme='dark'] .absence-form-card {
+    background-color: var(--app-surface-2) !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme='dark'] .absence-form-title {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-form-label,
+html[data-theme='dark'] .absence-form-checkbox-label,
+html[data-theme='dark'] .absence-form-time-label {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .absence-form-input,
+html[data-theme='dark'] .absence-form-textarea {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-input::placeholder,
+html[data-theme='dark'] .absence-form-textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .absence-form-input:focus,
+html[data-theme='dark'] .absence-form-textarea:focus,
+html[data-theme='dark'] .absence-form-calendar .p-inputtext:focus,
+html[data-theme='dark'] .absence-form-dropdown.p-focus,
+html[data-theme='dark'] .absence-form-dropdown:not(.p-disabled).p-focus {
+    border-color: var(--app-primary) !important;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35) !important;
+    outline: none !important;
+}
+
+html[data-theme='dark'] .absence-form-checkbox {
+    accent-color: var(--app-primary);
+}
+
+/* Dark mode PrimeReact Dropdown */
+
+html[data-theme='dark'] .absence-form-dropdown {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown .p-dropdown-label {
+    color: var(--app-text) !important;
+    background-color: transparent !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown .p-dropdown-trigger {
+    color: var(--app-text) !important;
+    background-color: transparent !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown-panel {
+    background-color: #1f2937 !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown-panel .p-dropdown-items {
+    background-color: #1f2937 !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown-panel .p-dropdown-item {
+    color: var(--app-text) !important;
+    background-color: transparent !important;
+}
+
+html[data-theme='dark'] .absence-form-dropdown-panel .p-dropdown-item:hover,
+html[data-theme='dark'] .absence-form-dropdown-panel .p-dropdown-item.p-highlight {
+    background-color: #334155 !important;
+    color: #ffffff !important;
+}
+
+/* Dark mode PrimeReact Calendar input */
+
+html[data-theme='dark'] .absence-form-calendar .p-inputtext {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar .p-inputtext::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar .p-button {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar .p-button:enabled:hover {
+    background-color: #1f2937 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+/* Dark mode PrimeReact Calendar popup */
+
+html[data-theme='dark'] .absence-form-calendar-panel,
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker {
+    background-color: #1f2937 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-header {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-title,
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-month,
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-year {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-prev,
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-next {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-prev:hover,
+html[data-theme='dark'] .absence-form-calendar-panel .p-datepicker-next:hover {
+    background-color: #334155 !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table th {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table td > span {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table td > span:hover {
+    background-color: #334155 !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table td > span.p-highlight {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table td.p-datepicker-today > span {
+    background-color: #155e75 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme='dark'] .absence-form-calendar-panel table td.p-datepicker-other-month > span {
+    color: #64748b !important;
+}
+
+/* Buttons dark mode */
+
+html[data-theme='dark'] .absence-form-cancel-btn {
+    background-color: #334155 !important;
+    color: var(--app-text) !important;
+    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-cancel-btn:hover {
+    background-color: #475569 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+    border: 1px solid #0891b2 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn:hover:not(:disabled) {
+    background-color: #0e7490 !important;
+}
+
+html[data-theme='dark'] .absence-form-submit-btn:disabled {
+    background-color: #334155 !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+    cursor: not-allowed;
+}
+
+html[data-theme='dark'] .absence-form-input[readonly],
+html[data-theme='dark'] .absence-form-textarea[readonly] {
+    background-color: #0f172a !important;
+    color: var(--app-text-muted) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    border: 1px solid #dc2626 !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn:hover:not(:disabled) {
+    background-color: #b91c1c !important;
+}
+
+html[data-theme='dark'] .absence-detail-cancel-btn:disabled {
+    background-color: #334155 !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+}
+
+/* Mobile: do not change form layout, only keep overlays inside viewport */
+
+@media (max-width: 600px) {
+    .absence-form-card {
+        max-width: calc(100vw - 2rem);
+        padding: 1.5rem;
+    }
+
+    .absence-form-dropdown-panel {
+        max-width: calc(100vw - 2rem) !important;
+        width: calc(100vw - 2rem) !important;
+        left: 1rem !important;
+        right: 1rem !important;
+    }
+
+    .absence-form-calendar-panel {
+        max-width: calc(100vw - 2rem) !important;
+        width: calc(100vw - 2rem) !important;
+        left: 1rem !important;
+        right: 1rem !important;
+    }
+
+    .absence-form-calendar-panel .p-datepicker {
+        width: 100% !important;
+    }
+
+    .absence-form-calendar-panel table {
+        width: 100% !important;
+        table-layout: fixed;
+    }
+
+    .absence-form-calendar-panel table td {
+        padding: 0.15rem !important;
+    }
+
+    .absence-form-calendar-panel table td > span {
+        width: 2rem !important;
+        height: 2rem !important;
+        margin: 0 auto;
+    }
 }
