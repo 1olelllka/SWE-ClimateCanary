@@ -84,7 +84,7 @@ public class WebSecurityConfig {
                                         .requestMatchers("/api/users/me/absences")
                                         .hasAuthority(Permission.CAN_MANAGE_OWN_ABSENCE.name())
 
-                                        .requestMatchers("/api/users/me").authenticated()
+                                        .requestMatchers("/api/users/me", "/api/users/settings").authenticated()
 
                                         .requestMatchers("/api/users/**")
                                         .hasAuthority(Permission.CAN_MANAGE_USERS.name())
@@ -99,7 +99,9 @@ public class WebSecurityConfig {
                                                 Permission.CAN_VIEW_OWN_SHARED_CLIMATE.name(),
                                                 Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
                                                 Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
-
+                                        .requestMatchers(
+                                                "/api/departments/*/climate-aggregation", "/api/departments/*/last-aggregation"
+                                        ).hasAnyAuthority(Permission.CAN_VIEW_COMPANY_AGGR.name())
                                         .requestMatchers(HttpMethod.POST, "/api/measurements")
                                         .hasAnyAuthority(Permission.CAN_SEND_MEASUREMENTS.name())
 
@@ -136,7 +138,9 @@ public class WebSecurityConfig {
                                         )
                                         .requestMatchers(HttpMethod.GET, "/api/departments/*")
                                         .authenticated()
-                                        .requestMatchers(HttpMethod.GET, "/api/building", "/api/building/*")
+                                        .requestMatchers(HttpMethod.GET, "/api/departments")
+                                        .hasAnyAuthority(Permission.CAN_VIEW_ALL_BUILDINGS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name(), Permission.CAN_VIEW_COMPANY_AGGR.name())
+                                        .requestMatchers(HttpMethod.GET, "/api/buildings", "/api/buildings/*")
                                         .hasAnyAuthority(Permission.CAN_VIEW_ALL_BUILDINGS.name(), Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())
                                         .requestMatchers("/api/buildings/**", "/api/departments/**", "/api/rooms/**")
                                         .hasAuthority(Permission.CAN_MANAGE_BUILDING_STRUCTURE.name())

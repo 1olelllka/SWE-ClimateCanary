@@ -1,8 +1,12 @@
 package at.qe.skeleton.tests.services;
 
+import at.qe.skeleton.dtos.UserSettingsPatchDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.model.DateFormat;
+import at.qe.skeleton.model.UserSettings;
 import at.qe.skeleton.model.Userx;
+import at.qe.skeleton.repositories.UserSettingsRepository;
 import at.qe.skeleton.repositories.UserxRepository;
 import at.qe.skeleton.services.impl.UserServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
@@ -31,6 +35,9 @@ class UserServiceUnitTests {
 
     @Mock
     private UserxRepository userxRepository;
+
+    @Mock
+    private UserSettingsRepository settingsRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -90,6 +97,7 @@ class UserServiceUnitTests {
         assertEquals("encodedPassword", sampleUser.getPassword()); // Verify password was altered
         verify(passwordEncoder, times(1)).encode("password");
         verify(userxRepository, times(1)).save(sampleUser);
+        verify(settingsRepository, times(1)).save(any(UserSettings.class));
     }
 
     @Test
@@ -100,6 +108,7 @@ class UserServiceUnitTests {
 
         verify(passwordEncoder, never()).encode(anyString());
         verify(userxRepository, never()).save(any());
+        verify(settingsRepository, never()).save(any(UserSettings.class));
     }
 
     @Test
@@ -128,5 +137,40 @@ class UserServiceUnitTests {
     void testThatDeleteUserShouldCallRepository() {
         userService.deleteUser(userId);
         verify(userxRepository, times(1)).deleteById(userId);
+        verify(settingsRepository, times(1)).deleteById(userId);
+    }
+
+    @Test
+    void testThatGetUserSettingsThrowException() {
+        when(settingsRepository.findById(userId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> userService.getUserSettings(userId));
+    }
+
+    @Test
+    void testThatGetUserSettingsReturnsSettings() {
+        when(settingsRepository.findById(userId)).thenReturn(Optional.of(UserSettings.builder().userId(userId).build()));
+        UserSettings userSettings = userService.getUserSettings(userId);
+
+        assertNotNull(userSettings);
+        assertEquals(userId, userSettings.getUserId());
+    }
+
+    @Test
+    void testThatPatchUserSettingsThrowException() {
+        when(settingsRepository.findById(userId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> userService.updateUserSettings(userId, null));
+    }
+
+    @Test
+    void testThatPatchUserSettingsReturnsSettings() {
+        when(settingsRepository.findById(userId)).thenReturn(Optional.of(UserSettings.builder().userId(userId).build()));
+        when(settingsRepository.save(any(UserSettings.class))).thenAnswer(a -> a.getArgument(0));
+        UserSettings userSettings = userService.updateUserSettings(userId, new UserSettingsPatchDTO(true, false, null, false));
+        assertNotNull(userSettings);
+        assertEquals(userId, userSettings.getUserId());
+        assertTrue(userSettings.isDarkMode());
+        assertFalse(userSettings.isFahrenheit());
+        assertEquals(DateFormat.DD_MM_YYYY, userSettings.getFormat());
+        assertFalse(userSettings.isTwelveHourFormat());
     }
 }

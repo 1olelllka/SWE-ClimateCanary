@@ -1,50 +1,67 @@
-import React, { useState } from 'react';
-import { Chart } from 'primereact/chart';
-import { TimeFilter } from './TimeFilter';
+import React from 'react';
+import ReactECharts from 'echarts-for-react';
+import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
 
-export const ViolationsBarChart: React.FC = () => {
-    const [timeRange, setTimeRange] = useState('Month');
-    const [dateRange, setDateRange] = useState<Date[] | null>(null);
-    const timeOptions = ['Current', 'Day', 'Week', 'Month'];
+interface Props {
+    departments: DepartmentWithStats[];
+    loading: boolean;
+}
 
-    const chartData = {
-        labels: ['Finance', 'IT', 'Human Resources', 'Marketing', 'Sales'],
-        datasets: [
-            {
-                label: 'Nr. of violations',
-                backgroundColor: ['#4caf50', '#ffeb3b', '#4285f4', '#9c27b0', '#e91e63'],
-                data: [12, 7, 15, 2, 9]
-            }
-        ]
-    };
+const BAR_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4', '#f44336', '#795548'];
 
-    const chartOptions = {
-        maintainAspectRatio: false,
-        aspectRatio: 0.8,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: '#eee' },
-                title: { display: true, text: 'Nr. of violations', color: '#6c757d', font: { weight: 'bold' } }
+export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) => {
+    const labels = departments.map(d => d.name);
+    const values = departments.map(d => d.activeViolations);
+
+    const option = {
+        tooltip: {
+            trigger: 'axis' as const,
+            formatter: (params: any[]) => {
+                const p = params[0];
+                return `${p.name}<br/>Active violations: <b>${p.value}</b>`;
             },
-            x: { grid: { display: false } }
-        }
+        },
+        grid: { left: 130, right: 30, top: 10, bottom: 30 },
+        xAxis: {
+            type: 'value' as const,
+            minInterval: 1,
+            min: 0,
+            splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
+            axisLabel: { fontSize: 11 },
+        },
+        yAxis: {
+            type: 'category' as const,
+            data: [...labels].reverse(),
+            axisLabel: { fontSize: 11 },
+            axisLine: { lineStyle: { color: '#e2e8f0' } },
+        },
+        series: [{
+            type: 'bar' as const,
+            data: [...values].reverse().map((v, i) => ({
+                value: v,
+                itemStyle: { color: BAR_COLORS[(values.length - 1 - i) % BAR_COLORS.length], borderRadius: [0, 4, 4, 0] },
+            })),
+            barMaxWidth: 36,
+        }],
     };
 
     return (
         <div className="table-container card chart-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h3 style={{ margin: 0 }}>Number of Violations per Department</h3>
-                <TimeFilter
-                    options={timeOptions}
-                    value={timeRange}
-                    onChange={setTimeRange}
-                    dateRange={dateRange}
-                    setDateRange={setDateRange}
-                />
+            <div className="flex-header">
+                <h3>Active Violations per Department</h3>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #64748b)' }}>
+                    Based on real-time limit breaches from sensor data
+                </span>
             </div>
-            <Chart type="bar" data={chartData} options={chartOptions} style={{ height: '300px' }} />
+            <div style={{ padding: '1rem 1.5rem 1.5rem' }}>
+                {loading ? (
+                    <div className="bm-loading">Loading…</div>
+                ) : departments.length === 0 ? (
+                    <div className="bm-empty">No department data available.</div>
+                ) : (
+                    <ReactECharts option={option} style={{ height: '300px' }} notMerge />
+                )}
+            </div>
         </div>
     );
 };

@@ -8,10 +8,7 @@ import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.AggregatedStatsRepository;
-import at.qe.skeleton.repositories.ClimateStatsRepository;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
-import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.ClimateStatsService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +43,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     private final AggregatedStatsMapper  aggregatedMapper;
     private final LimitMapper            limitMapper;
     private final AuthenticatedUserService authenticatedUserService;
+    private final AggregatedDepartmentStatsRepository departmentStatsRepository;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -135,21 +133,16 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         List<String> roles = authenticated.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new NotFoundException("Room with id %s was not found.".formatted(roomId.toString())));
         boolean isBuilding = roles.contains("CAN_VIEW_ALL_ROOMS");
-        boolean isDeptHead = roles.contains("CAN_VIEW_OWN_DEPARTMENT_MEASURES");
         if (!isBuilding) {
             boolean sameDepartment = authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId()
                     .equals(room.getDepartment().getId());
             boolean sameRoom = authenticated.getMyRoom() != null && authenticated.getMyRoom().getId().equals(roomId);
 
-            if (!isDeptHead) {
-                if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
-                    throw new ForbiddenException("You are not allowed to see others' room climate.");
+            if (room.getRoomType().equals(RoomType.SHARED) && !sameDepartment)
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
 
-                if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
-                    throw new ForbiddenException("You are not allowed to see others' room climate.");
-                }
-            } else {
-                if (!sameDepartment) throw new ForbiddenException("You are not allowed to see others' room climate.");
+            if (room.getRoomType().equals(RoomType.OFFICE) && !sameRoom) {
+                throw new ForbiddenException("You are not allowed to see others' room climate.");
             }
         }
         return climateStatsRepository
@@ -178,13 +171,13 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 throw new ForbiddenException("You are not allowed to see other's rooms.");
             }
         }
-        boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) < 15;
-
+        boolean useHourGrouping = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 4;
+        boolean useDayGrouping = "DAY".equals(granularity) || ChronoUnit.DAYS.between(from, to) > 4 && ChronoUnit.DAYS.between(from, to) < 45;
         // TEMPORARY VISUALIZATIONS – Background jobs should work instead
         List<AggregatedStats> data;
         if (useHourGrouping)
             return groupRawByHour(roomId, from, to);
-        else if ("DAY".equals(granularity)) {
+        else if (useDayGrouping && !"WEEK".equals(granularity)) {
             data = aggregatedStatsRepository
                     .findByRoomIdAndDateBetweenAndGranularity(roomId, from, to, Granularity.DAILY);
             if (!data.isEmpty()) {
@@ -209,7 +202,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                                                                  LocalDate from,
                                                                  LocalDate to,
                                                                  String granularity) {
-        if (from.isAfter(to) || ChronoUnit.DAYS.between(from, to) < 3) throw new ValidationException("Invalid timestamps.");
+        if (from.isAfter(to)) throw new ValidationException("Invalid timestamps.");
         boolean weekly = "WEEK".equals(granularity) && ChronoUnit.DAYS.between(from, to) > 45;
         boolean hourly = "HOUR".equals(granularity) && ChronoUnit.DAYS.between(from, to) <= 2;
         Userx authenticatedDeptMan = authenticatedUserService.getAuthenticatedUser();
@@ -246,6 +239,21 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         RoomMonitoring room = roomMonitoringRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
         return limitMapper.mapTo(room);
+    }
+
+    @Override
+    public AggregatedDataPointDTO getDepartmentAggregatedData(UUID departmentId) {
+        AggregatedDepartmentStats stats = departmentStatsRepository.findFirstByDepartmentIdOrderByDateDesc(departmentId)
+                .orElseThrow(() -> new NotFoundException("There's no data for department %s".formatted(departmentId.toString())));
+        return new AggregatedDataPointDTO(stats.getDate(), stats.getAvgTemp(), stats.getAvgHumidity(), stats.getAvgCO2());
+    }
+
+    @Override
+    public List<AggregatedDataPointDTO> getDepartmentAggregatedDataInTimePeriod(UUID departmentId, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) throw new ValidationException("Invalid timestamps.");
+        if (ChronoUnit.DAYS.between(startDate, endDate) > 180) throw new ValidationException("The time interval is too big.");
+        List<AggregatedDepartmentStats> stats = departmentStatsRepository.findAllByDepartmentIdAndDateBetweenOrderByDateAsc(departmentId, startDate, endDate);
+        return stats.stream().map(stat -> new AggregatedDataPointDTO(stat.getDate(), stat.getAvgTemp(), stat.getAvgHumidity(), stat.getAvgCO2())).toList();
     }
 
     /**

@@ -179,7 +179,13 @@ public class WarningServiceImpl implements WarningService {
     public WarningDTO resolveWarning(UUID warningId) {
         Warnings warning = findActiveWarningById(warningId);
         warning.setResolvedAt(LocalDateTime.now());
-        warning.setStatus(WarningStatus.GREEN);
+        warningsRepository.findAllActiveByType(warning.getMeasurementType())
+                .forEach(w -> {
+                    if (!w.getId().equals(warningId)) {
+                        w.setResolvedAt(LocalDateTime.now());
+                        warningsRepository.save(w);
+                    }
+                });
         return warningMapper.mapTo(warningsRepository.save(warning));
     }
 

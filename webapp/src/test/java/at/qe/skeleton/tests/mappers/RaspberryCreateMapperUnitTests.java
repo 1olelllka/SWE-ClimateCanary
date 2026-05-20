@@ -56,7 +56,8 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -72,7 +73,8 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -87,7 +89,8 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -102,7 +105,8 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -117,7 +121,8 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
@@ -132,29 +137,13 @@ class RaspberryCreateMapperUnitTests {
                     "Pi Lab A",
                     "192.168.1.100",
                     1000,
-                    UUID.randomUUID()
+                    UUID.randomUUID(),
+                    1
             );
 
             RaspberryPi result = mapper.mapFrom(dto);
 
             assertThat(result.getRoomMonitoring()).isNull();
-        }
-
-        @Test
-        @DisplayName("does not set frequency — defaults to 100 via @Builder.Default")
-        void doesNotSetFrequency() {
-            RaspberryCreateDTO dto = new RaspberryCreateDTO(
-                    "Pi Lab A",
-                    "192.168.1.100",
-                    1000,
-                    UUID.randomUUID()
-            );
-
-            RaspberryPi result = mapper.mapFrom(dto);
-
-            // RaspberryPi uses new RaspberryPi() not builder, so @Builder.Default
-            // does not apply — frequency will be 0 until set by service layer
-            assertThat(result.getFrequency()).isEqualTo(1000);//default value
         }
 
         @Test

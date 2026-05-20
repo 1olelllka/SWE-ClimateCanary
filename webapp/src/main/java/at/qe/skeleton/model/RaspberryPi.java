@@ -41,7 +41,7 @@ public class RaspberryPi {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer frequency = 1000;
+    private Integer frequency = 1;
 
     @OneToOne(mappedBy = "raspberryPi", fetch = FetchType.LAZY)
     private RoomMonitoring roomMonitoring;

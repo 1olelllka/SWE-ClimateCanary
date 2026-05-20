@@ -1,9 +1,6 @@
 package at.qe.skeleton.controllers;
 
-import at.qe.skeleton.dtos.AbsenceListDTO;
-import at.qe.skeleton.dtos.UserxCreateDTO;
-import at.qe.skeleton.dtos.UserxDTO;
-import at.qe.skeleton.dtos.UserxPatchDTO;
+import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.AbsenceListMapper;
 import at.qe.skeleton.mappers.UserPatchMapper;
@@ -11,8 +8,10 @@ import at.qe.skeleton.mappers.UserxCreateMapper;
 import at.qe.skeleton.mappers.UserxMapper;
 import at.qe.skeleton.model.Absence;
 import at.qe.skeleton.model.RoomType;
+import at.qe.skeleton.model.UserSettings;
 import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.services.AbsenceService;
+import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +36,7 @@ public class UserxController {
     private final UserService userService;
     private final AbsenceService absenceService;
     private final AbsenceListMapper absenceListMapper;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Autowired
     public UserxController(UserxMapper userMapper,
@@ -44,13 +44,15 @@ public class UserxController {
                            UserxCreateMapper userxCreateMapper,
                            UserPatchMapper userPatchMapper,
                            AbsenceService absenceService,
-                           AbsenceListMapper absenceListMapper) {
+                           AbsenceListMapper absenceListMapper,
+                           AuthenticatedUserService authenticatedUserService) {
         this.userMapper = userMapper;
         this.userService = userService;
         this.userxCreateMapper = userxCreateMapper;
         this.userPatchMapper = userPatchMapper;
         this.absenceService = absenceService;
         this.absenceListMapper = absenceListMapper;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @GetMapping("")
@@ -101,5 +103,21 @@ public class UserxController {
     public ResponseEntity<Void> deleteSpecificUser(@PathVariable(name="user_id") UUID id) {
         userService.deleteUser(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @GetMapping("/settings")
+    public ResponseEntity<UserSettingsDTO> getUserSettings() {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        UserSettings settings = userService.getUserSettings(user.getId());
+        return new ResponseEntity<>(new UserSettingsDTO(settings.getUserId(), settings.isDarkMode(), settings.isFahrenheit(), settings.getFormat(), settings.isTwelveHourFormat()),
+                HttpStatus.OK);
+    }
+
+    @PatchMapping("/settings")
+    public ResponseEntity<UserSettingsDTO> updateUserSettings(@RequestBody UserSettingsPatchDTO dto) {
+        Userx user = authenticatedUserService.getAuthenticatedUser();
+        UserSettings settings = userService.updateUserSettings(user.getId(), dto);
+        return new ResponseEntity<>(new UserSettingsDTO(settings.getUserId(), settings.isDarkMode(), settings.isFahrenheit(), settings.getFormat(), settings.isTwelveHourFormat()),
+                HttpStatus.OK);
     }
 }

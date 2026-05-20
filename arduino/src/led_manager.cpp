@@ -4,6 +4,8 @@ void LedManager::begin() {
   pinMode(LED_RED_PIN, OUTPUT);
   pinMode(LED_BLUE_PIN, OUTPUT);
   pinMode(LED_GREEN_PIN, OUTPUT);
+
+  setOff();
 }
 
 void LedManager::setOff() {
@@ -30,19 +32,14 @@ void LedManager::setRed() {
   analogWrite(LED_GREEN_PIN, 0);
 }
 
-void LedManager::update() {
-  switch (ledMode) {
-    case LedMode::Off:
-      setOff();
-      break;
-    case LedMode::Green:
-      setGreen();
-      break;
-    case LedMode::Blue:
-      setBlue();
-      break;
-    case LedMode::Red:
-      setRed();
-      break;
+void LedManager::update(LedMode ledMode) {
+  if (ledMode == LedMode::Off) {
+    setOff();
+  } else if (ledMode == LedMode::Green) {
+    setGreen();
+  } else if (ledMode == LedMode::Blue) {
+    setBlue();
+  } else if (ledMode == LedMode::Red) {
+    setRed();
   }
 }

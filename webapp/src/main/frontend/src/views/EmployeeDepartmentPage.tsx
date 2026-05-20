@@ -140,8 +140,10 @@ export const EmployeeDepartmentPage: React.FC = () => {
 
         globalAxios.get(`/api/rooms/${roomId}/current-climate`)
             .then(response => {
-                console.log('current climate response', response.data);
-                setCurrentClimate(response.data);
+                const data: ClimateDataPointDTO = response.data;
+                const isStale = data !== null
+                    && (Date.now() - new Date(data.timestamp).getTime()) > 5 * 60 * 1000;
+                setCurrentClimate(isStale ? null : data);
             })
             .catch(err => {
                 console.error(

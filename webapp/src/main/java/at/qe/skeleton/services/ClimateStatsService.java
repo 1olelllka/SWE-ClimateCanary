@@ -35,4 +35,8 @@ public interface ClimateStatsService {
                                                           String granularity);
 
     LimitDTO getLimits(UUID roomId);
+
+    AggregatedDataPointDTO getDepartmentAggregatedData(UUID departmentId);
+
+    List<AggregatedDataPointDTO> getDepartmentAggregatedDataInTimePeriod(UUID departmentId, LocalDate startDate, LocalDate endDate);
 }

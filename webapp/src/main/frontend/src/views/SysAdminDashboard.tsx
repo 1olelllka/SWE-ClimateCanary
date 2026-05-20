@@ -92,9 +92,11 @@ interface TableHeaderProps {
 }
 
 const TableHeader: React.FC<TableHeaderProps> = ({ title, search, onSearch, searchPlaceholder, filterEl }) => (
-    <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <h3 style={{ margin: 0 }}>{title}</h3>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+    <>
+        <div className="flex-header">
+            <h3 style={{ margin: 0 }}>{title}</h3>
+        </div>
+        <div style={{ padding: '0 1.5rem 1rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', paddingTop: '1rem' }}>
             <span className="p-input-icon-left">
                 <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
                 <InputText
@@ -106,7 +108,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({ title, search, onSearch, sear
             </span>
             {filterEl}
         </div>
-    </div>
+    </>
 );
 
 const SysAdminDashboard: React.FC = () => {
@@ -249,6 +251,20 @@ const SysAdminDashboard: React.FC = () => {
     }));
     const roomOptions         = rooms.map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }));
     const roleOptions         = roleDTOs.map(r => ({ label: r.name ?? '', value: r.id ?? '' }));
+
+    // --- Retry handlers ---
+    const handleRetryPiConnection = (id?: string) => {
+        if (!id) return;
+        new RaspberryControllerApi().retryDevicesConnection({ raspberryId: id })
+            .then(() => toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 }))
+            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 }));
+    };
+
+    const handleRetrySensorConnection = (sensorId: string) => {
+        new SensorStationControllerApi().retrySensorStation({ sensorId })
+            .then(() => toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 }))
+            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 }));
+    };
 
     // --- Pi handlers ---
     const openEditPiDialog = (row: RaspberryDTOReal) => {
@@ -592,8 +608,9 @@ const SysAdminDashboard: React.FC = () => {
                                 : <span style={{ color: '#9e9e9e' }}>None</span>;
                         }} />
                         <Column header="Status" body={row => statusBadge(row.status)} />
-                        <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
+                        <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
                             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)} />
                                 <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
                                 <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
                             </div>
@@ -608,7 +625,7 @@ const SysAdminDashboard: React.FC = () => {
                     />
                     <DataTable value={filteredSensors} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
                         <Column field="readId" header="Read ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                        <Column field="name" header="Name" sortable />
+                        <Column field="writeId" header="Write ID" style={{ maxWidth: '10rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                         <Column header="Room" body={(row: SensorStationDTO) => {
                             const room = rooms.find(r => r.id === row.roomId);
                             return room ? (room.name ?? room.id) : <span style={{ color: '#9e9e9e' }}>N/A</span>;
@@ -618,9 +635,9 @@ const SysAdminDashboard: React.FC = () => {
                             return pi ? (pi.name ?? pi.id) : <span style={{ color: '#9e9e9e' }}>None</span>;
                         }} />
                         <Column header="Status" body={row => statusBadge(row.status)} />
-                        <Column header="Last Measurement" body={() => <span style={{ color: '#9e9e9e' }}>N/A</span>} />
-                        <Column header="" style={{ width: '6rem' }} exportable={false} body={(row: SensorStationDTO) => (
+                        <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
                             <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                                <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetrySensorConnection(row.readId!)} />
                                 <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Sensor Station" onClick={() => openEditSensorDialog(row)} />
                                 <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)} />
                             </div>

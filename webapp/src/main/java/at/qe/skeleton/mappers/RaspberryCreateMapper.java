@@ -21,6 +21,7 @@ public class RaspberryCreateMapper implements DTOMapper<RaspberryPi, RaspberryCr
         pi.setPort(dto.port());
         pi.setName(dto.name());
         pi.setViolationCounter(0);
+        pi.setFrequency(dto.frequency());
         pi.setStatus(DeviceStatus.OFFLINE);
         pi.setLastHeartBeat(null);
         return pi;

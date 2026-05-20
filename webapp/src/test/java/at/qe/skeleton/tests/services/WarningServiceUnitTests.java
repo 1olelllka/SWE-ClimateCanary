@@ -1,5 +1,6 @@
 package at.qe.skeleton.tests.services;
 
+import at.qe.skeleton.dtos.ActiveViolationBuildingStats;
 import at.qe.skeleton.dtos.WarningCreateDTO;
 import at.qe.skeleton.dtos.WarningDTO;
 import at.qe.skeleton.dtos.WarningUpdateStatusDTO;
@@ -10,7 +11,6 @@ import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.impl.WarningServiceImpl;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +27,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +43,8 @@ class WarningServiceUnitTests {
     @Mock
     DepartmentRepository departmentRepository;
     @Mock
+    BuildingRepository buildingRepository;
+    @Mock
     TipRepository tipRepository;
 
     @Spy
@@ -55,23 +58,30 @@ class WarningServiceUnitTests {
     private final UUID roomId = UUID.randomUUID();
     private final UUID warningId = UUID.randomUUID();
     private final UUID deptId = UUID.randomUUID();
+    private final UUID buildingId = UUID.randomUUID();
 
     private final LocalDateTime now = LocalDateTime.of(2024, 6, 15, 12, 0);
     private final LocalDate startDate = LocalDate.of(2024, 6, 1);
     private final LocalDate endDate = LocalDate.of(2024, 6, 30);
 
+    private Building building;
     private Department department;
     private Room ownRoom;
     private Room otherRoom;
 
     @BeforeEach
     void setup() {
+        building = new Building();
+        building.setId(buildingId);
         department = new Department();
         department.setId(deptId);
+        department.setBuilding(building);
+        building.setDepartments(List.of(department));
 
         ownRoom = new Room();
         ownRoom.setId(roomId);
         ownRoom.setDepartment(department);
+        department.setRooms(List.of(ownRoom));
 
         otherRoom = new Room();
         otherRoom.setId(UUID.randomUUID());
@@ -131,7 +141,6 @@ class WarningServiceUnitTests {
     private Warnings resolvedWarning() {
         return activeWarning().toBuilder()
                 .resolvedAt(now.minusHours(1))
-                .status(WarningStatus.GREEN)
                 .build();
     }
 
@@ -147,6 +156,10 @@ class WarningServiceUnitTests {
 
     private Userx officeViewer() {
         return userWithPermission(Permission.CAN_VIEW_OWN_OFFICE_WARNINGS, ownRoom);
+    }
+
+    private Userx buildingViewer() {
+        return userWithPermission(Permission.CAN_VIEW_ALL_ROOMS, null);
     }
 
     private Userx officeViewerOtherRoom() {
@@ -175,6 +188,28 @@ class WarningServiceUnitTests {
         var result = service.getAllWarningsForRoom(departmentViewer(), roomId, true, null, null);
 
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void buildingViewer_activeTrue_returnsList() {
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
+        when(warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId))
+                .thenReturn(List.of(activeWarning()));
+
+        var result = service.getAllWarningsForRoom(buildingViewer(), roomId, true, null, null);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void buildingViewer_activeFalse_returnsList() {
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(ownRoom));
+        when(warningsRepository.findByRoomMonitoring_RoomIdAndCreatedAtBetween(eq(roomId), any(), any()))
+                .thenReturn(List.of(activeWarning(), resolvedWarning()));
+
+        var result = service.getAllWarningsForRoom(buildingViewer(), roomId, false, startDate, endDate);
+
+        assertThat(result).hasSize(2);
     }
 
     @Test
@@ -468,11 +503,13 @@ class WarningServiceUnitTests {
     @Test
     void resolveWarning_success() {
         when(warningsRepository.findById(warningId)).thenReturn(Optional.of(activeWarning()));
+        when(warningsRepository.findAllActiveByType(MeasurementType.TEMPERATURE)).thenReturn(List.of(activeWarning()));
         when(warningsRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
         var result = service.resolveWarning(warningId);
 
         assertThat(result.active()).isFalse();
+        verify(warningsRepository, times(1)).save(any(Warnings.class));
     }
 
     // ───── getViolationLogForDepartment ─────
@@ -514,5 +551,21 @@ class WarningServiceUnitTests {
                 service.getDetailedViolationLogForDepartment(
                         departmentViewer(), other.getId(), true, startDate, endDate))
                 .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void activeViolations_throwsNotFoundException() {
+        when(buildingRepository.findById(buildingId)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> service.getActiveViolationsForBuilding(buildingId));
+    }
+
+    @Test
+    void activeViolations_success() {
+        when(buildingRepository.findById(buildingId)).thenReturn(Optional.of(building));
+        when(warningsRepository.findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(List.of(roomId))).thenReturn(List.of());
+
+        ActiveViolationBuildingStats violations = service.getActiveViolationsForBuilding(buildingId);
+        assertNotNull(violations);
+        assertEquals(0, violations.activeViolations());
     }
 }

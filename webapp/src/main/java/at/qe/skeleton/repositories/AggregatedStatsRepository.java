@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface AggregatedStatsRepository extends JpaRepository<AggregatedStats, Integer> {
     List<AggregatedStats> findByRoomIdAndDateBetween(UUID roomId, LocalDate from, LocalDate to);
     List<AggregatedStats> findByRoomIdAndDateBetweenAndGranularity(UUID roomId, LocalDate from, LocalDate to, Granularity granularity);
+    Optional<AggregatedStats> findFirstByRoomIdAndDateAndGranularity(UUID roomId, LocalDate date, Granularity granularity);
     boolean existsByRoomIdAndDateAndGranularity(UUID roomId, LocalDate date, Granularity granularity);
     AggregatedStats findFirstByRoomIdAndGranularityOrderByDateDesc(UUID roomId, Granularity granularity);
 }

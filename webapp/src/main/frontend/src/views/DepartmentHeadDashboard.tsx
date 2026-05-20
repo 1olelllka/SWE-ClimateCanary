@@ -379,7 +379,9 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 .then(response => extractArrayResponse<ActiveWarning>(response.data))
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
-            return mapToRoomData(room, climate, warnings);
+            const isStale = climate !== null
+                && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+            return mapToRoomData(room, isStale ? null : climate, warnings);
         });
     }, []);
 
@@ -531,50 +533,37 @@ export const DepartmentHeadDashboard: React.FC = () => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
     }, [rooms]);
 
-    const activeAlertsCount = useMemo(() => {
-        return rooms.filter(room => room.status === 'red').length;
-    }, [rooms]);
-
     const averageTemperature = useMemo(() => {
-        const temperatures = rooms
-            .map(room => {
-                const parsed = parseFloat(
-                    room.temp
-                        .replace(' °C', '')
-                        .replace(',', '.')
-                );
+        const values = rooms
+            .map(room => parseFloat(room.temp.replace(' °C', '').replace(',', '.')))
+            .filter((v): v is number => !Number.isNaN(v));
 
-                return Number.isNaN(parsed) ? null : parsed;
-            })
-            .filter((value): value is number => value !== null);
+        if (values.length === 0) return 'n/a';
 
-        if (temperatures.length === 0) {
-            return 'n/a';
-        }
-
-        const average =
-            temperatures.reduce((sum, value) => sum + value, 0) / temperatures.length;
-
-        return `${average.toFixed(1).replace('.', ',')} °C`;
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        return `${avg.toFixed(1).replace('.', ',')} °C`;
     }, [rooms]);
 
-    const airQualityLabel = useMemo(() => {
-        const redRooms = rooms.filter(room => room.status === 'red').length;
-        const yellowRooms = rooms.filter(room => room.status === 'yellow').length;
+    const averageAirQuality = useMemo(() => {
+        const values = rooms
+            .map(room => parseFloat(room.co2.replace(' ppm', '').replace(',', '.')))
+            .filter((v): v is number => !Number.isNaN(v));
 
-        if (redRooms > 0) {
-            return 'Critical';
-        }
+        if (values.length === 0) return 'n/a';
 
-        if (yellowRooms > 0) {
-            return 'Warning';
-        }
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        return `${Math.round(avg)} ppm`;
+    }, [rooms]);
 
-        if (rooms.length === 0) {
-            return 'n/a';
-        }
+    const averageHumidity = useMemo(() => {
+        const values = rooms
+            .map(room => parseFloat(room.humidity.replace(' %', '').replace(',', '.')))
+            .filter((v): v is number => !Number.isNaN(v));
 
-        return 'Good';
+        if (values.length === 0) return 'n/a';
+
+        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+        return `${Math.round(avg)} %`;
     }, [rooms]);
 
     const violationStats = useMemo(() => {
@@ -601,18 +590,18 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     </div>
 
                     <div className="kpi-card">
-                        <h4>Active Alerts</h4>
-                        <h2>{loading ? '…' : activeAlertsCount}</h2>
-                    </div>
-
-                    <div className="kpi-card">
-                        <h4>Air Quality</h4>
-                        <h2>{loading ? '…' : airQualityLabel}</h2>
-                    </div>
-
-                    <div className="kpi-card">
                         <h4>Average Temperature</h4>
                         <h2>{loading ? '…' : averageTemperature}</h2>
+                    </div>
+
+                    <div className="kpi-card">
+                        <h4>Average Air Quality</h4>
+                        <h2>{loading ? '…' : averageAirQuality}</h2>
+                    </div>
+
+                    <div className="kpi-card">
+                        <h4>Average Humidity</h4>
+                        <h2>{loading ? '…' : averageHumidity}</h2>
                     </div>
                 </div>
 

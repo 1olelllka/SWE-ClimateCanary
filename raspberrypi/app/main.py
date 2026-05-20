@@ -14,7 +14,6 @@ import logging
 import sys
 
 from auth_manager import AuthManager
-from config_manager import ConfigManager
 from db_manager import DatabaseManager
 from data_processor import DataProcessor
 from web_manager import WebManager
@@ -24,18 +23,32 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-async def main(static_config: dict):
+async def main(db_path: str):
     logger.info("Starting IoT Gateway")
 
-    db = DatabaseManager(static_config['paths']['database'])
+    db = DatabaseManager(db_path)
     await db.connect()
     await db.init_db()
 
-    auth = AuthManager(
-        server_url=static_config['webapp']['server_url'],
-        username=static_config['auth']['username'],
-        password=static_config['auth']['password'],
-    )
+    configure_done = await db.get_config('configure_done')
+    if configure_done != '1':
+        logger.warning(f"[Main] configure_done flag not set, watiting for ./configure script to set initial config.")
+        while configure_done != '1':
+            await asyncio.sleep(10)
+            configure_done = await db.get_config('configure_done')
+        logger.info(f"[Main] configure_done detected. Continuing boot.")
+
+    server_url = await db.get_config('server_url')
+    username = await db.get_config('auth_username')
+    password = await db.get_config('auth_password')
+    local_listen_port = int(await db.get_config("local_listen_port") or "8080")
+
+    if not server_url or not username or not password:
+        logger.error(f"[Main] server_url, username or password missing from db, restart config.")
+        await db.close()
+        sys.exit(1)
+
+    auth = AuthManager( server_url=server_url, username=username, password=password)
     
     for attempt in range(1, 6):
         try:
@@ -45,30 +58,43 @@ async def main(static_config: dict):
             logger.warning(f"[Auth] Login attempt {attempt}/5 failed: {e}")
             if attempt == 5:
                 logger.error("[Auth] All 5 login attempts failed. Cannot start without authentication.")
+                await db.close()
                 sys.exit(1)
             await asyncio.sleep(5)
 
+    initial_config_done = await db.get_config('initial_config_done')
+    first_boot = initial_config_done != '1'
+
     config_ready_event = asyncio.Event()
+
+    if not first_boot:
+        logger.info(f"[Main] initial_config_done flag set, skipping wait for /api/config and continuing with existing db config.")
+        config_ready_event.set()
+    else:
+        logger.info(f"[Main] First boot - will wait for initial /api/config from webapp.")
 
     web_out_queue = asyncio.Queue()
     web_violation_queue = asyncio.Queue()
 
     web_manager = WebManager(
-        static_config,
         db,
+        local_listen_port,
+        server_url,
         web_out_queue,
         web_violation_queue,
         auth,
         config_ready_event,
+        first_boot=first_boot,
     )
 
     server_task = asyncio.create_task(
         web_manager.run_local_server(), name="WebServer"
     )
 
-    logger.info("[Main] Local server started. Waiting for /api/config from webapp...")
-    await config_ready_event.wait()
-    logger.info("[Main] /api/config received - continuing boot.")
+    if first_boot:
+        logger.info("[Main] Local server started. Waiting for /api/config from webapp...")
+        await config_ready_event.wait()
+        logger.info("[Main] /api/config received - continuing boot.")
 
     sensors = await db.get_sensors()
 
@@ -109,7 +135,15 @@ async def main(static_config: dict):
 
     web_manager.ble_managers = ble_managers
 
-    for sensor_name, ble_manager in ble_managers.items():
+    web_manager.processor = processor
+    web_manager.queues = queues
+    web_manager.scan_lock = scan_lock
+
+    for sensor in sensors:
+        sensor_name = sensor['name']
+        write_uuid = sensor['write_uuid']
+        ble_manager = ble_managers[sensor_name]
+
         tasks.append(asyncio.create_task(
             ble_manager.run(),
             name=f"BLE:{sensor_name}",
@@ -118,6 +152,7 @@ async def main(static_config: dict):
             processor.run(
                 sensor_name,
                 queues[sensor_name]['proc'],
+                write_uuid
             ),
             name=f"Proc:{sensor_name}",
         ))
@@ -132,22 +167,20 @@ async def main(static_config: dict):
 
 
 if __name__ == "__main__":
-    try:
-        static_config = ConfigManager.load("/home/pi/run/conf.yaml")
-    except Exception as e:
-        print(f"Failed to load config: {e}")
-        sys.exit(1)
+    
+    db_path = "/home/pi/data/production.sqlite"
+    log_file = "/home/pi/logs/raspberrypi.log"
 
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler(static_config['paths']['log_file']),
+            logging.FileHandler(log_file),
             logging.StreamHandler(sys.stdout),
         ],
     )
 
     try:
-        asyncio.run(main(static_config))
+        asyncio.run(main(db_path))
     except KeyboardInterrupt:
         logging.info("Gateway shutdown requested by user.")

@@ -16,6 +16,8 @@ import SettingsPage from "./views/SettingsPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
+import EmployeeDashboard from "./views/EmployeeDashboard";
+import { CompanyTrendPage } from "./views/CompanyTrendPage";
 
 /**
  * Define the routes of the application.
@@ -85,6 +87,16 @@ export const BuildingRoomAnalysisRoute = {
 }
 
 export const TipManagementRoute = {
-    url: '/tip-management',
+    url: '/tipmanagement',
     component: TipManagement
+}
+
+export const MyRoomRoute = {
+    url: '/my-room',
+    component: EmployeeDashboard
+}
+
+export const CompanyTrendsRoute = {
+    url: '/senior/trends',
+    component: CompanyTrendPage
 }

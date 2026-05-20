@@ -21,81 +21,53 @@ interface RoomListTableProps {
     readonly rooms: RoomData[];
     readonly showDepartment?: boolean;
     readonly showSettings?: boolean;
+    readonly onRowClick?: (roomId: string) => void;
     readonly onSettingsClick?: (roomId: string) => void;
 }
 
 export const RoomListTable: React.FC<RoomListTableProps> = ({
-                                                                rooms,
-                                                                showDepartment = false,
-                                                                showSettings = false,
-                                                                onSettingsClick
-                                                            }) => {
-
-    const isPrivacyMasked = (peopleStr: string) => {
-        const currentPeople = parseInt(peopleStr.split('/')[0], 10);
-        return currentPeople < 5;
-    };
-
+    rooms,
+    showDepartment = false,
+    showSettings = false,
+    onRowClick,
+    onSettingsClick,
+}) => {
     const handleRowClick = (e: any) => {
-        const room = e.data as RoomData;
-        if (isPrivacyMasked(room.people)) return;
         if (e.originalEvent.target.closest('.p-button')) return;
-        alert(`Navigiere zu: Overview Bureau ${room.id}`);
+        if (onRowClick) onRowClick((e.data as RoomData).id);
     };
 
-    // Templates
-    const blurTemplate = (rowData: RoomData, field: 'co2' | 'temp' | 'humidity') => {
-        const masked = isPrivacyMasked(rowData.people);
-        return <span className={masked ? 'blurred-text' : ''}>{masked ? 'n/a' : rowData[field]}</span>;
-    };
+    const statusTemplate = (rowData: RoomData) => (
+        <span className={`status-indicator status-${rowData.status}`} />
+    );
 
-    const statusTemplate = (rowData: RoomData) => {
-        return <span className={`status-indicator status-${rowData.status}`}></span>;
-    };
-
-    // Zahnrad-Template für Building Manager
-    const settingsTemplate = (rowData: RoomData) => {
-        return (
-            <Button
-                icon="pi pi-cog"
-                rounded
-                text
-                severity="secondary"
-                onClick={() => onSettingsClick && onSettingsClick(rowData.id)}
-                title="Analysis & Settings"
-            />
-        );
-    };
-
-    const rowClassRules = (rowData: RoomData) => {
-        return {
-            'row-disabled': isPrivacyMasked(rowData.people),
-            'row-clickable': !isPrivacyMasked(rowData.people)
-        };
-    };
+    const settingsTemplate = (rowData: RoomData) => (
+        <Button
+            icon="pi pi-cog"
+            rounded
+            text
+            severity="secondary"
+            onClick={() => onSettingsClick && onSettingsClick(rowData.id)}
+            title="Analysis & Settings"
+        />
+    );
 
     return (
         <div className="table-container">
-            <h3>Room List</h3>
             <DataTable
                 value={rooms}
                 {...defaultTableProps}
                 onRowClick={handleRowClick}
-                rowClassName={rowClassRules}
+                rowClassName={() => ({ 'row-clickable': !!onRowClick })}
             >
-                <Column field="id" header="Room" sortable></Column>
-                {/* Nur rendern, wenn showDepartment true ist */}
-                {showDepartment && <Column field="department" header="Dep." sortable></Column>}
-
-                <Column field="type" header="Type" sortable></Column>
-                <Column field="people" header="People"></Column>
-                <Column header="CO2" body={(data) => blurTemplate(data, 'co2')}></Column>
-                <Column header="Temp" body={(data) => blurTemplate(data, 'temp')}></Column>
-                <Column header="Humidity" body={(data) => blurTemplate(data, 'humidity')}></Column>
-                <Column header="Status" body={statusTemplate}></Column>
-
-                {/* Zahnrad rendern */}
-                {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '4rem' }}></Column>}
+                <Column field="id" header="Room" sortable />
+                {showDepartment && <Column field="department" header="Dep." sortable />}
+                <Column field="type" header="Type" sortable />
+                <Column field="co2" header="CO2" />
+                <Column field="temp" header="Temp" />
+                <Column field="humidity" header="Humidity" />
+                <Column header="Status" body={statusTemplate} />
+                {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '4rem' }} />}
             </DataTable>
         </div>
     );

@@ -1,114 +1,131 @@
 import React, { useMemo, useState } from 'react';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
 export interface ViolationDTO {
     readonly id?: string;
-    readonly date?: string;
-    readonly timestamp?: string;
-    readonly sensorType?: string;
-    readonly type?: string;
-    readonly measured?: number | string | null;
-    readonly measuredValue?: number | string | null;
-    readonly max?: number | string | null;
-    readonly maxValue?: number | string | null;
-    readonly min?: number | string | null;
-    readonly minValue?: number | string | null;
-    readonly duration?: string | number | null;
+    readonly measurementType?: 'TEMPERATURE' | 'HUMIDITY' | 'CO2' | string;
+    readonly status?: 'GREEN' | 'YELLOW' | 'RED' | string;
+    readonly message?: string | null;
+    readonly triggeredValue?: number | null;
+    readonly activeLimitAtTime?: number | null;
+    readonly createdAt?: string | null;
+    readonly resolvedAt?: string | null;
+    readonly active?: boolean;
+    readonly tip?: string | null;
 }
 
 interface RoomViolationLogTableProps {
     readonly violations: ViolationDTO[];
 }
 
-const formatDate = (value?: string) => {
-    if (!value) return '-';
+const SENSOR_LABEL: Record<string, string> = {
+    TEMPERATURE: 'Temperature',
+    HUMIDITY: 'Humidity',
+    CO2: 'CO₂',
+};
 
-    return new Date(value).toLocaleDateString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
+const STATUS_COLOR: Record<string, string> = {
+    RED: '#ef4444',
+    YELLOW: '#eab308',
+    GREEN: '#22c55e',
+};
+
+const formatDateTime = (value?: string | null) => {
+    if (!value) return '—';
+    return new Date(value).toLocaleString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
     });
 };
 
-const normalizeValue = (value: number | string | null | undefined) => {
-    if (value === null || value === undefined || value === '') return '-';
-    return String(value).replace('.', ',');
-};
+const fmt = (v?: number | null) =>
+    v == null ? '—' : v.toFixed(1).replace('.', ',');
 
 export const RoomViolationLogTable: React.FC<RoomViolationLogTableProps> = ({ violations }) => {
-    const [violationFilter, setViolationFilter] = useState('ALL');
+    const [sensorFilter, setSensorFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [activeOnly, setActiveOnly] = useState(false);
 
-    const filteredViolations = useMemo(() => {
-        if (violationFilter === 'ALL') {
-            return violations;
-        }
+    const filtered = useMemo(() => violations.filter(v => {
+        if (sensorFilter !== 'ALL' && v.measurementType !== sensorFilter) return false;
+        if (statusFilter !== 'ALL' && v.status !== statusFilter) return false;
+        if (activeOnly && !v.active) return false;
+        return true;
+    }), [violations, sensorFilter, statusFilter, activeOnly]);
 
-        return violations.filter(violation => {
-            const label = (violation.sensorType || violation.type || '').toLowerCase();
-            return label.includes(violationFilter.toLowerCase());
-        });
-    }, [violations, violationFilter]);
+    const dateTemplate    = (v: ViolationDTO) => formatDateTime(v.createdAt);
+    const sensorTemplate  = (v: ViolationDTO) => SENSOR_LABEL[v.measurementType ?? ''] ?? v.measurementType ?? '—';
+    const measuredTemplate = (v: ViolationDTO) => fmt(v.triggeredValue);
+    const limitTemplate   = (v: ViolationDTO) => fmt(v.activeLimitAtTime);
+
+    const statusTemplate = (v: ViolationDTO) => (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{
+                display: 'inline-block', width: 9, height: 9, borderRadius: '50%',
+                backgroundColor: STATUS_COLOR[v.status ?? ''] ?? '#9e9e9e', flexShrink: 0,
+            }} />
+            {v.status ?? '—'}
+        </span>
+    );
+
+    const resolvedTemplate = (v: ViolationDTO) => v.active
+        ? <span className="bra-active-text">Active</span>
+        : formatDateTime(v.resolvedAt);
 
     return (
-        <section className="room-analysis-section">
-            <div className="room-analysis-section-header">
-                <h2>Violation Log</h2>
-
+        <div className="table-container">
+            <div className="bra-table-controls">
                 <select
-                    className="room-analysis-filter-select"
-                    value={violationFilter}
-                    onChange={event => setViolationFilter(event.target.value)}
+                    className="bra-filter-select"
+                    value={sensorFilter}
+                    onChange={e => setSensorFilter(e.target.value)}
                 >
-                    <option value="ALL">Sensor Type Filter</option>
-                    <option value="Temperature">Temperature</option>
-                    <option value="Humidity">Humidity</option>
-                    <option value="Air Quality">Air Quality</option>
+                    <option value="ALL">All Sensors</option>
+                    <option value="TEMPERATURE">Temperature</option>
+                    <option value="HUMIDITY">Humidity</option>
+                    <option value="CO2">CO₂</option>
                 </select>
+                <select
+                    className="bra-filter-select"
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                >
+                    <option value="ALL">All Statuses</option>
+                    <option value="GREEN">Green</option>
+                    <option value="YELLOW">Yellow</option>
+                    <option value="RED">Red</option>
+                </select>
+                <button
+                    type="button"
+                    className={`bra-toggle-btn${activeOnly ? ' active' : ''}`}
+                    onClick={() => setActiveOnly(v => !v)}
+                    title="Show active warnings only"
+                >
+                    {activeOnly && <i className="pi pi-check" style={{ fontSize: '0.75rem' }} />}
+                    Active only
+                </button>
             </div>
 
-            <div className="room-analysis-table-wrapper">
-                <table className="room-analysis-table">
-                    <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Sensor Type</th>
-                        <th>Measured</th>
-                        <th>Max</th>
-                        <th>Min</th>
-                        <th>Duration</th>
-                    </tr>
-                    </thead>
-
-                    <tbody>
-                    {filteredViolations.map((violation, index) => {
-                        const sensorLabel = violation.sensorType || violation.type || '-';
-                        const measured = violation.measured ?? violation.measuredValue;
-                        const max = violation.max ?? violation.maxValue;
-                        const min = violation.min ?? violation.minValue;
-                        const date = violation.date ?? violation.timestamp;
-
-                        return (
-                            <tr key={violation.id || `${sensorLabel}-${index}`}>
-                                <td>{formatDate(date)}</td>
-                                <td>{sensorLabel}</td>
-                                <td>{normalizeValue(measured)}</td>
-                                <td>{normalizeValue(max)}</td>
-                                <td>{normalizeValue(min)}</td>
-                                <td>{violation.duration || '-'}</td>
-                            </tr>
-                        );
-                    })}
-
-                    {filteredViolations.length === 0 && (
-                        <tr>
-                            <td colSpan={6} className="room-analysis-empty-row">
-                                No violations found.
-                            </td>
-                        </tr>
-                    )}
-                    </tbody>
-                </table>
-            </div>
-        </section>
+            <DataTable
+                value={filtered}
+                paginator
+                rows={10}
+                rowsPerPageOptions={[5, 10, 20]}
+                paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+                currentPageReportTemplate="{first}-{last} of {totalRecords}"
+                stripedRows
+                emptyMessage="No warnings found."
+                responsiveLayout="scroll"
+            >
+                <Column header="Date"     body={dateTemplate} />
+                <Column header="Sensor"   body={sensorTemplate} />
+                <Column header="Status"   body={statusTemplate} />
+                <Column header="Measured" body={measuredTemplate} />
+                <Column header="Limit"    body={limitTemplate} />
+                <Column header="Resolved" body={resolvedTemplate} />
+            </DataTable>
+        </div>
     );
 };
 

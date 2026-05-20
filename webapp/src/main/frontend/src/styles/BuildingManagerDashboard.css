@@ -1,165 +1,300 @@
-.building-manager-dashboard {
+/* ── Page layout (employee style) ── */
+.bm-page {
+    min-height: 100vh;
+    background-color: var(--page-bg);
     display: flex;
     flex-direction: column;
-    gap: 2rem;
 }
 
-.building-manager-kpi-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.building-manager-kpi-card {
-    width: 250px;
-    background-color: #ffffff;
-    border: 1px solid #dddddd;
-    text-align: center;
-    margin-bottom: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    padding: 1.25rem;
-}
-
-.building-manager-kpi-card h4 {
-    color: #f44336;
-    margin: 0 0 10px 0;
-    font-size: 0.9rem;
-    font-weight: bold;
-}
-
-.building-manager-kpi-card h2 {
-    color: #f44336;
-    margin: 0;
-    font-size: 2.5rem;
-    font-weight: bold;
-}
-
-.building-manager-room-list-card {
+.bm-content {
     padding: 1.5rem;
-    background-color: #ffffff;
-    border-radius: 8px;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    flex-grow: 1;
 }
 
-.building-manager-table-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+/* ── Section heading ── */
+.bm-section-heading {
+    margin: 0 0 0.875rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
 }
 
-.building-manager-table-header h2 {
-    margin: 0;
-}
-
-.building-manager-table-controls {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.building-manager-search-wrapper i {
-    margin-left: 0.7rem;
-}
-
-.building-manager-search-input {
-    border-radius: 20px;
-    padding-left: 2rem;
-}
-
-.building-manager-department-dropdown {
-    border-radius: 20px;
-    min-width: 200px;
-}
-
-.building-manager-checkbox-row {
+/* ── Breadcrumb ── */
+.bm-breadcrumb {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
+    gap: 0.2rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
 }
 
-.building-manager-checkbox-row label {
-    margin-left: 0.5rem;
+.bm-breadcrumb-btn {
+    background: none;
+    border: none;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
     font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--nav-bg, #1a3a4a);
+    cursor: pointer;
+    transition: background-color 0.15s;
 }
 
-@media (max-width: 700px) {
-    .building-manager-kpi-card {
-        width: 100%;
+.bm-breadcrumb-btn:hover {
+    background: rgba(26, 58, 74, 0.08);
+}
+
+.bm-breadcrumb-current {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.bm-breadcrumb-sep {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    user-select: none;
+    padding: 0 0.1rem;
+}
+
+/* ── KPI row ── */
+.bm-kpi-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.bm-kpi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.bm-kpi-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-secondary);
+}
+
+.bm-kpi-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.bm-kpi-value--red {
+    color: #dc2626;
+}
+
+/* ── Navigation cards grid ── */
+.bm-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.bm-nav-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.bm-nav-card:hover {
+    border-color: var(--nav-bg, #1a3a4a);
+    box-shadow: 0 4px 12px rgba(26, 58, 74, 0.1);
+    transform: translateY(-1px);
+}
+
+.bm-nav-card--alert {
+    border-left: 4px solid #dc2626;
+}
+
+/* ── Card internals ── */
+.bm-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.bm-card-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.bm-badge {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.bm-badge--red {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.bm-card-sub {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.bm-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.bm-meta-sep {
+    opacity: 0.4;
+}
+
+/* ── Feedback states ── */
+.bm-loading,
+.bm-empty {
+    padding: 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.bm-error {
+    color: #b91c1c;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    .bm-content {
+        padding: 1rem;
     }
 
-    .building-manager-table-controls {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
+    .bm-kpi-row {
+        grid-template-columns: 1fr;
     }
 
-    .building-manager-search-wrapper,
-    .building-manager-search-input,
-    .building-manager-department-dropdown {
-        width: 100%;
+    .bm-cards-grid {
+        grid-template-columns: 1fr;
     }
 }
 
-html[data-theme='dark'] .building-manager-dashboard {
+/* ── Dark mode ── */
+html[data-theme='dark'] .bm-page {
+    background-color: var(--app-bg) !important;
+}
+
+html[data-theme='dark'] .bm-content {
     background-color: var(--app-bg) !important;
     color: var(--app-text) !important;
 }
 
-html[data-theme='dark'] .building-manager-kpi-card {
-    background-color: var(--app-surface-2) !important;
+html[data-theme='dark'] .bm-section-heading {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .bm-breadcrumb-btn {
+    color: var(--muted-blue, #7fb3c8) !important;
+}
+
+html[data-theme='dark'] .bm-breadcrumb-btn:hover {
+    background: rgba(127, 179, 200, 0.1) !important;
+}
+
+html[data-theme='dark'] .bm-breadcrumb-current {
     color: var(--app-text) !important;
-    border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .bm-breadcrumb-sep {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .bm-kpi-card {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
     box-shadow: none !important;
 }
 
-html[data-theme='dark'] .building-manager-kpi-card h4 {
+html[data-theme='dark'] .bm-kpi-title {
+    color: var(--app-text-muted) !important;
+}
+
+html[data-theme='dark'] .bm-kpi-value {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .bm-kpi-value--red {
     color: #f87171 !important;
 }
 
-html[data-theme='dark'] .building-manager-kpi-card h2 {
-    color: #f87171 !important;
-}
-
-html[data-theme='dark'] .building-manager-room-list-card {
+html[data-theme='dark'] .bm-nav-card {
     background-color: var(--app-surface-2) !important;
-    color: var(--app-text) !important;
     border-color: var(--app-border) !important;
+    box-shadow: none !important;
 }
 
-html[data-theme='dark'] .building-manager-room-list-card h2,
-html[data-theme='dark'] .building-manager-room-list-card label,
-html[data-theme='dark'] .building-manager-info-text {
+html[data-theme='dark'] .bm-nav-card:hover {
+    border-color: var(--muted-blue, #7fb3c8) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme='dark'] .bm-nav-card--alert {
+    border-left-color: #f87171 !important;
+}
+
+html[data-theme='dark'] .bm-card-name {
     color: var(--app-text) !important;
 }
 
-html[data-theme='dark'] .building-manager-search-input {
-    background-color: #111827 !important;
-    color: var(--app-text) !important;
-    border-color: var(--app-border) !important;
+html[data-theme='dark'] .bm-card-sub,
+html[data-theme='dark'] .bm-card-meta {
+    color: var(--app-text-muted) !important;
 }
 
-html[data-theme='dark'] .building-manager-search-input::placeholder {
-    color: #94a3b8 !important;
+html[data-theme='dark'] .bm-badge--red {
+    background: rgba(248, 113, 113, 0.15) !important;
+    color: #f87171 !important;
 }
 
-html[data-theme='dark'] .building-manager-department-dropdown {
-    background-color: #111827 !important;
-    color: var(--app-text) !important;
-    border-color: var(--app-border) !important;
-    border-radius: 999px !important;
-    overflow: hidden !important;
+html[data-theme='dark'] .bm-loading,
+html[data-theme='dark'] .bm-empty {
+    color: var(--app-text-muted) !important;
 }
 
-html[data-theme='dark'] .building-manager-department-dropdown .p-dropdown-label,
-html[data-theme='dark'] .building-manager-department-dropdown .p-dropdown-trigger {
-    background-color: transparent !important;
-    color: var(--app-text) !important;
-}
-
-html[data-theme='dark'] .building-manager-error-text {
+html[data-theme='dark'] .bm-error {
     color: #f87171 !important;
 }

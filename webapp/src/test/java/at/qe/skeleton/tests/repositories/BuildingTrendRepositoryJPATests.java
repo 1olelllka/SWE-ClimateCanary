@@ -37,6 +37,7 @@ class BuildingTrendRepositoryJPATests {
                 .departmentName("Engineering")
                 .trend(Trend.UP)
                 .value(10.0)
+                .date(LocalDate.now().minusDays(2))
                 .build());
 
         em.persist(BuildingTrend.builder()
@@ -44,6 +45,7 @@ class BuildingTrendRepositoryJPATests {
                 .departmentName("Engineering")
                 .trend(Trend.DOWN)
                 .value(5.0)
+                .date(LocalDate.now().minusDays(1))
                 .build());
 
         em.persist(BuildingTrend.builder()
@@ -51,6 +53,7 @@ class BuildingTrendRepositoryJPATests {
                 .departmentName("Engineering")
                 .trend(Trend.STABLE)
                 .value(7.0)
+                .date(LocalDate.now())
                 .build());
 
         em.persist(BuildingTrend.builder()
@@ -58,6 +61,7 @@ class BuildingTrendRepositoryJPATests {
                 .departmentName("HR")
                 .trend(Trend.UP)
                 .value(3.0)
+                .date(LocalDate.now())
                 .build());
 
         em.flush();
@@ -73,7 +77,7 @@ class BuildingTrendRepositoryJPATests {
     @Test
     void testFindAllByDepartmentIdAndDateBetween_returnsCorrectRange() {
         List<BuildingTrend> result = trendRepository.findAllByDepartmentIdAndDateBetweenOrderByDateAsc(
-                dept1Id, LocalDate.now().minusDays(1), LocalDate.now());
+                dept1Id, LocalDate.now().minusDays(2), LocalDate.now());
 
         assertEquals(3, result.size());
     }

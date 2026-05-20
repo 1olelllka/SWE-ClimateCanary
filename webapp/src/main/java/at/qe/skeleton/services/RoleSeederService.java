@@ -29,7 +29,7 @@ public class RoleSeederService {
                 "SYSADMIN", Set.of(Permission.CAN_MANAGE_USERS, Permission.CAN_MANAGE_BUILDING_STRUCTURE, Permission.CAN_MANAGE_DEVICES),
                 "HIGHER_MANAGER", Set.of(Permission.CAN_VIEW_COMPANY_AGGR, Permission.CAN_VIEW_VIOLATIONS_PER_DEPARTMENT),
                 "DEPARTMENT_MANAGER", Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_WARNINGS, Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES, Permission.CAN_VIEW_ABSENCE_VIEW, Permission.CAN_MANAGE_ABSENCES, Permission.CAN_MANAGE_OWN_ABSENCE, Permission.CAN_VIEW_OWN_OFFICE_CLIMATE, Permission.CAN_VIEW_OWN_SHARED_CLIMATE),
-                "BUILDING_MANAGER", Set.of(Permission.CAN_VIEW_ALL_ROOMS, Permission.CAN_CHANGE_LIMITS, Permission.CAN_MANAGE_TIPS),
+                "BUILDING_MANAGER", Set.of(Permission.CAN_VIEW_ALL_ROOMS, Permission.CAN_CHANGE_LIMITS, Permission.CAN_MANAGE_TIPS, Permission.CAN_VIEW_ALL_BUILDINGS),
                 "RASPBERRY_PI", Set.of(Permission.CAN_GET_RASPBERRY_CONFIG, Permission.CAN_VIEW_OCCUPANCY, Permission.CAN_SEND_WARNINGS, Permission.CAN_SEND_MEASUREMENTS, Permission.CAN_LIMITED_MANAGE_DEVICES)
         );
         Arrays.stream(names).forEach((roleName) -> {
