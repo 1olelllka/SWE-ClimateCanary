@@ -14,7 +14,6 @@ import logging
 import sys
 
 from auth_manager import AuthManager
-from config_manager import ConfigManager
 from db_manager import DatabaseManager
 from data_processor import DataProcessor
 from web_manager import WebManager
@@ -24,7 +23,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-async def main(db_path: str, log_file: str):
+async def main(db_path: str):
     logger.info("Starting IoT Gateway")
 
     db = DatabaseManager(db_path)
@@ -33,7 +32,7 @@ async def main(db_path: str, log_file: str):
 
     configure_done = await db.get_config('configure_done')
     if configure_done != '1':
-        logger.warning(f"[Main] configure_done flag not set, watiting for ./condigure script to set initial config.")
+        logger.warning(f"[Main] configure_done flag not set, watiting for ./configure script to set initial config.")
         while configure_done != '1':
             await asyncio.sleep(10)
             configure_done = await db.get_config('configure_done')
@@ -182,6 +181,6 @@ if __name__ == "__main__":
     )
 
     try:
-        asyncio.run(main(db_path, log_file))
+        asyncio.run(main(db_path))
     except KeyboardInterrupt:
         logging.info("Gateway shutdown requested by user.")
