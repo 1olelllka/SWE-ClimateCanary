@@ -80,6 +80,13 @@ class BLEManager:
 
                 connected = False 
                 for attempt in range (1,6):
+
+                    sensors = await self.db.get_sensors()
+                    sensor_cfg = next((s for s in sensors if s['name'] == self.name), None)
+                    if not sensor_cfg:
+                        logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
+                        return
+                    
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
