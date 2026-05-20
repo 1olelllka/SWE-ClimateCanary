@@ -8,10 +8,7 @@ import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.AggregatedStatsRepository;
-import at.qe.skeleton.repositories.ClimateStatsRepository;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
-import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.ClimateStatsService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +43,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     private final AggregatedStatsMapper  aggregatedMapper;
     private final LimitMapper            limitMapper;
     private final AuthenticatedUserService authenticatedUserService;
+    private final AggregatedDepartmentStatsRepository departmentStatsRepository;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -241,6 +239,21 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         RoomMonitoring room = roomMonitoringRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
         return limitMapper.mapTo(room);
+    }
+
+    @Override
+    public AggregatedDataPointDTO getDepartmentAggregatedData(UUID departmentId) {
+        AggregatedDepartmentStats stats = departmentStatsRepository.findFirstByDepartmentIdOrderByDateDesc(departmentId)
+                .orElseThrow(() -> new NotFoundException("There's no data for department %s".formatted(departmentId.toString())));
+        return new AggregatedDataPointDTO(stats.getDate(), stats.getAvgTemp(), stats.getAvgHumidity(), stats.getAvgCO2());
+    }
+
+    @Override
+    public List<AggregatedDataPointDTO> getDepartmentAggregatedDataInTimePeriod(UUID departmentId, LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) throw new ValidationException("Invalid timestamps.");
+        if (ChronoUnit.DAYS.between(startDate, endDate) > 180) throw new ValidationException("The time interval is too big.");
+        List<AggregatedDepartmentStats> stats = departmentStatsRepository.findAllByDepartmentIdAndDateBetweenOrderByDateAsc(departmentId, startDate, endDate);
+        return stats.stream().map(stat -> new AggregatedDataPointDTO(stat.getDate(), stat.getAvgTemp(), stat.getAvgHumidity(), stat.getAvgCO2())).toList();
     }
 
     /**

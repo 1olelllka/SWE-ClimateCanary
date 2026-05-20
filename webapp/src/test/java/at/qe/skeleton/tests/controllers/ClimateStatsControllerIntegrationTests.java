@@ -55,6 +55,8 @@ class ClimateStatsControllerIntegrationTests {
     RoomService roomService;
     @Autowired
     UserxRepository userxRepository;
+    @Autowired
+    AggregatedDepartmentStatsRepository departmentStatsRepository;
     ObjectMapper mapper = new ObjectMapper();
 
 
@@ -88,6 +90,7 @@ class ClimateStatsControllerIntegrationTests {
         monitoringRepository.deleteAll();
         departmentRepository.deleteAll();
         buildingRepository.deleteAll();
+        departmentStatsRepository.deleteAll();
     }
 
     @Test
@@ -426,6 +429,53 @@ class ClimateStatsControllerIntegrationTests {
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/rooms/%s/climate-history?startDate=%s&endDate=%s&granularity=WEEK".formatted(room.getId().toString(), LocalDate.now().minusDays(100), LocalDate.now()))
                         .with(SecurityMockMvcRequestPostProcessors.authentication(auth)))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_ALL_ROOMS")
+    void testThatGetDepartmentAggregatedDataIsSecured() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/last-aggregation".formatted(UUID.randomUUID().toString())))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/climate-aggregation?startDate=%s&endDate=%s".formatted(UUID.randomUUID().toString(), LocalDate.now(), LocalDate.now())))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_COMPANY_AGGR")
+    void testThatGetLastDepartmentAggregatedDataReturnsHttp404NotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/last-aggregation".formatted(UUID.randomUUID().toString())))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_COMPANY_AGGR")
+    void testThatGetLastDepartmentAggregatedDataReturnsHttp200Ok() throws Exception {
+        UUID departmentId = UUID.randomUUID();
+        departmentStatsRepository.save(AggregatedDepartmentStats.builder().departmentId(departmentId).date(LocalDate.now()).build());
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/last-aggregation".formatted(departmentId.toString())))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_COMPANY_AGGR")
+    void testThatGetDepartmentAggregatedDataReturnsHttp400BadRequestIfInvalidTimestamps() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/climate-aggregation?startDate=%s&endDate=%s".formatted(UUID.randomUUID().toString(), LocalDate.now(), LocalDate.now().minusDays(1))))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_COMPANY_AGGR")
+    void testThatGetDepartmentAggregatedDataReturnsHttp400BadRequestIfTooBigTimestamp() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/climate-aggregation?startDate=%s&endDate=%s".formatted(UUID.randomUUID().toString(), LocalDate.now(), LocalDate.now().plusDays(200))))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_VIEW_COMPANY_AGGR")
+    void testThatGetDepartmentAggregatedDataReturnsHttp200OkOnSuccess() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/departments/%s/climate-aggregation?startDate=%s&endDate=%s".formatted(UUID.randomUUID().toString(), LocalDate.now(), LocalDate.now().plusDays(2))))
                 .andExpect(MockMvcResultMatchers.status().isOk());
     }
 

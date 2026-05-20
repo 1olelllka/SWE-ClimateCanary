@@ -1,12 +1,7 @@
 package at.qe.skeleton.background;
 
-import at.qe.skeleton.model.AggregatedStats;
-import at.qe.skeleton.model.ClimateStats;
-import at.qe.skeleton.model.Granularity;
-import at.qe.skeleton.model.RoomMonitoring;
-import at.qe.skeleton.repositories.AggregatedStatsRepository;
-import at.qe.skeleton.repositories.ClimateStatsRepository;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
+import at.qe.skeleton.model.*;
+import at.qe.skeleton.repositories.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +28,8 @@ public class ClimateAggregationJob {
     private final ClimateStatsRepository climateStatsRepository;
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository roomMonitoringRepository;
+    private final AggregatedDepartmentStatsRepository departmentStatsRepository;
+    private final DepartmentRepository departmentRepository;
 
     @Value("${app.aggregation.run-on-startup:true}")
     private boolean runOnStartup;
@@ -50,7 +47,38 @@ public class ClimateAggregationJob {
     @Transactional
     public void aggregateDaily() {
         log.info("Running daily climate aggregation...");
-        getRoomId().ifPresent(roomId -> aggregateDay(roomId, LocalDate.now().minusDays(1)));
+        getRooms().forEach(roomId -> aggregateDay(roomId, LocalDate.now().minusDays(1)));
+        getDepartments().forEach(department -> aggregateDayForDepartment(department, LocalDate.now().minusDays(1)));
+    }
+
+    private void aggregateDayForDepartment(Department department, LocalDate localDate) {
+        log.info("Running aggregation for department {} {}.", department.getId(), department.getName());
+        if (departmentStatsRepository.existsByDepartmentIdAndDate(department.getId(), localDate)) {
+            log.info("Daily aggregation already exists for department with id {}", department.getId());
+            return;
+        }
+        AggregatedDepartmentStats stats = AggregatedDepartmentStats
+                .builder()
+                .departmentId(department.getId())
+                .date(localDate)
+                .avgCO2(0)
+                .avgHumidity(0)
+                .avgTemp(0)
+                .build();
+        for (Room room : department.getRooms()) {
+            Optional<AggregatedStats> roomStats = aggregatedStatsRepository.findFirstByRoomIdAndDateAndGranularity(room.getId(), localDate, Granularity.DAILY);
+            if (roomStats.isEmpty()) {
+                log.info("Not found aggregated stats for room {}, department {}.", room.getRoomNumber(), department.getId());
+                continue;
+            }
+            stats.setAvgCO2(stats.getAvgCO2() + roomStats.get().getAvgCO2());
+            stats.setAvgTemp(stats.getAvgTemp() + roomStats.get().getAvgTemp());
+            stats.setAvgHumidity(stats.getAvgHumidity() + roomStats.get().getAvgHumidity());
+        }
+        stats.setAvgCO2(stats.getAvgCO2() / department.getRooms().size());
+        stats.setAvgHumidity(stats.getAvgHumidity() / department.getRooms().size());
+        stats.setAvgTemp(stats.getAvgTemp() / department.getRooms().size());
+        departmentStatsRepository.save(stats);
     }
 
     // Averages the 7 DAILY rows from the past week into a single WEEKLY summary
@@ -58,10 +86,9 @@ public class ClimateAggregationJob {
     @Async
     @Transactional
     public void aggregateWeekly() {
-        log.info("Running weekly climate aggregation...");
-        getRoomId().ifPresent(roomId -> {
+        getRooms().forEach(roomId -> {
             LocalDate weekStart = LocalDate.now().minusDays(7);
-            LocalDate weekEnd   = LocalDate.now().minusDays(1);
+            LocalDate weekEnd = LocalDate.now().minusDays(1);
 
             if (aggregatedStatsRepository.existsByRoomIdAndDateAndGranularity(roomId, weekStart, Granularity.WEEKLY)) {
                 log.info("Weekly aggregation already exists for {} starting {}, skipping.", roomId, weekStart);
@@ -91,6 +118,7 @@ public class ClimateAggregationJob {
     }
 
     private void aggregateDay(UUID roomId, LocalDate date) {
+        log.info("Running daily aggregation for room {}", roomId);
         if (aggregatedStatsRepository.existsByRoomIdAndDateAndGranularity(roomId, date, Granularity.DAILY)) {
             log.info("Daily aggregation already exists for {} on {}, skipping.", roomId, date);
             return;
@@ -119,11 +147,12 @@ public class ClimateAggregationJob {
         log.info("Daily aggregation saved for room {} on {} ({} records).", roomId, date, records.size());
     }
 
-    private Optional<UUID> getRoomId() {
-        return roomMonitoringRepository.findAll().stream()
-                .filter(r -> r.getRoomNumber().endsWith("101"))
-                .findFirst()
-                .map(RoomMonitoring::getRoomId);
+    private List<UUID> getRooms() {
+        return roomMonitoringRepository.findAll().stream().map(RoomMonitoring::getRoomId).toList();
+    }
+
+    private List<Department> getDepartments() {
+        return departmentRepository.findAll();
     }
 
     private <T> double avg(List<T> list, ToDoubleFunction<T> extractor) {
