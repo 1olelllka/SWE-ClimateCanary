@@ -127,8 +127,11 @@ class BLEManager:
                             logger.info(f"[BLE:{self.name}] Time sync sent.")
 
                             freq = await self.db.get_config('frequency')
-                            await client.write_gatt_char( write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
-                            logger.info(f"[BLE:{self.name}] Frequency sync sent.")
+                            if freq is not None:
+                                await client.write_gatt_char( write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
+                                logger.info(f"[BLE:{self.name}] Frequency sync sent.")
+                            else:
+                                logger.warning(f"[BLE:{self.name}] Frequency is null - skipping frequency sync.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
                             connected = True 
