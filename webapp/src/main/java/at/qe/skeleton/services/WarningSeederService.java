@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -84,6 +86,80 @@ public class WarningSeederService {
         ));
 
         log.info("Seeded 3 temperature and 2 humidity active warnings for room {}.", room.getRoomNumber());
+
+        seedDepartmentActiveWarnings(tempTip, humTip);
+    }
+
+    // dept prefix → number of active violations, equally distributed across [1,10] (Engineering = 0)
+    private static final Map<String, Integer> DEPT_ACTIVE_COUNT = Map.of(
+            "MAR", 1,
+            "HUM", 4,
+            "FIN", 7,
+            "OPE", 10
+    );
+
+    private static final MeasurementType[] TYPES = {
+            MeasurementType.TEMPERATURE, MeasurementType.HUMIDITY, MeasurementType.CO2
+    };
+
+    private void seedDepartmentActiveWarnings(Tip tempTip, Tip humTip) {
+        List<RoomMonitoring> allRooms = roomMonitoringRepository.findAll();
+
+        DEPT_ACTIVE_COUNT.forEach((prefix, count) -> {
+            List<RoomMonitoring> deptRooms = allRooms.stream()
+                    .filter(r -> r.getRoomNumber().startsWith(prefix + "-"))
+                    .sorted((a, b) -> a.getRoomNumber().compareTo(b.getRoomNumber()))
+                    .toList();
+
+            if (deptRooms.isEmpty()) {
+                log.warn("No rooms found for prefix '{}', skipping.", prefix);
+                return;
+            }
+
+            List<Warnings> batch = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                RoomMonitoring target = deptRooms.get(i % deptRooms.size());
+                MeasurementType type  = TYPES[i % TYPES.length];
+                Tip tip = (type == MeasurementType.TEMPERATURE) ? tempTip : humTip;
+
+                String msg;
+                double triggered, limit;
+                WarningStatus status;
+                if (type == MeasurementType.TEMPERATURE) {
+                    triggered = 27.0 + i * 0.3;
+                    limit     = TEMP_MAX;
+                    status    = WarningStatus.RED;
+                    msg       = "Temperature exceeded maximum of " + limit + " °C. Current: " + String.format("%.1f", triggered) + " °C.";
+                } else if (type == MeasurementType.HUMIDITY) {
+                    triggered = 65.0 + i * 0.5;
+                    limit     = HUM_MAX;
+                    status    = i % 3 == 0 ? WarningStatus.RED : WarningStatus.YELLOW;
+                    msg       = "Humidity exceeded maximum of " + limit + "%. Current: " + String.format("%.1f", triggered) + "%.";
+                } else {
+                    triggered = 75.0 + i * 1.0;
+                    limit     = 70.0;
+                    status    = WarningStatus.RED;
+                    msg       = "CO₂ level exceeded maximum of " + (int) limit + ". Current: " + (int) triggered + ".";
+                    tip       = null;
+                }
+
+                batch.add(Warnings.builder()
+                        .roomMonitoring(target)
+                        .measurementType(type)
+                        .status(status)
+                        .triggeredValue(triggered)
+                        .activeLimitAtTime(limit)
+                        .sensorWriteId(UUID.randomUUID())
+                        .message(msg)
+                        .createdAt(LocalDateTime.now().minusMinutes(30L + i * 10))
+                        .resolvedAt(null)
+                        .tip(tip)
+                        .build());
+            }
+
+            warningRepository.saveAll(batch);
+            log.info("Seeded {} active warnings for prefix '{}'.", count, prefix);
+        });
     }
 
     private Warnings build(RoomMonitoring room, MeasurementType type, WarningStatus status,
