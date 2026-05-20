@@ -15,4 +15,5 @@ export const ROUTES = {
     BUILDING_ROOM_ANALYSIS: '/building-room-analysis/:roomId',
     TIPMANAGEMENT: '/tipmanagement',
     MY_ROOM: '/my-room',
+    COMPANY_TRENDS: '/senior/trends',
 } as const;

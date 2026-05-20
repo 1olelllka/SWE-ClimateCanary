@@ -19,6 +19,7 @@ import SettingsPage from "./views/SettingsPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
+import { CompanyTrendPage } from "./views/CompanyTrendPage";
 
 export const HomePageRoute = {
     url: ROUTES.HOME,
@@ -88,6 +89,11 @@ export const BuildingRoomAnalysisRoute = {
 export const TipManagementRoute = {
     url: ROUTES.TIPMANAGEMENT,
     component: TipManagement
+}
+
+export const CompanyTrendsRoute = {
+    url: ROUTES.COMPANY_TRENDS,
+    component: CompanyTrendPage
 }
 
 // referenced but not yet routed — kept to avoid unused-import warnings

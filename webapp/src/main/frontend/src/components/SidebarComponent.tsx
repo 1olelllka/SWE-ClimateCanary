@@ -47,7 +47,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
 
     // Exakte Bezeichnungen für die Startseite je nach Rolle
     const getOverviewLabel = () => {
-        if (isSeniorManager) return 'Departments Overview';
+        if (isSeniorManager) return 'Company Overview';
         if (isDepartmentManager) return 'Department Dashboard';
         if (isBuildingManager) return 'Building Overview';
         if (isEmployee) return 'My Office';
@@ -64,7 +64,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             visible: true // Jeder sieht eigene Startseite
         },
         {
-            label: 'Departments List',
+            label: 'Company Overview',
             icon: 'pi-list',
             route: '/',
             visible: isSeniorManager && currentDept !== null
@@ -91,7 +91,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             label: 'My Absences',
             icon: 'pi-calendar-times',
             route: '/absences',
-            visible: isEmployee || isSeniorManager || isDepartmentManager
+            visible: isEmployee || isDepartmentManager
         },
         {
             label: 'Absences',
@@ -117,6 +117,12 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             icon: 'pi-building',
             route: '/building-configuration',
             visible: isAdmin
+        },
+        {
+            label: 'Climate Trends',
+            icon: 'pi-chart-line',
+            route: ROUTES.COMPANY_TRENDS,
+            visible: isSeniorManager
         },
         {
             label: 'Tip Management',
