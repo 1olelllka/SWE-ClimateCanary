@@ -155,7 +155,7 @@ class WebManager:
         )
     
         if not ble:
-            logger.warning(f"[WebManager] No active BLE manager for write_uuid='{violated_sensor_wId}' — tip not forwarded.")
+            logger.warning(f"[WebManager] No active BLE manager for write_uuid='{violated_sensor_wId}' - tip not forwarded.")
             return
     
         ble_msg = await self._build_ble_warn_message(ble.name, violation_type, violation_status, tip)
@@ -269,22 +269,10 @@ class WebManager:
             await self.auth.refresh_if_needed()
 
             server_url = self.static_config['webapp']['server_url']
-            missing = await ConfigManager.fetch_and_seed(pi_id, server_url, self.db, self.auth)
-
-            if missing:
-                logger.critical(
-                    f"[WebManager] /api/config processed but critical fields are null: {missing}. "
-                    "Holding boot gate — waiting for a complete config from the webapp."
-                )
-                await self.db.log_event(
-                    "CONFIG",
-                    f"Config received with null fields {missing} - boot gate not unblocked.",
-                    "WARNING",
-                )
-                return
+            await ConfigManager.fetch_and_seed(pi_id, server_url, self.db, self.auth)
 
             new_freq = await self.db.get_config('frequency')
-            if new_freq:
+            if new_freq is not None:
                 logger.info(f"[WebManager] Config re-seeded. Broadcasting FREQUENCY:{new_freq} to all Arduinos.")
                 for ble in self.ble_managers.values():
                     await ble.ble_inbox.put(f"FREQUENCY:{new_freq}")
@@ -292,7 +280,7 @@ class WebManager:
             # Unblock the boot gate (idempotent after first call)
             if not self.config_ready_event.is_set():
                 self.config_ready_event.set()
-                logger.info("[WebManager] config_ready_event set — boot gate unblocked.")
+                logger.info("[WebManager] config_ready_event set - boot gate unblocked.")
 
         except Exception as e:
             logger.error(f"[WebManager] _task_config_change failed: {e}")
@@ -354,7 +342,7 @@ class WebManager:
                         failure_streak = 0
                         if is_webapp_offline:
                             is_webapp_offline = False
-                            logger.info("[WebManager] Webapp back online — notifying Arduinos.")
+                            logger.info("[WebManager] Webapp back online - notifying Arduinos.")
                             await _broadcast_to_arduinos("ERROR:WEBAPP_CLEAR")
                     else:
                         failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
@@ -377,7 +365,7 @@ class WebManager:
                 finally:
                     if failure_streak >= OFFLINE_THRESHOLD and not is_webapp_offline:
                         is_webapp_offline = True
-                        logger.warning("[WebManager] Webapp confirmed offline — notifying Arduinos.")
+                        logger.warning("[WebManager] Webapp confirmed offline - notifying Arduinos.")
                         await _broadcast_to_arduinos("ERROR:WEBAPP_OFFLINE")
                     self.web_out_queue.task_done()
 
