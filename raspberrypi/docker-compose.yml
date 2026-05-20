@@ -1,0 +1,13 @@
+services:
+  gateway:
+    build: ./app
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - data:/home/pi/data
+      - logs:/home/pi/logs
+
+volumes:
+  data:
+  logs:
