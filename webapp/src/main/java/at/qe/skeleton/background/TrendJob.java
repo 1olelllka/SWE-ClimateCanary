@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -30,21 +31,21 @@ public class TrendJob {
     @PostConstruct
     void init() {
         if (runOnStartup) {
-            trendWeekly();
+            trendDaily();
         }
     }
 
-    @Scheduled(cron = "${app.aggregation.weekly.cron:0 0 1 * * MON}")
+    @Scheduled(cron = "${app.aggregation.daily.cron:0 0 1 * * *}")
     @Async
     @Transactional
-    public void trendWeekly() {
-        log.info("Running background trend calculation...");
+    public void trendDaily() {
+        log.info("Running background daily trend calculation...");
         List<Department> departments = departmentRepository.findAll();
         for (Department department : departments) {
             double value = 0;
             Trend trending;
             for (Room room : department.getRooms()) {
-                AggregatedStats roomStats = aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(room.getId(), Granularity.WEEKLY);
+                AggregatedStats roomStats = aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(room.getId(), Granularity.DAILY);
                 if (roomStats == null) {
                     log.info("Aggregated stats for room {} {} was not found.", room.getId().toString(), room.getRoomNumber());
                     continue;
@@ -65,10 +66,11 @@ public class TrendJob {
                     .departmentName(department.getName())
                     .value(value)
                     .trend(trending)
+                    .date(LocalDate.now())
                     .build();
             trendRepository.save(trend);
         }
-        log.info("Completed background trend calculation...");
+        log.info("Completed background daily trend calculation...");
     }
 
     private double avgFormula(double temperature, double humidity, double co2) {

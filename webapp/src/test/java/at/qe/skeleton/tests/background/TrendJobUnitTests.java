@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,7 +51,7 @@ class TrendJobUnitTests {
     }
 
     @Test
-    void testThatTrendWeeklyCalculatesUpTrendCorrectly() {
+    void testThatTrendDailyCalculatesUpTrendCorrectly() {
         // Arrange
         // Formula calculation input: temp=22, hum=50, co2=1000
         // normTemp = (22-18)/(26-18) = 0.5 -> weight 0.4 * 0.5 = 0.2
@@ -67,15 +68,16 @@ class TrendJobUnitTests {
 
         BuildingTrend lastTrend = BuildingTrend.builder()
                 .value(0.3000) // Lower than calculated value -> Trend should go UP
+                .date(LocalDate.now().minusDays(1))
                 .build();
 
         when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.WEEKLY))
+        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                 .thenReturn(stats);
         when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
 
         // Act
-        trendJob.trendWeekly();
+        trendJob.trendDaily();
 
         // Assert
         ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
@@ -86,10 +88,11 @@ class TrendJobUnitTests {
         assertEquals("Informatics", savedTrend.getDepartmentName());
         assertEquals(calculatedValue, savedTrend.getValue(), 0.0001);
         assertEquals(Trend.UP, savedTrend.getTrend());
+        assertEquals(LocalDate.now(), savedTrend.getDate());
     }
 
     @Test
-    void testThatTrendWeeklyCalculatesDownTrendCorrectly() {
+    void testThatTrendDailyCalculatesDownTrendCorrectly() {
         // Arrange
         AggregatedStats stats = AggregatedStats.builder()
                 .avgTemp(18.0f) // normTemp = 0
@@ -99,15 +102,16 @@ class TrendJobUnitTests {
 
         BuildingTrend lastTrend = BuildingTrend.builder()
                 .value(0.1500) // Higher than calculated value (0.0) -> Trend should go DOWN
+                .date(LocalDate.now().minusDays(1))
                 .build();
 
         when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.WEEKLY))
+        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                 .thenReturn(stats);
         when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
 
         // Act
-        trendJob.trendWeekly();
+        trendJob.trendDaily();
 
         // Assert
         ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
@@ -116,7 +120,7 @@ class TrendJobUnitTests {
     }
 
     @Test
-    void testThatTrendWeeklySetsStableTrendWhenValuesAreSame() {
+    void testThatTrendDailySetsStableTrendWhenValuesAreSame() {
         // Arrange
         AggregatedStats stats = AggregatedStats.builder()
                 .avgTemp(26.0f) // normTemp = 1.0 -> 0.4
@@ -126,15 +130,16 @@ class TrendJobUnitTests {
 
         BuildingTrend lastTrend = BuildingTrend.builder()
                 .value(1.0) // Exactly matches the calculated value -> Trend should be STABLE
+                .date(LocalDate.now().minusDays(1))
                 .build();
 
         when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.WEEKLY))
+        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                 .thenReturn(stats);
         when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
 
         // Act
-        trendJob.trendWeekly();
+        trendJob.trendDaily();
 
         // Assert
         ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
@@ -143,18 +148,18 @@ class TrendJobUnitTests {
     }
 
     @Test
-    void testThatTrendWeeklyDefaultsToStableWhenNoPreviousTrendExists() {
+    void testThatTrendDailyDefaultsToStableWhenNoPreviousTrendExists() {
         // Arrange
         AggregatedStats stats = AggregatedStats.builder()
                 .avgTemp(22.0f).avgHumidity(50.0f).avgCO2(1000.0f).build();
 
         when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.WEEKLY))
+        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                 .thenReturn(stats);
         when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(null); // No history
 
         // Act
-        trendJob.trendWeekly();
+        trendJob.trendDaily();
 
         // Assert
         ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
@@ -163,15 +168,15 @@ class TrendJobUnitTests {
     }
 
     @Test
-    void testThatTrendWeeklySkipsRoomWhenStatsAreMissing() {
+    void testThatTrendDailySkipsRoomWhenStatsAreMissing() {
         // Arrange
         when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.WEEKLY))
+        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                 .thenReturn(null);
         when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(null);
 
         // Act
-        trendJob.trendWeekly();
+        trendJob.trendDaily();
 
         // Assert
         ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
