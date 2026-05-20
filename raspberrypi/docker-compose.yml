@@ -5,9 +5,6 @@ services:
     network_mode: host
     privileged: true
     volumes:
-      - data:/home/pi/data
-      - logs:/home/pi/logs
-
-volumes:
-  data:
-  logs:
+      - /home/pi/data:/home/pi/data
+      - /home/pi/logs:/home/pi/logs
+      - /home/pi/conf.yaml:/app/conf.yaml:ro
