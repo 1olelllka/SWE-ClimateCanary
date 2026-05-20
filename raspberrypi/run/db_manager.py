@@ -45,7 +45,7 @@ class DatabaseManager:
         await self.db.execute('''
                               CREATE TABLE IF NOT EXISTS system_limits (
                                   key TEXT PRIMARY KEY,
-                                  value REAL NOT NULL,
+                                  value REAL,
                                   updated_at TEXT NOT NULL
                                   )
                               ''')
@@ -67,7 +67,7 @@ class DatabaseManager:
         await self.db.execute('''
                               CREATE TABLE IF NOT EXISTS config (
                                   key TEXT PRIMARY KEY,
-                                  value TEXT NOT NULL,
+                                  value TEXT,
                                   updated_at TEXT NOT NULL
                                   )
                               ''')
@@ -82,7 +82,7 @@ class DatabaseManager:
             row = await cursor.fetchone()
             return row[0] if row else None
 
-    async def set_config(self, key: str, value: str):
+    async def set_config(self, key: str, value: str | None):
         await self.db.execute(
                 """
                 INSERT INTO config (key, value, updated_at)
@@ -91,7 +91,7 @@ class DatabaseManager:
                 value = excluded.value,
                 updated_at = excluded.updated_at
                 """,
-                (key, str(value), get_current_time())
+                (key, value, get_current_time())
                 )
         await self.db.commit()
         logger.debug(f"[Config] {key} = {value}")
@@ -149,7 +149,7 @@ class DatabaseManager:
 
 # Limits
 
-    async def set_limit(self, key: str, value: float):
+    async def set_limit(self, key: str, value: float | None):
         await self.db.execute(
                 """
                 INSERT INTO system_limits (key, value, updated_at)
