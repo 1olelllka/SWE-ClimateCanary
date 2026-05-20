@@ -19,7 +19,7 @@ class BLEManager:
         self.disconnect_event = asyncio.Event()
         self.reconnect_event = asyncio.Event()
         self.removal_event = asyncio.Event()
-        self._loop = asyncio.get_event_loop()
+        self._loop = asyncio.get_running_loop()
         self.scan_lock = scan_lock
 
     @property
