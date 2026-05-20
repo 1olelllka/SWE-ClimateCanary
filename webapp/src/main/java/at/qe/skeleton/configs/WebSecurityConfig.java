@@ -100,7 +100,7 @@ public class WebSecurityConfig {
                                                 Permission.CAN_VIEW_OWN_OFFICE_CLIMATE.name(),
                                                 Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES.name())
                                         .requestMatchers(
-                                                "/api/departments/*/climate-aggregation"
+                                                "/api/departments/*/climate-aggregation", "/api/departments/*/last-aggregation"
                                         ).hasAnyAuthority(Permission.CAN_VIEW_COMPANY_AGGR.name())
                                         .requestMatchers(HttpMethod.POST, "/api/measurements")
                                         .hasAnyAuthority(Permission.CAN_SEND_MEASUREMENTS.name())

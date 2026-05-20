@@ -12,6 +12,6 @@ import java.util.UUID;
 @Repository
 public interface AggregatedDepartmentStatsRepository extends JpaRepository<AggregatedDepartmentStats, UUID> {
     boolean existsByDepartmentIdAndDate(UUID departmentId, LocalDate date);
-    Optional<AggregatedDepartmentStats> findFirstByDepartmentIdOrderByDateDesc(UUID roomId);
+    Optional<AggregatedDepartmentStats> findFirstByDepartmentIdOrderByDateDesc(UUID departmentId);
     List<AggregatedDepartmentStats> findAllByDepartmentIdAndDateBetweenOrderByDateAsc(UUID departmentId, LocalDate startDate, LocalDate endDate);
 }
