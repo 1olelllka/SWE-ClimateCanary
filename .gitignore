@@ -296,3 +296,7 @@ sketch
 
 # openapi generated files
 webapp/src/main/frontend/src/generated-skeleton-api/
+
+# pycache
+raspberry/app/__pycache__
+raspberry/tests/__pycache__
