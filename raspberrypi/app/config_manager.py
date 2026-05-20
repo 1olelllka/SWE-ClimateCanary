@@ -17,7 +17,7 @@ class ConfigManager:
 
         for path_key in ['database', 'log_file']:
             full_path = config['paths'].get(path_key)
-            if full_path:
+            if full_path and os.path.isabs(full_path):
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
         return config
@@ -25,7 +25,7 @@ class ConfigManager:
 # Full config fetch
 
     @staticmethod
-    async def fetch_and_seed(pi_id: str, server_url: str, db, auth) -> list[str]:
+    async def fetch_and_seed(pi_id: str, server_url: str, db, auth):
         await db.set_config('raspberry_id', pi_id)
         await db.set_config('server_url', server_url)
 
@@ -38,58 +38,24 @@ class ConfigManager:
                 f"[Config] Could not reach webapp for full config fetch: {e}. "
                 "Continuing with existing DB config."
             )
-            return []
+            return 
 
-        missing: list[str] = []
+        await db.set_config('room_id', remote.get('roomId'))
+        await db.set_config('frequency', str(remote['frequency']) if remote.get('frequency') is not None else None)
 
-        room_id = remote.get('roomId')
-        if room_id:
-            await db.set_config('room_id', room_id)
-        else:
-            missing.append('roomId')
+        limits = remote.get('limits') or {}
+        await db.set_limit('max_temp', float(limits['tempMax']) if limits.get('tempMax') is not None else None)
+        await db.set_limit('min_temp', float(limits['tempMin']) if limits.get('tempMin') is not None else None)
+        await db.set_limit('max_moisture', float(limits['humMax']) if limits.get('humMax') is not None else None)
+        await db.set_limit('min_moisture', float(limits['humMin']) if limits.get('humMin') is not None else None)
+        await db.set_limit('max_co2', float(limits['co2Max']) if limits.get('co2Max') is not None else None)
 
-        frequency = remote.get('frequency')
-        if frequency is not None:
-            await db.set_config('frequency', str(frequency))
-        else:
-            missing.append('frequency')
+        occupancy = remote.get('occupancy') or {}
+        effective = occupancy.get('effectiveOccupancy')
+        privacy = occupancy.get('privacyMode')
 
-        limits = remote.get('limits')
-        if limits:
-            limit_updates = {
-                'max_temp': limits.get('tempMax'),
-                'min_temp': limits.get('tempMin'),
-                'max_moisture': limits.get('humMax'),
-                'min_moisture': limits.get('humMin'),
-                'max_co2': limits.get('co2Max'),
-            }
-            null_limit_keys = []
-            for key, value in limit_updates.items():
-                if value is not None:
-                    await db.set_limit(key, float(value))
-                else:
-                    null_limit_keys.append(key)
-            if null_limit_keys:
-                missing.append(f"limits({', '.join(null_limit_keys)})")
-        else:
-            missing.append('limits')
-
-        occupancy = remote.get('occupancy')
-        if occupancy:
-            effective = occupancy.get('effectiveOccupancy')
-            privacy = occupancy.get('privacyMode')
-
-            if effective is not None:
-                await db.set_limit('current_occupancy', float(effective))
-            else:
-                missing.append('occupancy.effectiveOccupancy')
-
-            if privacy is not None:
-                await db.set_limit('privacy_mode', 1.0 if privacy else 0.0)
-            else:
-                missing.append('occupancy.privacyMode')
-        else:
-            missing.append('occupancy')
+        await db.set_limit('current_occupancy', float(effective) if effective is not None else None)
+        await db.set_limit('privacy_mode', (1.0 if privacy else 0.0) if privacy is not None else None)
 
         sensors = remote.get('sensors', [])
         sensor_list = [
@@ -102,20 +68,30 @@ class ConfigManager:
         ]
         await db.set_sensors(sensor_list)
 
-        if missing:
+        null_fields = [k for k, v in {
+            'roomId': remote.get('roomId'),
+            'frequency': remote.get('frequency'),
+            'limits.tempMax': limits.get('tempMax'),
+            'limits.tempMin': limits.get('tempMin'),
+            'limits.humMax': limits.get('humMax'),
+            'limits.humMin': limits.get('humMin'),
+            'limits.co2Max': limits.get('co2Max'),
+            'occupancy.effectiveOccupancy': effective,
+            'occupancy.privacyMode': privacy,
+        }.items() if v is None]
+        
+        if null_fields:
             logger.warning(
-                f"[Config] Seed completed with missing/null critical fields: {missing}. "
+                f"[Config] Seed complete but null fields from remote: {null_fields}. "
+                f"Processing will be halted until a valid config arrives. "
                 f"Sensors seeded: {len(sensor_list)}"
             )
         else:
             logger.info(
                 f"[Config] Seed complete: {len(sensor_list)} sensors, "
-                f"room={room_id}, freq={frequency}, "
-                f"occupancy={occupancy.get('effectiveOccupancy')}, "
-                f"privacy={occupancy.get('privacyMode')}"
+                f"room={remote.get('roomId')}, freq={remote.get('frequency')}, "
+                f"occupancy={effective}, privacy={privacy}"
             )
-
-        return missing
 
 # Live update handlers, called by WebManager endpoints
 
@@ -193,22 +169,20 @@ class ConfigManager:
     async def handle_config_change(db, auth, pi_id: str) -> str | None:
         server_url = await db.get_config('server_url')
         if not server_url:
-            raise RuntimeError("server_url missing from DB — cannot fetch config.")
+            raise RuntimeError("server_url missing from DB - cannot fetch config.")
 
         remote = await ConfigManager._fetch(
             f"{server_url}/api/raspberry-pis/{pi_id}/config", auth
         )
 
-        updates = {
-            'room_id':   remote.get('roomId'),
-            'frequency': str(remote['frequency']) if remote.get('frequency') else None,
-        }
-        for key, value in updates.items():
-            if value is not None:
-                await db.set_config(key, value)
+        room_id = remote.get('roomId')
+        frequency = str(remote['frequency']) if remote.get('frequency') else None
+        
+        await db.set_config('room_id', room_id)
+        await db.set_config('frequency', frequency)
 
         logger.info(f"[Config] General config refreshed for pi={pi_id}.")
-        return updates.get('frequency')
+        return frequency
 
 # Internal helpers
 

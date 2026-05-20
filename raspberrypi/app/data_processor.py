@@ -56,13 +56,27 @@ class DataProcessor:
 
             try:
                 limits = await self.db.get_all_limits()
-                privacy = limits.get('privacy_mode', 1.0)
+                config = await self.db.get_all_config()
+                room_id = config.get('room_id')
+                freq = config.get('frequency')
+
+                if room_id is None or freq is None:
+                    logger.warning(
+                            f"[Processor:{sensor_name}] Config has null values (room_id={room_id}, frequency={freq}) - discarding measurement until valid config arrives."
+                            )
+                    continue 
+
+                null_limits = [k for k in ('max_temp','min_temp','max_moisture','min_moisture','max_co2') if limits.get(k) is None]
+                if null_limits:
+                    logger.warning(
+                        f"[Processor:{sensor_name}] Limits have null values {null_limits} - discarding measurement until valid config arrives."
+                    )
+                    continue
 
                 if isinstance(raw_data, bytes):
                     raw_data = raw_data.decode('utf-8')
                 data = json.loads(raw_data)
 
-                room_id = await self.db.get_config('room_id')
 
                 time_base = data.get('time_base')
                 offset_ms = data.get('millis_offset')
@@ -71,6 +85,8 @@ class DataProcessor:
                     timestamp = (datetime.fromisoformat(time_base) + timedelta(milliseconds=int(offset_ms))).isoformat()
                 else:
                     timestamp = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
+
+                privacy = limits.get('privacy_mode', 1.0)
 
                 if privacy:
                     logger.warning(f"[Processor:{sensor_name}] Privacy Mode active. Discarding.")

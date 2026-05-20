@@ -80,6 +80,13 @@ class BLEManager:
 
                 connected = False 
                 for attempt in range (1,6):
+
+                    sensors = await self.db.get_sensors()
+                    sensor_cfg = next((s for s in sensors if s['name'] == self.name), None)
+                    if not sensor_cfg:
+                        logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
+                        return
+                    
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
@@ -127,8 +134,11 @@ class BLEManager:
                             logger.info(f"[BLE:{self.name}] Time sync sent.")
 
                             freq = await self.db.get_config('frequency')
-                            await client.write_gatt_char( write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
-                            logger.info(f"[BLE:{self.name}] Frequency sync sent.")
+                            if freq is not None:
+                                await client.write_gatt_char( write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
+                                logger.info(f"[BLE:{self.name}] Frequency sync sent.")
+                            else:
+                                logger.warning(f"[BLE:{self.name}] Frequency is null - skipping frequency sync.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
                             connected = True 
@@ -147,7 +157,7 @@ class BLEManager:
     
                             if self.removal_event.is_set():
                                 logger.warning(f"[BLE:{self.name}] Sensor deleted from config. Disconnecting.")
-                                await self.db.log_event("BLE", f"{target_name} removed — disconnecting.", "INFO")
+                                await self.db.log_event("BLE", f"{target_name} removed - disconnecting.", "INFO")
                                 await self.status_queue.put({
                                     "read_uuid": self.read_uuid,
                                     "sensor_name": self.name,
