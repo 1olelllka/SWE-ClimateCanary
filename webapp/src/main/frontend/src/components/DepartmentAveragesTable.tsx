@@ -3,50 +3,68 @@ import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
 import { useNavigate } from 'react-router-dom';
+import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
 
-export interface DepartmentData {
-    department: string;
-    co2: string;
-    temp: string;
-    humidity: string;
-    status: 'red' | 'green' | 'yellow' | 'gray';
+interface Props {
+    departments: DepartmentWithStats[];
+    loading: boolean;
 }
 
-const mockDepartments: DepartmentData[] = [
-    { department: 'Finance', co2: '1049 ppm', temp: '26,5 °C', humidity: '53 %', status: 'red' },
-    { department: 'IT', co2: '1020 ppm', temp: '25,5 °C', humidity: '50 %', status: 'red' },
-    { department: 'Human Resources', co2: '970 ppm', temp: '22,2 °C', humidity: '45 %', status: 'green' },
-    { department: 'Marketing', co2: '950 ppm', temp: '21,9 °C', humidity: '48 %', status: 'yellow' },
-    { department: 'Sales', co2: '950 ppm', temp: '21,9 °C', humidity: '48 %', status: 'green' },
-];
+interface TableRow {
+    id:         string;
+    department: string;
+    co2:        string;
+    temp:       string;
+    humidity:   string;
+    status:     'red' | 'yellow' | 'green' | 'gray';
+}
 
-export const DepartmentAveragesTable: React.FC = () => {
+function computeStatus(dept: DepartmentWithStats): 'red' | 'yellow' | 'green' | 'gray' {
+    if (!dept.stats) return 'gray';
+    const n = dept.activeViolations;
+    if (n === 0) return 'green';
+    if (n <= 2)  return 'yellow';
+    return 'red';
+}
+
+export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading }) => {
     const navigate = useNavigate();
 
-    const handleRowClick = (e: any) => {
-        const dep = e.data as DepartmentData;
-        navigate(`/senior/department/${encodeURIComponent(dep.department)}`);
+    const tableData: TableRow[] = departments.map(d => ({
+        id:         d.id,
+        department: d.name,
+        co2:      d.stats?.avgAirQuality  != null ? `${d.stats.avgAirQuality.toFixed(0)} ppm`  : 'N/A',
+        temp:     d.stats?.avgTemperature != null ? `${d.stats.avgTemperature.toFixed(1)} °C`  : 'N/A',
+        humidity: d.stats?.avgHumidity    != null ? `${d.stats.avgHumidity.toFixed(1)} %`      : 'N/A',
+        status:   computeStatus(d),
+    }));
+
+    const handleRowClick = (e: { data: TableRow }) => {
+        navigate(`/senior/department/${encodeURIComponent(e.data.department)}`);
     };
 
-    const statusTemplate = (rowData: DepartmentData) => {
-        return <span className={`status-indicator status-${rowData.status}`}></span>;
-    };
+    const statusTemplate = (row: TableRow) => (
+        <span className={`status-indicator status-${row.status}`} />
+    );
 
     return (
         <div className="table-container">
-            <h3>Avg. Values per Department</h3>
+            <div className="flex-header">
+                <h3>Avg. Values per Department</h3>
+            </div>
             <DataTable
-                value={mockDepartments}
+                value={tableData}
                 {...defaultTableProps}
+                loading={loading}
                 onRowClick={handleRowClick}
                 className="row-clickable"
-                rows={5}
+                rows={10}
             >
-                <Column field="department" header="Department" sortable></Column>
-                <Column field="co2" header="CO2" sortable></Column>
-                <Column field="temp" header="Temp" sortable></Column>
-                <Column field="humidity" header="Humidity" sortable></Column>
-                <Column header="Status" body={statusTemplate}></Column>
+                <Column field="department" header="Department" sortable />
+                <Column field="co2"        header="CO₂"        sortable />
+                <Column field="temp"       header="Temp"       sortable />
+                <Column field="humidity"   header="Humidity"   sortable />
+                <Column header="Status"    body={statusTemplate} />
             </DataTable>
         </div>
     );
