@@ -2,8 +2,6 @@ package at.qe.skeleton.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -27,6 +25,5 @@ public class BuildingTrend {
     private Trend trend;
     @Column(nullable = false, name = "trend_value")
     private Double value;
-    @CreationTimestamp
     private LocalDate date;
 }
