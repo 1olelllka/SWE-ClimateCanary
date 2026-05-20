@@ -169,7 +169,7 @@ class ConfigManager:
     async def handle_config_change(db, auth, pi_id: str) -> str | None:
         server_url = await db.get_config('server_url')
         if not server_url:
-            raise RuntimeError("server_url missing from DB — cannot fetch config.")
+            raise RuntimeError("server_url missing from DB - cannot fetch config.")
 
         remote = await ConfigManager._fetch(
             f"{server_url}/api/raspberry-pis/{pi_id}/config", auth

@@ -150,7 +150,7 @@ class BLEManager:
     
                             if self.removal_event.is_set():
                                 logger.warning(f"[BLE:{self.name}] Sensor deleted from config. Disconnecting.")
-                                await self.db.log_event("BLE", f"{target_name} removed — disconnecting.", "INFO")
+                                await self.db.log_event("BLE", f"{target_name} removed - disconnecting.", "INFO")
                                 await self.status_queue.put({
                                     "read_uuid": self.read_uuid,
                                     "sensor_name": self.name,
