@@ -19,6 +19,8 @@ class DatabaseManager:
             self.db = await aiosqlite.connect(self.db_path)
             self.db.row_factory = aiosqlite.Row 
             await self.db.execute("PRAGMA journal_mode=WAL;")
+            await self.db.execute("PRAGMA synchronous=NORMAL;")
+            await self.db.execute("PRAGMA foreign_keys=ON;")
             logger.info(f"[DB] Connected to database at {self.db_path}")
 
     async def close(self):

@@ -17,7 +17,7 @@ class ConfigManager:
 
         for path_key in ['database', 'log_file']:
             full_path = config['paths'].get(path_key)
-            if full_path:
+            if full_path and os.path.isabs(full_path):
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
         return config
