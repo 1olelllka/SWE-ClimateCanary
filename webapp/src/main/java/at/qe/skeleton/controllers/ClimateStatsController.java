@@ -77,6 +77,18 @@ public class ClimateStatsController {
                 climateStatsService.getClimateHistoryFull(id, startDate, endDate, granularity));
     }
 
+    @GetMapping("/departments/{id}/last-aggregation")
+    public ResponseEntity<AggregatedDataPointDTO> getAggregatedDataForDepartment(@PathVariable(name = "id") UUID departmentId) {
+        return new ResponseEntity<>(climateStatsService.getDepartmentAggregatedData(departmentId), HttpStatus.OK);
+    }
+
+    @GetMapping("/departments/{id}/climate-aggregation")
+    public ResponseEntity<List<AggregatedDataPointDTO>> getAggregatedDataInPeriodOfTime(@PathVariable(name = "id") UUID departmentId,
+                                                                                        @RequestParam(name = "startDate") LocalDate startDate,
+                                                                                        @RequestParam(name = "endDate") LocalDate endDate) {
+        return new ResponseEntity<>(climateStatsService.getDepartmentAggregatedDataInTimePeriod(departmentId, startDate, endDate), HttpStatus.OK);
+    }
+
     private boolean hasRole(String role) {
         return SecurityContextHolder.getContext()
                 .getAuthentication()

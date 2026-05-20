@@ -8,10 +8,7 @@ import at.qe.skeleton.mappers.AggregatedStatsMapper;
 import at.qe.skeleton.mappers.ClimateDataPointMapper;
 import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.*;
-import at.qe.skeleton.repositories.AggregatedStatsRepository;
-import at.qe.skeleton.repositories.ClimateStatsRepository;
-import at.qe.skeleton.repositories.RoomMonitoringRepository;
-import at.qe.skeleton.repositories.RoomRepository;
+import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +37,7 @@ class ClimateStatsServiceUnitTests {
     @Mock private AggregatedStatsMapper aggregatedMapper;
     @Mock private LimitMapper limitMapper;
     @Mock private AuthenticatedUserService authenticatedUserService;
+    @Mock private AggregatedDepartmentStatsRepository departmentStatsRepository;
     @Mock private Userx user;
 
     @InjectMocks
@@ -900,6 +898,55 @@ class ClimateStatsServiceUnitTests {
 
             assertThrows(NotFoundException.class,
                     () -> climateStatsService.getLimits(monitoringId));
+        }
+    }
+
+    @Nested
+    class GetDepartmentAggregatedData {
+
+        @Test
+        void throws_NotFoundException() {
+            UUID departmentId = UUID.randomUUID();
+            when(departmentStatsRepository.findFirstByDepartmentIdOrderByDateDesc(departmentId)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () -> climateStatsService.getDepartmentAggregatedData(departmentId));
+        }
+
+        @Test
+        void returns_firstData() {
+            UUID departmentId = UUID.randomUUID();
+            AggregatedDepartmentStats stats = AggregatedDepartmentStats.builder().id(12).avgTemp(10).build();
+            when(departmentStatsRepository.findFirstByDepartmentIdOrderByDateDesc(departmentId)).thenReturn(Optional.of(stats));
+
+            AggregatedDataPointDTO result = climateStatsService.getDepartmentAggregatedData(departmentId);
+            assertNotNull(result);
+            assertEquals(stats.getAvgTemp(), result.avgTemperature());
+        }
+    }
+
+    @Nested
+    class GetDepartmentAggregatedDataInTimePeriod {
+        @Test
+        void throws_ValidationExceptionOnInvalidTimestamps() {
+            assertThrows(ValidationException.class,
+                    () -> climateStatsService.getDepartmentAggregatedDataInTimePeriod(UUID.randomUUID(), LocalDate.now(), LocalDate.now().minusDays(1)));
+            verify(departmentStatsRepository, never()).findAllByDepartmentIdAndDateBetweenOrderByDateAsc(any(), any(), any());
+        }
+
+        @Test
+        void throws_ValidationExceptionOnTooBigTimestamps() {
+            assertThrows(ValidationException.class,
+                    () -> climateStatsService.getDepartmentAggregatedDataInTimePeriod(UUID.randomUUID(), LocalDate.now(), LocalDate.now().plusDays(200)));
+            verify(departmentStatsRepository, never()).findAllByDepartmentIdAndDateBetweenOrderByDateAsc(any(), any(), any());
+        }
+
+        @Test
+        void returns_ListOfData() {
+            UUID departmentId = UUID.randomUUID();
+            when(departmentStatsRepository.findAllByDepartmentIdAndDateBetweenOrderByDateAsc(departmentId, LocalDate.now(), LocalDate.now().plusDays(2))).thenReturn(List.of());
+            List<AggregatedDataPointDTO> lst = climateStatsService.getDepartmentAggregatedDataInTimePeriod(departmentId, LocalDate.now(), LocalDate.now().plusDays(2));
+            assertNotNull(lst);
+            assertEquals(0, lst.size());
         }
     }
 }
