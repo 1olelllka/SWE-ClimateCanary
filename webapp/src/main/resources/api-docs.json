@@ -1614,6 +1614,205 @@
         }
       }
     },
+    "/api/departments/{id}/last-aggregation": {
+      "get": {
+        "tags": [
+          "climate-stats-controller"
+        ],
+        "summary": "Get latest aggregated climate data for a department",
+        "operationId": "getLastAggregationForDepartment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AggregatedDataPointDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departments/{id}/climate-aggregation": {
+      "get": {
+        "tags": [
+          "climate-stats-controller"
+        ],
+        "summary": "Get aggregated climate data for a department over a time period",
+        "operationId": "getClimateAggregationForDepartment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AggregatedDataPointDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warnings/departments/{department_id}/summary": {
+      "get": {
+        "tags": [
+          "warning-controller"
+        ],
+        "summary": "Get active violation summary for a department",
+        "operationId": "getWarningsSummaryForDepartment",
+        "parameters": [
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onlyActive",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SummaryWarningDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/building-trend/departments/{department_id}": {
+      "get": {
+        "tags": [
+          "building-trend-controller"
+        ],
+        "summary": "Get weekly trend data for a department",
+        "operationId": "getTrendsForSpecificDepartment",
+        "parameters": [
+          {
+            "name": "department_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BuildingTrendDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/raspberry-pis/{raspberry_id}/config": {
       "get": {
         "tags": [
@@ -2857,6 +3056,98 @@
           "DEPARTMENT_MANAGER",
           "BUILDING_MANAGER"
         ]
+      },
+      "AggregatedDataPointDTO": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "avgTemperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgHumidity": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgAirQuality": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "SummaryWarningDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "measurementType": {
+            "type": "string",
+            "enum": ["TEMPERATURE", "HUMIDITY", "CO2"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["GREEN", "YELLOW", "RED"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "triggeredValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "activeLimitAtTime": {
+            "type": "number",
+            "format": "double"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BuildingTrendDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "UP",
+              "DOWN",
+              "STABLE"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
       }
     }
   }
