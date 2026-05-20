@@ -10,19 +10,28 @@ logger = logging.getLogger(__name__)
 SENSOR_UPDATE_TYPES = {"SENSOR_DELETE", "SENSOR_ADD", "FLUSH"}
 
 class WebManager:
-    def __init__(self, static_config, db, web_out_queue, web_violation_queue, auth,
-                 config_ready_event: asyncio.Event):
-        self.static_config = static_config
+    def __init__(
+        self,
+        db,
+        local_listen_port: int,
+        server_url: str,
+        web_out_queue,
+        web_violation_queue,
+        auth,
+        config_ready_event: asyncio.Event,
+        first_boot: bool = False,
+    ):
         self.db = db
         self.web_out_queue = web_out_queue
         self.web_violation_queue  = web_violation_queue
         self.auth = auth
-        self.local_port = static_config['webapp']['local_listen_port']
-        self.server_url = static_config['webapp']['server_url']
+        self.local_port = local_listen_port
+        self.server_url = server_url
         self.ble_managers: dict[str, BLEManager] = {}
         self.status_queue: asyncio.Queue = asyncio.Queue()  # BLEManager -> WebManager
 
         self.config_ready_event = config_ready_event
+        self._first_boot = first_boot
 
         self.processor = None
         self.queues: dict[str, dict[str, asyncio.Queue]] = {}
@@ -268,8 +277,7 @@ class WebManager:
             # Always refresh the auth token before a full config re-fetch
             await self.auth.refresh_if_needed()
 
-            server_url = self.static_config['webapp']['server_url']
-            await ConfigManager.fetch_and_seed(pi_id, server_url, self.db, self.auth)
+            await ConfigManager.fetch_and_seed(pi_id, self.server_url, self.db, self.auth)
 
             new_freq = await self.db.get_config('frequency')
             if new_freq is not None:
@@ -277,10 +285,13 @@ class WebManager:
                 for ble in self.ble_managers.values():
                     await ble.ble_inbox.put(f"FREQUENCY:{new_freq}")
 
-            # Unblock the boot gate (idempotent after first call)
-            if not self.config_ready_event.is_set():
+            # On first boot: persist the flag so subsequent restarts skip the wait,
+            # then unblock the boot gate.
+            if self._first_boot and not self.config_ready_event.is_set():
+                await self.db.set_config("initial_config_done", "1")
+                logger.info("[WebManager] initial_config_done flag set in DB.")
                 self.config_ready_event.set()
-                logger.info("[WebManager] config_ready_event set - boot gate unblocked.")
+                logger.info("[WebManager] config_ready_event set — boot gate unblocked.")
 
         except Exception as e:
             logger.error(f"[WebManager] _task_config_change failed: {e}")
@@ -444,7 +455,7 @@ class WebManager:
 
     async def _handle_violation_resolve(self, session, event: dict):
         sensor_name = event["sensor_name"]
-        limit_key   = event["limit_key"]
+        limit_key = event["limit_key"]
 
         warning_id = await self.db.get_warning_id(sensor_name, limit_key)
         if not warning_id:
