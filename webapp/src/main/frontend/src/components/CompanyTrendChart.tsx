@@ -88,7 +88,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
     const allDates = (() => {
         const set = new Set<string>();
         deptData.forEach(rows => rows.forEach(r => r.date && set.add(r.date)));
-        return [...set].sort();
+        return [...set].sort((a, b) => a.localeCompare(b));
     })();
 
     // Per-dept lookup: deptId -> date -> value
