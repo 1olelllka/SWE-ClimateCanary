@@ -104,8 +104,8 @@ String FaultManager::activeText() const {
       return "Webapp offline";
 
     case FaultType::None:
-      return "No faults";
+      return "";
   }
 
-  return "No faults";
+  return "";
 }

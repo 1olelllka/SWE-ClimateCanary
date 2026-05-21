@@ -21,6 +21,39 @@ static void printLine(rgb_lcd& lcd, uint8_t row, const String& text) {
   lcd.print(padded.substring(0, 16));
 }
 
+static constexpr uint8_t LCD_WIDTH = 16;
+static constexpr unsigned long SCROLL_INTERVAL_MS = 400;
+
+String DisplayManager::scrollText(const String& text) {
+  if (text.length() <= LCD_WIDTH) {
+    scrollIndex = 0;
+    lastScrollText = text;
+    return text;
+  }
+
+  String loopText = text + " ";
+
+  if (loopText != lastScrollText) {
+    lastScrollText = loopText;
+    scrollIndex = 0;
+    lastScrollUpdate = millis();
+  }
+
+  if (millis() - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
+    lastScrollUpdate = millis();
+    scrollIndex = (scrollIndex + 1) % loopText.length();
+  }
+
+  String visible = "";
+
+  for (uint8_t i = 0; i < LCD_WIDTH; i++) {
+    const uint8_t charIndex = (scrollIndex + i) % loopText.length();
+    visible += loopText[charIndex];
+  }
+
+  return visible;
+}
+
 void DisplayManager::showSetupFault(const String& faultText) {
   lcd.clear();
   printLine(lcd, 0, "Setup Fault");
@@ -44,9 +77,20 @@ void DisplayManager::setWarningData(
   const String& threshold,
   const String& tip
 ) {
+  const bool changed =
+    currentWarnText != warnText ||
+    currentThreshold != threshold ||
+    currentTip != tip;
+
   currentWarnText = warnText;
   currentThreshold = threshold;
   currentTip = tip;
+
+  if (changed) {
+    scrollIndex = 0;
+    lastScrollText = "";
+    lastScrollUpdate = millis();
+  }
 }
 
 void DisplayManager::clearWarningData() {
@@ -94,7 +138,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
     switch (currentWarningPage) {
       case WarningModeDisplay::WarnMessage:
         printLine(lcd, 0, "Warn Mode(text)");
-        printLine(lcd, 1, currentWarnText);
+        printLine(lcd, 1, scrollText(currentWarnText));
         break;
 
       case WarningModeDisplay::ExceededThreshold:
@@ -104,7 +148,7 @@ void DisplayManager::showReading(const SensorReading& reading) {
 
       case WarningModeDisplay::AdviceMessage:
         printLine(lcd, 0, "Warn Mode(tip)");
-        printLine(lcd, 1, currentTip);
+        printLine(lcd, 1, scrollText(currentTip));
         break;
     }
   }
