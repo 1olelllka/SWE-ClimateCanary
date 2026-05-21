@@ -42,10 +42,10 @@ interface Props {
 }
 
 const RoomFormDialog: React.FC<Props> = ({
-    visible, isNew, form, formErrors, departmentOptions, loading, onHide, onSave, onChange,
-}) => {
+                                             visible, isNew, form, formErrors, departmentOptions, loading, onHide, onSave, onChange,
+                                         }) => {
     const footer = (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <div className="admin-dialog-footer">
             <Button label="Cancel" severity="secondary" outlined onClick={onHide} />
             <Button label={isNew ? 'Create' : 'Save'} icon="pi pi-check" loading={loading} onClick={onSave} />
         </div>
@@ -55,12 +55,13 @@ const RoomFormDialog: React.FC<Props> = ({
         <Dialog
             header={isNew ? 'Add Room' : 'Edit Room'}
             visible={visible}
+            className="admin-form-dialog"
             style={{ width: '460px' }}
             onHide={onHide}
             footer={footer}
             draggable={false}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="admin-dialog-body">
                 <div>
                     <label htmlFor="rf-name" style={labelStyle}>Name *</label>
                     <InputText

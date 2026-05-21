@@ -354,13 +354,9 @@ const BuildingConfigurationPage: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="dashboard-content">
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div className="device-tab-row">
                     {(Object.keys(TAB_LABELS) as TabKey[]).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`admin-tab-btn${activeTab === tab ? ' active' : ''}`}
-                        >
+                        <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`admin-tab-btn${activeTab === tab ? ' active' : ''}`}>
                             {TAB_LABELS[tab]}
                         </button>
                     ))}
