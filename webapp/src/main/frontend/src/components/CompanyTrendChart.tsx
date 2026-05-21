@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { DashboardCalendar } from './Calendar';
 import { BuildingTrendControllerApi, BuildingTrendDTO } from '../generated-skeleton-api';
 import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
+import { Toast } from 'primereact/toast';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 
@@ -43,12 +44,32 @@ function dateRange(filter: TimeFilter, custom: Date[] | null): { startDate: stri
 }
 
 export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
+    const toastRef = useRef<Toast>(null);
+
     const [selection,   setSelection]   = useState<Selection>('all');
     const [timeFilter,  setTimeFilter]  = useState<TimeFilter>('Week');
     const [customRange, setCustomRange] = useState<Date[] | null>(null);
     const [deptData,    setDeptData]    = useState<Map<string, BuildingTrendDTO[]>>(new Map());
     const [loading,     setLoading]     = useState(false);
     const [error,       setError]       = useState(false);
+
+    const handleDateRangeChange = (dates: Date[] | null) => {
+        if (dates?.[0]) {
+            const minAllowed = new Date();
+            minAllowed.setMonth(minAllowed.getMonth() - 3);
+            if (dates[0] < minAllowed) {
+                toastRef.current?.show({
+                    severity: 'warn',
+                    summary:  'Date out of range',
+                    detail:   'You can only select dates up to 3 months in the past.',
+                    life:     4000,
+                });
+                setCustomRange(null);
+                return;
+            }
+        }
+        setCustomRange(dates);
+    };
 
     const fetchAll = useCallback(() => {
         if (departments.length === 0) return;
@@ -188,6 +209,8 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         },
         yAxis: {
             type:      'value' as const,
+            min:       0,
+            max:       1,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
             axisLabel: { fontSize: 11 },
         },
@@ -198,6 +221,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
 
     return (
         <div className="table-container card chart-card">
+            <Toast ref={toastRef} />
             <div className="flex-header">
                 <h3>Climate Trend Indicator</h3>
                 <div className="time-filters">
@@ -212,7 +236,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                     ))}
                     <DashboardCalendar
                         dateRange={customRange}
-                        setDateRange={setCustomRange}
+                        setDateRange={handleDateRangeChange}
                         isActive={timeFilter === 'Custom'}
                         onActivate={() => setTimeFilter('Custom')}
                     />
