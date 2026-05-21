@@ -4,7 +4,6 @@ import SidebarComponent from '../components/SidebarComponent';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
-import { Divider } from 'primereact/divider';
 import { Toast } from 'primereact/toast';
 import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO } from '../generated-skeleton-api';
 import globalAxios from 'axios';
@@ -176,52 +175,29 @@ const UserConfigurationPage: React.FC = () => {
 
             <div className="dashboard-content">
 
+                {/* ── User List ── */}
                 <div className="table-container">
-                    <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                        <h3 style={{ margin: 0 }}>User List</h3>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <span className="p-input-icon-left">
-            <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
-            <InputText
-                value={lastNameSearch}
-                onChange={e => setLastNameSearch(e.target.value)}
-                placeholder="Search by last name"
-                style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
-            />
-        </span>
-                            <Dropdown
-                                value={roleFilter}
-                                options={roleFilterOptions}
-                                onChange={e => setRoleFilter(e.value)}
-                                placeholder="Role Filter"
-                                showClear
-                                style={{ borderRadius: '20px', minWidth: '180px' }}
-                            />
-                            <Dropdown
-                                value={roomFilter}
-                                options={roomFilterOptions}
-                                onChange={e => setRoomFilter(e.value)}
-                                placeholder="Room Filter"
-                                showClear
-                                filter
-                                style={{ borderRadius: '20px', minWidth: '180px' }}
-                            />
-                            <Button label="Add User" icon="pi pi-user-plus" onClick={openCreate} />
-                        </div>
+                    <div className="flex-header">
+                        <h3>User List</h3>
+                        <Button label="Add User" icon="pi pi-user-plus" className="admin-add-button" onClick={openCreate} />
                     </div>
 
-                    <UserListComponent
-                        users={filteredUsers}
-                        loading={loading}
-                        onEditUser={openEdit}
-                        onDeleteUser={handleDelete}
-                        showDelete
-                    />
+                    <div className="table-filter-row">
+                    <span className="p-input-icon-left">
+                        <i className="pi pi-search" />
+                        <InputText value={lastNameSearch} onChange={e => setLastNameSearch(e.target.value)} placeholder="Search by last name" />
+                    </span>
+
+                        <Dropdown value={roleFilter} options={roleFilterOptions} onChange={e => setRoleFilter(e.value)} placeholder="Role Filter" showClear />
+                        <Dropdown value={roomFilter} options={roomFilterOptions} onChange={e => setRoomFilter(e.value)} placeholder="Room Filter" showClear filter />
+                    </div>
+
+                    <UserListComponent users={filteredUsers} loading={loading} onEditUser={openEdit} onDeleteUser={handleDelete} showDelete />
                 </div>
 
-                <Divider />
-
+                {/* ── Role Management ── */}
                 <RoleManagement roleDTOs={roleDTOs} onRoleDTOsChange={setRoleDTOs} />
+
             </div>
 
             <UserFormDialog
