@@ -143,11 +143,14 @@ async def main(db_path: str):
         sensor_name = sensor['name']
         write_uuid = sensor['write_uuid']
         ble_manager = ble_managers[sensor_name]
-
-        tasks.append(asyncio.create_task(
+    
+        ble_task = asyncio.create_task(
             ble_manager.run(),
             name=f"BLE:{sensor_name}",
-        ))
+        )
+        web_manager._ble_tasks[sensor_name] = ble_task
+        tasks.append(ble_task)
+    
         tasks.append(asyncio.create_task(
             processor.run(
                 sensor_name,
