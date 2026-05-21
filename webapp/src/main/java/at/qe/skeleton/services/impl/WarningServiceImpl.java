@@ -7,9 +7,9 @@ import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +33,7 @@ public class WarningServiceImpl implements WarningService {
     private final WarningMapper warningMapper;
     private final WarningCreateMapper warningCreateMapper;
     private final TipRepository tipRepository;
+    private final LiveDataService liveDataService;
 
     // get warnings for a specific room
     @Override
@@ -160,7 +161,9 @@ public class WarningServiceImpl implements WarningService {
             }
         }
         warning.setRoomMonitoring(room);
-        return warningMapper.mapTo(warningsRepository.save(warning));
+        WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
+        liveDataService.pushActiveWarning(room.getRoomId(), res);
+        return res;
     }
 
     // for Pi to update severity while warning is still active                   //
@@ -186,7 +189,9 @@ public class WarningServiceImpl implements WarningService {
                         warningsRepository.save(w);
                     }
                 });
-        return warningMapper.mapTo(warningsRepository.save(warning));
+        WarningDTO dto = warningMapper.mapTo(warningsRepository.save(warning));
+        liveDataService.resolveActiveWarning(dto.roomId(), dto);
+        return dto;
     }
 
 

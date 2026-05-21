@@ -7,6 +7,8 @@ import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
 import { Toast } from 'primereact/toast';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 interface ClimateData {
     timestamp: string;
@@ -80,7 +82,8 @@ export const EmployeeDashboard: React.FC = () => {
     const [historyPoints, setHistoryPoints] = useState<RawPoint[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Resolve current user's room on mount
+    const stompClient = useRef<Client | null>(null);
+
     useEffect(() => {
         globalAxios.get('/api/users/me')
             .then(res => {
@@ -96,53 +99,92 @@ export const EmployeeDashboard: React.FC = () => {
             .catch(() => { setServerOffline(true); setLoading(false); });
     }, []);
 
-    const fetchLiveData = useCallback(() => {
-        if (!roomId) return;
-
-        const now = new Date();
-        const twentyMinAgo = new Date(now.getTime() - 20 * 60 * 1000);
-
-        Promise.all([
-            globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
-                .then(r => r.data).catch(() => null),
-            globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${roomId}`, {
-                params: {
-                    activeOnly: false,
-                    startDate: '2000-01-01',
-                    endDate: fmtDate(new Date()),
-                },
-            }).then(r => r.data).catch(() => []),
-            globalAxios.get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-                params: {
-                    startDate: fmtDate(twentyMinAgo),
-                    endDate:   fmtDate(now),
-                    startTime: fmtTime(twentyMinAgo),
-                    endTime:   fmtTime(now),
-                },
-            }).then(r => r.data).catch(() => []),
-        ]).then(([climateData, warningData, histData]) => {
-            setClimate(climateData);
-            // Find the latest warning per measurement type regardless of status,
-            // then keep only those where the latest is still active (not resolved).
-            const latestPerType = new Map<string, ActiveWarning>();
-            for (const w of (warningData ?? [])) {
-                const existing = latestPerType.get(w.measurementType);
-                if (!existing || new Date(w.createdAt) > new Date(existing.createdAt))
-                    latestPerType.set(w.measurementType, w);
-            }
-            setWarnings([...latestPerType.values()].filter(w => w.active));
-            setHistoryPoints(histData ?? []);
-            setLoading(false);
-        });
-    }, [roomId]);
-
-    // Fetch immediately when room is known, then every 30 s
     useEffect(() => {
         if (!roomId) return;
-        fetchLiveData();
-        const interval = setInterval(fetchLiveData, 30_000);
-        return () => clearInterval(interval);
-    }, [roomId, fetchLiveData]);
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-warnings'),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                console.log('Connected, roomId:', roomId); // now visible
+                stompClient.current?.subscribe(`/topic/active-warnings/${roomId}`, (message) => {
+                    const warning: ActiveWarning = JSON.parse(message.body);
+                    setWarnings((prev) => [warning, ...prev.filter(w => w.measurementType != warning.measurementType)])
+                });
+                stompClient.current?.subscribe(`/topic/resolve-warnings/${roomId}`, (message) => {
+                    const warning: ActiveWarning = JSON.parse(message.body);
+                    setWarnings((prev) => prev.filter(w => w.id !== warning.id));
+                });
+                stompClient.current?.subscribe(`/topic/climate-data/${roomId}`, (message) => {
+                    const data: ClimateData = JSON.parse(message.body);
+                    console.log("received climate-data");
+                    setClimate(data);
+                    setHistoryPoints((prev) => [...prev, data]);
+                })
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
+    }, [roomId]);
+
+    useEffect(() => {
+        setLoading(true)
+        const now = new Date();
+        const twentyMinAgo = new Date(now.getTime() - 20 * 60 * 1000);
+        globalAxios.get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
+            params: {
+                startDate: fmtDate(twentyMinAgo),
+                endDate:   fmtDate(now),
+                startTime: fmtTime(twentyMinAgo),
+                endTime:   fmtTime(now),
+            },
+        }).then(r => {
+            setLoading(false);
+            setHistoryPoints(r.data ?? []);
+        })
+        .catch(() => [])
+    }, [roomId])
+
+    useEffect(() => {
+        setLoading(true);
+        globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
+            .then(r => {
+                setClimate(r.data)
+                setLoading(false);
+            })
+            .catch(() => null)
+    }, [roomId])
+
+    useEffect(() => {
+        globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${roomId}`, {
+            params: {
+                activeOnly: true,
+                startDate: '2000-01-01',
+                endDate: fmtDate(new Date()),
+            },
+        })
+        .then(r => {
+            setWarnings(
+                Object.values(
+                    (r.data as ActiveWarning[]).reduce((acc, warning) => {
+                        const existing = acc[warning.measurementType];
+                        if (!existing || new Date(warning.createdAt) > new Date(existing.createdAt)) {
+                            acc[warning.measurementType] = warning;
+                        }
+                        return acc;
+                    }, {} as Record<string, ActiveWarning>)
+                )
+            );
+        })
+        .catch(() => [])
+    }, [roomId])
 
     // Show a toast the first time each unique warning (by ID) is observed
     useEffect(() => {
