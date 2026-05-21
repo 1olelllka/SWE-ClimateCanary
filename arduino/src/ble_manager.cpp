@@ -139,6 +139,8 @@ String BLEManager::serializeBufferedReading(const BufferedReading& buffered) con
 }
 
 void BLEManager::sendReading(const SensorReading& reading) {
+  BLE.poll();
+
   if (!reading.valid) {
     return;
   }
@@ -168,10 +170,23 @@ void BLEManager::sendReading(const SensorReading& reading) {
   }
 
   String payload = serializeReading(reading);
-  txCharacteristic.writeValue(payload);
+  bool write_success = txCharacteristic.writeValue(payload);
 
-  Serial.print("Sent to Pi: ");
-  Serial.println(payload);
+  if (write_success) {
+    Serial.print("Sent to Pi: ");
+    Serial.println(payload);
+  } else {
+    Serial.print("BLE write failed, buffering reading: ");
+    Serial.println(payload);
+
+    const unsigned long millisOffset = millis() - timeSyncMillis;
+
+    readingBuffer.push(
+      reading,
+      receivedTimestamp,
+      millisOffset
+    );
+  }
 }
 
 void BLEManager::flushBufferedReadings() {
