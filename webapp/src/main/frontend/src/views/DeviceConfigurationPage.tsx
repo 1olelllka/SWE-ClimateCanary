@@ -441,6 +441,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                         <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
                             <Column field="readId" header="Read ID" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                             <Column field="writeId" header="Write ID" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+                            <Column field="name" header="Name" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
                             <Column header="Room" body={row => getRoomName(row.roomId)} />
                             <Column
                                 header="Assigned To"
