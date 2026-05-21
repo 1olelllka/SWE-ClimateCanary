@@ -344,3 +344,39 @@ html[data-theme='dark'] .tip-edit-save-btn {
 html[data-theme='dark'] .tip-edit-save-btn:hover:not(:disabled) {
     background-color: #256080 !important;
 }
+
+@media (max-width: 700px) {
+    .tip-mgmt-table thead th,
+    .tip-mgmt-table tbody td {
+        padding-left: 0.45rem;
+        padding-right: 0.45rem;
+    }
+
+    .tip-mgmt-table thead th:first-child,
+    .tip-mgmt-table tbody td:first-child {
+        width: 2.2rem;
+        padding-left: 0.45rem;
+        padding-right: 0.25rem;
+        text-align: left;
+    }
+
+    .tip-mgmt-table tbody td:first-child .tip-status-dot {
+        transform: translateX(0.7rem);
+    }
+
+    .tip-mgmt-table thead th:nth-child(2),
+    .tip-mgmt-table tbody td:nth-child(2) {
+        width: 4.9rem;
+        padding-left: 0.25rem;
+        padding-right: 0.4rem;
+    }
+}
+
+/* Mobile: remove separator between filter groups */
+
+@media (max-width: 700px) {
+    .tip-mgmt-filter-group + .tip-mgmt-filter-group {
+        padding-left: 0;
+        border-left: none;
+    }
+}

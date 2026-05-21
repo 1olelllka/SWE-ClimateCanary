@@ -28,7 +28,7 @@ const STATUS_DOT: Record<WarningStatus, string> = {
 
 const SENSOR_LABEL: Record<ViolatedSensor, string> = {
     AIR:         'CO₂',
-    TEMPERATURE: 'Temperature',
+    TEMPERATURE: 'Temp.',
     HUMIDITY:    'Humidity',
 };
 
