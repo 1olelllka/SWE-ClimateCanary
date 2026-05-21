@@ -23,7 +23,7 @@ function computeStatus(dept: DepartmentWithStats): 'red' | 'yellow' | 'green' | 
     if (!dept.stats) return 'gray';
     const n = dept.activeViolations;
     if (n === 0) return 'green';
-    if (n <= 2)  return 'yellow';
+    if (n <= 3)  return 'yellow';
     return 'red';
 }
 

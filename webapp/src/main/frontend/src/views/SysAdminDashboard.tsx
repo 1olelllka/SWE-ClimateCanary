@@ -1027,5 +1027,6 @@ const SysAdminDashboard: React.FC = () => {
             </Dialog>
         </div>
     );
+};
 
 export default SysAdminDashboard;
