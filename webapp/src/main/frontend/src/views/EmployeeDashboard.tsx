@@ -22,6 +22,7 @@ interface ActiveWarning {
     active: boolean;
     createdAt: string;
     tip: string;
+    status: 'GREEN' | 'YELLOW' | 'RED';
 }
 
 interface RawPoint {
@@ -227,7 +228,7 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={tempSparkline}
                                 trendIcon={tempTrend.icon}
                                 trendText={tempTrend.text}
-                                violated={!!tempWarning}
+                                warningStatus={tempWarning?.status}
                                 tip={tempWarning?.tip}
                             />
                             <Cards
@@ -238,7 +239,7 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={humSparkline}
                                 trendIcon={humTrend.icon}
                                 trendText={humTrend.text}
-                                violated={!!humWarning}
+                                warningStatus={humWarning?.status}
                                 tip={humWarning?.tip}
                             />
                             <Cards
@@ -249,7 +250,7 @@ export const EmployeeDashboard: React.FC = () => {
                                 dataPoints={aqSparkline}
                                 trendIcon={aqTrend.icon}
                                 trendText={aqTrend.text}
-                                violated={!!aqWarning}
+                                warningStatus={aqWarning?.status}
                                 tip={aqWarning?.tip}
                             />
                         </div>

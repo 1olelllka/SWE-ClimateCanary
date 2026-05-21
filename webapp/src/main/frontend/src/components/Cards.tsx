@@ -2,6 +2,14 @@ import '../styles/Cards.css';
 import React from 'react';
 import { LineChart } from './LineChart';
 
+type WarningStatus = 'GREEN' | 'YELLOW' | 'RED';
+
+const STATUS_CONFIG: Record<WarningStatus, { label: string}> = {
+    GREEN:  { label: '⚠ Mild alert'  },
+    YELLOW: { label: '⚠ Moderate warning' },
+    RED:    { label: '⚠ Critical warning'  },
+};
+
 interface KpiCardProps {
     readonly title: string;
     readonly value: string;
@@ -11,7 +19,7 @@ interface KpiCardProps {
     readonly dataPoints?: number[];   // actual metric values for dynamic sparkline
     readonly trendText: string;
     readonly trendIcon: string;
-    readonly violated?: boolean;
+    readonly warningStatus?: WarningStatus;
     readonly tip?: string;
 }
 
@@ -19,15 +27,19 @@ export const Cards: React.FC<KpiCardProps> = ({
     title, value, unit, color,
     points, dataPoints,
     trendText, trendIcon,
-    violated = false, tip,
+    warningStatus, tip,
 }) => {
+    const violated = warningStatus != null;
+    const statusCfg = warningStatus ? STATUS_CONFIG[warningStatus] : null;
     const showTip = violated && tip && tip !== "There's no tip.";
     return (
         <div className={`card-wrapper${violated ? ' card-violated' : ''}`}>
             <div className="card-header" style={{ color }}>
                 {violated && <span className="card-alert-dot" />}
                 <span>{title}</span>
-                {violated && <span className="card-alert-badge">⚠ Alert</span>}
+                {statusCfg && (
+                    <span className="card-alert-badge">{statusCfg.label}</span>
+                )}
             </div>
             <div className="card-value-row" style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
                 <span className="card-value" style={{ color }}>{value}</span>
