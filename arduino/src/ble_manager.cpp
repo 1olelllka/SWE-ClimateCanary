@@ -55,8 +55,6 @@ void BLEManager::poll() {
     displayManager->updateFault(faultManager.activeText());
     ledManager.update(LedManager::LedMode::White);
 
-    timeReceived = false;
-
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
   } 
@@ -69,7 +67,6 @@ void BLEManager::poll() {
     ledManager.update(LedManager::LedMode::Off);
 
     currentCentral = BLEDevice();
-    timeReceived = false;
 
     BLE.advertise();
     Serial.println("BLE advertising restarted");
@@ -145,12 +142,9 @@ void BLEManager::sendReading(const SensorReading& reading) {
     return;
   }
 
-  if (!timeReceived) {
-    Serial.println("Cannot send reading: time sync not established");
-    return;
-  }
-
   if (!isConnected()) {
+    Serial.println("Cannot send reading: Pi not connected or not subscribed");
+
     const unsigned long millisOffset = millis() - timeSyncMillis;
 
     const bool stored = readingBuffer.push(

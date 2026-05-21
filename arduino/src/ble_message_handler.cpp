@@ -97,7 +97,6 @@ void BLEMessageHandler::handleRxMessage(
   if (received.startsWith("TIME:")) {
     manager->receivedTimestamp = received.substring(5);
     manager->timeSyncMillis = millis();
-    manager->timeReceived = true;
 
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);

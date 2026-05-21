@@ -49,7 +49,6 @@ private:
   static BLEManager* instance;
   DisplayManager* displayManager = nullptr;
 
-  bool timeReceived = false;
   String receivedTimestamp = "";
   unsigned long timeSyncMillis = 0;
 
