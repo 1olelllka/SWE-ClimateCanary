@@ -73,6 +73,8 @@ class BLEManager:
                 if not sensor_cfg:
                     logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                     return
+                
+                self.sensor = sensor_cfg
 
                 target_name = sensor_cfg['name']
                 char_uuid = sensor_cfg['char_uuid']
@@ -86,6 +88,8 @@ class BLEManager:
                     if not sensor_cfg:
                         logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                         return
+
+                    self.sensor = sensor_cfg 
                     
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
