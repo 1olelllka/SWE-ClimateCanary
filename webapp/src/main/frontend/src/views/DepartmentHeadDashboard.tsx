@@ -528,6 +528,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
         <div className="dashboard-layout">
             <PageHeader
                 title={'Department Overview'}
+                subtitle={departmentName ?? undefined}
                 onMenuClick={() => setSidebarVisible(true)}
             />
 

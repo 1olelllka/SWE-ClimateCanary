@@ -1,21 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { InputSwitch } from 'primereact/inputswitch';
+import { Dropdown } from 'primereact/dropdown';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { ROUTES } from '../utilities/routes.paths';
-
 import '../styles/SettingsPage.css';
+import '../styles/Tables.css';
 
 export const SettingsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const navigate = useNavigate();
 
-    const [firstName, setFirstName] = useState('Georg');
-    const [lastName, setLastName] = useState('Moser');
-    const [email, setEmail] = useState('georg.moser@uibk.ac.at');
-    const [currentPassword, setCurrentPassword] = useState('password');
-    const [newPassword, setNewPassword] = useState('password');
+    const [email, setEmail] = useState('');
 
     const [language, setLanguage] = useState('English');
     const [temperatureUnit, setTemperatureUnit] = useState('°C');
@@ -26,219 +23,106 @@ export const SettingsPage: React.FC = () => {
         warnings: false,
         tips: false,
         absences: false,
-        problemRooms: false
+        problemRooms: false,
     });
 
-    const handleNotificationChange = (key: keyof typeof notifications) => {
-        setNotifications(previous => ({
-            ...previous,
-            [key]: !previous[key]
-        }));
+    const toggleNotification = (key: keyof typeof notifications) => {
+        setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
     const handleSave = () => {
         alert('Settings saved. Backend integration will be added later.');
     };
 
+    const PREFS = [
+        { label: 'Language',         value: language,         set: setLanguage,         opts: ['English', 'Deutsch'] },
+        { label: 'Temperature Unit', value: temperatureUnit,  set: setTemperatureUnit,  opts: ['°C', '°F'] },
+        { label: 'Time Format',      value: timeFormat,       set: setTimeFormat,       opts: ['24-hour (14:30)', '12-hour (2:30 PM)'] },
+        { label: 'Date Format',      value: dayFormat,        set: setDayFormat,        opts: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] },
+    ] as const;
+
+    const NOTIFS: { key: keyof typeof notifications; label: string }[] = [
+        { key: 'warnings',     label: 'Warnings' },
+        { key: 'tips',         label: 'Tips' },
+        { key: 'absences',     label: 'Absences' },
+        { key: 'problemRooms', label: 'Problem rooms' },
+    ];
+
     return (
-        <div className="settings-page">
-            <PageHeader
-                title="Settings"
-                onMenuClick={() => setSidebarVisible(true)}
-            />
+        <div className="dashboard-layout">
+            <PageHeader title="Settings" onMenuClick={() => setSidebarVisible(true)} />
+            <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
-            <SidebarComponent
-                visible={sidebarVisible}
-                onHide={() => setSidebarVisible(false)}
-            />
+            <div className="dashboard-content settings-wrap">
 
-            <main className="settings-content">
-                <section className="settings-section">
-                    <h2>Account</h2>
-
-                    <div className="settings-profile-row">
-                        <div className="settings-avatar" />
-
-                        <div className="settings-profile-info">
-                            <span className="settings-profile-title">Profile picture</span>
-                            <span className="settings-profile-subtitle">PNG, JPEG under 15 MB</span>
-                        </div>
-
-                        <button type="button" className="settings-secondary-button">
-                            Upload new picture
-                        </button>
-
-                        <button type="button" className="settings-secondary-button">
-                            Delete picture
-                        </button>
+                <div className="table-container">
+                    <div className="flex-header">
+                        <h3>Email Address</h3>
                     </div>
-
-                    <div className="settings-form-group">
-                        <h3>Full Name</h3>
-
-                        <div className="settings-two-column">
-                            <label>
-                                <span>First name</span>
-                                <input
-                                    type="text"
-                                    value={firstName}
-                                    onChange={event => setFirstName(event.target.value)}
-                                />
-                            </label>
-
-                            <label>
-                                <span>Last name</span>
-                                <input
-                                    type="text"
-                                    value={lastName}
-                                    onChange={event => setLastName(event.target.value)}
-                                />
-                            </label>
+                    <div className="settings-card-body">
+                        <p className="settings-desc">
+                            Manage the email address used for notifications.
+                        </p>
+                        <div className="settings-field">
+                            <label className="settings-field-label">Email</label>
+                            <input
+                                type="email"
+                                className="settings-input"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                placeholder="your@email.com"
+                            />
                         </div>
                     </div>
+                </div>
 
-                    <div className="settings-form-group">
-                        <h3>Contact email</h3>
-                        <p>Manage your accounts email address for the notifications.</p>
-
-                        <div className="settings-email-row">
-                            <label>
-                                <span>Email</span>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={event => setEmail(event.target.value)}
+                <div className="table-container">
+                    <div className="flex-header">
+                        <h3>Preferences</h3>
+                    </div>
+                    <div className="settings-card-body">
+                        <p className="settings-desc">Personalize your experience.</p>
+                        {PREFS.map(({ label, value, set, opts }) => (
+                            <div className="settings-pref-row" key={label}>
+                                <span className="settings-pref-label">{label}</span>
+                                <Dropdown
+                                    value={value}
+                                    options={opts as unknown as string[]}
+                                    onChange={e => set(e.value)}
+                                    className="settings-dropdown"
                                 />
-                            </label>
-
-                            <button type="button" className="settings-primary-small-button">
-                                Add another email
-                            </button>
-                        </div>
+                            </div>
+                        ))}
                     </div>
+                </div>
 
-                    <div className="settings-form-group">
-                        <h3>Password</h3>
-                        <p>Modify your current password</p>
-
-                        <div className="settings-two-column">
-                            <label>
-                                <span>Current password</span>
-                                <input
-                                    type="password"
-                                    value={currentPassword}
-                                    onChange={event => setCurrentPassword(event.target.value)}
+                <div className="table-container">
+                    <div className="flex-header">
+                        <h3>Notifications</h3>
+                    </div>
+                    <div className="settings-card-body">
+                        {NOTIFS.map(({ key, label }) => (
+                            <div className="settings-notif-row" key={key}>
+                                <span className="settings-notif-label">{label}</span>
+                                <InputSwitch
+                                    checked={notifications[key]}
+                                    onChange={() => toggleNotification(key)}
                                 />
-                            </label>
-
-                            <label>
-                                <span>New password</span>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={event => setNewPassword(event.target.value)}
-                                />
-                            </label>
-                        </div>
+                            </div>
+                        ))}
                     </div>
-                </section>
-
-                <section className="settings-section settings-preferences-section">
-                    <h2>Preferences</h2>
-                    <p>Personalize your experience.</p>
-
-                    <div className="settings-preference-row">
-                        <span>Language</span>
-                        <select value={language} onChange={event => setLanguage(event.target.value)}>
-                            <option>English</option>
-                            <option>Deutsch</option>
-                        </select>
-                    </div>
-
-                    <div className="settings-preference-row">
-                        <span>Temperature units</span>
-                        <select value={temperatureUnit} onChange={event => setTemperatureUnit(event.target.value)}>
-                            <option>°C</option>
-                            <option>°F</option>
-                        </select>
-                    </div>
-
-                    <div className="settings-preference-row">
-                        <span>Time Format</span>
-                        <select value={timeFormat} onChange={event => setTimeFormat(event.target.value)}>
-                            <option>24-hour (14:30)</option>
-                            <option>12-hour (2:30 PM)</option>
-                        </select>
-                    </div>
-
-                    <div className="settings-preference-row">
-                        <span>Date Format</span>
-                        <select value={dayFormat} onChange={event => setDayFormat(event.target.value)}>
-                            <option>DD/MM/YYYY</option>
-                            <option>MM/DD/YYYY</option>
-                            <option>YYYY-MM-DD</option>
-                        </select>
-                    </div>
-                </section>
-
-                <section className="settings-section settings-notifications-section">
-                    <h2>Notifications</h2>
-
-                    <label className="settings-checkbox-row">
-                        <input
-                            type="checkbox"
-                            checked={notifications.warnings}
-                            onChange={() => handleNotificationChange('warnings')}
-                        />
-                        <span>Warnings</span>
-                    </label>
-
-                    <label className="settings-checkbox-row">
-                        <input
-                            type="checkbox"
-                            checked={notifications.tips}
-                            onChange={() => handleNotificationChange('tips')}
-                        />
-                        <span>Tips</span>
-                    </label>
-
-                    <label className="settings-checkbox-row">
-                        <input
-                            type="checkbox"
-                            checked={notifications.absences}
-                            onChange={() => handleNotificationChange('absences')}
-                        />
-                        <span>Absences</span>
-                    </label>
-
-                    <label className="settings-checkbox-row">
-                        <input
-                            type="checkbox"
-                            checked={notifications.problemRooms}
-                            onChange={() => handleNotificationChange('problemRooms')}
-                        />
-                        <span>Problem rooms</span>
-                    </label>
-                </section>
+                </div>
 
                 <div className="settings-action-row">
-                    <button
-                        type="button"
-                        className="settings-save-button"
-                        onClick={handleSave}
-                    >
+                    <button className="settings-save-btn" onClick={handleSave}>
                         Save changes
                     </button>
-
-                    <button
-                        type="button"
-                        className="settings-cancel-button"
-                        onClick={() => navigate(ROUTES.HOME)}
-                    >
+                    <button className="settings-cancel-btn" onClick={() => navigate(ROUTES.HOME)}>
                         Cancel
                     </button>
                 </div>
-            </main>
+
+            </div>
         </div>
     );
 };

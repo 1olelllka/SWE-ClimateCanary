@@ -23,29 +23,20 @@ interface ThresholdViolationsTableProps {
     readonly fullPage?: boolean;
 }
 
-const STATUS_STYLE: Record<string, { label: string; color: string; bg: string }> = {
-    RED:      { label: 'Red',      color: '#b91c1c', bg: '#fee2e2' },
-    YELLOW:   { label: 'Yellow',   color: '#92400e', bg: '#fef9c3' },
-    GREEN:    { label: 'Green',    color: '#166534', bg: '#dcfce7' },
-    RESOLVED: { label: 'Resolved', color: '#475569', bg: '#f1f5f9' },
+const STATUS_LABEL: Record<string, string> = {
+    RED:      'Red',
+    YELLOW:   'Yellow',
+    GREEN:    'Green',
+    RESOLVED: 'Resolved',
 };
 
 const statusBody = (row: ThresholdViolationData) => {
     const key = row.active ? row.status : 'RESOLVED';
-    const s = STATUS_STYLE[key] ?? STATUS_STYLE['RESOLVED'];
+    const label = STATUS_LABEL[key] ?? 'Resolved';
+    const cssKey = key.toLowerCase() as 'red' | 'yellow' | 'green' | 'resolved';
     return (
-        <span style={{
-            display:         'inline-block',
-            padding:         '2px 10px',
-            borderRadius:    '12px',
-            fontSize:        '0.72rem',
-            fontWeight:      600,
-            letterSpacing:   '0.02em',
-            color:           s.color,
-            backgroundColor: s.bg,
-            whiteSpace:      'nowrap',
-        }}>
-            {s.label}
+        <span className={`status-badge status-badge-${cssKey}`}>
+            {label}
         </span>
     );
 };

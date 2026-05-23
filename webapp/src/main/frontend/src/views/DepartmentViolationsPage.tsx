@@ -147,11 +147,11 @@ export const DepartmentViolationsPage: React.FC = () => {
     }, [violations, showActiveOnly, selectedRoom, selectedSensor, dateRange]);
 
     return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--page-bg)' }}>
+        <div className="dashboard-layout">
             <PageHeader title="Threshold Violations" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
-            <div style={{ padding: '1.5rem 2rem', flexGrow: 1 }}>
+            <div className="dashboard-content">
                 {error && <p style={{ color: '#dc2626', marginBottom: '1rem' }}>{error}</p>}
 
                 <div style={{

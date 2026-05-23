@@ -82,8 +82,14 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             visible: isEmployee
         },
         {
+            label: 'Threshold Violations',
+            icon: 'pi-exclamation-triangle',
+            route: ROUTES.DEPARTMENT_VIOLATIONS,
+            visible: isDepartmentManager
+        },
+        {
             label: 'My Room',
-            icon: 'pi-home',
+            icon: 'pi-th-large',
             route: ROUTES.MY_ROOM,
             visible: isDepartmentManager
         },
@@ -94,15 +100,9 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             visible: isEmployee || isDepartmentManager
         },
         {
-            label: 'Absences',
-            icon: 'pi-list',
+            label: 'Team Absences',
+            icon: 'pi-users',
             route: '/department-absences',
-            visible: isDepartmentManager
-        },
-        {
-            label: 'Threshold Violations',
-            icon: 'pi-exclamation-triangle',
-            route: ROUTES.DEPARTMENT_VIOLATIONS,
             visible: isDepartmentManager
         },
         // --- SYSADMIN MENÜPUNKTE ---
@@ -136,12 +136,6 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             route: ROUTES.TIPMANAGEMENT,
             visible: isBuildingManager
         },
-        {
-            label: 'Settings',
-            icon: 'pi-cog',
-            route: ROUTES.SETTINGS,
-            visible: true
-        }
     ];
 
     // Filtert alle Menüpunkte raus, bei denen visible: false ist
@@ -192,21 +186,24 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
                     />
                 </div>
 
-                {isEmployee && (
+                {(isEmployee || isDepartmentManager) && (
                     <div className="sidebar-clock-wrapper">
                         <ClockInOutButton />
                     </div>
                 )}
 
                 <div className="user-profile">
-                    <div className="user-avatar">
-                        <i className="pi pi-user" style={{ fontSize: '1.35rem' }}></i>
-                    </div>
-
                     <div className="user-info">
                         <span className="user-name">{currentUser?.username || 'User'}</span>
                         <span className="user-email">Logged in</span>
                     </div>
+                    <button
+                        className="user-settings-btn"
+                        onClick={() => handleNavigation(ROUTES.SETTINGS)}
+                        aria-label="Settings"
+                    >
+                        <i className="pi pi-cog" aria-hidden="true" />
+                    </button>
                 </div>
             </div>
 
