@@ -5,8 +5,7 @@ import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
 import { Toast } from 'primereact/toast';
-import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO } from '../generated-skeleton-api';
-import globalAxios from 'axios';
+import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO, UserxControllerApi } from '../generated-skeleton-api';
 import RoleManagement from '../components/RoleManagement';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
 import UserListComponent from '../components/UserListComponent';
@@ -55,11 +54,11 @@ const UserConfigurationPage: React.FC = () => {
     const fetchData = () => {
         setLoading(true);
         Promise.all([
-            globalAxios.get<{ content: FullUser[] }>('/api/users?size=1000'),
+            new UserxControllerApi().getPageOfUsers({ pageable: { page: 0, size: 1000, sort: [] } }),
             new UserRoleControllerApi().getAllPermissions(),
             new RoomControllerApi().getPageOfRooms({ pageable: PAGEABLE }),
         ]).then(([usersRes, rolesRes, roomsRes]) => {
-            setUsers(usersRes.data.content ?? []);
+            setUsers((usersRes.data as any).content ?? []);
             setRoleDTOs(rolesRes.data ?? []);
             setRooms(roomsRes.data.content ?? []);
         }).catch(() => {
@@ -126,27 +125,32 @@ const UserConfigurationPage: React.FC = () => {
         setDialogLoading(true);
         try {
             if (isNewUser) {
-                const res = await globalAxios.post<FullUser>('/api/users', {
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    username: form.username,
-                    enabled: form.enabled,
-                    roles: form.roleIds,
-                    password: form.password,
-                    roomId: form.roomId || null,
+                const res = await new UserxControllerApi().createNewUser({
+                    userxCreateDTO: {
+                        firstName: form.firstName,
+                        lastName: form.lastName,
+                        username: form.username,
+                        enabled: form.enabled,
+                        roles: form.roleIds,
+                        password: form.password,
+                        roomId: form.roomId || null,
+                    } as any,
                 });
-                setUsers(prev => [...prev, res.data]);
+                setUsers(prev => [...prev, res.data as any]);
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'User created successfully.', life: 3000 });
             } else {
-                const res = await globalAxios.patch<FullUser>(`/api/users/${editingUserId}`, {
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    username: form.username,
-                    isEnabled: form.enabled,
-                    roles: form.roleIds,
-                    roomId: form.roomId || null,
+                const res = await new UserxControllerApi().patchSpecificUser({
+                    userId: editingUserId!,
+                    userxPatchDTO: {
+                        firstName: form.firstName,
+                        lastName: form.lastName,
+                        username: form.username,
+                        isEnabled: form.enabled,
+                        roles: form.roleIds,
+                        roomId: form.roomId || null,
+                    } as any,
                 });
-                setUsers(prev => prev.map(u => u.id === res.data.id ? res.data : u));
+                setUsers(prev => prev.map(u => u.id === (res.data as any).id ? res.data as any : u));
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'User updated successfully.', life: 3000 });
             }
             setShowDialog(false);
@@ -159,7 +163,7 @@ const UserConfigurationPage: React.FC = () => {
 
     const handleDelete = (user: FullUser) => {
         if (!user.id || !globalThis.confirm(`Delete user "${user.username}"?`)) return;
-        globalAxios.delete(`/api/users/${user.id}`)
+        new UserxControllerApi().deleteSpecificUser({ userId: user.id })
             .then(() => {
                 setUsers(prev => prev.filter(u => u.id !== user.id));
                 toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000 });

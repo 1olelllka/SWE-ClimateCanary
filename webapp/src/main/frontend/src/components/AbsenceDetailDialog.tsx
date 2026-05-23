@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import globalAxios from 'axios';
+import { AbsenceControllerApi } from '../generated-skeleton-api';
 import '../styles/CreateAbsenceForm.css';
 
 export interface AbsenceListDTO {
@@ -55,7 +55,7 @@ export const AbsenceDetailDialog: React.FC<AbsenceDetailDialogProps> = ({
 
     const handleCancelRequest = () => {
         setCancelling(true);
-        globalAxios.patch(`/api/absences/${absence.id}/cancel`)
+        new AbsenceControllerApi().cancelAbsence({ absenceId: absence.id })
             .then(() => onCancelled())
             .catch(err => {
                 const msg = err.response?.data?.message || err.message;

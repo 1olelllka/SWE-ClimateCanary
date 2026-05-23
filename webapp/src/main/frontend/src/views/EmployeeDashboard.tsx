@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import globalAxios from 'axios';
+import { RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
 import { FooterComponent } from "../components/FooterComponent";
@@ -86,9 +86,9 @@ export const EmployeeDashboard: React.FC = () => {
     const stompClient = useRef<Client | null>(null);
 
     useEffect(() => {
-        globalAxios.get('/api/users/me')
+        new UserxControllerApi().getAuthenticatedUser()
             .then(res => {
-                const room = res.data?.myRoom;
+                const room = (res.data as any)?.myRoom;
                 if (room?.id) {
                     setRoomId(room.id);
                     if (room.roomNumber) setRoomName(room.roomNumber);
@@ -136,16 +136,16 @@ export const EmployeeDashboard: React.FC = () => {
     }, [roomId]);
 
     useEffect(() => {
+        if (!roomId) return;
         setLoading(true)
         const now = new Date();
         const twentyMinAgo = new Date(now.getTime() - 20 * 60 * 1000);
-        globalAxios.get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-            params: {
-                startDate: fmtDate(twentyMinAgo),
-                endDate:   fmtDate(now),
-                startTime: fmtTime(twentyMinAgo),
-                endTime:   fmtTime(now),
-            },
+        new RoomControllerApi().getOvertimeClimateData({
+            roomId,
+            startDate: fmtDate(twentyMinAgo),
+            endDate:   fmtDate(now),
+            startTime: fmtTime(twentyMinAgo),
+            endTime:   fmtTime(now),
         }).then(r => {
             setLoading(false);
             setHistoryPoints(r.data ?? []);
@@ -154,22 +154,23 @@ export const EmployeeDashboard: React.FC = () => {
     }, [roomId])
 
     useEffect(() => {
+        if (!roomId) return;
         setLoading(true);
-        globalAxios.get<ClimateData>(`/api/rooms/${roomId}/current-climate`)
+        new RoomControllerApi().getCurrentClimate({ roomId })
             .then(r => {
-                setClimate(r.data)
+                setClimate(r.data as ClimateData);
                 setLoading(false);
             })
             .catch(() => null)
     }, [roomId])
 
     useEffect(() => {
-        globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${roomId}`, {
-            params: {
-                activeOnly: true,
-                startDate: '2000-01-01',
-                endDate: fmtDate(new Date()),
-            },
+        if (!roomId) return;
+        new WarningControllerApi().getWarningsForRoom({
+            roomId,
+            activeOnly: true,
+            startDate: '2000-01-01',
+            endDate: fmtDate(new Date()),
         })
         .then(r => {
             setWarnings(

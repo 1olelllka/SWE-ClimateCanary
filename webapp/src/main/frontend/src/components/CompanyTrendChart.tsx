@@ -30,7 +30,7 @@ function dateRange(filter: TimeFilter, custom: Date[] | null): { startDate: stri
     const now = new Date();
     const end = fmtDate(now);
     if (filter === 'Week') {
-        const s = new Date(now); s.setDate(s.getDate() - 7);
+        const s = new Date(now); s.setDate(s.getDate() - 6);
         return { startDate: fmtDate(s), endDate: end };
     }
     if (filter === 'Month') {
@@ -140,7 +140,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                 series.push({
                     name:      dept.name,
                     type:      'line',
-                    smooth:    true,
+                    smooth:    0.3,
                     symbol:    'none',
                     lineStyle: { color, width: 1.5, opacity: 0.75 },
                     itemStyle: { color },
@@ -155,7 +155,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
             series.push({
                 name:      dept?.name ?? 'Department',
                 type:      'line',
-                smooth:    true,
+                smooth:    0.3,
                 symbol:    'none',
                 lineStyle: { color, width: 2 },
                 itemStyle: { color },
@@ -167,7 +167,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
             series.push({
                 name:      'Company',
                 type:      'line',
-                smooth:    true,
+                smooth:    0.3,
                 symbol:    'none',
                 z:         10,
                 lineStyle: { color: COMPANY_COLOR, width: 3 },
@@ -192,6 +192,10 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            formatter:   (params: any[]) =>
+                params.map(p =>
+                    `${p.marker}${p.seriesName}: ${p.value != null ? Number(p.value).toFixed(2) : '—'}`
+                ).join('<br/>'),
         },
         legend: {
             bottom:    0,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactECharts from 'echarts-for-react';
-import globalAxios from 'axios';
+import { GetClimateHistoryGranularityEnum, RoomControllerApi } from '../generated-skeleton-api';
 import { DashboardCalendar } from './Calendar';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
@@ -117,8 +117,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
     const [loading,    setLoading]    = useState(false);
 
     useEffect(() => {
-        globalAxios.get<Limits>(`/api/rooms/${roomId}/limits`)
-            .then(r => setLimits(r.data))
+        new RoomControllerApi().getLimitsForRoom({ roomId })
+            .then(r => setLimits(r.data as any))
             .catch(() => {});
     }, [roomId]);
 
@@ -129,16 +129,14 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         if (timeFilter === 'Day') {
             const now     = new Date();
             const dayAgo  = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-            req = globalAxios
-                .get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-                    params: {
-                        startDate: fmtDate(dayAgo),
-                        endDate:   fmtDate(now),
-                        startTime: fmtTime(dayAgo),
-                        endTime:   fmtTime(now),
-                    },
+            req = new RoomControllerApi().getOvertimeClimateData({
+                    roomId,
+                    startDate: fmtDate(dayAgo),
+                    endDate:   fmtDate(now),
+                    startTime: fmtTime(dayAgo),
+                    endTime:   fmtTime(now),
                 })
-                .then(r => groupByHour(r.data));
+                .then(r => groupByHour(r.data as RawPoint[]));
 
         } else if (timeFilter === 'Custom' && dateRange?.[0] && dateRange?.[1]) {
             const startDate = dateRange[0].toISOString().slice(0, 10);
@@ -149,11 +147,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
 
             if (diffDays <= 1) {
                 // Single day — use raw overtime endpoint grouped by hour
-                req = globalAxios
-                    .get<RawPoint[]>(`/api/rooms/${roomId}/overtime`, {
-                        params: { startDate, endDate },
-                    })
-                    .then(r => groupByHour(r.data));
+                req = new RoomControllerApi().getOvertimeClimateData({ roomId, startDate, endDate })
+                    .then(r => groupByHour(r.data as RawPoint[]));
             } else {
                 // Multi-day — use aggregated climate-history with smart granularity
                 const granularity = diffDays <= 4
@@ -161,11 +156,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
                     : diffDays > 4 && diffDays < 45 ? 'DAY'
                     : 'WEEK';
 
-                req = globalAxios
-                    .get<AggPoint[]>(`/api/rooms/${roomId}/climate-history`, {
-                        params: { startDate, endDate, granularity },
+                req = new RoomControllerApi().getClimateHistory({
+                        roomId,
+                        startDate,
+                        endDate,
+                        granularity: granularity as GetClimateHistoryGranularityEnum,
                     })
-                    .then(r => r.data.map(d => ({
+                    .then(r => (r.data as AggPoint[]).map(d => ({
                         label:       d.date,
                         temperature: d.avgTemperature,
                         humidity:    d.avgHumidity,
@@ -182,11 +179,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
                 startDate = fmtDate(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 7))
             }
 
-            req = globalAxios
-                .get<AggPoint[]>(`/api/rooms/${roomId}/climate-history`, {
-                    params: { endDate: fmtDate(new Date()), startDate: startDate, granularity: 'DAY' },
+            req = new RoomControllerApi().getClimateHistory({
+                    roomId,
+                    startDate,
+                    endDate: fmtDate(new Date()),
+                    granularity: GetClimateHistoryGranularityEnum.DAY,
                 })
-                .then(r => r.data.map(d => ({
+                .then(r => (r.data as AggPoint[]).map(d => ({
                     label:       d.date,
                     temperature: d.avgTemperature,
                     humidity:    d.avgHumidity,

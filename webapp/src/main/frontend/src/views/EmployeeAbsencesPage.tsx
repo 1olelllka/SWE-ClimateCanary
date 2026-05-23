@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import globalAxios from 'axios';
+import { UserxControllerApi } from '../generated-skeleton-api';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
@@ -97,12 +97,12 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const fetchAbsences = useCallback(() => {
         setLoading(true);
 
-        globalAxios.get('/api/users/me')
-            .then(res => setCurrentUserId(res.data.id))
+        new UserxControllerApi().getAuthenticatedUser()
+            .then(res => setCurrentUserId((res.data as any).id))
             .catch(err => console.error('Could not load user', err));
 
-        globalAxios.get('/api/users/me/absences')
-            .then(res => setAbsences(res.data.content || []))
+        new UserxControllerApi().getPageOfAbsencesOfAuthenticatedUser({ pageable: { page: 0, size: 100, sort: [] } })
+            .then(res => setAbsences((res.data.content as any) || []))
             .catch(err => console.error('Could not load absences', err))
             .finally(() => setLoading(false));
     }, []);

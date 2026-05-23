@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import globalAxios from 'axios';
+import { TipControllerApi } from '../generated-skeleton-api';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
-import { BASE_PATH } from '../generated-skeleton-api/base';
 
 import {
     buildCreateDTO,
@@ -47,9 +46,9 @@ export const TipManagementForm: React.FC = () => {
     const [editMessage, setEditMessage] = useState('');
 
     useEffect(() => {
-        globalAxios.get<TipDTO[]>(`${BASE_PATH}/api/tips`)
+        new TipControllerApi().getAllTips()
             .then(response => {
-                setTips(Array.isArray(response.data) ? response.data : []);
+                setTips(Array.isArray(response.data) ? response.data as TipDTO[] : []);
             })
             .catch(err => {
                 console.error('Could not load tips', err.response?.data || err);
@@ -88,9 +87,10 @@ export const TipManagementForm: React.FC = () => {
 
         setSaving(true);
 
+        const tipApi = new TipControllerApi();
         const request = editingTip
-            ? globalAxios.patch<TipDTO>(`${BASE_PATH}/api/tips/${editingTip.id}`, { message: editMessage })
-            : globalAxios.post<TipDTO>(`${BASE_PATH}/api/tips`, buildCreateDTO(editingOption, editMessage));
+            ? tipApi.patchTip({ tipId: editingTip.id, tipPatchDTO: { message: editMessage } })
+            : tipApi.createNewTip({ tipCreateDTO: buildCreateDTO(editingOption, editMessage) as any });
 
         request
             .then(response => {

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
+import { AbsenceControllerApi } from '../generated-skeleton-api';
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from '../components/PageHeader';
 import '../styles/DepartmentAbsencesPage.css';
@@ -50,9 +50,9 @@ export const DepartmentAbsencesPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        globalAxios.get('/api/absences')
+        new AbsenceControllerApi().getAllAbsences({ pageable: { page: 0, size: 100, sort: [] } })
             .then(res => {
-                setAbsences(res.data.content || []);
+                setAbsences((res.data.content as any) || []);
             })
             .catch(err => {
                 console.error('Fehler beim Laden der Abwesenheiten', err);
@@ -64,7 +64,7 @@ export const DepartmentAbsencesPage: React.FC = () => {
     }, []);
 
     const updateAbsenceStatus = (absenceId: string, status: 'APPROVED' | 'REJECTED') => {
-        globalAxios.patch(`/api/absences/${absenceId}`, { status })
+        new AbsenceControllerApi().updateStatusOfAbsence({ absenceId, absencePatchDTO: { status } as any })
             .then(() => {
                 fetchAbsences();
             })

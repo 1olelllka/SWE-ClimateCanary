@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import globalAxios from 'axios';
+import { DepartmentControllerApi, UserxControllerApi } from '../generated-skeleton-api';
 import { Sidebar } from 'primereact/sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
@@ -32,11 +32,11 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
 
     useEffect(() => {
         if (!isDepartmentManager) return;
-        globalAxios.get('/api/users/me').then(res => {
-            const deptId = res.data?.myRoom?.departmentID;
+        new UserxControllerApi().getAuthenticatedUser().then(res => {
+            const deptId = (res.data as any)?.myRoom?.departmentID;
             if (!deptId) return;
-            return globalAxios.get(`/api/departments/${deptId}`).then(r => {
-                const name = r.data?.name || r.data?.departmentName || null;
+            return new DepartmentControllerApi().getSpecificDepartment({ departmentId: deptId }).then(r => {
+                const name = r.data?.name || (r.data as any)?.departmentName || null;
                 setDeptManagerDeptName(name);
             });
         }).catch(() => {});

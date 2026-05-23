@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import globalAxios from 'axios';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import { BuildingListDTO, DepartmentListDTO } from '../generated-skeleton-api/api';
+import { BuildingListDTO, DepartmentListDTO, RoomControllerApi, BuildingControllerApi, DepartmentControllerApi, WarningControllerApi } from '../generated-skeleton-api/api';
 import { extractArrayResponse } from '../utilities/apiUtils';
 
 import '../styles/BuildingManagerDashboard.css';
@@ -125,15 +124,14 @@ export const BuildingManagerDashboard: React.FC = () => {
     // Fetch live data for one room and update its row in state immediately
     const updateRoomLiveData = useCallback((room: RoomDTO): void => {
         Promise.all([
-            globalAxios.get<ClimateData>(`/api/rooms/${room.id}/current-climate`)
-                .then(r => r.data).catch(() => null),
-            globalAxios.get<ActiveWarning[]>(`/api/warnings/rooms/${room.id}`, {
-                params: {
-                    activeOnly: true,
-                    startDate: '2000-01-01',
-                    endDate: new Date().toISOString().slice(0, 10),
-                },
-            }).then(r => r.data).catch(() => []),
+            new RoomControllerApi().getCurrentClimate({ roomId: room.id! })
+                .then(r => r.data as ClimateData).catch(() => null),
+            new WarningControllerApi().getWarningsForRoom({
+                roomId: room.id!,
+                activeOnly: true,
+                startDate: '2000-01-01',
+                endDate: new Date().toISOString().slice(0, 10),
+            }).then(r => r.data as ActiveWarning[]).catch(() => []),
         ]).then(([climate, warnings]) => {
             const roomData = mapToRoomData(room, climate, warnings ?? []);
             setAllRooms(prev => prev.map(r => r.backendId === room.id ? roomData : r));
@@ -142,7 +140,7 @@ export const BuildingManagerDashboard: React.FC = () => {
 
     // Fetch room list, show rows immediately with N/A, then update each row as live data arrives
     const loadRooms = useCallback(async (): Promise<void> => {
-        const r = await globalAxios.get('/api/rooms');
+        const r = await new RoomControllerApi().getPageOfRooms({ pageable: { page: 0, size: 500, sort: [] } });
         const rooms = extractArrayResponse<RoomDTO>(r.data, []);
         roomDTOsRef.current = rooms;
         setAllRooms(rooms.map(makeInitialRow));
@@ -154,9 +152,9 @@ export const BuildingManagerDashboard: React.FC = () => {
         setError(null);
 
         Promise.all([
-            globalAxios.get('/api/buildings', { params: { size: 500 } })
+            new BuildingControllerApi().getPageOfBuildings({ pageable: { page: 0, size: 500, sort: [] } })
                 .then(r => extractArrayResponse<BuildingListDTO>(r.data, [])),
-            globalAxios.get('/api/departments', { params: { size: 500 } })
+            new DepartmentControllerApi().getPageOfDepartments({ pageable: { page: 0, size: 500, sort: [] } })
                 .then(r => extractArrayResponse<DepartmentListDTO>(r.data, [])),
             loadRooms(),
         ])

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
+import { DepartmentControllerApi, RoomControllerApi, UserxControllerApi } from '../generated-skeleton-api';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -78,9 +78,9 @@ export const EmployeeDepartmentPage: React.FC = () => {
         setLoadingRooms(true);
         setError(null);
 
-        globalAxios.get('/api/users/me')
+        new UserxControllerApi().getAuthenticatedUser()
             .then(userResponse => {
-                const user: UserxDTO = userResponse.data;
+                const user: UserxDTO = userResponse.data as any;
                 const departmentId = user.myRoom?.departmentID;
 
                 setCurrentUser(user);
@@ -93,9 +93,9 @@ export const EmployeeDepartmentPage: React.FC = () => {
                     return;
                 }
 
-                return globalAxios.get('/api/departments/'+departmentId)
+                return new DepartmentControllerApi().getSpecificDepartment({ departmentId })
                     .then(roomResponse => {
-                        const departmentRooms: RoomDTO[] = roomResponse.data.rooms || [];
+                        const departmentRooms: RoomDTO[] = (roomResponse.data as any).rooms || [];
                         console.log(departmentRooms)
                         setRooms(departmentRooms)
                         if (departmentRooms.length === 0) {
@@ -138,9 +138,9 @@ export const EmployeeDepartmentPage: React.FC = () => {
     const fetchCurrentClimate = useCallback((roomId: string) => {
         setLoadingClimate(true);
 
-        globalAxios.get(`/api/rooms/${roomId}/current-climate`)
+        new RoomControllerApi().getCurrentClimate({ roomId })
             .then(response => {
-                const data: ClimateDataPointDTO = response.data;
+                const data: ClimateDataPointDTO = response.data as any;
                 const isStale = data !== null
                     && (Date.now() - new Date(data.timestamp).getTime()) > 5 * 60 * 1000;
                 setCurrentClimate(isStale ? null : data);

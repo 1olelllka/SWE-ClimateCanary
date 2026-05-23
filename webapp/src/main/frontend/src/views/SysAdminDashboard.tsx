@@ -17,6 +17,7 @@ import {
     BuildingControllerApi,
     DepartmentControllerApi,
     UserRoleControllerApi,
+    UserxControllerApi,
     RaspberryDTO,
     SensorStationDTO,
     RoomDTO,
@@ -30,9 +31,6 @@ import BuildingFormDialog, { BuildingFormState, emptyBuildingForm } from '../com
 import DepartmentFormDialog, { DepartmentFormState, emptyDepartmentForm } from '../components/DepartmentFormDialog';
 import RoomFormDialog, { RoomFormState, emptyRoomForm } from '../components/RoomFormDialog';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
-import globalAxios from 'axios';
-import axios from 'axios';
-import { BASE_PATH } from '../generated-skeleton-api/base';
 import '../styles/Tables.css';
 
 interface RaspberryRoomRef { roomId?: string; roomName?: string; }
@@ -209,8 +207,8 @@ const SysAdminDashboard: React.FC = () => {
     useEffect(() => {
         fetchRaspberries();
         refreshSensors();
-        globalAxios.get<{ content: FullUser[] }>('/api/users?size=100')
-            .then(res => setUsers(res.data.content ?? [])).catch(() => {
+        new UserxControllerApi().getPageOfUsers({ pageable: PAGEABLE })
+            .then(res => setUsers((res.data.content as any) ?? [])).catch(() => {
         });
         new UserRoleControllerApi().getAllPermissions()
             .then(res => setRoleDTOs(res.data ?? [])).catch(() => {
@@ -364,7 +362,7 @@ const SysAdminDashboard: React.FC = () => {
 
     const handleDisconnectSensor = async (sensorId: string) => {
         try {
-            await axios.delete(`${BASE_PATH}/api/sensor-stations/${sensorId}/room`);
+            await new SensorStationControllerApi().disconnectSensorFromRoom({ sensorId });
             toast.current?.show({
                 severity: 'success',
                 summary: 'Disconnected',
@@ -529,16 +527,19 @@ const SysAdminDashboard: React.FC = () => {
         }
         setDeptDialogLoading(true);
         try {
-            const res = await globalAxios.patch(`/api/departments/${editingDeptId}`, {
-                name: deptForm.name,
-                buildingID: deptForm.buildingID,
-                roomIdsToDelete: deptForm.roomIdsToDelete,
-                existingRoomIdsToAssign: deptForm.existingRoomIds,
-                newRooms: deptForm.rooms.map(r => ({
-                    name: r.name,
-                    roomType: r.roomType,
-                    defaultPeopleCount: r.defaultPeopleCount
-                })),
+            const res = await new DepartmentControllerApi().patchSpecificDepartment({
+                departmentId: editingDeptId!,
+                departmentCreateDTO: {
+                    name: deptForm.name,
+                    buildingID: deptForm.buildingID,
+                    roomIdsToDelete: deptForm.roomIdsToDelete,
+                    existingRoomIdsToAssign: deptForm.existingRoomIds,
+                    newRooms: deptForm.rooms.map(r => ({
+                        name: r.name,
+                        roomType: r.roomType,
+                        defaultPeopleCount: r.defaultPeopleCount
+                    })),
+                } as any,
             });
             setDepartments(prev => prev.map(d => d.id === res.data.id
                 ? {
@@ -664,13 +665,16 @@ const SysAdminDashboard: React.FC = () => {
         }
         setUserDialogLoading(true);
         try {
-            const res = await globalAxios.patch<FullUser>(`/api/users/${editingUserId}`, {
-                firstName: userForm.firstName,
-                lastName: userForm.lastName,
-                username: userForm.username,
-                isEnabled: userForm.enabled,
-                roles: userForm.roleIds,
-                roomId: userForm.roomId || null,
+            const res = await new UserxControllerApi().patchSpecificUser({
+                userId: editingUserId!,
+                userxPatchDTO: {
+                    firstName: userForm.firstName,
+                    lastName: userForm.lastName,
+                    username: userForm.username,
+                    isEnabled: userForm.enabled,
+                    roles: userForm.roleIds as any,
+                    roomId: userForm.roomId || null,
+                } as any,
             });
             setUsers(prev => prev.map(u => u.id === res.data.id ? res.data : u));
             toast.current?.show({
@@ -689,7 +693,7 @@ const SysAdminDashboard: React.FC = () => {
 
     const handleDeleteUser = (user: FullUser) => {
         if (!user.id || !globalThis.confirm(`Delete user "${user.username}"?`)) return;
-        globalAxios.delete(`/api/users/${user.id}`)
+        new UserxControllerApi().deleteSpecificUser({ userId: user.id! })
             .then(() => {
                 setUsers(prev => prev.filter(u => u.id !== user.id));
                 toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000});

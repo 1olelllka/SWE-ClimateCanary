@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
-import { BASE_PATH } from '../generated-skeleton-api/base';
+import { AbsenceControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -371,11 +370,15 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
         return Promise.all([
-            globalAxios.get<ClimateData>(`${BASE_PATH}/api/rooms/${room.id}/current-climate`)
-                .then(response => response.data)
+            new RoomControllerApi().getCurrentClimate({ roomId: room.id! })
+                .then(response => response.data as ClimateData)
                 .catch(() => null),
-            // TODO: CHANGE THIS, just testing...
-            globalAxios.get<ActiveWarning[]>(`${BASE_PATH}/api/warnings/rooms/${room.id}?activeOnly=true&startDate=2025-04-04&endDate=2025-04-04`)
+            new WarningControllerApi().getWarningsForRoom({
+                    roomId: room.id!,
+                    activeOnly: true,
+                    startDate: '2000-01-01',
+                    endDate: new Date().toISOString().slice(0, 10),
+                })
                 .then(response => extractArrayResponse<ActiveWarning>(response.data))
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
@@ -397,12 +400,16 @@ export const DepartmentHeadDashboard: React.FC = () => {
         }
 
         Promise.all(
-            // TODO: CHANGE THIS, just testing...
             roomsWithBackendId.map(room =>
-                globalAxios.get<WarningDTO[]>(`${BASE_PATH}/api/warnings/rooms/${room.backendId}?activeOnly=false&startDate=2025-04-04&endDate=2025-04-04`)
+                new WarningControllerApi().getWarningsForRoom({
+                        roomId: room.backendId!,
+                        activeOnly: false,
+                        startDate: '2000-01-01',
+                        endDate: new Date().toISOString().slice(0, 10),
+                    })
                     .then(response => {
                         const warnings = Array.isArray(response.data)
-                            ? response.data
+                            ? response.data as WarningDTO[]
                             : [];
 
                         return warnings.map(warning =>
@@ -444,7 +451,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const fetchPendingRequests = useCallback(() => {
         setPendingRequestsLoading(true);
 
-        globalAxios.get(`${BASE_PATH}/api/absences?page=0&size=100`)
+        new AbsenceControllerApi().getAllAbsences({ pageable: { page: 0, size: 100, sort: [] } })
             .then(response => {
                 const absences = extractArrayResponse<AbsenceListDTO>(response.data);
 
@@ -472,14 +479,14 @@ export const DepartmentHeadDashboard: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        globalAxios.get("/api/users/me")
+        new UserxControllerApi().getAuthenticatedUser()
             .then(response => {
                 const id = (response.data as UserxDTO).myRoom?.departmentID;
                 if (!id) throw new Error("User has no department assigned.");
                 setDepartmentId(id);
                 return id;
             })
-            .then(id => globalAxios.get(`${BASE_PATH}/api/departments/${id}`))
+            .then(id => new DepartmentControllerApi().getSpecificDepartment({ departmentId: id }))
             .then(response => {
                 const apiRooms = extractArrayResponse<RoomDTO>(response.data.rooms);
                 if (apiRooms.length > 0) {

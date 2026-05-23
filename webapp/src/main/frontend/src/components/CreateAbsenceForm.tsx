@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
+import { AbsenceControllerApi } from '../generated-skeleton-api';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 import '../styles/CreateAbsenceForm.css';
@@ -58,8 +58,8 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
     useEffect(() => {
         setManagerLoading(true);
 
-        globalAxios.get('/api/absences/managers')
-            .then(res => setManagers(res.data || []))
+        new AbsenceControllerApi().getAvailableManagers()
+            .then(res => setManagers((res.data as any) || []))
             .catch(err => {
                 console.error('Could not load managers', err);
                 setManagers([]);
@@ -105,13 +105,15 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
             ? `${endDateString}T${endTime}:00`
             : `${endDateString}T23:59:59`;
 
-        globalAxios.post('/api/absences', {
-            userId: currentUserId,
-            startDate: startIso,
-            endDate: endIso,
-            reason,
-            comment,
-            assignedTo: managerId,
+        new AbsenceControllerApi().createNewAbsence({
+            absenceCreateDTO: {
+                userId: currentUserId!,
+                startDate: startIso,
+                endDate: endIso,
+                reason: reason as any,
+                comment,
+                assignedTo: managerId,
+            },
         })
             .then(() => {
                 alert('Absence request submitted successfully!');
