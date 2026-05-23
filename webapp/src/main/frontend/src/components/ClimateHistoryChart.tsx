@@ -127,14 +127,18 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
         let req: Promise<DataPoint[]>;
 
         if (timeFilter === 'Day') {
-            const now     = new Date();
-            const dayAgo  = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const now = new Date();
+            // Align to last complete hour so labels are symmetric (e.g. 10:00–10:00)
+            const end = new Date(now);
+            end.setMinutes(0, 0, 0);
+            end.setHours(end.getHours() - 1);
+            const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
             req = new RoomControllerApi().getOvertimeClimateData({
                     roomId,
-                    startDate: fmtDate(dayAgo),
-                    endDate:   fmtDate(now),
-                    startTime: fmtTime(dayAgo),
-                    endTime:   fmtTime(now),
+                    startDate: fmtDate(start),
+                    endDate:   fmtDate(end),
+                    startTime: fmtTime(start),
+                    endTime:   fmtTime(end),
                 })
                 .then(r => groupByHour(r.data as RawPoint[]));
 
