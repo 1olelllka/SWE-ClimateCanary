@@ -1,13 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AbsenceControllerApi } from '../generated-skeleton-api';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
+import { Toast } from 'primereact/toast';
 import '../styles/CreateAbsenceForm.css';
+
+interface ToastOptions {
+    severity: 'success' | 'error' | 'warn' | 'info';
+    summary: string;
+    detail: string;
+    life?: number;
+}
 
 interface CreateAbsenceFormProps {
     currentUserId: string | null;
     onSuccess: () => void;
     onCancel: () => void;
+    onToast?: (options: ToastOptions) => void;
 }
 
 interface ManagerDTO {
@@ -42,6 +51,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                                                                         currentUserId,
                                                                         onSuccess,
                                                                         onCancel,
+                                                                        onToast,
                                                                     }) => {
     const [reason, setReason] = useState<AbsenceReason>('VACATION');
     const [startDate, setStartDate] = useState<Date | null>(null);
@@ -56,6 +66,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [managerLoading, setManagerLoading] = useState(true);
+    const toast = useRef<Toast>(null);
 
     useEffect(() => {
         setManagerLoading(true);
@@ -80,17 +91,17 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
         e.preventDefault();
 
         if (!currentUserId) {
-            alert('Error: User ID not found. Please log in again.');
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'User ID not found. Please log in again.', life: 4000 });
             return;
         }
 
         if (!startDate || !endDate) {
-            alert('Please select start and end date.');
+            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Please select a start and end date.', life: 4000 });
             return;
         }
 
         if (!managerId) {
-            alert('Please select a manager.');
+            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Please select a manager.', life: 4000 });
             return;
         }
 
@@ -118,13 +129,13 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
             },
         })
             .then(() => {
-                alert('Absence request submitted successfully!');
                 onSuccess();
+                onToast?.({ severity: 'success', summary: 'Submitted', detail: 'Absence request sent successfully.', life: 3000 });
             })
             .catch(err => {
-                const serverError = err.response?.data?.message || err.response?.data || err.message;
-                console.error('Server error:', serverError);
-                alert('Server error:\n' + JSON.stringify(serverError, null, 2));
+                const detail = err.response?.data?.detail || err.response?.data?.message || err.message || 'An unexpected error occurred.';
+                console.error('Server error:', err.response?.data || err);
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: String(detail), life: 5000 });
             })
             .finally(() => setIsSubmitting(false));
     };
@@ -133,6 +144,7 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
     return (
         <div className="absence-form-card">
+            <Toast ref={toast} position="top-right" />
             <h2 className="absence-form-title">Absence Request</h2>
 
             <form className="absence-form-body" onSubmit={handleSubmit}>

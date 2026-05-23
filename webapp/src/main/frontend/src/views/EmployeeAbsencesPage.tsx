@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserxControllerApi } from '../generated-skeleton-api';
+import { Toast } from 'primereact/toast';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
@@ -86,6 +87,7 @@ const KpiCard = ({ title, value, max, displayValue, barColor = '#22c55e' }: KpiC
 };
 
 export const EmployeeAbsencesPage: React.FC = () => {
+    const toast = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [selectedAbsence, setSelectedAbsence] = useState<AbsenceListDTO | null>(null);
@@ -152,6 +154,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     return (
         <div className="employee-absences-page">
+            <Toast ref={toast} position="top-right" />
             <PageHeader title="My Absences" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
@@ -210,6 +213,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                                 fetchAbsences();
                             }}
                             onCancel={() => setShowRequestForm(false)}
+                            onToast={opts => toast.current?.show(opts)}
                         />
                     </div>
                 )}
