@@ -9,7 +9,7 @@ import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
 import { ThresholdViolationData } from '../components/ThresholdViolationsTable';
 import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
-import {NumberOfViolationsTable, ViolationStatsData} from '../components/NumberOfViolationsTable';
+import { RoomViolationsBarChart } from '../components/RoomViolationsBarChart';
 import { UserxDTO } from '../generated-skeleton-api';
 interface RoomDTO {
     id: string;
@@ -294,33 +294,6 @@ const mapAbsenceToPendingRequest = (
     };
 };
 
-const buildViolationStats = (
-    rooms: RoomData[],
-    violations: ThresholdViolationData[]
-): ViolationStatsData[] => {
-    return rooms.map(room => {
-        const roomViolations = violations.filter(
-            violation => violation.room === room.id
-        );
-
-        const lastViolation = roomViolations.length > 0
-            ? roomViolations
-                .map(violation => violation.datetime)
-                .sort((a, b) => {
-                    const parse = (s: string) =>
-                        new Date(s.split(' ')[0].split('.').reverse().join('-')).getTime();
-                    return parse(b) - parse(a);
-                })[0]
-            : '-';
-
-        return {
-            room: room.id,
-            type: room.type,
-            violationsCount: roomViolations.length,
-            lastViolation
-        };
-    });
-};
 
 export const DepartmentHeadDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -403,10 +376,13 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 const flattened = results.flat();
 
                 flattened.sort((a, b) => {
-                    const dateA = new Date(a.date.split('.').reverse().join('-')).getTime();
-                    const dateB = new Date(b.date.split('.').reverse().join('-')).getTime();
-
-                    return dateB - dateA;
+                    const parse = (s: string) => {
+                        const [d, t = '00:00'] = s.split(' ');
+                        const [dd, mm, yyyy] = d.split('.');
+                        const [hh, min] = t.split(':');
+                        return new Date(+yyyy, +mm - 1, +dd, +hh, +min).getTime();
+                    };
+                    return parse(b.datetime) - parse(a.datetime);
                 });
 
                 setThresholdViolations(flattened);
@@ -548,10 +524,6 @@ export const DepartmentHeadDashboard: React.FC = () => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
     }, [rooms]);
 
-    const violationStats = useMemo(() => {
-        return buildViolationStats(rooms, thresholdViolations);
-    }, [rooms, thresholdViolations]);
-
     return (
         <div className="dashboard-layout">
             <PageHeader
@@ -622,8 +594,8 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     loading={pendingRequestsLoading}
                 />
 
-                <NumberOfViolationsTable
-                    stats={violationStats}
+                <RoomViolationsBarChart
+                    violations={thresholdViolations}
                     loading={violationsLoading}
                 />
             </div>
