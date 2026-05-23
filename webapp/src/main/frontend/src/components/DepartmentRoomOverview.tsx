@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+    ActiveWarning,
     ClimateDataPointDTO,
     getRoomDisplayName,
     RoomDTO
@@ -11,7 +12,14 @@ interface DepartmentRoomOverviewProps {
     expandedRoomId: string | null;
     currentClimate: ClimateDataPointDTO | null;
     loadingClimate: boolean;
+    warnings: ActiveWarning[];
     onToggleRoom: (roomId: string) => void;
+}
+
+function warningColor(status?: string): string | undefined {
+    if (status === 'RED') return '#dc2626';
+    if (status === 'YELLOW') return '#eab308';
+    return undefined;
 }
 
 const formatTemperature = (value?: number) => {
@@ -43,8 +51,12 @@ export const DepartmentRoomOverview: React.FC<DepartmentRoomOverviewProps> = ({
                                                                                   expandedRoomId,
                                                                                   currentClimate,
                                                                                   loadingClimate,
+                                                                                  warnings,
                                                                                   onToggleRoom
                                                                               }) => {
+    const tempWarning = warnings.find(w => w.measurementType === 'TEMPERATURE');
+    const humWarning  = warnings.find(w => w.measurementType === 'HUMIDITY');
+    const aqWarning   = warnings.find(w => w.measurementType === 'CO2');
     if (rooms.length === 0) {
         return (
             <section className="department-room-list">
@@ -89,17 +101,32 @@ export const DepartmentRoomOverview: React.FC<DepartmentRoomOverviewProps> = ({
                                     <div className="department-room-values">
                                         <div>
                                             <span>Current Temperature</span>
-                                            <strong>{currentClimate ? formatTemperature(currentClimate.temperature) : 'N/A'}</strong>
+                                            <strong style={{ color: warningColor(tempWarning?.status) }}>
+                                                {currentClimate ? formatTemperature(currentClimate.temperature) : 'N/A'}
+                                            </strong>
+                                            {tempWarning?.tip && tempWarning.tip !== "There's no tip." && (
+                                                <small className="department-room-tip">{tempWarning.tip}</small>
+                                            )}
                                         </div>
 
                                         <div>
                                             <span>Current Humidity</span>
-                                            <strong>{currentClimate ? formatHumidity(currentClimate.humidity) : 'N/A'}</strong>
+                                            <strong style={{ color: warningColor(humWarning?.status) }}>
+                                                {currentClimate ? formatHumidity(currentClimate.humidity) : 'N/A'}
+                                            </strong>
+                                            {humWarning?.tip && humWarning.tip !== "There's no tip." && (
+                                                <small className="department-room-tip">{humWarning.tip}</small>
+                                            )}
                                         </div>
 
                                         <div>
                                             <span>Current Air Quality</span>
-                                            <strong>{currentClimate ? formatAirQuality(currentClimate.airQuality) : 'N/A'}</strong>
+                                            <strong style={{ color: warningColor(aqWarning?.status) }}>
+                                                {currentClimate ? formatAirQuality(currentClimate.airQuality) : 'N/A'}
+                                            </strong>
+                                            {aqWarning?.tip && aqWarning.tip !== "There's no tip." && (
+                                                <small className="department-room-tip">{aqWarning.tip}</small>
+                                            )}
                                         </div>
                                     </div>
                                 )}

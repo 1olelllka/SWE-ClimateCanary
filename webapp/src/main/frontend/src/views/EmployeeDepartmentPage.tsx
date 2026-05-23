@@ -1,5 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { DepartmentControllerApi, RoomControllerApi, UserxControllerApi } from '../generated-skeleton-api';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { Toast } from 'primereact/toast';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -42,6 +45,19 @@ export interface ClimateDataPointDTO {
     airQuality: number;
 }
 
+export interface ActiveWarning {
+    id: string;
+    measurementType: string;
+    message: string;
+    tip: string;
+    createdAt: string;
+    status: 'GREEN' | 'YELLOW' | 'RED';
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
 export const getRoomDisplayName = (room: RoomDTO) => {
     return room.name || room.roomNumber || 'Unnamed room';
 };
@@ -69,6 +85,10 @@ export const EmployeeDepartmentPage: React.FC = () => {
     const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
 
     const [currentClimate, setCurrentClimate] = useState<ClimateDataPointDTO | null>(null);
+    const [warnings, setWarnings] = useState<ActiveWarning[]>([]);
+    const toastRef = useRef<Toast>(null);
+    const shownWarningIds = useRef<Set<string>>(new Set());
+    const stompClient = useRef<Client | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loadingRooms, setLoadingRooms] = useState(true);
     const [loadingClimate, setLoadingClimate] = useState(false);
@@ -135,6 +155,29 @@ export const EmployeeDepartmentPage: React.FC = () => {
             });
     }, []);
 
+    const fetchWarnings = useCallback((roomId: string) => {
+        new WarningControllerApi().getWarningsForRoom({
+            roomId,
+            activeOnly: true,
+            startDate: '2000-01-01',
+            endDate: fmtDate(new Date()),
+        })
+        .then(r => {
+            setWarnings(
+                Object.values(
+                    (r.data as ActiveWarning[]).reduce((acc, warning) => {
+                        const existing = acc[warning.measurementType];
+                        if (!existing || new Date(warning.createdAt) > new Date(existing.createdAt)) {
+                            acc[warning.measurementType] = warning;
+                        }
+                        return acc;
+                    }, {} as Record<string, ActiveWarning>)
+                )
+            );
+        })
+        .catch(() => {});
+    }, []);
+
     const fetchCurrentClimate = useCallback((roomId: string) => {
         setLoadingClimate(true);
 
@@ -165,11 +208,67 @@ export const EmployeeDepartmentPage: React.FC = () => {
     useEffect(() => {
         if (!expandedRoomId) {
             setCurrentClimate(null);
+            setWarnings([]);
             return;
         }
 
         fetchCurrentClimate(expandedRoomId);
-    }, [expandedRoomId, fetchCurrentClimate]);
+        fetchWarnings(expandedRoomId);
+    }, [expandedRoomId, fetchCurrentClimate, fetchWarnings]);
+
+    useEffect(() => {
+        if (!expandedRoomId) return;
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-warnings'),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                stompClient.current?.subscribe(`/topic/active-warnings/${expandedRoomId}`, (message) => {
+                    const warning: ActiveWarning = JSON.parse(message.body);
+                    setWarnings(prev => [warning, ...prev.filter(w => w.measurementType !== warning.measurementType)]);
+                });
+                stompClient.current?.subscribe(`/topic/resolve-warnings/${expandedRoomId}`, (message) => {
+                    const warning: ActiveWarning = JSON.parse(message.body);
+                    setWarnings(prev => prev.filter(w => w.id !== warning.id));
+                });
+                stompClient.current?.subscribe(`/topic/climate-data/${expandedRoomId}`, (message) => {
+                    const data: ClimateDataPointDTO = JSON.parse(message.body);
+                    setCurrentClimate(data);
+                });
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
+    }, [expandedRoomId]);
+
+    useEffect(() => {
+        if (!toastRef.current || warnings.length === 0) return;
+
+        for (const warning of warnings) {
+            if (shownWarningIds.current.has(warning.id)) continue;
+            shownWarningIds.current.add(warning.id);
+
+            const label =
+                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+
+            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+
+            toastRef.current.show({
+                severity: 'warn',
+                summary: `${label}: ${warning.message}`,
+                detail: hasTip ? warning.tip : undefined,
+                life: 5000,
+            });
+        }
+    }, [warnings]);
 
     const filteredRooms = useMemo(() => {
         const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -185,6 +284,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
 
     return (
         <div className="employee-department-page">
+            <Toast ref={toastRef} position="top-right" />
             <PageHeader
                 title="My Department"
                 subtitle={currentUser?.myRoom?.departmentName || 'Overview'}
@@ -231,6 +331,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
                             expandedRoomId={expandedRoomId}
                             currentClimate={currentClimate}
                             loadingClimate={loadingClimate}
+                            warnings={warnings}
                             onToggleRoom={(roomId) => {
                                 setExpandedRoomId(previousRoomId =>
                                     previousRoomId === roomId ? null : roomId

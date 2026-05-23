@@ -88,6 +88,7 @@ public class WarningSeederService {
         log.info("Seeded 3 temperature and 2 humidity active warnings for room {}.", room.getRoomNumber());
 
         seedDepartmentActiveWarnings(tempTip, humTip);
+        seedEng103ActiveWarning(tempTip);
     }
 
     // dept prefix → number of active violations, equally distributed across [1,10] (Engineering = 0)
@@ -160,6 +161,33 @@ public class WarningSeederService {
             warningRepository.saveAll(batch);
             log.info("Seeded {} active warnings for prefix '{}'.", count, prefix);
         });
+    }
+
+    private void seedEng103ActiveWarning(Tip tempTip) {
+        RoomMonitoring eng103 = roomMonitoringRepository.findAll().stream()
+                .filter(r -> r.getRoomNumber().equals("ENG-103"))
+                .findFirst()
+                .orElse(null);
+
+        if (eng103 == null) {
+            log.warn("Room ENG-103 not found, skipping active warning seeding.");
+            return;
+        }
+
+        warningRepository.save(Warnings.builder()
+                .roomMonitoring(eng103)
+                .measurementType(MeasurementType.TEMPERATURE)
+                .status(WarningStatus.RED)
+                .triggeredValue(28.4)
+                .activeLimitAtTime(TEMP_MAX)
+                .sensorWriteId(UUID.randomUUID())
+                .message("Temperature exceeded maximum threshold of " + TEMP_MAX + " °C. Current reading: 28.4 °C.")
+                .createdAt(LocalDateTime.now().minusMinutes(10))
+                .resolvedAt(null)
+                .tip(tempTip)
+                .build());
+
+        log.info("Seeded 1 active (unresolved) temperature warning for room ENG-103.");
     }
 
     private Warnings build(RoomMonitoring room, MeasurementType type, WarningStatus status,
