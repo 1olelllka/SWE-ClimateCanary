@@ -1,26 +1,9 @@
-import yaml
-import os
 import aiohttp
 import logging
 
 logger = logging.getLogger(__name__)
 
 class ConfigManager:
-
-    @staticmethod
-    def load(filepath="/home/pi/run/conf.yaml") -> dict:
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"Config file not found: {filepath}")
-
-        with open(filepath, "r") as f:
-            config = yaml.safe_load(f)
-
-        for path_key in ['database', 'log_file']:
-            full_path = config['paths'].get(path_key)
-            if full_path and os.path.isabs(full_path):
-                os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-        return config
 
 # Full config fetch
 

@@ -40,7 +40,7 @@ public class TrendJob {
     @Transactional
     public void trendDaily() {
         log.info("Running background daily trend calculation...");
-        List<Department> departments = departmentRepository.findAll();
+        List<Department> departments = departmentRepository.findAllWithRooms();
         for (Department department : departments) {
             double value = 0;
             Trend trending;

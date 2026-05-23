@@ -1,2 +1,2 @@
 #!/bin/sh
-docker compose exec gateway uv run /app/configure.py
+docker compose exec -e UV_CACHE_DIR=/tmp/uv-cache gateway uv run /app/configure.py

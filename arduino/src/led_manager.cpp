@@ -14,6 +14,12 @@ void LedManager::setOff() {
   analogWrite(LED_GREEN_PIN, 0);
 }
 
+void LedManager::setWhite() {
+  analogWrite(LED_RED_PIN, 255);
+  analogWrite(LED_BLUE_PIN, 255);
+  analogWrite(LED_GREEN_PIN, 255);
+}
+
 void LedManager::setGreen() {
   analogWrite(LED_RED_PIN, 0);
   analogWrite(LED_BLUE_PIN, 0);
@@ -35,6 +41,8 @@ void LedManager::setRed() {
 void LedManager::update(LedMode ledMode) {
   if (ledMode == LedMode::Off) {
     setOff();
+  } else if (ledMode == LedMode::White) {
+    setWhite();
   } else if (ledMode == LedMode::Green) {
     setGreen();
   } else if (ledMode == LedMode::Blue) {

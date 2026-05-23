@@ -1897,3 +1897,68 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
         padding: 0.6rem 0.85rem !important;
     }
 }
+
+.table-filter-row-single {
+    grid-template-columns: minmax(220px, 320px);
+}
+
+@media (max-width: 700px) {
+    .table-filter-row-single {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── Admin dialog section internals ── */
+
+.admin-dialog-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.admin-dialog-table .p-datatable-thead > tr > th {
+    font-size: 0.65rem !important;
+    padding: 0.55rem 0.7rem !important;
+}
+
+.admin-dialog-table .p-datatable-tbody > tr > td {
+    font-size: 0.78rem !important;
+    padding: 0.6rem 0.7rem !important;
+}
+
+.admin-dialog-table .p-button {
+    width: 1.8rem !important;
+    height: 1.8rem !important;
+    min-width: 1.8rem !important;
+    padding: 0 !important;
+}
+
+.admin-dialog-table .p-button-icon {
+    font-size: 0.78rem !important;
+}
+
+.admin-form-dialog-wide {
+    max-width: 95vw;
+}
+
+@media (max-width: 700px) {
+    .admin-dialog-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .admin-form-dialog-wide {
+        width: calc(100vw - 2rem) !important;
+    }
+
+    .admin-dialog-table .p-datatable-wrapper {
+        overflow-x: auto !important;
+    }
+
+    .admin-dialog-table .p-datatable-table {
+        min-width: 560px !important;
+    }
+}

@@ -37,19 +37,18 @@ private:
   BLEStringCharacteristic txCharacteristic{
     BLE_TX_UUID,
     BLERead | BLENotify,
-    128
+    192
   };
 
   BLEStringCharacteristic rxCharacteristic{
     BLE_RX_UUID,
     BLEWriteWithoutResponse,
-    128
+    192
   };
 
   static BLEManager* instance;
   DisplayManager* displayManager = nullptr;
 
-  bool timeReceived = false;
   String receivedTimestamp = "";
   unsigned long timeSyncMillis = 0;
 

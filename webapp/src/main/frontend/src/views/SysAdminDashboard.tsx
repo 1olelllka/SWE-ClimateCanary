@@ -187,31 +187,38 @@ const SysAdminDashboard: React.FC = () => {
     const [departmentBuildingFilter, setDepartmentBuildingFilter] = useState<string | null>(null);
 
     const fetchRaspberries = () =>
-        new RaspberryControllerApi().getAllRaspberries({ pageable: PAGEABLE })
-            .then(res => setRaspberries(res.data.content ?? [])).catch(() => {});
+        new RaspberryControllerApi().getAllRaspberries({pageable: PAGEABLE})
+            .then(res => setRaspberries(res.data.content ?? [])).catch(() => {
+        });
 
     const refreshSensors = () =>
-        new SensorStationControllerApi().getAllSensorStations({ pageable: PAGEABLE })
-            .then(res => setSensors(res.data.content ?? [])).catch(() => {});
+        new SensorStationControllerApi().getAllSensorStations({pageable: PAGEABLE})
+            .then(res => setSensors(res.data.content ?? [])).catch(() => {
+        });
 
     const fetchRooms = () =>
-        new RoomControllerApi().getPageOfRooms({ pageable: PAGEABLE })
-            .then(res => setRooms(res.data.content ?? [])).catch(() => {});
+        new RoomControllerApi().getPageOfRooms({pageable: PAGEABLE})
+            .then(res => setRooms(res.data.content ?? [])).catch(() => {
+        });
 
     const fetchDepartments = () =>
-        new DepartmentControllerApi().getPageOfDepartments({ pageable: PAGEABLE })
-            .then(res => setDepartments(res.data.content ?? [])).catch(() => {});
+        new DepartmentControllerApi().getPageOfDepartments({pageable: PAGEABLE})
+            .then(res => setDepartments(res.data.content ?? [])).catch(() => {
+        });
 
     useEffect(() => {
         fetchRaspberries();
         refreshSensors();
         globalAxios.get<{ content: FullUser[] }>('/api/users?size=100')
-            .then(res => setUsers(res.data.content ?? [])).catch(() => {});
+            .then(res => setUsers(res.data.content ?? [])).catch(() => {
+        });
         new UserRoleControllerApi().getAllPermissions()
-            .then(res => setRoleDTOs(res.data ?? [])).catch(() => {});
+            .then(res => setRoleDTOs(res.data ?? [])).catch(() => {
+        });
         fetchRooms();
-        new BuildingControllerApi().getPageOfBuildings({ pageable: PAGEABLE })
-            .then(res => setBuildings(res.data.content ?? [])).catch(() => {});
+        new BuildingControllerApi().getPageOfBuildings({pageable: PAGEABLE})
+            .then(res => setBuildings(res.data.content ?? [])).catch(() => {
+        });
         fetchDepartments();
     }, []);
 
@@ -225,8 +232,8 @@ const SysAdminDashboard: React.FC = () => {
             return true;
         }).slice(0, PREVIEW_ROWS);
 
-    const filteredRaspberries  = filterList(raspberries,  'name',     raspberrySearch,   'status',      raspberryStatusFilter);
-    const filteredSensors      = filterList(sensors,      'name',     sensorSearch,      'status',      sensorStatusFilter);
+    const filteredRaspberries = filterList(raspberries, 'name', raspberrySearch, 'status', raspberryStatusFilter);
+    const filteredSensors = filterList(sensors, 'name', sensorSearch, 'status', sensorStatusFilter);
     const filteredUsers = users.filter(u => {
         if (userSearch && !(u.username ?? '').toLowerCase().includes(userSearch.toLowerCase())) {
             return false;
@@ -239,31 +246,51 @@ const SysAdminDashboard: React.FC = () => {
         }
         return true;
     }).slice(0, PREVIEW_ROWS);
-    const filteredRooms        = filterList(rooms,        'name',     roomSearch,        'roomType',    roomTypeFilter);
-    const filteredBuildings    = filterList(buildings,    'name',     buildingSearch);
-    const filteredDepartments  = filterList(departments,  'name',     departmentSearch,  'buildingName', departmentBuildingFilter);
+    const filteredRooms = filterList(rooms, 'name', roomSearch, 'roomType', roomTypeFilter);
+    const filteredBuildings = filterList(buildings, 'name', buildingSearch);
+    const filteredDepartments = filterList(departments, 'name', departmentSearch, 'buildingName', departmentBuildingFilter);
 
     const buildingNameOptions = [...new Set(departments.map(d => d.buildingName).filter(Boolean))] as string[];
-    const buildingOptions     = buildings.map(b => ({ label: b.name ?? b.id ?? '', value: b.id ?? '' }));
-    const departmentOptions   = departments.map(d => ({
+    const buildingOptions = buildings.map(b => ({label: b.name ?? b.id ?? '', value: b.id ?? ''}));
+    const departmentOptions = departments.map(d => ({
         label: d.buildingName ? `${d.name ?? ''} (${d.buildingName})` : (d.name ?? d.id ?? ''),
         value: d.id ?? '',
     }));
-    const roomOptions         = rooms.map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }));
-    const roleOptions         = roleDTOs.map(r => ({ label: r.name ?? '', value: r.id ?? '' }));
+    const roomOptions = rooms.map(r => ({label: r.name ?? r.id ?? '', value: r.id ?? ''}));
+    const roleOptions = roleDTOs.map(r => ({label: r.name ?? '', value: r.id ?? ''}));
 
     // --- Retry handlers ---
     const handleRetryPiConnection = (id?: string) => {
         if (!id) return;
-        new RaspberryControllerApi().retryDevicesConnection({ raspberryId: id })
-            .then(() => toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 }))
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 }));
+        new RaspberryControllerApi().retryDevicesConnection({raspberryId: id})
+            .then(() => toast.current?.show({
+                severity: 'success',
+                summary: 'Retry sent',
+                detail: 'Reconnection request sent to Raspberry Pi.',
+                life: 3000
+            }))
+            .catch(() => toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to send reconnection request.',
+                life: 3000
+            }));
     };
 
     const handleRetrySensorConnection = (sensorId: string) => {
-        new SensorStationControllerApi().retrySensorStation({ sensorId })
-            .then(() => toast.current?.show({ severity: 'success', summary: 'Retry sent', detail: 'Reconnection request sent to Raspberry Pi.', life: 3000 }))
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 }));
+        new SensorStationControllerApi().retrySensorStation({sensorId})
+            .then(() => toast.current?.show({
+                severity: 'success',
+                summary: 'Retry sent',
+                detail: 'Reconnection request sent to Raspberry Pi.',
+                life: 3000
+            }))
+            .catch(() => toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to send reconnection request.',
+                life: 3000
+            }));
     };
 
     // --- Pi handlers ---
@@ -279,20 +306,40 @@ const SysAdminDashboard: React.FC = () => {
 
     const handleSavePi = async () => {
         if (!piName || !piIpAddress || piPort == null) {
-            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Name, IP address, and port are required.', life: 3000 });
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Name, IP address, and port are required.',
+                life: 3000
+            });
             return;
         }
         setPiLoading(true);
         try {
             await new RaspberryControllerApi().patchSpecificRaspberry({
                 raspberryId: editingPiId!,
-                raspberryPatchDTO: { name: piName, ipAddress: piIpAddress, port: piPort, frequency: piInterval ?? undefined },
+                raspberryPatchDTO: {
+                    name: piName,
+                    ipAddress: piIpAddress,
+                    port: piPort,
+                    frequency: piInterval ?? undefined
+                },
             });
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Raspberry Pi updated successfully.', life: 3000 });
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Saved',
+                detail: 'Raspberry Pi updated successfully.',
+                life: 3000
+            });
             setShowPiDialog(false);
             fetchRaspberries();
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update Raspberry Pi.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to update Raspberry Pi.',
+                life: 3000
+            });
         } finally {
             setPiLoading(false);
         }
@@ -301,22 +348,37 @@ const SysAdminDashboard: React.FC = () => {
     const handleDeletePi = async (id?: string) => {
         if (!id || !globalThis.confirm('Delete this Raspberry Pi?')) return;
         try {
-            await new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id });
+            await new RaspberryControllerApi().deleteSpecificRaspberry({raspberryId: id});
             setRaspberries(prev => prev.filter(p => p.id !== id));
-            setSensors(prev => prev.map(s => s.connectedToPiId === id ? { ...s, connectedToPiId: undefined } : s));
-            toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
+            setSensors(prev => prev.map(s => s.connectedToPiId === id ? {...s, connectedToPiId: undefined} : s));
+            toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete Raspberry Pi.',
+                life: 3000
+            });
         }
     };
 
     const handleDisconnectSensor = async (sensorId: string) => {
         try {
             await axios.delete(`${BASE_PATH}/api/sensor-stations/${sensorId}/room`);
-            toast.current?.show({ severity: 'success', summary: 'Disconnected', detail: 'Sensor station disconnected from Pi.', life: 3000 });
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Disconnected',
+                detail: 'Sensor station disconnected from Pi.',
+                life: 3000
+            });
             refreshSensors();
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to disconnect sensor station.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to disconnect sensor station.',
+                life: 3000
+            });
         }
     };
 
@@ -330,20 +392,35 @@ const SysAdminDashboard: React.FC = () => {
 
     const handleSaveSensor = async () => {
         if (!sensorName || !sensorRoomId) {
-            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Name and room are required.', life: 3000 });
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Validation',
+                detail: 'Name and room are required.',
+                life: 3000
+            });
             return;
         }
         setSensorLoading(true);
         try {
             await new SensorStationControllerApi().patchExistingSensorStation({
                 sensorId: editingSensorId!,
-                sensorStationPatchDTO: { name: sensorName, roomId: sensorRoomId },
+                sensorStationPatchDTO: {name: sensorName, roomId: sensorRoomId},
             });
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Sensor Station updated successfully.', life: 3000 });
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Saved',
+                detail: 'Sensor Station updated successfully.',
+                life: 3000
+            });
             setShowSensorDialog(false);
             refreshSensors();
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update Sensor Station.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to update Sensor Station.',
+                life: 3000
+            });
         } finally {
             setSensorLoading(false);
         }
@@ -352,17 +429,27 @@ const SysAdminDashboard: React.FC = () => {
     const handleDeleteSensor = async (id?: string) => {
         if (!id || !globalThis.confirm('Delete this Sensor Station?')) return;
         try {
-            await new SensorStationControllerApi().removeSpecificSensor({ sensorId: id });
+            await new SensorStationControllerApi().removeSpecificSensor({sensorId: id});
             setSensors(prev => prev.filter(s => s.readId !== id));
-            toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Deleted',
+                detail: 'Sensor Station deleted.',
+                life: 3000
+            });
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete Sensor Station.',
+                life: 3000
+            });
         }
     };
 
     // --- Building handlers ---
     const openEditBuilding = (b: BuildingListDTO) => {
-        setBuildingForm({ name: b.name ?? '', address: b.address ?? '' });
+        setBuildingForm({name: b.name ?? '', address: b.address ?? ''});
         setBuildingFormErrors({});
         setEditingBuildingId(b.id);
         setShowBuildingEditDialog(true);
@@ -371,18 +458,30 @@ const SysAdminDashboard: React.FC = () => {
     const handleSaveBuilding = async () => {
         const errors: Partial<Record<keyof BuildingFormState, string>> = {};
         if (!buildingForm.name.trim()) errors.name = 'Required';
-        if (Object.keys(errors).length > 0) { setBuildingFormErrors(errors); return; }
+        if (Object.keys(errors).length > 0) {
+            setBuildingFormErrors(errors);
+            return;
+        }
         setBuildingDialogLoading(true);
         try {
             const res = await new BuildingControllerApi().patchSpecificBuilding({
                 buildingId: editingBuildingId!,
-                buildingCreateDTO: { name: buildingForm.name, address: buildingForm.address },
+                buildingCreateDTO: {name: buildingForm.name, address: buildingForm.address},
             });
-            setBuildings(prev => prev.map(b => b.id === res.data.id ? { ...b, name: res.data.name, address: res.data.address } : b));
+            setBuildings(prev => prev.map(b => b.id === res.data.id ? {
+                ...b,
+                name: res.data.name,
+                address: res.data.address
+            } : b));
             setShowBuildingEditDialog(false);
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Building updated.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Saved', detail: 'Building updated.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update building.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to update building.',
+                life: 3000
+            });
         } finally {
             setBuildingDialogLoading(false);
         }
@@ -391,18 +490,30 @@ const SysAdminDashboard: React.FC = () => {
     const handleDeleteBuilding = async (id?: string) => {
         if (!id || !globalThis.confirm('Delete this building?')) return;
         try {
-            await new BuildingControllerApi().deleteSpecificBuilding({ buildingId: id });
+            await new BuildingControllerApi().deleteSpecificBuilding({buildingId: id});
             setBuildings(prev => prev.filter(b => b.id !== id));
-            toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Building deleted.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'Building deleted.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete building.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete building.',
+                life: 3000
+            });
         }
     };
 
     // --- Department handlers ---
     const openEditDepartment = (d: DepartmentListDTO) => {
         const currentRoomIds = rooms.filter(r => r.departmentID === d.id && r.id).map(r => r.id!);
-        setDeptForm({ name: d.name ?? '', buildingID: d.buildingID ?? '', currentRoomIds, existingRoomIds: [], rooms: [], roomIdsToDelete: [] });
+        setDeptForm({
+            name: d.name ?? '',
+            buildingID: d.buildingID ?? '',
+            currentRoomIds,
+            existingRoomIds: [],
+            rooms: [],
+            roomIdsToDelete: []
+        });
         setDeptFormErrors({});
         setEditingDeptId(d.id);
         setShowDeptEditDialog(true);
@@ -412,7 +523,10 @@ const SysAdminDashboard: React.FC = () => {
         const errors: Partial<Record<keyof DepartmentFormState, string>> = {};
         if (!deptForm.name.trim()) errors.name = 'Required';
         if (!deptForm.buildingID) errors.buildingID = 'Required';
-        if (Object.keys(errors).length > 0) { setDeptFormErrors(errors); return; }
+        if (Object.keys(errors).length > 0) {
+            setDeptFormErrors(errors);
+            return;
+        }
         setDeptDialogLoading(true);
         try {
             const res = await globalAxios.patch(`/api/departments/${editingDeptId}`, {
@@ -427,15 +541,25 @@ const SysAdminDashboard: React.FC = () => {
                 })),
             });
             setDepartments(prev => prev.map(d => d.id === res.data.id
-                ? { ...d, name: res.data.name, buildingID: res.data.buildingID, buildingName: buildings.find(b => b.id === res.data.buildingID)?.name }
+                ? {
+                    ...d,
+                    name: res.data.name,
+                    buildingID: res.data.buildingID,
+                    buildingName: buildings.find(b => b.id === res.data.buildingID)?.name
+                }
                 : d
             ));
             const roomsChanged = deptForm.roomIdsToDelete.length > 0 || deptForm.existingRoomIds.length > 0 || deptForm.rooms.length > 0;
             if (roomsChanged) fetchRooms();
             setShowDeptEditDialog(false);
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Department updated.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Saved', detail: 'Department updated.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update department.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to update department.',
+                life: 3000
+            });
         } finally {
             setDeptDialogLoading(false);
         }
@@ -444,11 +568,16 @@ const SysAdminDashboard: React.FC = () => {
     const handleDeleteDepartment = async (id?: string) => {
         if (!id || !globalThis.confirm('Delete this department?')) return;
         try {
-            await new DepartmentControllerApi().deleteSpecificDepartment({ departmentId: id });
+            await new DepartmentControllerApi().deleteSpecificDepartment({departmentId: id});
             setDepartments(prev => prev.filter(d => d.id !== id));
-            toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Department deleted.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'Department deleted.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete department.', life: 3000 });
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete department.',
+                life: 3000
+            });
         }
     };
 
@@ -469,7 +598,10 @@ const SysAdminDashboard: React.FC = () => {
         const errors: Partial<Record<keyof RoomFormState, string>> = {};
         if (!roomForm.name.trim()) errors.name = 'Required';
         if (!roomForm.departmentID) errors.departmentID = 'Required';
-        if (Object.keys(errors).length > 0) { setRoomFormErrors(errors); return; }
+        if (Object.keys(errors).length > 0) {
+            setRoomFormErrors(errors);
+            return;
+        }
         setRoomDialogLoading(true);
         try {
             const res = await new RoomControllerApi().patchSpecificRoom({
@@ -481,11 +613,11 @@ const SysAdminDashboard: React.FC = () => {
                     defaultPeopleCount: roomForm.defaultPeopleCount,
                 },
             });
-            setRooms(prev => prev.map(r => r.id === res.data.id ? { ...r, ...res.data } : r));
+            setRooms(prev => prev.map(r => r.id === res.data.id ? {...r, ...res.data} : r));
             setShowRoomEditDialog(false);
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Room updated.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Saved', detail: 'Room updated.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update room.', life: 3000 });
+            toast.current?.show({severity: 'error', summary: 'Error', detail: 'Failed to update room.', life: 3000});
         } finally {
             setRoomDialogLoading(false);
         }
@@ -494,11 +626,11 @@ const SysAdminDashboard: React.FC = () => {
     const handleDeleteRoom = async (id?: string) => {
         if (!id || !globalThis.confirm('Delete this room?')) return;
         try {
-            await new RoomControllerApi().deleteSpecificRoom({ roomId: id });
+            await new RoomControllerApi().deleteSpecificRoom({roomId: id});
             setRooms(prev => prev.filter(r => r.id !== id));
-            toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Room deleted.', life: 3000 });
+            toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'Room deleted.', life: 3000});
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete room.', life: 3000 });
+            toast.current?.show({severity: 'error', summary: 'Error', detail: 'Failed to delete room.', life: 3000});
         }
     };
 
@@ -526,7 +658,10 @@ const SysAdminDashboard: React.FC = () => {
         if (!userForm.lastName.trim()) errors.lastName = 'Required';
         if (!userForm.username.trim()) errors.username = 'Required';
         if (userForm.roleIds.length === 0) errors.roleIds = 'At least one role required';
-        if (Object.keys(errors).length > 0) { setUserFormErrors(errors); return; }
+        if (Object.keys(errors).length > 0) {
+            setUserFormErrors(errors);
+            return;
+        }
         setUserDialogLoading(true);
         try {
             const res = await globalAxios.patch<FullUser>(`/api/users/${editingUserId}`, {
@@ -538,10 +673,15 @@ const SysAdminDashboard: React.FC = () => {
                 roomId: userForm.roomId || null,
             });
             setUsers(prev => prev.map(u => u.id === res.data.id ? res.data : u));
-            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'User updated successfully.', life: 3000 });
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Saved',
+                detail: 'User updated successfully.',
+                life: 3000
+            });
             setShowUserDialog(false);
         } catch {
-            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to save user.', life: 3000 });
+            toast.current?.show({severity: 'error', summary: 'Error', detail: 'Failed to save user.', life: 3000});
         } finally {
             setUserDialogLoading(false);
         }
@@ -552,15 +692,20 @@ const SysAdminDashboard: React.FC = () => {
         globalAxios.delete(`/api/users/${user.id}`)
             .then(() => {
                 setUsers(prev => prev.filter(u => u.id !== user.id));
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000 });
+                toast.current?.show({severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000});
             })
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete user.', life: 3000 }));
+            .catch(() => toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to delete user.',
+                life: 3000
+            }));
     };
 
     // --- Dropdown options ---
-    const statusOptions      = [{ label: 'Online', value: 'ONLINE' }, { label: 'Offline', value: 'OFFLINE' }];
-    const roomTypeOptions    = [{ label: 'Office', value: 'OFFICE' }, { label: 'Shared', value: 'SHARED' }];
-    const roleFilterOptions  = roleDTOs.map(r => ({ label: r.name ?? '', value: r.name ?? '' }));
+    const statusOptions = [{label: 'Online', value: 'ONLINE'}, {label: 'Offline', value: 'OFFLINE'}];
+    const roomTypeOptions = [{label: 'Office', value: 'OFFICE'}, {label: 'Shared', value: 'SHARED'}];
+    const roleFilterOptions = roleDTOs.map(r => ({label: r.name ?? '', value: r.name ?? ''}));
 
     const roomFilterOptions = rooms.map(r => ({
         label: r.departmentName
@@ -571,9 +716,9 @@ const SysAdminDashboard: React.FC = () => {
 
     return (
         <div className="dashboard-layout">
-            <Toast ref={toast} />
-            <PageHeader title="Dashboard" onMenuClick={() => setSidebarVisible(true)} />
-            <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
+            <Toast ref={toast}/>
+            <PageHeader title="Dashboard" onMenuClick={() => setSidebarVisible(true)}/>
+            <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)}/>
 
             <div className="dashboard-content">
 
@@ -591,7 +736,7 @@ const SysAdminDashboard: React.FC = () => {
                                 onChange={e => setRaspberryStatusFilter(e.value)}
                                 placeholder="Status Filter"
                                 showClear
-                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                                style={{borderRadius: '20px', minWidth: '160px'}}
                             />
                         }
                     />
@@ -602,12 +747,12 @@ const SysAdminDashboard: React.FC = () => {
                         emptyMessage="No Raspberry Pis found."
                         responsiveLayout="scroll"
                     >
-                        <Column field="name" header="Name" sortable />
+                        <Column field="name" header="Name" sortable/>
 
                         <Column
                             header="Room"
                             body={(row: RaspberryDTOReal) =>
-                                row.room?.roomName ?? <span style={{ color: '#9e9e9e' }}>N/A</span>
+                                row.room?.roomName ?? <span style={{color: '#9e9e9e'}}>N/A</span>
                             }
                         />
 
@@ -618,11 +763,11 @@ const SysAdminDashboard: React.FC = () => {
 
                                 return count > 0
                                     ? <span>{count}</span>
-                                    : <span style={{ color: '#9e9e9e' }}>None</span>;
+                                    : <span style={{color: '#9e9e9e'}}>None</span>;
                             }}
                         />
 
-                        <Column header="Status" body={row => statusBadge(row.status)} />
+                        <Column header="Status" body={row => statusBadge(row.status)}/>
 
                         <Column
                             header=""
@@ -631,9 +776,12 @@ const SysAdminDashboard: React.FC = () => {
                             exportable={false}
                             body={(row: RaspberryDTOReal) => (
                                 <div className="admin-table-actions">
-                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)} />
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
+                                    <Button icon="pi pi-refresh" rounded text severity="warning"
+                                            title="Retry connection" onClick={() => handleRetryPiConnection(row.id)}/>
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi"
+                                            onClick={() => openEditPiDialog(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger"
+                                            title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)}/>
                                 </div>
                             )}
                         />
@@ -654,7 +802,7 @@ const SysAdminDashboard: React.FC = () => {
                                 onChange={e => setSensorStatusFilter(e.value)}
                                 placeholder="Status Filter"
                                 showClear
-                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                                style={{borderRadius: '20px', minWidth: '160px'}}
                             />
                         }
                     />
@@ -665,7 +813,7 @@ const SysAdminDashboard: React.FC = () => {
                         emptyMessage="No Sensor Stations found."
                         responsiveLayout="scroll"
                     >
-                        <Column field="name" header="Name" sortable />
+                        <Column field="name" header="Name" sortable/>
 
                         <Column
                             header="Room"
@@ -674,7 +822,7 @@ const SysAdminDashboard: React.FC = () => {
 
                                 return room
                                     ? (room.name ?? room.id)
-                                    : <span style={{ color: '#9e9e9e' }}>N/A</span>;
+                                    : <span style={{color: '#9e9e9e'}}>N/A</span>;
                             }}
                         />
 
@@ -685,11 +833,11 @@ const SysAdminDashboard: React.FC = () => {
 
                                 return pi
                                     ? (pi.name ?? pi.id)
-                                    : <span style={{ color: '#9e9e9e' }}>None</span>;
+                                    : <span style={{color: '#9e9e9e'}}>None</span>;
                             }}
                         />
 
-                        <Column header="Status" body={row => statusBadge(row.status)} />
+                        <Column header="Status" body={row => statusBadge(row.status)}/>
 
                         <Column
                             header=""
@@ -698,9 +846,14 @@ const SysAdminDashboard: React.FC = () => {
                             exportable={false}
                             body={(row: SensorStationDTO) => (
                                 <div className="admin-table-actions">
-                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetrySensorConnection(row.readId!)} />
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Sensor Station" onClick={() => openEditSensorDialog(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)} />
+                                    <Button icon="pi pi-refresh" rounded text severity="warning"
+                                            title="Retry connection to Raspberry Pi"
+                                            onClick={() => handleRetrySensorConnection(row.readId!)}/>
+                                    <Button icon="pi pi-cog" rounded text severity="secondary"
+                                            title="Edit Sensor Station" onClick={() => openEditSensorDialog(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger"
+                                            title="Delete Sensor Station"
+                                            onClick={() => handleDeleteSensor(row.readId)}/>
                                 </div>
                             )}
                         />
@@ -722,7 +875,7 @@ const SysAdminDashboard: React.FC = () => {
                                     onChange={e => setUserRoleFilter(e.value)}
                                     placeholder="Role Filter"
                                     showClear
-                                    style={{ borderRadius: '20px', minWidth: '160px' }}
+                                    style={{borderRadius: '20px', minWidth: '160px'}}
                                 />
 
                                 <Dropdown
@@ -732,7 +885,7 @@ const SysAdminDashboard: React.FC = () => {
                                     placeholder="Room Filter"
                                     showClear
                                     filter
-                                    style={{ borderRadius: '20px', minWidth: '180px' }}
+                                    style={{borderRadius: '20px', minWidth: '180px'}}
                                 />
                             </>
                         }
@@ -761,7 +914,7 @@ const SysAdminDashboard: React.FC = () => {
                                 onChange={e => setDepartmentBuildingFilter(e.value)}
                                 placeholder="Building Filter"
                                 showClear
-                                style={{ borderRadius: '20px', minWidth: '180px' }}
+                                style={{borderRadius: '20px', minWidth: '180px'}}
                             />
                         }
                     />
@@ -772,8 +925,8 @@ const SysAdminDashboard: React.FC = () => {
                         emptyMessage="No departments found."
                         responsiveLayout="scroll"
                     >
-                        <Column field="name" header="Name" sortable />
-                        <Column field="buildingName" header="Building" sortable />
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="buildingName" header="Building" sortable/>
 
                         <Column
                             header=""
@@ -782,8 +935,10 @@ const SysAdminDashboard: React.FC = () => {
                             exportable={false}
                             body={(row: DepartmentListDTO) => (
                                 <div className="admin-table-actions">
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit department" onClick={() => openEditDepartment(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete department" onClick={() => handleDeleteDepartment(row.id)} />
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit department"
+                                            onClick={() => openEditDepartment(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete department"
+                                            onClick={() => handleDeleteDepartment(row.id)}/>
                                 </div>
                             )}
                         />
@@ -804,7 +959,7 @@ const SysAdminDashboard: React.FC = () => {
                                 onChange={e => setRoomTypeFilter(e.value)}
                                 placeholder="Type Filter"
                                 showClear
-                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                                style={{borderRadius: '20px', minWidth: '160px'}}
                             />
                         }
                     />
@@ -816,10 +971,10 @@ const SysAdminDashboard: React.FC = () => {
                         responsiveLayout="scroll"
                         className="admin-rooms-table"
                     >
-                        <Column field="name" header="Name" sortable />
-                        <Column field="departmentName" header="Department" sortable />
-                        <Column field="roomType" header="Type" />
-                        <Column field="defaultPeopleCount" header="Capacity" sortable />
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="departmentName" header="Department" sortable/>
+                        <Column field="roomType" header="Type"/>
+                        <Column field="defaultPeopleCount" header="Capacity" sortable/>
 
                         <Column
                             header=""
@@ -828,8 +983,10 @@ const SysAdminDashboard: React.FC = () => {
                             exportable={false}
                             body={(row: RoomDTO) => (
                                 <div className="admin-table-actions">
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit room" onClick={() => openEditRoom(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete room" onClick={() => handleDeleteRoom(row.id)} />
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit room"
+                                            onClick={() => openEditRoom(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete room"
+                                            onClick={() => handleDeleteRoom(row.id)}/>
                                 </div>
                             )}
                         />
@@ -851,8 +1008,8 @@ const SysAdminDashboard: React.FC = () => {
                         emptyMessage="No buildings found."
                         responsiveLayout="scroll"
                     >
-                        <Column field="name" header="Name" sortable />
-                        <Column field="address" header="Address" />
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="address" header="Address"/>
 
                         <Column
                             header=""
@@ -861,8 +1018,10 @@ const SysAdminDashboard: React.FC = () => {
                             exportable={false}
                             body={(row: BuildingListDTO) => (
                                 <div className="admin-table-actions">
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit building" onClick={() => openEditBuilding(row)} />
-                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete building" onClick={() => handleDeleteBuilding(row.id)} />
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit building"
+                                            onClick={() => openEditBuilding(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete building"
+                                            onClick={() => handleDeleteBuilding(row.id)}/>
                                 </div>
                             )}
                         />
@@ -878,7 +1037,7 @@ const SysAdminDashboard: React.FC = () => {
                 loading={buildingDialogLoading}
                 onHide={() => setShowBuildingEditDialog(false)}
                 onSave={handleSaveBuilding}
-                onChange={patch => setBuildingForm(f => ({ ...f, ...patch }))}
+                onChange={patch => setBuildingForm(f => ({...f, ...patch}))}
             />
 
             <DepartmentFormDialog
@@ -891,7 +1050,7 @@ const SysAdminDashboard: React.FC = () => {
                 loading={deptDialogLoading}
                 onHide={() => setShowDeptEditDialog(false)}
                 onSave={handleSaveDepartment}
-                onChange={patch => setDeptForm(f => ({ ...f, ...patch }))}
+                onChange={patch => setDeptForm(f => ({...f, ...patch}))}
             />
 
             <RoomFormDialog
@@ -903,7 +1062,7 @@ const SysAdminDashboard: React.FC = () => {
                 loading={roomDialogLoading}
                 onHide={() => setShowRoomEditDialog(false)}
                 onSave={handleSaveRoom}
-                onChange={patch => setRoomForm(f => ({ ...f, ...patch }))}
+                onChange={patch => setRoomForm(f => ({...f, ...patch}))}
             />
 
             <UserFormDialog
@@ -916,27 +1075,28 @@ const SysAdminDashboard: React.FC = () => {
                 loading={userDialogLoading}
                 onHide={() => setShowUserDialog(false)}
                 onSave={handleSaveUser}
-                onChange={patch => setUserForm(f => ({ ...f, ...patch }))}
+                onChange={patch => setUserForm(f => ({...f, ...patch}))}
             />
 
             {/* ── Edit Raspberry Pi Dialog ── */}
             <Dialog
                 header="Edit Raspberry Pi"
                 visible={showPiDialog}
-                style={{ width: '480px' }}
+                style={{width: '480px'}}
                 onHide={() => setShowPiDialog(false)}
                 footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <Button label="Cancel" severity="secondary" outlined onClick={() => setShowPiDialog(false)} />
-                        <Button label="Save" icon="pi pi-check" loading={piLoading} onClick={handleSavePi} />
+                    <div style={{display: 'flex', justifyContent: 'flex-end', gap: '0.5rem'}}>
+                        <Button label="Cancel" severity="secondary" outlined onClick={() => setShowPiDialog(false)}/>
+                        <Button label="Save" icon="pi pi-check" loading={piLoading} onClick={handleSavePi}/>
                     </div>
                 }
                 draggable={false}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                     <div>
                         <label htmlFor="pi-name" style={labelStyle}>Name *</label>
-                        <InputText id="pi-name" value={piName} onChange={e => setPiName(e.target.value)} placeholder="e.g. Pi-Lab-01" style={{ width: '100%' }} />
+                        <InputText id="pi-name" value={piName} onChange={e => setPiName(e.target.value)}
+                                   placeholder="e.g. Pi-Lab-01" style={{width: '100%'}}/>
                     </div>
 
                     <div>
@@ -944,23 +1104,28 @@ const SysAdminDashboard: React.FC = () => {
                         <InputText
                             value={rooms.find(r => r.id === piRoomId)?.name ?? piRoomId ?? 'N/A'}
                             readOnly
-                            style={{ width: '100%', background: '#f5f5f5', cursor: 'default' }}
+                            style={{width: '100%', background: '#f5f5f5', cursor: 'default'}}
                         />
                     </div>
 
                     <div>
                         <label htmlFor="pi-ip" style={labelStyle}>IP Address *</label>
-                        <InputText id="pi-ip" value={piIpAddress} onChange={e => setPiIpAddress(e.target.value)} placeholder="e.g. 192.168.1.10" style={{ width: '100%' }} />
+                        <InputText id="pi-ip" value={piIpAddress} onChange={e => setPiIpAddress(e.target.value)}
+                                   placeholder="e.g. 192.168.1.10" style={{width: '100%'}}/>
                     </div>
 
                     <div>
                         <label htmlFor="pi-port" style={labelStyle}>Port *</label>
-                        <InputNumber inputId="pi-port" value={piPort} onValueChange={e => setPiPort(e.value ?? null)} placeholder="e.g. 1000–9999" style={{ width: '100%' }} min={1000} max={9999} useGrouping={false} />
+                        <InputNumber inputId="pi-port" value={piPort} onValueChange={e => setPiPort(e.value ?? null)}
+                                     placeholder="e.g. 1000–9999" style={{width: '100%'}} min={1000} max={9999}
+                                     useGrouping={false}/>
                     </div>
 
                     <div>
                         <label htmlFor="pi-interval" style={labelStyle}>Pushing Data Interval (seconds)</label>
-                        <InputNumber inputId="pi-interval" value={piInterval} onValueChange={e => setPiInterval(e.value ?? null)} placeholder="e.g. 60" style={{ width: '100%' }} min={1} />
+                        <InputNumber inputId="pi-interval" value={piInterval}
+                                     onValueChange={e => setPiInterval(e.value ?? null)} placeholder="e.g. 60"
+                                     style={{width: '100%'}} min={1}/>
                     </div>
 
                     <div>
@@ -970,9 +1135,11 @@ const SysAdminDashboard: React.FC = () => {
                             size="small"
                             emptyMessage="No sensor stations connected."
                         >
-                            <Column field="name" header="Name" />
-                            <Column field="writeId" header="Write ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                            <Column field="readId" header="Read ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+                            <Column field="name" header="Name"/>
+                            <Column field="writeId" header="Write ID"
+                                    style={{maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis'}}/>
+                            <Column field="readId" header="Read ID"
+                                    style={{maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis'}}/>
                             <Column
                                 header=""
                                 className="admin-actions-column"
@@ -1003,25 +1170,29 @@ const SysAdminDashboard: React.FC = () => {
             <Dialog
                 header="Edit Sensor Station"
                 visible={showSensorDialog}
-                style={{ width: '480px' }}
+                style={{width: '480px'}}
                 onHide={() => setShowSensorDialog(false)}
                 footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                        <Button label="Cancel" severity="secondary" outlined onClick={() => setShowSensorDialog(false)} />
-                        <Button label="Save" icon="pi pi-check" loading={sensorLoading} onClick={handleSaveSensor} />
+                    <div style={{display: 'flex', justifyContent: 'flex-end', gap: '0.5rem'}}>
+                        <Button label="Cancel" severity="secondary" outlined
+                                onClick={() => setShowSensorDialog(false)}/>
+                        <Button label="Save" icon="pi pi-check" loading={sensorLoading} onClick={handleSaveSensor}/>
                     </div>
                 }
                 draggable={false}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                     <div>
                         <label htmlFor="sensor-name" style={labelStyle}>Name *</label>
-                        <InputText id="sensor-name" value={sensorName} onChange={e => setSensorName(e.target.value)} placeholder="e.g. Station-A1" style={{ width: '100%' }} />
+                        <InputText id="sensor-name" value={sensorName} onChange={e => setSensorName(e.target.value)}
+                                   placeholder="e.g. Station-A1" style={{width: '100%'}}/>
                     </div>
 
                     <div>
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
-                        <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
+                        <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions}
+                                  onChange={e => setSensorRoomId(e.value)} placeholder="Select room"
+                                  style={{width: '100%'}} filter/>
                     </div>
                 </div>
             </Dialog>

@@ -5,7 +5,7 @@
 #include "led_manager.h"
 #include "reading_buffer.h"
 
-#define JSON_BUFFER_SIZE 128
+#define JSON_BUFFER_SIZE 192
 #define ADVERTISING_INTERVAL 32
 #define TIMESTAMP_MAX_LENGTH 19
 
@@ -53,9 +53,7 @@ void BLEManager::poll() {
     
     faultManager.clear(FaultType::PiDisconnected);
     displayManager->updateFault(faultManager.activeText());
-    ledManager.update(LedManager::LedMode::Green);
-
-    timeReceived = false;
+    ledManager.update(LedManager::LedMode::White);
 
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
@@ -66,9 +64,9 @@ void BLEManager::poll() {
 
     faultManager.set(FaultType::PiDisconnected);
     displayManager->updateFault(faultManager.activeText());
+    ledManager.update(LedManager::LedMode::Off);
 
     currentCentral = BLEDevice();
-    timeReceived = false;
 
     BLE.advertise();
     Serial.println("BLE advertising restarted");
@@ -102,7 +100,7 @@ String BLEManager::serializeReading(const SensorReading& r) const {
   json += ",\"humidity\":";
   json += String(r.humidityPct, 2);
 
-  json += ",\"co2\":";
+  json += ",\"iaq\":";
   json += String(r.airQualityIndex, 2);
 
   json += "}";
@@ -129,7 +127,7 @@ String BLEManager::serializeBufferedReading(const BufferedReading& buffered) con
   json += ",\"humidity\":";
   json += String(buffered.reading.humidityPct, 2);
 
-  json += ",\"co2\":";
+  json += ",\"iaq\":";
   json += String(buffered.reading.airQualityIndex, 2);
 
   json += "}";
@@ -138,16 +136,15 @@ String BLEManager::serializeBufferedReading(const BufferedReading& buffered) con
 }
 
 void BLEManager::sendReading(const SensorReading& reading) {
+  BLE.poll();
+
   if (!reading.valid) {
     return;
   }
 
-  if (!timeReceived) {
-    Serial.println("Skipping reading: no time sync available");
-    return;
-  }
-
   if (!isConnected()) {
+    Serial.println("Cannot send reading: Pi not connected or not subscribed");
+
     const unsigned long millisOffset = millis() - timeSyncMillis;
 
     const bool stored = readingBuffer.push(
@@ -167,10 +164,23 @@ void BLEManager::sendReading(const SensorReading& reading) {
   }
 
   String payload = serializeReading(reading);
-  txCharacteristic.writeValue(payload);
+  bool write_success = txCharacteristic.writeValue(payload);
 
-  Serial.print("Sent to Pi: ");
-  Serial.println(payload);
+  if (write_success) {
+    Serial.print("Sent to Pi: ");
+    Serial.println(payload);
+  } else {
+    Serial.print("BLE write failed, buffering reading: ");
+    Serial.println(payload);
+
+    const unsigned long millisOffset = millis() - timeSyncMillis;
+
+    readingBuffer.push(
+      reading,
+      receivedTimestamp,
+      millisOffset
+    );
+  }
 }
 
 void BLEManager::flushBufferedReadings() {
