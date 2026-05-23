@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AbsenceControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { AbsenceControllerApi, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -358,11 +360,14 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
+    const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
+    const stompClient = useRef<Client | null>(null);
     const [thresholdViolations, setThresholdViolations] = useState<ThresholdViolationData[]>([]);
     const [pendingRequests, setPendingRequests] = useState<PendingRequestData[]>([]);
 
     const [departmentName, setDepartmentName] = useState<string | null>(null);
     const [departmentId, setDepartmentId] = useState<string | null>(null);
+    const [deptAggregation, setDeptAggregation] = useState<AggregatedDataPointDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [violationsLoading, setViolationsLoading] = useState(false);
     const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
@@ -475,6 +480,13 @@ export const DepartmentHeadDashboard: React.FC = () => {
             });
     }, []);
 
+    const fetchDeptAggregation = useCallback((deptId: string) => {
+        new ClimateStatsControllerApi()
+            .getLastAggregationForDepartment({ id: deptId })
+            .then(r => setDeptAggregation(r.data as AggregatedDataPointDTO))
+            .catch(() => setDeptAggregation(null));
+    }, []);
+
     const fetchDepartmentRooms = useCallback(() => {
         setLoading(true);
         setError(null);
@@ -484,6 +496,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 const id = (response.data as UserxDTO).myRoom?.departmentID;
                 if (!id) throw new Error("User has no department assigned.");
                 setDepartmentId(id);
+                fetchDeptAggregation(id);
                 return id;
             })
             .then(id => new DepartmentControllerApi().getSpecificDepartment({ departmentId: id }))
@@ -505,6 +518,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 return Promise.all(apiRooms.map(fetchRoomWithLiveData))
                     .then(roomData => {
                         setRooms(roomData);
+                        setRoomBackendIds(roomData.map(r => r.backendId!).filter(Boolean));
                         fetchThresholdViolations(roomData);
                     });
             })
@@ -522,55 +536,53 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setLoading(false);
             });
-    }, [fetchRoomWithLiveData, fetchThresholdViolations]);
+    }, [fetchRoomWithLiveData, fetchThresholdViolations, fetchDeptAggregation]);
 
     useEffect(() => {
         fetchDepartmentRooms();
         fetchPendingRequests();
 
         const interval = window.setInterval(() => {
-            fetchDepartmentRooms();
             fetchPendingRequests();
         }, 30_000);
 
         return () => window.clearInterval(interval);
     }, [fetchDepartmentRooms, fetchPendingRequests]);
 
+    useEffect(() => {
+        if (roomBackendIds.length === 0) return;
+
+        stompClient.current?.deactivate();
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-warnings'),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                roomBackendIds.forEach(backendId => {
+                    stompClient.current?.subscribe(`/topic/climate-data/${backendId}`, (message) => {
+                        const data: ClimateData = JSON.parse(message.body);
+                        setRooms(prev => prev.map(r => {
+                            if (r.backendId !== backendId) return r;
+                            return {
+                                ...r,
+                                temp:     data.temperature != null ? `${formatNumber(data.temperature, 1)} °C` : r.temp,
+                                humidity: data.humidity    != null ? `${formatNumber(data.humidity, 0)} %`     : r.humidity,
+                                co2:      data.airQuality  != null ? `${formatNumber(data.airQuality, 0)} ppm` : r.co2,
+                            };
+                        }));
+                    });
+                });
+            },
+            onStompError: (frame) => { console.error('STOMP error:', frame); },
+        });
+
+        stompClient.current.activate();
+
+        return () => { stompClient.current?.deactivate(); };
+    }, [roomBackendIds]);
+
     const problemRoomsCount = useMemo(() => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
-    }, [rooms]);
-
-    const averageTemperature = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.temp.replace(' °C', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${avg.toFixed(1).replace('.', ',')} °C`;
-    }, [rooms]);
-
-    const averageAirQuality = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.co2.replace(' ppm', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${Math.round(avg)} ppm`;
-    }, [rooms]);
-
-    const averageHumidity = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.humidity.replace(' %', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${Math.round(avg)} %`;
     }, [rooms]);
 
     const violationStats = useMemo(() => {
@@ -580,7 +592,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
     return (
         <div className="dashboard-layout">
             <PageHeader
-                title={departmentName ? `Overview Department ${departmentName}` : 'Department Overview'}
+                title={'Department Overview'}
                 onMenuClick={() => setSidebarVisible(true)}
             />
 
@@ -598,17 +610,17 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                     <div className="kpi-card">
                         <h4>Average Temperature</h4>
-                        <h2>{loading ? '…' : averageTemperature}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${deptAggregation.avgTemperature.toFixed(1).replace('.', ',')} °C` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">
                         <h4>Average Air Quality</h4>
-                        <h2>{loading ? '…' : averageAirQuality}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgAirQuality != null ? `${Math.round(deptAggregation.avgAirQuality)} ppm` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">
                         <h4>Average Humidity</h4>
-                        <h2>{loading ? '…' : averageHumidity}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgHumidity != null ? `${Math.round(deptAggregation.avgHumidity)} %` : 'n/a'}</h2>
                     </div>
                 </div>
 

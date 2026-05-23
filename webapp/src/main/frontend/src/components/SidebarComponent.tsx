@@ -48,7 +48,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     // Exakte Bezeichnungen für die Startseite je nach Rolle
     const getOverviewLabel = () => {
         if (isSeniorManager) return 'Company Overview';
-        if (isDepartmentManager) return 'Department Dashboard';
+        if (isDepartmentManager) return 'Department Overview';
         if (isBuildingManager) return 'Building Overview';
         if (isEmployee) return 'My Office';
         return 'Overview'; // Für SysAdmin
