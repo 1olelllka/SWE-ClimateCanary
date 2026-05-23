@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { DepartmentAveragesTable } from '../components/DepartmentAveragesTable';
@@ -15,6 +15,8 @@ import {
 } from '../generated-skeleton-api';
 import '../styles/BuildingManagerDashboard.css';
 import '../styles/Tables.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 export interface DepartmentWithStats {
     id: string;
@@ -41,6 +43,9 @@ export const SeniorManagerDashboard: React.FC = () => {
     const [error, setError]                    = useState<string | null>(null);
     const [companyScore, setCompanyScore]      = useState<number | null>(null);
     const [trendLoading, setTrendLoading]      = useState(false);
+    const [totalViolations, setTotalViolations] = useState(0);
+
+    const stompClient = useRef<Client | null>(null);
 
     useEffect(() => {
         departmentApi
@@ -67,7 +72,6 @@ export const SeniorManagerDashboard: React.FC = () => {
                         const activeViolations = violationsResult.status === 'fulfilled'
                             ? (violationsResult.value.data?.length ?? 0)
                             : 0;
-
                         return { id: dept.id, name: dept.name, stats, activeViolations };
                     })
                 );
@@ -83,6 +87,7 @@ export const SeniorManagerDashboard: React.FC = () => {
         const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
         const startDate = fmtDate(weekAgo);
         const endDate   = fmtDate(now);
+        setTotalViolations(departments.reduce((s, v) => s + v.activeViolations, 0))
 
         setTrendLoading(true);
         Promise.all(
@@ -108,7 +113,50 @@ export const SeniorManagerDashboard: React.FC = () => {
         }).finally(() => setTrendLoading(false));
     }, [departments]);
 
-    const totalViolations = departments.reduce((s, d) => s + d.activeViolations, 0);
+    useEffect(() => {
+        if (!departments || departments.length == 0) return;
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                console.log('Connected');
+                departments.forEach(dep => {
+                    stompClient.current?.subscribe(`/topic/active-warnings-department/${dep.id}`, (message) => {
+                        setDepartments(prev => prev.map(r => {
+                            if (r.id !== dep.id) return r;
+                            return {
+                                ...r,
+                                activeViolations: r.activeViolations + 1
+                            };
+                        }));
+                    setTotalViolations((prev) => prev + 1);
+                    });
+                    stompClient.current?.subscribe(`/topic/resolve-warnings-department/${dep.id}`, (message) => {
+                        setDepartments(prev => prev.map(r => {
+                            if (r.id !== dep.id) return r;
+                            return {
+                                ...r,
+                                activeViolations: r.activeViolations > 0 ? r.activeViolations - 1 : 0
+                            };
+                        }));
+                        setTotalViolations((prev) => prev - 1);
+                    });
+                })
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
+    }, [departments]);
+
+    // const totalViolations = departments.reduce((s, d) => s + d.activeViolations, 0);
 
     return (
         <div className="bm-page">

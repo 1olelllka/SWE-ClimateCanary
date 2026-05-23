@@ -22,6 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
+    private final AggregatedDepartmentStatsRepository departmentStatsRepository;
     private final RoomRepository roomRepository;
     private final RoomMonitoringRepository monitoringRepository;
     private final RaspberryPiRepository raspberryPiRepository;
@@ -139,11 +140,11 @@ public class DepartmentServiceImpl implements DepartmentService {
                     .stream()
                     .map(Room::getId)
                     .toList();
-            department.setBuilding(null);
             roomIds.forEach(roomService::deleteRoom);
         }
         if (department != null) departmentRepository.delete(department);
         trendRepository.deleteAllByDepartmentId(id);
+        departmentStatsRepository.deleteAllByDepartmentId(id);
     }
 
     @Override

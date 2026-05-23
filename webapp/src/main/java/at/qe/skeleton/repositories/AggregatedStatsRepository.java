@@ -18,4 +18,5 @@ public interface AggregatedStatsRepository extends JpaRepository<AggregatedStats
     boolean existsByRoomIdAndDateAndGranularity(UUID roomId, LocalDate date, Granularity granularity);
     AggregatedStats findFirstByRoomIdAndGranularityOrderByDateDesc(UUID roomId, Granularity granularity);
     boolean existsByDateBeforeAndGranularity(LocalDate cutoff, Granularity granularity);
+    void deleteAllByRoomId(UUID id);
 }

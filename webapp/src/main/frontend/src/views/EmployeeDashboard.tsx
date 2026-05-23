@@ -104,8 +104,11 @@ export const EmployeeDashboard: React.FC = () => {
         if (!roomId) return;
 
         stompClient.current = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/active-warnings'),
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
             reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization": `Bearer ${localStorage.getItem('bearerToken')}`
+            },
             onConnect: () => {
                 console.log('Connected, roomId:', roomId); // now visible
                 stompClient.current?.subscribe(`/topic/active-warnings/${roomId}`, (message) => {

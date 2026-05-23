@@ -6,6 +6,8 @@ import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.BuildingTrendRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,23 +19,23 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("TrendJob")
 class TrendJobUnitTests {
 
-    @Mock private BuildingTrendRepository trendRepository;
-    @Mock private AggregatedStatsRepository aggregatedStatsRepository;
-    @Mock private DepartmentRepository departmentRepository;
+    @Mock private BuildingTrendRepository    trendRepository;
+    @Mock private AggregatedStatsRepository  aggregatedStatsRepository;
+    @Mock private DepartmentRepository       departmentRepository;
 
     @InjectMocks private TrendJob trendJob;
 
+    private UUID       deptId;
+    private UUID       roomId;
     private Department department;
-    private Room room;
-    private UUID deptId;
-    private UUID roomId;
+    private Room       room;
 
     @BeforeEach
     void setUp() {
@@ -50,138 +52,197 @@ class TrendJobUnitTests {
         department.setRooms(List.of(room));
     }
 
-    @Test
-    void testThatTrendDailyCalculatesUpTrendCorrectly() {
-        // Arrange
-        // Formula calculation input: temp=22, hum=50, co2=1000
-        // normTemp = (22-18)/(26-18) = 0.5 -> weight 0.4 * 0.5 = 0.2
-        // normHum = (50-30)/(70-30) = 0.5 -> weight 0.3 * 0.5 = 0.15
-        // normCo2 = (1000-400)/(2000-400) = 0.375 -> weight 0.3 * 0.375 = 0.1125
-        // Expected value score = 0.2 + 0.15 + 0.1125 = 0.4625
-        double calculatedValue = 0.4625;
+    // ── helpers ───────────────────────────────────────────────────────────────
 
-        AggregatedStats stats = AggregatedStats.builder()
-                .avgTemp(22.0f)
-                .avgHumidity(50.0f)
-                .avgCO2(1000.0f)
+    private void stubDepartments() {
+        when(departmentRepository.findAllWithRooms()).thenReturn(List.of(department));
+    }
+
+    private AggregatedStats statsOf(float temp, float humidity, float co2) {
+        return AggregatedStats.builder()
+                .avgTemp(temp)
+                .avgHumidity(humidity)
+                .avgCO2(co2)
                 .build();
+    }
 
-        BuildingTrend lastTrend = BuildingTrend.builder()
-                .value(0.3000) // Lower than calculated value -> Trend should go UP
+    private BuildingTrend previousTrendWithValue(double value) {
+        return BuildingTrend.builder()
+                .value(value)
                 .date(LocalDate.now().minusDays(1))
                 .build();
-
-        when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
-                .thenReturn(stats);
-        when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
-
-        // Act
-        trendJob.trendDaily();
-
-        // Assert
-        ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
-        verify(trendRepository).save(trendCaptor.capture());
-
-        BuildingTrend savedTrend = trendCaptor.getValue();
-        assertEquals(deptId, savedTrend.getDepartmentId());
-        assertEquals("Informatics", savedTrend.getDepartmentName());
-        assertEquals(calculatedValue, savedTrend.getValue(), 0.0001);
-        assertEquals(Trend.UP, savedTrend.getTrend());
-        assertEquals(LocalDate.now(), savedTrend.getDate());
     }
 
-    @Test
-    void testThatTrendDailyCalculatesDownTrendCorrectly() {
-        // Arrange
-        AggregatedStats stats = AggregatedStats.builder()
-                .avgTemp(18.0f) // normTemp = 0
-                .avgHumidity(30.0f) // normHum = 0
-                .avgCO2(400.0f) // normCo2 = 0
-                .build(); // value score = 0.0
-
-        BuildingTrend lastTrend = BuildingTrend.builder()
-                .value(0.1500) // Higher than calculated value (0.0) -> Trend should go DOWN
-                .date(LocalDate.now().minusDays(1))
-                .build();
-
-        when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
-                .thenReturn(stats);
-        when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
-
-        // Act
+    private BuildingTrend capturedTrend() {
         trendJob.trendDaily();
-
-        // Assert
-        ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
-        verify(trendRepository).save(trendCaptor.capture());
-        assertEquals(Trend.DOWN, trendCaptor.getValue().getTrend());
+        ArgumentCaptor<BuildingTrend> captor = ArgumentCaptor.forClass(BuildingTrend.class);
+        verify(trendRepository).save(captor.capture());
+        return captor.getValue();
     }
 
-    @Test
-    void testThatTrendDailySetsStableTrendWhenValuesAreSame() {
-        // Arrange
-        AggregatedStats stats = AggregatedStats.builder()
-                .avgTemp(26.0f) // normTemp = 1.0 -> 0.4
-                .avgHumidity(70.0f) // normHum = 1.0 -> 0.3
-                .avgCO2(2000.0f) // normCo2 = 1.0 -> 0.3
-                .build(); // value score = 1.0
+    // ═════════════════════════════════════════════════════════════════════════
+    // trendDaily — trend direction
+    // ═════════════════════════════════════════════════════════════════════════
 
-        BuildingTrend lastTrend = BuildingTrend.builder()
-                .value(1.0) // Exactly matches the calculated value -> Trend should be STABLE
-                .date(LocalDate.now().minusDays(1))
-                .build();
+    @Nested
+    @DisplayName("trend direction")
+    class TrendDirection {
 
-        when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
-                .thenReturn(stats);
-        when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(lastTrend);
+        @Test
+        @DisplayName("UP when calculated value exceeds previous trend value")
+        void calculatesUpTrend() {
+            // normTemp  = (22-18)/(26-18) = 0.5  → 0.4 × 0.5  = 0.2000
+            // normHum   = (50-30)/(70-30) = 0.5  → 0.3 × 0.5  = 0.1500
+            // normCo2   = (1000-400)/(2000-400) = 0.375 → 0.3 × 0.375 = 0.1125
+            // total = 0.4625
+            double expectedValue = 0.4625;
 
-        // Act
-        trendJob.trendDaily();
+            stubDepartments();
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(statsOf(22f, 50f, 1000f));
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(previousTrendWithValue(0.30)); // lower → UP
 
-        // Assert
-        ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
-        verify(trendRepository).save(trendCaptor.capture());
-        assertEquals(Trend.STABLE, trendCaptor.getValue().getTrend());
+            BuildingTrend saved = capturedTrend();
+
+            assertEquals(deptId,           saved.getDepartmentId());
+            assertEquals("Informatics",    saved.getDepartmentName());
+            assertEquals(expectedValue,    saved.getValue(), 0.0001);
+            assertEquals(Trend.UP,         saved.getTrend());
+            assertEquals(LocalDate.now(),  saved.getDate());
+        }
+
+        @Test
+        @DisplayName("DOWN when calculated value is below previous trend value")
+        void calculatesDownTrend() {
+            // All sensors at minimum → value = 0.0
+            stubDepartments();
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(statsOf(18f, 30f, 400f));
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(previousTrendWithValue(0.15)); // higher → DOWN
+
+            assertEquals(Trend.DOWN, capturedTrend().getTrend());
+        }
+
+        @Test
+        @DisplayName("STABLE when calculated value equals previous trend value")
+        void calculatesStableTrend() {
+            // All sensors at maximum → value = 1.0
+            stubDepartments();
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(statsOf(26f, 70f, 2000f));
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(previousTrendWithValue(1.0)); // equal → STABLE
+
+            assertEquals(Trend.STABLE, capturedTrend().getTrend());
+        }
+
+        @Test
+        @DisplayName("STABLE when no previous trend record exists (first run)")
+        void defaultsToStableWhenNoPreviousTrend() {
+            stubDepartments();
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(statsOf(22f, 50f, 1000f));
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(null); // no history
+
+            assertEquals(Trend.STABLE, capturedTrend().getTrend());
+        }
     }
 
-    @Test
-    void testThatTrendDailyDefaultsToStableWhenNoPreviousTrendExists() {
-        // Arrange
-        AggregatedStats stats = AggregatedStats.builder()
-                .avgTemp(22.0f).avgHumidity(50.0f).avgCO2(1000.0f).build();
+    // ═════════════════════════════════════════════════════════════════════════
+    // trendDaily — missing / partial stats
+    // ═════════════════════════════════════════════════════════════════════════
 
-        when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
-                .thenReturn(stats);
-        when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(null); // No history
+    @Nested
+    @DisplayName("missing or partial stats")
+    class MissingStats {
 
-        // Act
-        trendJob.trendDaily();
+        @Test
+        @DisplayName("saves trend with value=0 when all rooms have no aggregated stats")
+        void allRoomsMissingStats_savesTrendWithZeroValue() {
+            stubDepartments();
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(null);
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(null);
 
-        // Assert
-        ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
-        verify(trendRepository).save(trendCaptor.capture());
-        assertEquals(Trend.STABLE, trendCaptor.getValue().getTrend());
+            BuildingTrend saved = capturedTrend();
+
+            assertEquals(0.0,          saved.getValue(), 0.0001);
+            assertEquals(Trend.STABLE,  saved.getTrend()); // no previous → STABLE
+            assertEquals(deptId,        saved.getDepartmentId());
+        }
+
+        @Test
+        @DisplayName("partial rooms: uses only rooms that have stats; skips rooms without")
+        void partialRoomsMissingStats_accumulatesOnlyValidRooms() {
+            Room roomWithoutStats = new Room();
+            roomWithoutStats.setId(UUID.randomUUID());
+            roomWithoutStats.setRoomNumber("102");
+
+            department.setRooms(List.of(room, roomWithoutStats));
+
+            stubDepartments();
+            // room has stats, roomWithoutStats does not
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
+                    .thenReturn(statsOf(22f, 50f, 1000f));
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomWithoutStats.getId(), Granularity.DAILY))
+                    .thenReturn(null);
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
+                    .thenReturn(null);
+
+            BuildingTrend saved = capturedTrend();
+
+            // Only room contributes: value should equal the single-room calculation
+            assertEquals(0.4625, saved.getValue(), 0.0001);
+        }
+
+        @Test
+        @DisplayName("no departments → no trends saved")
+        void noDepartments_noSave() {
+            when(departmentRepository.findAllWithRooms()).thenReturn(List.of());
+
+            trendJob.trendDaily();
+
+            verify(trendRepository, never()).save(any());
+        }
     }
 
-    @Test
-    void testThatTrendDailySkipsRoomWhenStatsAreMissing() {
-        // Arrange
-        when(departmentRepository.findAll()).thenReturn(List.of(department));
-        when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
-                .thenReturn(null);
-        when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(null);
+    // ═════════════════════════════════════════════════════════════════════════
+    // trendDaily — multiple departments
+    // ═════════════════════════════════════════════════════════════════════════
 
-        // Act
-        trendJob.trendDaily();
+    @Nested
+    @DisplayName("multiple departments")
+    class MultipleDepartments {
 
-        // Assert
-        ArgumentCaptor<BuildingTrend> trendCaptor = ArgumentCaptor.forClass(BuildingTrend.class);
-        verify(trendRepository).save(trendCaptor.capture());
+        @Test
+        @DisplayName("saves one BuildingTrend per department")
+        void savesOneTrendPerDepartment() {
+            UUID dept2Id   = UUID.randomUUID();
+            UUID room2Id   = UUID.randomUUID();
 
-        assertEquals(0.0, trendCaptor.getValue().getValue());
+            Room room2 = new Room();
+            room2.setId(room2Id);
+            room2.setRoomNumber("201");
+
+            Department dept2 = new Department();
+            dept2.setId(dept2Id);
+            dept2.setName("Engineering");
+            dept2.setRooms(List.of(room2));
+
+            when(departmentRepository.findAllWithRooms()).thenReturn(List.of(department, dept2));
+
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId,  Granularity.DAILY)).thenReturn(statsOf(22f, 50f, 1000f));
+            when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(room2Id, Granularity.DAILY)).thenReturn(statsOf(20f, 40f, 800f));
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId)).thenReturn(null);
+            when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(dept2Id)).thenReturn(null);
+
+            trendJob.trendDaily();
+
+            verify(trendRepository, times(2)).save(any(BuildingTrend.class));
+        }
     }
 }

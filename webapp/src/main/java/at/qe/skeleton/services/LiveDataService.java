@@ -2,7 +2,6 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.WarningDTO;
-import at.qe.skeleton.model.ClimateStats;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -29,6 +28,14 @@ public class LiveDataService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void pushActiveWarningDepartment(UUID departmentId) {
+        messagingTemplate.convertAndSend("/topic/active-warnings-department/"+departmentId.toString(), "{}");
+    }
+
+    public void resolveActiveWarning(UUID departmentId) {
+        messagingTemplate.convertAndSend("/topic/resolve-warnings-department/"+departmentId.toString(), "{}");
     }
 
     public void resolveActiveWarning(UUID roomId, WarningDTO warning) {

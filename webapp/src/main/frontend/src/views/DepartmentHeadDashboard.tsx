@@ -494,7 +494,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
         stompClient.current?.deactivate();
 
         stompClient.current = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/active-warnings'),
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
             reconnectDelay: 5000,
             onConnect: () => {
                 roomBackendIds.forEach(backendId => {

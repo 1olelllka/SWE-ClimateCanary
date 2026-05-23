@@ -14,4 +14,5 @@ public interface AggregatedDepartmentStatsRepository extends JpaRepository<Aggre
     boolean existsByDepartmentIdAndDate(UUID departmentId, LocalDate date);
     Optional<AggregatedDepartmentStats> findFirstByDepartmentIdOrderByDateDesc(UUID departmentId);
     List<AggregatedDepartmentStats> findAllByDepartmentIdAndDateBetweenOrderByDateAsc(UUID departmentId, LocalDate startDate, LocalDate endDate);
+    void deleteAllByDepartmentId(UUID id);
 }
