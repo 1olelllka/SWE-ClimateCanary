@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { GetClimateHistoryGranularityEnum, RoomControllerApi } from '../generated-skeleton-api';
 import { DashboardCalendar } from './Calendar';
+import { Toast } from 'primereact/toast';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 
@@ -45,6 +46,7 @@ interface AggPoint {
 
 interface Props {
     roomId: string;
+    hideDayView?: boolean;
 }
 
 const mean = (nums: number[]) =>
@@ -108,8 +110,9 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 
-export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
-    const [timeFilter, setTimeFilter] = useState<TimeFilter>('Day');
+export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = false }) => {
+    const toastRef = useRef<Toast>(null);
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>(hideDayView ? 'Week' : 'Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
     const [data,       setData]       = useState<DataPoint[]>([]);
@@ -149,10 +152,17 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
                 (dateRange[1].getTime() - dateRange[0].getTime()) / 86_400_000,
             );
 
-            if (diffDays <= 1) {
-                // Single day — use raw overtime endpoint grouped by hour
-                req = new RoomControllerApi().getOvertimeClimateData({ roomId, startDate, endDate })
-                    .then(r => groupByHour(r.data as RawPoint[]));
+            if (diffDays < 3) {
+                setLoading(false);
+                toastRef.current?.show({
+                    severity: 'warn',
+                    summary:  'Range too short',
+                    detail:   'Please select a range of at least 3 days.',
+                    life:     4000,
+                });
+                setTimeFilter('Week');
+                setDateRange(null);
+                return;
             } else {
                 // Multi-day — use aggregated climate-history with smart granularity
                 const granularity = diffDays <= 4
@@ -433,9 +443,10 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId }) => {
 
     return (
         <div className="chart-card">
+            <Toast ref={toastRef} position="top-right" />
             <div className="chart-header">
                 <div className="time-filters">
-                    {(['Day', 'Week', 'Month'] as TimeFilter[]).map(f => (
+                    {(['Day', 'Week', 'Month'] as TimeFilter[]).filter(f => !(hideDayView && f === 'Day')).map(f => (
                         <button
                             key={f}
                             className={`time-filter-btn ${timeFilter === f ? 'active' : ''}`}

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { AbsenceControllerApi, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
@@ -357,6 +358,7 @@ const buildViolationStats = (
 };
 
 export const DepartmentHeadDashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
@@ -642,7 +644,17 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     </p>
                 )}
 
-                <RoomListTable rooms={rooms} />
+                <RoomListTable
+                    rooms={rooms}
+                    onRowClick={(displayId) => {
+                        const room = rooms.find(r => r.id === displayId);
+                        if (!room?.backendId) return;
+                        const params = new URLSearchParams();
+                        params.set('name', displayId);
+                        params.set('shared', String(room.type === 'Common Area'));
+                        navigate(`/senior/department/${encodeURIComponent(room.backendId)}?${params.toString()}`);
+                    }}
+                />
 
                 <ThresholdViolationsTable
                     violations={thresholdViolations}
