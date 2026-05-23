@@ -20,6 +20,7 @@ import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
 import { CompanyTrendPage } from "./views/CompanyTrendPage";
+import DepartmentViolationsPage from "./views/DepartmentViolationsPage";
 
 export const HomePageRoute = {
     url: ROUTES.HOME,
@@ -94,6 +95,11 @@ export const TipManagementRoute = {
 export const CompanyTrendsRoute = {
     url: ROUTES.COMPANY_TRENDS,
     component: CompanyTrendPage
+}
+
+export const DepartmentViolationsRoute = {
+    url: ROUTES.DEPARTMENT_VIOLATIONS,
+    component: DepartmentViolationsPage,
 }
 
 // referenced but not yet routed — kept to avoid unused-import warnings

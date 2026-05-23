@@ -4,6 +4,29 @@
     text-align: center;
 }
 
+/* Compact calendar panel used in filter bars */
+.compact-datepicker.p-datepicker {
+    font-size: 0.78rem;
+}
+.compact-datepicker .p-datepicker-header {
+    padding: 0.3rem 0.5rem;
+}
+.compact-datepicker .p-datepicker-calendar {
+    font-size: 0.78rem;
+}
+.compact-datepicker .p-datepicker-calendar td {
+    padding: 0.05rem;
+}
+.compact-datepicker .p-datepicker-calendar td > span,
+.compact-datepicker .p-datepicker-calendar td > a {
+    width: 1.7rem;
+    height: 1.7rem;
+    line-height: 1.7rem;
+}
+.compact-datepicker .p-datepicker-buttonbar {
+    padding: 0.3rem 0.5rem;
+}
+
 .mb-3 {
     margin-bottom: 1.5rem;
 }

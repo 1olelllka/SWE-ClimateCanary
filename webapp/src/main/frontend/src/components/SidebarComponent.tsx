@@ -99,6 +99,12 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             route: '/department-absences',
             visible: isDepartmentManager
         },
+        {
+            label: 'Threshold Violations',
+            icon: 'pi-exclamation-triangle',
+            route: ROUTES.DEPARTMENT_VIOLATIONS,
+            visible: isDepartmentManager
+        },
         // --- SYSADMIN MENÜPUNKTE ---
         {
             label: 'Device Configuration',

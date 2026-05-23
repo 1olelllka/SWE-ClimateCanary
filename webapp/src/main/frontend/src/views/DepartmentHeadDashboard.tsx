@@ -7,7 +7,7 @@ import { AbsenceControllerApi, AggregatedDataPointDTO, ClimateStatsControllerApi
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import {ThresholdViolationsTable, ThresholdViolationData} from '../components/ThresholdViolationsTable';
+import { ThresholdViolationData } from '../components/ThresholdViolationsTable';
 import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
 import {NumberOfViolationsTable, ViolationStatsData} from '../components/NumberOfViolationsTable';
 import { UserxDTO } from '../generated-skeleton-api';
@@ -208,85 +208,51 @@ const mapToRoomData = (
     } as RoomData;
 };
 
-const formatMeasurementType = (measurementType?: string): string => {
-    if (!measurementType) {
-        return 'Warning';
-    }
-
-    if (measurementType === 'TEMPERATURE') {
-        return 'Temperature';
-    }
-
-    if (measurementType === 'HUMIDITY') {
-        return 'Humidity';
-    }
-
-    if (measurementType === 'AIR') {
-        return 'Air Quality';
-    }
-
-    return measurementType
-        .toLowerCase()
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
-};
-
 const getMeasurementUnit = (measurementType?: string): string => {
-    if (measurementType === 'TEMPERATURE') {
-        return '°C';
-    }
-
-    if (measurementType === 'HUMIDITY') {
-        return '%';
-    }
-
-    if (measurementType === 'AIR') {
-        return 'ppm';
-    }
-
+    if (measurementType === 'TEMPERATURE') return '°C';
+    if (measurementType === 'HUMIDITY') return '%';
+    if (measurementType === 'AIR') return 'ppm';
     return '';
 };
 
-const formatDate = (dateString?: string): string => {
-    if (!dateString) {
-        return 'n/a';
-    }
+const formatSensorName = (measurementType?: string): string => {
+    if (measurementType === 'TEMPERATURE') return 'Temperature';
+    if (measurementType === 'HUMIDITY') return 'Humidity';
+    if (measurementType === 'AIR') return 'CO₂';
+    return measurementType ?? 'Unknown';
+};
 
-    return new Date(dateString).toLocaleDateString('de-DE');
+const formatDatetime = (dateString?: string): string => {
+    if (!dateString) return 'n/a';
+    const d = new Date(dateString);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
 const formatViolationNumber = (
     value: number | null | undefined,
     measurementType?: string
 ): string => {
-    if (value === null || value === undefined || Number.isNaN(value)) {
-        return 'n/a';
-    }
-
+    if (value === null || value === undefined || Number.isNaN(value)) return 'n/a';
     const unit = getMeasurementUnit(measurementType);
-
-    if (measurementType === 'AIR') {
-        return `${value.toFixed(0)} ${unit}`.trim();
-    }
-
+    if (measurementType === 'AIR') return `${value.toFixed(0)} ${unit}`.trim();
     return `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
 const mapWarningToThresholdViolation = (
     warning: WarningDTO,
     roomLabel: string,
-    roomType: string
 ): ThresholdViolationData => {
-    const measurementLabel = formatMeasurementType(warning.measurementType);
-
+    const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
-        id: warning.id,
-        warning: warning.message || `${measurementLabel} ${warning.status}`,
-        room: roomLabel,
-        type: roomType,
-        max: formatViolationNumber(warning.activeLimitAtTime, warning.measurementType),
-        real: formatViolationNumber(warning.triggeredValue, warning.measurementType),
-        date: formatDate(warning.createdAt)
+        id:           warning.id,
+        status:       warning.status,
+        active:       warning.active,
+        sensor:       formatSensorName(warning.measurementType),
+        room:         roomLabel,
+        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType)}`,
+        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType),
+        datetime:     formatDatetime(warning.createdAt),
     };
 };
 
@@ -339,12 +305,11 @@ const buildViolationStats = (
 
         const lastViolation = roomViolations.length > 0
             ? roomViolations
-                .map(violation => violation.date)
+                .map(violation => violation.datetime)
                 .sort((a, b) => {
-                    const dateA = new Date(a.split('.').reverse().join('-')).getTime();
-                    const dateB = new Date(b.split('.').reverse().join('-')).getTime();
-
-                    return dateB - dateA;
+                    const parse = (s: string) =>
+                        new Date(s.split(' ')[0].split('.').reverse().join('-')).getTime();
+                    return parse(b) - parse(a);
                 })[0]
             : '-';
 
@@ -420,11 +385,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(
-                                warning,
-                                room.id,
-                                room.type
-                            )
+                            mapWarningToThresholdViolation(warning, room.id)
                         );
                     })
                     .catch(error => {
@@ -654,11 +615,6 @@ export const DepartmentHeadDashboard: React.FC = () => {
                         params.set('shared', String(room.type === 'Common Area'));
                         navigate(`/senior/department/${encodeURIComponent(room.backendId)}?${params.toString()}`);
                     }}
-                />
-
-                <ThresholdViolationsTable
-                    violations={thresholdViolations}
-                    loading={violationsLoading}
                 />
 
                 <PendingRequestsTable
