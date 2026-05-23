@@ -85,11 +85,18 @@ public class WarningServiceImpl implements WarningService {
                         )
                 );
             }
-            // Office-level access: employees always see only active warnings for their own room
-            if (isOfficeUser && room.equals(user.getMyRoom())) {
-                return mapToDTOs(
-                        warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
-                );
+            // Office-level access: employees see only active warnings for their own room
+            // or any room in their department (shared/common rooms shown on the department page)
+            if (isOfficeUser) {
+                boolean sameRoom = room.equals(user.getMyRoom());
+                boolean sameDepartment = room.getDepartment() != null
+                        && user.getMyRoom().getDepartment() != null
+                        && room.getDepartment().getId().equals(user.getMyRoom().getDepartment().getId());
+                if (sameRoom || sameDepartment) {
+                    return mapToDTOs(
+                            warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
+                    );
+                }
             }
         }
         if (isBuildingManager) {
