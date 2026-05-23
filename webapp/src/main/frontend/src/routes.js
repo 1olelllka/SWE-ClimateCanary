@@ -13,6 +13,7 @@ import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 import SettingsPage from "./views/SettingsPage";
+import RoomDetailPage from "./views/RoomDetailPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
@@ -80,6 +81,11 @@ export const SettingsRoute = {
 export const DepartmentDetailRoute = {
     url: '/senior/department/:departmentName',
     component: DepartmentDetailPage
+}
+
+export const RoomDetailRoute = {
+    url: '/department/room/:roomId',
+    component: RoomDetailPage
 }
 
 export const BuildingRoomAnalysisRoute = {

@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 
 interface MiniSparklineProps {
     readonly color: string;
-    readonly points?: string;        // legacy SVG string — used by DepartmentDetailPage etc.
+    readonly points?: string;        // legacy SVG string — used by RoomDetailPage etc.
     readonly dataPoints?: number[];  // ECharts mode: actual metric values
 }
 
@@ -82,7 +82,7 @@ export const LineChart: React.FC<MiniSparklineProps> = ({
         );
     }
 
-    // ── Legacy SVG mode (DepartmentDetailPage, static mock data) ─────────────
+    // ── Legacy SVG mode (RoomDetailPage, static mock data) ─────────────
     return (
         <div style={{ height: '40px', width: '100%' }}>
             <svg viewBox="0 0 100 30" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>

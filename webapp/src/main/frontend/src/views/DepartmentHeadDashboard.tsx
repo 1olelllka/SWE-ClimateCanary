@@ -586,7 +586,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                         const params = new URLSearchParams();
                         params.set('name', displayId);
                         params.set('shared', String(room.type === 'Common Area'));
-                        navigate(`/senior/department/${encodeURIComponent(room.backendId)}?${params.toString()}`);
+                        navigate(`/department/room/${encodeURIComponent(room.backendId)}?${params.toString()}`);
                     }}
                 />
 

@@ -17,11 +17,20 @@ interface Props {
 const trendApi = new BuildingTrendControllerApi();
 
 const DEPT_COLORS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ef4444', '#06b6d4', '#84cc16', '#f97316',
-    '#6366f1', '#14b8a6', '#e879f9', '#fb923c',
+    '#1A5F96', // deep blue
+    '#2DAA9E', // teal
+    '#66BB6A', // green
+    '#00BCD4', // cyan
+    '#2E7D32', // dark green
+    '#4FC3F7', // sky blue
+    '#004D40', // dark teal
+    '#81D4FA', // light blue
+    '#1565C0', // royal blue
+    '#26A69A', // medium teal
+    '#43A047', // forest green
+    '#0288D1', // ocean blue
 ];
-const COMPANY_COLOR = '#1e3a8a';
+const COMPANY_COLOR = '#0f2d54'; // deep navy — always distinct from dept lines
 
 const pad2    = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date)   => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -170,8 +179,9 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                 smooth:    0.3,
                 symbol:    'none',
                 z:         10,
-                lineStyle: { color: COMPANY_COLOR, width: 3 },
+                lineStyle: { color: COMPANY_COLOR, width: 5 },
                 itemStyle: { color: COMPANY_COLOR },
+                areaStyle: { color: COMPANY_COLOR, opacity: 0.06 },
                 data:      companyValues,
             });
         }

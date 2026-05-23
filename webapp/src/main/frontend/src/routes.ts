@@ -16,6 +16,7 @@ import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 import SettingsPage from "./views/SettingsPage";
+import RoomDetailPage from "./views/RoomDetailPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
@@ -100,6 +101,11 @@ export const CompanyTrendsRoute = {
 export const DepartmentViolationsRoute = {
     url: ROUTES.DEPARTMENT_VIOLATIONS,
     component: DepartmentViolationsPage,
+}
+
+export const RoomDetailRoute = {
+    url: ROUTES.ROOM_DETAIL,
+    component: RoomDetailPage,
 }
 
 // referenced but not yet routed — kept to avoid unused-import warnings
