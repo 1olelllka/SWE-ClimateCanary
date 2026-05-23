@@ -28,7 +28,9 @@ export const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
 
     return (
         <div className="table-container">
-            <h3>Pending Requests</h3>
+            <div className="flex-header">
+                <h3>Pending Requests</h3>
+            </div>
 
             <DataTable
                 value={requests}
