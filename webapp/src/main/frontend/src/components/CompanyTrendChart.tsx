@@ -214,7 +214,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         yAxis: {
             type:      'value' as const,
             min:       0,
-            max:       1,
+            max:       100,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
             axisLabel: { fontSize: 11 },
         },

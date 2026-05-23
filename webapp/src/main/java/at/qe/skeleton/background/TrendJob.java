@@ -43,6 +43,7 @@ public class TrendJob {
         List<Department> departments = departmentRepository.findAllWithRooms();
         for (Department department : departments) {
             double value = 0;
+            int roomsWithData = 0;
             Trend trending;
             for (Room room : department.getRooms()) {
                 AggregatedStats roomStats = aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(room.getId(), Granularity.DAILY);
@@ -51,7 +52,9 @@ public class TrendJob {
                     continue;
                 }
                 value += avgFormula(roomStats.getAvgTemp(), roomStats.getAvgHumidity(), roomStats.getAvgCO2());
+                roomsWithData++;
             }
+            if (roomsWithData > 0) value = value / roomsWithData;
             BuildingTrend lastOne = trendRepository.findFirstByDepartmentIdOrderByDateDesc(department.getId());
             if (lastOne == null) {
                 trending = Trend.STABLE;
@@ -78,7 +81,8 @@ public class TrendJob {
         double normalizedHumidity = (humidity - 30.0) / (70.0 - 30.0);
         double normalizedCo2 = (co2 - 400.0) / (2000.0 - 400.0);
 
-        return 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        double raw = 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        return Math.max(0.0, Math.min(100.0, (1.0 - raw) * 100.0));
     }
 
 }
