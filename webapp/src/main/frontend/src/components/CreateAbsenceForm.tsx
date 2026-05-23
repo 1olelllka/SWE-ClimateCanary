@@ -47,8 +47,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [includeTime, setIncludeTime] = useState(false);
-    const [startTime, setStartTime] = useState('07:00');
-    const [endTime, setEndTime] = useState('15:00');
+    const [startHour, setStartHour] = useState('07');
+    const [startMinute, setStartMinute] = useState('00');
+    const [endHour, setEndHour] = useState('15');
+    const [endMinute, setEndMinute] = useState('00');
     const [managerId, setManagerId] = useState('');
     const [managers, setManagers] = useState<ManagerDTO[]>([]);
     const [comment, setComment] = useState('');
@@ -98,11 +100,11 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
         const endDateString = formatDateForBackend(endDate);
 
         const startIso = includeTime
-            ? `${startDateString}T${startTime}:00`
+            ? `${startDateString}T${startHour}:${startMinute}:00`
             : `${startDateString}T00:00:00`;
 
         const endIso = includeTime
-            ? `${endDateString}T${endTime}:00`
+            ? `${endDateString}T${endHour}:${endMinute}:00`
             : `${endDateString}T23:59:59`;
 
         new AbsenceControllerApi().createNewAbsence({
@@ -199,23 +201,39 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
                 {includeTime && (
                     <div className="absence-form-time-row">
-                        <label className="absence-form-time-label">From</label>
+                        <div className="absence-form-time-group">
+                            <label className="absence-form-label">From</label>
+                            <div className="absence-form-time-selects">
+                                <select className="absence-form-time-select" value={startHour} onChange={e => setStartHour(e.target.value)}>
+                                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <span className="absence-form-time-colon">:</span>
+                                <select className="absence-form-time-select" value={startMinute} onChange={e => setStartMinute(e.target.value)}>
+                                    {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-                        <input
-                            className="absence-form-input"
-                            type="time"
-                            value={startTime}
-                            onChange={e => setStartTime(e.target.value)}
-                        />
-
-                        <label className="absence-form-time-label">Till</label>
-
-                        <input
-                            className="absence-form-input"
-                            type="time"
-                            value={endTime}
-                            onChange={e => setEndTime(e.target.value)}
-                        />
+                        <div className="absence-form-time-group">
+                            <label className="absence-form-label">Till</label>
+                            <div className="absence-form-time-selects">
+                                <select className="absence-form-time-select" value={endHour} onChange={e => setEndHour(e.target.value)}>
+                                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <span className="absence-form-time-colon">:</span>
+                                <select className="absence-form-time-select" value={endMinute} onChange={e => setEndMinute(e.target.value)}>
+                                    {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 )}
 
