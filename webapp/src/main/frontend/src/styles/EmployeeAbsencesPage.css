@@ -97,20 +97,37 @@
     margin-bottom: 1.5rem;
 }
 
-.absence-sort-button {
-    padding: 0.5rem 1rem;
+.absence-status-filter {
+    padding: 0.5rem 2.25rem 0.5rem 0.875rem;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 8px;
     font-size: 0.875rem;
-    font-weight: 600;
     color: var(--text-primary);
+    font-family: inherit;
     cursor: pointer;
+    outline: none;
     transition: border-color 0.15s;
+    min-width: 150px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
 }
 
-.absence-sort-button:hover {
+.absence-status-filter:focus {
     border-color: #94a3b8;
+}
+
+.absence-sortable-th {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.absence-sortable-th:hover {
+    color: var(--text-primary);
 }
 
 .absence-request-button {
@@ -315,10 +332,21 @@ html[data-theme='dark'] .employee-absences-page .absence-kpi-bar-track {
 }
 
 /* Controls */
-html[data-theme='dark'] .employee-absences-page .absence-sort-button {
+html[data-theme='dark'] .employee-absences-page .absence-status-filter {
     background-color: var(--app-surface-2) !important;
     color: var(--app-text) !important;
     border: 1px solid var(--app-border) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-status-filter:focus {
+    border-color: var(--app-primary) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-sortable-th:hover {
+    color: var(--app-text) !important;
 }
 
 html[data-theme='dark'] .employee-absences-page .absence-request-button {

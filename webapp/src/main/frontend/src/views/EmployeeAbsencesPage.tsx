@@ -95,6 +95,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [sortAscending, setSortAscending] = useState(false);
+    const [statusFilter, setStatusFilter] = useState('');
 
     const fetchAbsences = useCallback(() => {
         setLoading(true);
@@ -142,12 +143,14 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     // ── Table sort ────────────────────────────────────────────────────────────
 
-    const sortedAbsences = useMemo(() =>
-        [...absences].sort((a, b) => {
-            const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            return sortAscending ? diff : -diff;
-        }),
-        [absences, sortAscending],
+    const displayedAbsences = useMemo(() =>
+        [...absences]
+            .filter(a => !statusFilter || a.status === statusFilter)
+            .sort((a, b) => {
+                const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                return sortAscending ? diff : -diff;
+            }),
+        [absences, sortAscending, statusFilter],
     );
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -188,13 +191,17 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 </div>
 
                 <div className="employee-absences-controls">
-                    <button
-                        type="button"
-                        className="absence-sort-button"
-                        onClick={() => setSortAscending(prev => !prev)}
+                    <select
+                        className="absence-status-filter"
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value)}
                     >
-                        Sort by date {sortAscending ? '↑' : '↓'}
-                    </button>
+                        <option value="">All statuses</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
                     <button
                         type="button"
                         className="absence-request-button"
@@ -239,21 +246,26 @@ export const EmployeeAbsencesPage: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th>Request</th>
-                                    <th>Date</th>
+                                    <th
+                                        className="absence-sortable-th"
+                                        onClick={() => setSortAscending(prev => !prev)}
+                                    >
+                                        Date {sortAscending ? '↑' : '↓'}
+                                    </th>
                                     <th>Hours</th>
                                     <th>Status</th>
                                     <th />
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedAbsences.length === 0 ? (
+                                {displayedAbsences.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="employee-absences-empty-cell">
                                             No absences found.
                                         </td>
                                     </tr>
                                 ) : (
-                                    sortedAbsences.map(abs => (
+                                    displayedAbsences.map(abs => (
                                         <tr key={abs.id}>
                                             <td>{formatEnum(abs.typeOfAbsence)}</td>
                                             <td>{formatDateRange(abs.startDate, abs.endDate)}</td>
