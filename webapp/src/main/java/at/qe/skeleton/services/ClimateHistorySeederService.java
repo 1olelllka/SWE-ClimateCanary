@@ -31,7 +31,9 @@ public class ClimateHistorySeederService {
 
     public void seed() {
         log.info("Running climate history seeder...");
-        if (climateStatsRepository.count() > 0) {
+        // Skip only if historical data already exists (older than 2 days).
+        // Recent-only data means the Pi just started sending; seed history anyway.
+        if (climateStatsRepository.existsByDateBefore(OffsetDateTime.now().minusDays(2))) {
             log.info("Climate history already seeded. Aborting...");
             return;
         }
