@@ -216,9 +216,7 @@ export const RoomDetailPage: React.FC = () => {
                         value={fmt(currentClimate?.temperature)}
                         unit="°C"
                         color="#e05252"
-                        dataPoints={tempSparkline}
-                        trendIcon={tempTrend.icon}
-                        trendText={tempTrend.text}
+                        showSparkline={false}
                         warningStatus={tempWarning?.status}
                         tip={tempWarning?.tip}
                     />
@@ -227,9 +225,7 @@ export const RoomDetailPage: React.FC = () => {
                         value={fmt(currentClimate?.humidity)}
                         unit="%"
                         color="#26a69a"
-                        dataPoints={humSparkline}
-                        trendIcon={humTrend.icon}
-                        trendText={humTrend.text}
+                        showSparkline={false}
                         warningStatus={humWarning?.status}
                         tip={humWarning?.tip}
                     />
@@ -238,9 +234,7 @@ export const RoomDetailPage: React.FC = () => {
                         value={fmt(currentClimate?.airQuality, 0)}
                         unit="ppm"
                         color="#d4891a"
-                        dataPoints={aqSparkline}
-                        trendIcon={aqTrend.icon}
-                        trendText={aqTrend.text}
+                        showSparkline={false}
                         warningStatus={aqWarning?.status}
                         tip={aqWarning?.tip}
                     />

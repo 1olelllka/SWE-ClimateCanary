@@ -18,8 +18,8 @@ interface KpiCardProps {
     readonly points?: string;         // legacy SVG polyline string (RoomDetailPage etc.)
     readonly dataPoints?: number[];   // actual metric values for dynamic sparkline
     readonly showSparkline?: boolean; // set false to hide the chart area entirely (default true)
-    readonly trendText: string;
-    readonly trendIcon: string;
+    readonly trendText?: string;      // omit to hide the trend row entirely
+    readonly trendIcon?: string;
     readonly warningStatus?: WarningStatus;
     readonly tip?: string;
 }
@@ -28,7 +28,7 @@ export const Cards: React.FC<KpiCardProps> = ({
     title, value, unit, color,
     points, dataPoints,
     showSparkline = true,
-    trendText, trendIcon,
+    trendText, trendIcon = 'pi-minus',
     warningStatus, tip,
 }) => {
     const violated = warningStatus != null;
@@ -47,14 +47,15 @@ export const Cards: React.FC<KpiCardProps> = ({
                 <span className="card-value" style={{ color }}>{value}</span>
                 <span className="card-unit">{unit}</span>
             </div>
-            {showSparkline
-                ? <LineChart color={color} points={points} dataPoints={dataPoints} />
-                : <div style={{ height: '40px', margin: '0.25rem 0' }} />
-            }
-            <div className="card-trend">
-                <i className={`pi ${trendIcon}`} style={{ color }}></i>
-                <span>{trendText}</span>
-            </div>
+            {showSparkline && (
+                <LineChart color={color} points={points} dataPoints={dataPoints} />
+            )}
+            {trendText !== undefined && (
+                <div className="card-trend">
+                    <i className={`pi ${trendIcon}`} style={{ color }}></i>
+                    <span>{trendText}</span>
+                </div>
+            )}
             {showTip && (
                 <div className="card-tip">
                     <span className="card-tip-icon">💡</span>
