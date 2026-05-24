@@ -11,17 +11,28 @@ import at.qe.skeleton.dtos.LoginRequestDTO;
 import at.qe.skeleton.dtos.LoginResponseDTO;
 import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.services.AuthenticationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
+@Tag(name = "Auth")
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
@@ -31,12 +42,13 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
-    /**
-     * Authenticates a user and returns a JWT token.
-     *
-     * @param loginRequest the login request containing the username and password
-     * @return the JWT token
-     */
+    @Operation(summary = "Log in")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Bearer Token."),
+            @ApiResponse(responseCode = "400", description = "Validation issue.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ProblemDetail.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized.", content = @Content())
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> authenticateUser(@RequestBody @Valid LoginRequestDTO loginRequest,
                                                              BindingResult bindingResult) {

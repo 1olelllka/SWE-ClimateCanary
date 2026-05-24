@@ -1,7 +1,10 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.PiConfigDTO;
+import at.qe.skeleton.dtos.ReducedSensorDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;

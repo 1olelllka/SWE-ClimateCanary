@@ -1,6 +1,9 @@
 package at.qe.skeleton.feign;
 
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.LimitChangeNotificationDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.StateChangeNotificationDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

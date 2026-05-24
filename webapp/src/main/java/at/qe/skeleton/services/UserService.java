@@ -3,7 +3,6 @@ package at.qe.skeleton.services;
 import at.qe.skeleton.dtos.UserSettingsPatchDTO;
 import at.qe.skeleton.model.UserSettings;
 import at.qe.skeleton.model.Userx;
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
