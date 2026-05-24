@@ -40,7 +40,7 @@ export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading 
     }));
 
     const handleRowClick = (e: { data: TableRow }) => {
-        navigate(`/senior/department/${encodeURIComponent(e.data.department)}`);
+        navigate(`/senior/department/${encodeURIComponent(e.data.id)}?name=${encodeURIComponent(e.data.department)}`);
     };
 
     const statusTemplate = (row: TableRow) => (

@@ -7,8 +7,7 @@ interface Props {
     loading: boolean;
 }
 
-const BAR_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4', '#f44336', '#795548'];
-
+const BAR_COLORS = ["#1A5F96", "#2DAA9E", "#66BB6A", "#00BCD4", "#2E7D32", "#4FC3F7", "#004D40", "#81D4FA", "#1565C0", "#E8F5E9"];
 export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) => {
     const labels = departments.map(d => d.name);
     const values = departments.map(d => d.activeViolations);

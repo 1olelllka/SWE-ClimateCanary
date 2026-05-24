@@ -108,7 +108,7 @@ export const SeniorManagerDashboard: React.FC = () => {
             }
             if (latestValues.length > 0) {
                 const avg = latestValues.reduce((s, v) => s + v, 0) / latestValues.length;
-                setCompanyScore(Math.round(avg * 100));
+                setCompanyScore(Math.round(avg));
             }
         }).finally(() => setTrendLoading(false));
     }, [departments]);

@@ -15,10 +15,11 @@ interface KpiCardProps {
     readonly value: string;
     readonly unit: string;
     readonly color: string;
-    readonly points?: string;         // legacy SVG polyline string (DepartmentDetailPage etc.)
+    readonly points?: string;         // legacy SVG polyline string (RoomDetailPage etc.)
     readonly dataPoints?: number[];   // actual metric values for dynamic sparkline
-    readonly trendText: string;
-    readonly trendIcon: string;
+    readonly showSparkline?: boolean; // set false to hide the chart area entirely (default true)
+    readonly trendText?: string;      // omit to hide the trend row entirely
+    readonly trendIcon?: string;
     readonly warningStatus?: WarningStatus;
     readonly tip?: string;
 }
@@ -26,7 +27,8 @@ interface KpiCardProps {
 export const Cards: React.FC<KpiCardProps> = ({
     title, value, unit, color,
     points, dataPoints,
-    trendText, trendIcon,
+    showSparkline = true,
+    trendText, trendIcon = 'pi-minus',
     warningStatus, tip,
 }) => {
     const violated = warningStatus != null;
@@ -45,11 +47,15 @@ export const Cards: React.FC<KpiCardProps> = ({
                 <span className="card-value" style={{ color }}>{value}</span>
                 <span className="card-unit">{unit}</span>
             </div>
-            <LineChart color={color} points={points} dataPoints={dataPoints} />
-            <div className="card-trend">
-                <i className={`pi ${trendIcon}`} style={{ color }}></i>
-                <span>{trendText}</span>
-            </div>
+            {showSparkline && (
+                <LineChart color={color} points={points} dataPoints={dataPoints} />
+            )}
+            {trendText !== undefined && (
+                <div className="card-trend">
+                    <i className={`pi ${trendIcon}`} style={{ color }}></i>
+                    <span>{trendText}</span>
+                </div>
+            )}
             {showTip && (
                 <div className="card-tip">
                     <span className="card-tip-icon">💡</span>
