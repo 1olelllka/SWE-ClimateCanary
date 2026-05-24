@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -214,11 +215,26 @@ class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    void testThatCreateAbsenceReturnsHttp400BadRequestIfNumberOfDaysIsTooBig() throws Exception {
+    void testThatCreateAbsenceReturnsHttp200OktEvenIfNumberOfDaysIsTooBigForIllness() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(30),
                 AbsenceType.ILLNESS,
+                "Comment",
+                this.manager.getId());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
+    void testThatCreateAbsenceReturnsHttp400BadRequestIfNumberOfDaysIsTooBig() throws Exception {
+        AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(30),
+                AbsenceType.VACATION,
                 "Comment",
                 this.manager.getId());
         mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
@@ -229,7 +245,7 @@ class AbsenceControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
-    void testThatCreateAbsenceReturnsHttp201AndCreatedAbsence() throws Exception {
+    void testThatCreateAbsenceReturnsHttp201AndCreatedAbsenceWithWholeNumbersOfDays() throws Exception {
         AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
                 LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(5),
@@ -241,7 +257,24 @@ class AbsenceControllerIntegrationTests {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists());
-        assertEquals(12, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
+        assertEquals(25, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_OWN_ABSENCE")
+    void testThatCreateAbsenceReturnsHttp201AndCreatedAbsence() throws Exception {
+        AbsenceCreateDTO dto = new AbsenceCreateDTO(this.user.getId(),
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(5),
+                AbsenceType.VACATION,
+                "Comment",
+                this.manager.getId());
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/absences")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").exists());
+        assertNotEquals(25, userxRepository.findById(this.user.getId()).get().getNumberOfAbsences());
     }
 
     @Test

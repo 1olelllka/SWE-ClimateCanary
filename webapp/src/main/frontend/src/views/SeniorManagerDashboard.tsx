@@ -119,6 +119,9 @@ export const SeniorManagerDashboard: React.FC = () => {
         stompClient.current = new Client({
             webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
             reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization":`Bearer ${localStorage.getItem("bearerToken")}`
+            },
             onConnect: () => {
                 console.log('Connected');
                 departments.forEach(dep => {

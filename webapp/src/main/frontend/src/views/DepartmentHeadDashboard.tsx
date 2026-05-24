@@ -496,6 +496,9 @@ export const DepartmentHeadDashboard: React.FC = () => {
         stompClient.current = new Client({
             webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
             reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization": `Bearer ${localStorage.getItem("bearerToken")}`
+            },
             onConnect: () => {
                 roomBackendIds.forEach(backendId => {
                     stompClient.current?.subscribe(`/topic/climate-data/${backendId}`, (message) => {

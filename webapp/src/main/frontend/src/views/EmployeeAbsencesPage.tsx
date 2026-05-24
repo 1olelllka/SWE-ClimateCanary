@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { UserxControllerApi } from '../generated-skeleton-api';
+import { UserxControllerApi, UserxDTO } from '../generated-skeleton-api';
 import { Toast } from 'primereact/toast';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -96,12 +96,16 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [sortAscending, setSortAscending] = useState(false);
     const [statusFilter, setStatusFilter] = useState('');
-
+    const [user, setUser] = useState<UserxDTO>();
     const fetchAbsences = useCallback(() => {
         setLoading(true);
 
         new UserxControllerApi().getAuthenticatedUser()
-            .then(res => setCurrentUserId((res.data as any).id))
+            .then(res => {
+                setCurrentUserId((res.data as any).id)
+                console.log(res.data)
+                setUser(res.data);
+            })
             .catch(err => console.error('Could not load user', err));
 
         new UserxControllerApi().getPageOfAbsencesOfAuthenticatedUser({ pageable: { page: 0, size: 100, sort: [] } })
@@ -118,18 +122,18 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     const currentYear = new Date().getFullYear();
 
-    const usedVacationDays = useMemo(() =>
-        absences
-            .filter(a =>
-                a.status === 'APPROVED' &&
-                a.typeOfAbsence === 'VACATION' &&
-                new Date(a.startDate).getFullYear() === currentYear,
-            )
-            .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
-        [absences, currentYear],
-    );
+    // const usedVacationDays = useMemo(() =>
+    //     absences
+    //         .filter(a =>
+    //             a.status === 'APPROVED' &&
+    //             a.typeOfAbsence === 'VACATION' &&
+    //             new Date(a.startDate).getFullYear() === currentYear,
+    //         )
+    //         .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
+    //     [absences, currentYear],
+    // );
 
-    const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
+    // const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
 
     const oldestPendingMinutes = useMemo(() => {
         const pending = absences
@@ -168,12 +172,12 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 <div className="employee-absences-kpi-grid">
                     <KpiCard
                         title="Vacation Days Remaining"
-                        value={vacationRemaining}
+                        value={user == null || user.numberOfAbsences == undefined ? TOTAL_VACATION_DAYS : user.numberOfAbsences}
                         max={TOTAL_VACATION_DAYS}
                     />
                     <KpiCard
                         title="Used This Year"
-                        value={usedVacationDays}
+                        value={user == null || user.numberOfAbsences == undefined ? 0 : TOTAL_VACATION_DAYS - user.numberOfAbsences}
                         max={TOTAL_VACATION_DAYS}
                     />
                     <KpiCard
