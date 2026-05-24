@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import {
@@ -17,6 +17,8 @@ import '../styles/BuildingManagerDashboard.css';
 import '../styles/EmployeeDashboard.css';
 import '../styles/ClimateHistoryChart.css';
 import '../styles/TimeFilter.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const climateApi = new ClimateStatsControllerApi();
 const warningApi = new WarningControllerApi();
@@ -50,10 +52,12 @@ export const DepartmentDetailPage: React.FC = () => {
     const [lastStats,   setLastStats]   = useState<AggregatedDataPointDTO | null>(null);
     const [weeklyData,  setWeeklyData]  = useState<AggregatedDataPointDTO[]>([]);
     const [violations,  setViolations]  = useState<SummaryWarningDTO[]>([]);
+    const [activeWarnings, setViolationsCnt] = useState(0);
     const [trendWeek,   setTrendWeek]   = useState<BuildingTrendDTO[]>([]);
     const [trendMonth,  setTrendMonth]  = useState<BuildingTrendDTO[]>([]);
     const [loading,     setLoading]     = useState(true);
     const [violView,    setViolView]    = useState<ViolView>('Week');
+    const stompClient = useRef<Client | null>(null);
 
     useEffect(() => {
         if (!deptId) return;
@@ -102,10 +106,46 @@ export const DepartmentDetailPage: React.FC = () => {
                 setLastStats(last);
                 setWeeklyData(weekly);
                 setViolations(viols);
+                setViolationsCnt(viols.filter(v => v.active).length);
                 setTrendWeek(tw);
                 setTrendMonth(tm);
             })
             .finally(() => setLoading(false));
+    }, [deptId]);
+
+    useEffect(() => {
+        if (!deptId) return;
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
+            reconnectDelay: 5000,
+            onConnect: () => {
+                console.log('Connected');
+                stompClient.current?.subscribe(`/topic/active-warnings-department/${deptId}`, (message) => {
+                    const newWarning: SummaryWarningDTO = JSON.parse(message.body);
+                    setViolations(prev => [...prev, newWarning]);
+                    setViolationsCnt((prev) => prev + 1);
+                });
+                stompClient.current?.subscribe(`/topic/resolve-warnings-department/${deptId}`, (message) => {
+                    const resolved: SummaryWarningDTO = JSON.parse(message.body);
+                    setViolations(prev =>
+                        prev.map(v =>
+                            v.id === resolved.id ? { ...v, active: false } : v
+                        )
+                    );
+                    setViolationsCnt((prev) => prev - 1);
+                });
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
     }, [deptId]);
 
     /* ── Climate sparklines ─────────────────────────────────────────────── */
@@ -119,9 +159,6 @@ export const DepartmentDetailPage: React.FC = () => {
 
     const trendWeekCurrent  = trendWeekValues.length  > 0 ? trendWeekValues[trendWeekValues.length - 1]   : null;
     const trendMonthCurrent = trendMonthValues.length > 0 ? trendMonthValues[trendMonthValues.length - 1] : null;
-
-    /* ── Active warnings ─────────────────────────────────────────────────── */
-    const activeWarnings = violations.filter(v => v.active).length;
 
     /* ── Generic trend helper ────────────────────────────────────────────── */
     function climateCardTrend(

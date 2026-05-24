@@ -173,7 +173,7 @@ public class WarningServiceImpl implements WarningService {
         warning.setRoomMonitoring(room);
         WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.pushActiveWarning(room.getRoomId(), res);
-        liveDataService.pushActiveWarningDepartment(roomRepository.findById(res.roomId()).get().getDepartment().getId());
+        liveDataService.pushActiveWarningDepartment(roomRepository.findById(res.roomId()).get().getDepartment().getId(), res);
         return res;
     }
 
@@ -209,7 +209,7 @@ public class WarningServiceImpl implements WarningService {
         if (room != null) {
             UUID deptId = room.getDepartment().getId();
             for (int i = 0; i < counter.get(); i++) {
-                liveDataService.resolveActiveWarning(deptId);
+                liveDataService.resolveActiveWarningDepartment(deptId, dto);
             }
         }
         return dto;

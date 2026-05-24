@@ -501,7 +501,7 @@ class WarningServiceUnitTests {
             service.createWarning(createDto());
 
             verify(liveDataService).pushActiveWarning(eq(roomId), any(WarningDTO.class));
-            verify(liveDataService).pushActiveWarningDepartment(deptId);
+            verify(liveDataService).pushActiveWarningDepartment(eq(deptId), any());
         }
     }
 
@@ -569,7 +569,7 @@ class WarningServiceUnitTests {
 
             assertThat(result.active()).isFalse();
             verify(liveDataService).resolveActiveWarning(eq(roomId), any(WarningDTO.class));
-            verify(liveDataService, atLeastOnce()).resolveActiveWarning(deptId);
+            verify(liveDataService, atLeastOnce()).resolveActiveWarningDepartment(eq(deptId), any());
         }
 
         @Test

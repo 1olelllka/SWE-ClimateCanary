@@ -16,7 +16,6 @@ public record UserxDTO (
     String firstName,
     String lastName,
     boolean enabled,
-    LocalDateTime snoozedWarningsUntil,
     @ArraySchema(schema = @Schema(implementation = UserRole.class))
     Set<UserRoleDTO> roles,
     UserRoom myRoom,

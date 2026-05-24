@@ -30,12 +30,24 @@ public class LiveDataService {
         }
     }
 
-    public void pushActiveWarningDepartment(UUID departmentId) {
-        messagingTemplate.convertAndSend("/topic/active-warnings-department/"+departmentId.toString(), "{}");
+    public void pushActiveWarningDepartment(UUID departmentId, WarningDTO dto) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        try {
+            messagingTemplate.convertAndSend("/topic/active-warnings-department/" + departmentId.toString(), mapper.writeValueAsString(dto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public void resolveActiveWarning(UUID departmentId) {
-        messagingTemplate.convertAndSend("/topic/resolve-warnings-department/"+departmentId.toString(), "{}");
+    public void resolveActiveWarningDepartment(UUID departmentId, WarningDTO dto) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        try {
+            messagingTemplate.convertAndSend("/topic/resolve-warnings-department/" + departmentId.toString(), mapper.writeValueAsString(dto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void resolveActiveWarning(UUID roomId, WarningDTO warning) {

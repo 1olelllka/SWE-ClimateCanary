@@ -120,7 +120,7 @@ class LiveDataServiceUnitTests {
         @Test
         @DisplayName("sends to correct department topic")
         void sendsToCorrectTopic() {
-            liveDataService.pushActiveWarningDepartment(deptId);
+            liveDataService.pushActiveWarningDepartment(deptId, sampleWarning());
 
             assertThat(capture().destination())
                     .isEqualTo("/topic/active-warnings-department/" + deptId);
@@ -129,9 +129,9 @@ class LiveDataServiceUnitTests {
         @Test
         @DisplayName("payload is empty JSON object")
         void payloadIsEmptyJson() {
-            liveDataService.pushActiveWarningDepartment(deptId);
+            liveDataService.pushActiveWarningDepartment(deptId, sampleWarning());
 
-            assertThat(capture().payload()).isEqualTo("{}");
+            assertThat(capture().payload()).isNotEqualTo("{}");
         }
     }
 
@@ -146,8 +146,7 @@ class LiveDataServiceUnitTests {
         @Test
         @DisplayName("sends to correct department resolve topic")
         void sendsToCorrectTopic() {
-            liveDataService.resolveActiveWarning(deptId);
-
+            liveDataService.resolveActiveWarningDepartment(deptId, sampleWarning());
             assertThat(capture().destination())
                     .isEqualTo("/topic/resolve-warnings-department/" + deptId);
         }
@@ -155,9 +154,9 @@ class LiveDataServiceUnitTests {
         @Test
         @DisplayName("payload is empty JSON object")
         void payloadIsEmptyJson() {
-            liveDataService.resolveActiveWarning(deptId);
+            liveDataService.resolveActiveWarningDepartment(deptId, sampleWarning());
 
-            assertThat(capture().payload()).isEqualTo("{}");
+            assertThat(capture().payload()).isNotEqualTo("{}");
         }
     }
 

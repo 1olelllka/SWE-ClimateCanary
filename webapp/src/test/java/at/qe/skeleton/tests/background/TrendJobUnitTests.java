@@ -91,36 +91,35 @@ class TrendJobUnitTests {
         @Test
         @DisplayName("UP when calculated value exceeds previous trend value")
         void calculatesUpTrend() {
-            // normTemp  = (22-18)/(26-18) = 0.5  → 0.4 × 0.5  = 0.2000
-            // normHum   = (50-30)/(70-30) = 0.5  → 0.3 × 0.5  = 0.1500
-            // normCo2   = (1000-400)/(2000-400) = 0.375 → 0.3 × 0.375 = 0.1125
-            // total = 0.4625
-            double expectedValue = 0.4625;
+            // raw = 0.4 * 0.5 + 0.3 * 0.5 + 0.3 * 0.375 = 0.4625
+            // value = (1 - 0.4625) * 100 = 53.75
+            double expectedValue = 53.75;
 
             stubDepartments();
             when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                     .thenReturn(statsOf(22f, 50f, 1000f));
             when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
-                    .thenReturn(previousTrendWithValue(0.30)); // lower → UP
+                    .thenReturn(previousTrendWithValue(30.0)); // lower → UP
 
             BuildingTrend saved = capturedTrend();
 
-            assertEquals(deptId,           saved.getDepartmentId());
-            assertEquals("Informatics",    saved.getDepartmentName());
-            assertEquals(expectedValue,    saved.getValue(), 0.0001);
-            assertEquals(Trend.UP,         saved.getTrend());
-            assertEquals(LocalDate.now(),  saved.getDate());
+            assertEquals(deptId,          saved.getDepartmentId());
+            assertEquals("Informatics",   saved.getDepartmentName());
+            assertEquals(expectedValue,   saved.getValue(), 0.0001);
+            assertEquals(Trend.UP,        saved.getTrend());
+            assertEquals(LocalDate.now(), saved.getDate());
         }
 
         @Test
         @DisplayName("DOWN when calculated value is below previous trend value")
         void calculatesDownTrend() {
-            // All sensors at minimum → value = 0.0
+            // All sensors at minimum → raw = 0.0 → value = 100.0
+            // previousTrend = 150.0 > 100.0 → DOWN
             stubDepartments();
             when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                     .thenReturn(statsOf(18f, 30f, 400f));
             when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
-                    .thenReturn(previousTrendWithValue(0.15)); // higher → DOWN
+                    .thenReturn(previousTrendWithValue(150.0)); // higher → DOWN
 
             assertEquals(Trend.DOWN, capturedTrend().getTrend());
         }
@@ -128,12 +127,12 @@ class TrendJobUnitTests {
         @Test
         @DisplayName("STABLE when calculated value equals previous trend value")
         void calculatesStableTrend() {
-            // All sensors at maximum → value = 1.0
+            // All sensors at maximum → raw = 1.0 → value = 0.0
             stubDepartments();
             when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                     .thenReturn(statsOf(26f, 70f, 2000f));
             when(trendRepository.findFirstByDepartmentIdOrderByDateDesc(deptId))
-                    .thenReturn(previousTrendWithValue(1.0)); // equal → STABLE
+                    .thenReturn(previousTrendWithValue(0.0)); // equal → STABLE
 
             assertEquals(Trend.STABLE, capturedTrend().getTrend());
         }
@@ -185,7 +184,6 @@ class TrendJobUnitTests {
             department.setRooms(List.of(room, roomWithoutStats));
 
             stubDepartments();
-            // room has stats, roomWithoutStats does not
             when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomId, Granularity.DAILY))
                     .thenReturn(statsOf(22f, 50f, 1000f));
             when(aggregatedStatsRepository.findFirstByRoomIdAndGranularityOrderByDateDesc(roomWithoutStats.getId(), Granularity.DAILY))
@@ -195,8 +193,8 @@ class TrendJobUnitTests {
 
             BuildingTrend saved = capturedTrend();
 
-            // Only room contributes: value should equal the single-room calculation
-            assertEquals(0.4625, saved.getValue(), 0.0001);
+            // raw = 0.4625 → value = (1 - 0.4625) * 100 = 53.75
+            assertEquals(53.75, saved.getValue(), 0.0001);
         }
 
         @Test
