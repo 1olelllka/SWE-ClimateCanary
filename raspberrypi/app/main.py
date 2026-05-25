@@ -50,16 +50,12 @@ async def main(db_path: str):
 
     auth = AuthManager( server_url=server_url, username=username, password=password)
     
-    for attempt in range(1, 6):
+    while True:
         try:
             await auth.login()
             break
         except Exception as e:
-            logger.warning(f"[Auth] Login attempt {attempt}/5 failed: {e}")
-            if attempt == 5:
-                logger.error("[Auth] All 5 login attempts failed. Cannot start without authentication.")
-                await db.close()
-                sys.exit(1)
+            logger.warning(f"[Auth] Login attempt failed: {e}. Retrying...")
             await asyncio.sleep(5)
 
     initial_config_done = await db.get_config('initial_config_done')
