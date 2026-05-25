@@ -43,7 +43,7 @@ auth:
     2. Manual setup on the pi:
         * Run `deploy.sh` without parameters like `./deploy.sh`
         * This will copy all necessary files to the pi and exit 
-        * Needs manual activation, so `ssh` into the pi, start the docker container  with `docker compose up --build -d` and complete the setup by running  the `./configure` script (after the docker container started).
-        * Note that `conf.yaml` can either be edited on your machine before running `deploy.sh` or remotely on the pi (before running `./configure`)
+        * Needs manual activation, so `ssh` into the pi, start the docker container  with `docker compose up --build -d` and complete the setup by running  the `./configure` script 
+        * Note that `conf.yaml` can either be edited on your machine before running `deploy.sh`, or remotely on the pi before running `./configure`
 - Now everything should be up and running, you can view the logs on the pi either directly from the log file or by running `docker logs -f pi-gateway-1` to see them in real time
 - **WARNING:** Running `./deploy.sh` wipes everything and starts fresh, including logs and database 
