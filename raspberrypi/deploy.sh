@@ -23,6 +23,11 @@ rsync -a --delete \
   --exclude="deploy.sh" \
   ${LOCAL_DIR} ${PI_USER}@${PI_HOST}:${PI_PATH}
 
+ssh ${PI_USER}@${PI_HOST} << "EOF"
+cd /home/pi
+docker compose down
+EOF
+
 if [ "$START_AFTER_DEPLOY" = true ]; then
     echo "Starting docker services..."
 
