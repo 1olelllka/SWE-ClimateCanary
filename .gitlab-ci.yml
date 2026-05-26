@@ -43,6 +43,24 @@ backend-unit-tests:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_MERGE_REQUEST_ID'
 
+# Raspberry Pi Python Unit Tests
+raspberrypi-unit-tests:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install -r raspberrypi/requirements.txt
+    - python -m pytest raspberrypi/tests/
+        --cov=raspberrypi/app
+        --cov-report=xml:raspberrypi/coverage.xml
+        --cov-config=raspberrypi/.coveragerc
+        --rootdir=.
+  artifacts:
+    paths:
+      - raspberrypi/coverage.xml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_MERGE_REQUEST_ID'
+
 # SonarQube Analysis for Frontend and Backend
 sonarqube-analysis:
   stage: analyze
@@ -54,6 +72,8 @@ sonarqube-analysis:
     - sonar-scanner -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL
   needs:
     - job: backend-unit-tests
+      artifacts: true
+    - job: raspberrypi-unit-tests
       artifacts: true
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

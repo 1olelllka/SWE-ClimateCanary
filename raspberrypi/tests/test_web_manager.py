@@ -902,6 +902,50 @@ class TestEndpointValidations:
             resp = await client.post('/api/config', json={"raspberryPi": "pi-1", "frequency": 60})
             assert resp.status == 202
 
+    async def test_limits_invalid_json_returns_400(self, client):
+        resp = await client.post('/api/limits', data=b'not-json', headers={'Content-Type': 'application/json'})
+        assert resp.status == 400
+
+    async def test_limits_no_limit_fields_returns_400(self, client):
+        resp = await client.post('/api/limits', json={"irrelevant": "data"})
+        assert resp.status == 400
+
+    async def test_occupancy_invalid_json_returns_400(self, client):
+        resp = await client.post('/api/occupancy', data=b'not-json', headers={'Content-Type': 'application/json'})
+        assert resp.status == 400
+
+    async def test_occupancy_missing_field_returns_400(self, client):
+        resp = await client.post('/api/occupancy', json={"other": "field"})
+        assert resp.status == 400
+
+    async def test_occupancy_negative_value_returns_400(self, client):
+        resp = await client.post('/api/occupancy', json={"effectiveOccupancy": -1})
+        assert resp.status == 400
+
+    async def test_sensors_invalid_json_returns_400(self, client):
+        resp = await client.post('/api/sensors', data=b'not-json', headers={'Content-Type': 'application/json'})
+        assert resp.status == 400
+
+    async def test_sensors_unknown_update_type_returns_400(self, client):
+        resp = await client.post('/api/sensors', json={"updateType": "UNKNOWN_TYPE"})
+        assert resp.status == 400
+
+    async def test_sensors_add_without_ids_returns_400(self, client):
+        resp = await client.post('/api/sensors', json={"updateType": "SENSOR_ADD"})
+        assert resp.status == 400
+
+    async def test_sensors_delete_without_ids_returns_400(self, client):
+        resp = await client.post('/api/sensors', json={"updateType": "SENSOR_DELETE"})
+        assert resp.status == 400
+
+    async def test_config_invalid_json_returns_400(self, client):
+        resp = await client.post('/api/config', data=b'not-json', headers={'Content-Type': 'application/json'})
+        assert resp.status == 400
+
+    async def test_config_missing_pi_id_returns_400(self, client):
+        resp = await client.post('/api/config', json={"frequency": 60})
+        assert resp.status == 400
+
 class TestOutgoingDataWorkerOfflineStreak:
     """Fixes the QueueEmpty failure by ensuring the worker has time to loop."""
     
