@@ -83,6 +83,7 @@ const DeviceConfigurationPage: React.FC = () => {
     // Sensor dialog
     const [showSensorDialog, setShowSensorDialog] = useState(false);
     const [editingSensorId, setEditingSensorId] = useState<string | null>(null);
+    const [editingSensorWriteId, setEditingSensorWriteId] = useState<string | null>(null);
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
@@ -227,12 +228,14 @@ const DeviceConfigurationPage: React.FC = () => {
 
     const openSensorDialog = () => {
         setEditingSensorId(null);
+        setEditingSensorWriteId(null);
         setSensorName(''); setSensorRoomId('');
         setShowSensorDialog(true);
     };
 
     const openEditSensorDialog = (row: SensorStationDTO) => {
         setEditingSensorId(row.readId ?? null);
+        setEditingSensorWriteId(row.writeId ?? null);
         setSensorName(row.name ?? '');
         setSensorRoomId(row.roomId ?? '');
         setShowSensorDialog(true);
@@ -557,6 +560,19 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
                         <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                     </div>
+
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </Dialog>
         </div>
