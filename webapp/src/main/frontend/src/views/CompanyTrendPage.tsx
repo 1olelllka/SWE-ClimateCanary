@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
-import { FooterComponent } from '../components/FooterComponent';
 import { CompanyTrendChart } from '../components/CompanyTrendChart';
 import { DepartmentControllerApi, DepartmentListDTO } from '../generated-skeleton-api';
 import { DepartmentWithStats } from './SeniorManagerDashboard';
@@ -39,8 +38,6 @@ export const CompanyTrendPage: React.FC = () => {
                 {error && <div className="bm-error">{error}</div>}
                 <CompanyTrendChart departments={departments} />
             </div>
-
-            <FooterComponent />
         </div>
     );
 };

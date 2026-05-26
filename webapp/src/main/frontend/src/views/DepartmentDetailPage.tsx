@@ -12,7 +12,6 @@ import {
 import { Cards } from '../components/Cards';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
-import { FooterComponent } from '../components/FooterComponent';
 import '../styles/BuildingManagerDashboard.css';
 import '../styles/EmployeeDashboard.css';
 import '../styles/ClimateHistoryChart.css';
@@ -412,8 +411,6 @@ export const DepartmentDetailPage: React.FC = () => {
                 </div>
 
             </div>
-
-            <FooterComponent />
         </div>
     );
 };
