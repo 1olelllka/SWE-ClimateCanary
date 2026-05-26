@@ -407,10 +407,15 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             },
         },
         legend: {
-            show:      showLegend,
-            bottom:    0,
-            data:      ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
-            textStyle: { fontSize: 11 },
+            show: showLegend,
+            bottom: 0,
+            data: ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
+            textStyle: {
+                fontSize: 11,
+                color: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--chart-text-color')
+                    .trim() || '#475569',
+            },
         },
         grid: {
             left:         48,
@@ -424,9 +429,12 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             boundaryGap: false,
             data:        data.map(d => d.label),
             axisLabel: {
-                rotate:   rotateLabels ? 35 : 0,
+                rotate: rotateLabels ? 35 : 0,
                 fontSize: 11,
-                align:    rotateLabels ? 'right' : 'center',
+                align: rotateLabels ? 'right' : 'center',
+                color: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--chart-text-color')
+                    .trim() || '#475569',
             },
             axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
@@ -436,7 +444,12 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             min:       yAxisMin,
             nice: true,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel: { fontSize: 11 },
+            axisLabel: {
+                fontSize: 11,
+                color: getComputedStyle(document.documentElement)
+                    .getPropertyValue('--chart-text-color')
+                    .trim() || '#475569',
+            },
         },
         series,
     };
