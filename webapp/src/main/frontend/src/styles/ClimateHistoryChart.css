@@ -14,24 +14,6 @@
     gap: 0.75rem;
 }
 
-.metric-select {
-    appearance: none;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.4rem 2rem 0.4rem 0.75rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #475569;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s;
-}
-
-.metric-select:focus {
-    border-color: #94a3b8;
-}
-
 .chart-loading {
     height: 300px;
     display: flex;
@@ -47,4 +29,34 @@
 
 html[data-theme='dark'] {
     --chart-text-color: #f8fafc;
+}
+
+.metric-select.p-dropdown {
+    min-width: 8rem;
+    height: 2.25rem;
+    border-radius: 8px !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+}
+
+.metric-select.p-dropdown .p-dropdown-label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.75rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, #475569) !important;
+}
+
+.metric-select.p-dropdown .p-dropdown-trigger {
+    width: 2rem !important;
+    color: var(--text-secondary, #64748b) !important;
+}
+
+.metric-select.p-dropdown.p-focus {
+    border-color: #94a3b8 !important;
+}
+
+.metric-select-panel .p-dropdown-item {
+    font-size: 0.8rem !important;
 }

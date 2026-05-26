@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import { GetClimateHistoryGranularityEnum, RoomControllerApi } from '../generated-skeleton-api';
 import { DashboardCalendar } from './Calendar';
 import { Toast } from 'primereact/toast';
+import { Dropdown } from 'primereact/dropdown';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 
@@ -118,6 +119,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const [data,       setData]       = useState<DataPoint[]>([]);
     const [limits,     setLimits]     = useState<Limits | null>(null);
     const [loading,    setLoading]    = useState(false);
+
+    const metricOptions = [
+        { label: 'All metrics', value: 'All' },
+        { label: 'Temperature', value: 'Temperature' },
+        { label: 'Humidity', value: 'Humidity' },
+        { label: 'Air Quality', value: 'Air Quality' },
+    ];
 
     useEffect(() => {
         new RoomControllerApi().getLimitsForRoom({ roomId })
@@ -476,16 +484,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
                     />
                 </div>
 
-                <select
-                    className="metric-select"
+                <Dropdown
                     value={metric}
-                    onChange={e => setMetric(e.target.value as Metric)}
-                >
-                    <option value="All">All metrics</option>
-                    <option value="Temperature">Temperature</option>
-                    <option value="Humidity">Humidity</option>
-                    <option value="Air Quality">Air Quality</option>
-                </select>
+                    options={metricOptions}
+                    onChange={e => setMetric(e.value as Metric)}
+                    className="metric-select"
+                    panelClassName="metric-select-panel"
+                />
             </div>
 
             {loading ? (

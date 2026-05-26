@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
-import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
@@ -305,8 +304,6 @@ export const EmployeeDashboard: React.FC = () => {
                     </>
                 )}
             </div>
-
-            <FooterComponent />
         </div>
     );
 };
