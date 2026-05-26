@@ -345,8 +345,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const rotateLabels = timeFilter === 'Day' || timeFilter === 'Custom';
     const showLegend   = metric === 'All';
 
-    // Rotated labels need ~44 px; legend needs ~28 px; combine when both are present
-    const gridBottom = (rotateLabels ? 44 : 20) + (showLegend ? 28 : 0);
+    // Rotated labels need ~54 px; legend needs ~28 px; combine when both are present
+    const gridBottom = (rotateLabels ? 54 : 28) + (showLegend ? 46 : 0);
 
     const yAxisMax: number | undefined = (() => {
         if (L == null || !data.length) return undefined;

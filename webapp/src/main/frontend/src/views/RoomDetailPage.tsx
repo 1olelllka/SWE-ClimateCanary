@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { RoomControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
-import { FooterComponent } from '../components/FooterComponent';
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from '../components/PageHeader';
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
@@ -245,8 +244,6 @@ export const RoomDetailPage: React.FC = () => {
 
                 {roomId && <ClimateHistoryChart roomId={roomId} hideDayView={!isShared} />}
             </div>
-
-            <FooterComponent />
         </div>
     );
 };
