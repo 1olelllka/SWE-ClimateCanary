@@ -136,6 +136,11 @@ class TestRunMessageHandling:
         await run_one(processor, "not-json{{{")
         mock_db.insert_measurement.assert_not_called()
 
+    async def test_unexpected_exception_does_not_crash(self, processor, mock_db):
+        mock_db.get_all_limits.side_effect = RuntimeError("db error")
+        await run_one(processor, GOOD_DATA)
+        mock_db.insert_measurement.assert_not_called()
+
     async def test_discards_when_room_id_missing(self, processor, mock_db, queues):
         mock_db.get_all_config.return_value = {"room_id": None, "frequency": "60"}
         await run_one(processor, GOOD_DATA)
@@ -277,6 +282,20 @@ class TestCheckViolations:
         await processor._check_violations(SENSOR, data, limits, "room-1", "ts", WRITE_ID)
         assert queues["violation"].empty()
         assert processor._bad_streak[SENSOR]["max_temp"] == 0
+
+    async def test_all_violations_resolved_logs_when_none_remain(self, processor, mock_db, queues):
+        processor._init_sensor_state(SENSOR)
+        # call 1: max_temp in-loop check → active; call 2: min_temp in-loop check → empty; call 3: remaining check → empty
+        mock_db.get_active_violations.side_effect = [
+            [{"type": "max_temp"}],
+            [],
+            [],
+        ]
+        limits = self._make_limits(max_temp=30.0)
+        data = {"temperature": 22.0}
+        for _ in range(VIOLATION_THRESHOLD):
+            await processor._check_violations(SENSOR, data, limits, "room-1", "ts", WRITE_ID)
+        mock_db.resolve_violation.assert_awaited_once_with(SENSOR, "max_temp")
 
     async def test_violation_report_contains_correct_fields(self, processor, mock_db, queues):
         processor._init_sensor_state(SENSOR)
