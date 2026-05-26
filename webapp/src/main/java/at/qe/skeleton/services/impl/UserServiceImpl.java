@@ -47,7 +47,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public Userx updateUser(UUID id, Userx u) {
         return userxRepository.findById(id).map(user -> {
-            Optional.ofNullable(u.getUsername()).ifPresent(user::setUsername);
+            Optional.ofNullable(u.getUsername()).ifPresent(username -> {
+                if (!username.equals(user.getUsername()) && userxRepository.existsByUsername(username)) {
+                    throw new ConflictException("Username " + username + " not available");
+                }
+                user.setUsername(username);
+            });
             Optional.ofNullable(u.getFirstName()).ifPresent(user::setFirstName);
             Optional.ofNullable(u.getLastName()).ifPresent(user::setLastName);
             Optional.ofNullable(u.getUserRoles()).ifPresent(user::setUserRoles);
