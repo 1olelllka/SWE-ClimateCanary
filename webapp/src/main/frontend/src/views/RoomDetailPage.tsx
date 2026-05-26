@@ -8,6 +8,7 @@ import { PageHeader } from '../components/PageHeader';
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { useTemperature } from '../hooks/useTemperature';
 
 interface ClimateData {
     timestamp: string;
@@ -161,8 +162,12 @@ export const RoomDetailPage: React.FC = () => {
         && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
     const currentClimate = isClimateStale ? null : climate;
 
+    const { convert: convertTemp, convertDelta, unit: tempUnit } = useTemperature();
+
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
+    const fmtTemp = (v: number | undefined, decimals = 1): string =>
+        v !== undefined ? convertTemp(v).toFixed(decimals) : (loading ? '…' : 'N/A');
 
     const updatedAt = currentClimate
         ? new Date(currentClimate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -174,7 +179,7 @@ export const RoomDetailPage: React.FC = () => {
     const humSparkline  = last10min.map(p => p.humidity);
     const aqSparkline   = last10min.map(p => p.airQuality);
 
-    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
+    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${convertDelta(v).toFixed(1)}${tempUnit}`, 0.2);
     const humTrend  = calcTrend(currentClimate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
     const aqTrend   = calcTrend(currentClimate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
 
@@ -215,8 +220,8 @@ export const RoomDetailPage: React.FC = () => {
                 <div className="card-grid">
                     <Cards
                         title="Temperature"
-                        value={fmt(currentClimate?.temperature)}
-                        unit="°C"
+                        value={fmtTemp(currentClimate?.temperature)}
+                        unit={tempUnit}
                         color="#e05252"
                         showSparkline={false}
                         warningStatus={tempWarning?.status}

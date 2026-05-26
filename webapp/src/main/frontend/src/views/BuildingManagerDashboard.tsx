@@ -6,6 +6,7 @@ import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
 import { BuildingListDTO, DepartmentListDTO, RoomControllerApi, BuildingControllerApi, DepartmentControllerApi, WarningControllerApi } from '../generated-skeleton-api/api';
 import { extractArrayResponse } from '../utilities/apiUtils';
+import { useTemperature } from '../hooks/useTemperature';
 
 import '../styles/BuildingManagerDashboard.css';
 
@@ -84,14 +85,20 @@ const makeInitialRow = (room: RoomDTO): RoomData => ({
     status: 'gray',
 } as RoomData);
 
-const mapToRoomData = (room: RoomDTO, climate: ClimateData | null, warnings: ActiveWarning[]): RoomData => ({
+const mapToRoomData = (
+    room: RoomDTO,
+    climate: ClimateData | null,
+    warnings: ActiveWarning[],
+    tempConvert: (c: number) => number,
+    tempUnit: string,
+): RoomData => ({
     id: getRoomDisplayId(room),
     backendId: room.id,
     department: getDepartmentName(room),
     type: formatRoomType(room.roomType),
     people: getPeopleLabel(room),
     co2: climate?.airQuality != null ? `${formatNumber(climate.airQuality, 0)} ppm` : 'n/a',
-    temp: climate?.temperature != null ? `${formatNumber(climate.temperature, 1)} °C` : 'n/a',
+    temp: climate?.temperature != null ? `${formatNumber(tempConvert(climate.temperature), 1)} ${tempUnit}` : 'n/a',
     humidity: climate?.humidity != null ? `${formatNumber(climate.humidity, 0)} %` : 'n/a',
     status: getRoomStatus(warnings),
 } as RoomData);
@@ -104,6 +111,7 @@ export const BuildingManagerDashboard: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
 
     const [buildings, setBuildings] = useState<BuildingListDTO[]>([]);
     const [allDepts, setAllDepts] = useState<DepartmentListDTO[]>([]);
@@ -133,7 +141,7 @@ export const BuildingManagerDashboard: React.FC = () => {
                 endDate: new Date().toISOString().slice(0, 10),
             }).then(r => r.data as ActiveWarning[]).catch(() => []),
         ]).then(([climate, warnings]) => {
-            const roomData = mapToRoomData(room, climate, warnings ?? []);
+            const roomData = mapToRoomData(room, climate, warnings ?? [], convertTemp, tempUnit);
             setAllRooms(prev => prev.map(r => r.backendId === room.id ? roomData : r));
         }).catch(() => {});
     }, []);

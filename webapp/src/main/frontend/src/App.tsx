@@ -25,11 +25,13 @@ import {
 } from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
+import { UserPreferencesProvider } from "./Contexts/UserPreferencesContext";
 
 const App: React.FC = () => {
     return (
         <ThemeProvider>
             <UserProvider>
+                <UserPreferencesProvider>
                 <Suspense fallback={<div>Loading...</div>}>
                     <BrowserRouter>
                         <Routes>
@@ -56,6 +58,7 @@ const App: React.FC = () => {
                         </Routes>
                     </BrowserRouter>
                 </Suspense>
+                </UserPreferencesProvider>
             </UserProvider>
         </ThemeProvider>
     );

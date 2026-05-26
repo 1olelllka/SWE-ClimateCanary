@@ -7,6 +7,7 @@ import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import '../styles/CreateAbsenceForm.css';
+import { useTemperature } from '../hooks/useTemperature';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -192,7 +193,9 @@ const getRoomStatus = (
 const mapToRoomData = (
     room: RoomDTO,
     climate: ClimateData | null,
-    warnings: ActiveWarning[]
+    warnings: ActiveWarning[],
+    tempConvert: (c: number) => number,
+    tempUnit: string,
 ): RoomData => {
     return {
         id: getRoomDisplayId(room),
@@ -203,7 +206,7 @@ const mapToRoomData = (
             ? `${formatNumber(climate.airQuality, 0)} ppm`
             : 'n/a',
         temp: climate?.temperature !== null && climate?.temperature !== undefined
-            ? `${formatNumber(climate.temperature, 1)} °C`
+            ? `${formatNumber(tempConvert(climate.temperature), 1)} ${tempUnit}`
             : 'n/a',
         humidity: climate?.humidity !== null && climate?.humidity !== undefined
             ? `${formatNumber(climate.humidity, 0)} %`
@@ -212,8 +215,8 @@ const mapToRoomData = (
     } as RoomData;
 };
 
-const getMeasurementUnit = (measurementType?: string): string => {
-    if (measurementType === 'TEMPERATURE') return '°C';
+const getMeasurementUnit = (measurementType?: string, tempUnit = '°C'): string => {
+    if (measurementType === 'TEMPERATURE') return tempUnit;
     if (measurementType === 'HUMIDITY') return '%';
     if (measurementType === 'AIR') return 'ppm';
     return '';
@@ -235,17 +238,22 @@ const formatDatetime = (dateString?: string): string => {
 
 const formatViolationNumber = (
     value: number | null | undefined,
-    measurementType?: string
+    measurementType?: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
 ): string => {
     if (value === null || value === undefined || Number.isNaN(value)) return 'n/a';
-    const unit = getMeasurementUnit(measurementType);
-    if (measurementType === 'AIR') return `${value.toFixed(0)} ${unit}`.trim();
-    return `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+    const unit = getMeasurementUnit(measurementType, tempUnit);
+    const displayValue = measurementType === 'TEMPERATURE' ? tempConvert(value) : value;
+    if (measurementType === 'AIR') return `${displayValue.toFixed(0)} ${unit}`.trim();
+    return `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
 const mapWarningToThresholdViolation = (
     warning: WarningDTO,
     roomLabel: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
 ): ThresholdViolationData => {
     const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
@@ -254,8 +262,8 @@ const mapWarningToThresholdViolation = (
         active:       warning.active,
         sensor:       formatSensorName(warning.measurementType),
         room:         roomLabel,
-        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType)}`,
-        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType),
+        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType, tempConvert, tempUnit)}`,
+        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType, tempConvert, tempUnit),
         datetime:     formatDatetime(warning.createdAt),
     };
 };
@@ -303,6 +311,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const navigate = useNavigate();
     const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
     const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
@@ -341,9 +350,9 @@ export const DepartmentHeadDashboard: React.FC = () => {
         ]).then(([climate, warnings]) => {
             const isStale = climate !== null
                 && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
-            return mapToRoomData(room, isStale ? null : climate, warnings);
+            return mapToRoomData(room, isStale ? null : climate, warnings, convertTemp, tempUnit);
         });
-    }, []);
+    }, [convertTemp, tempUnit]);
 
     const fetchThresholdViolations = useCallback((roomData: RoomData[]) => {
         setViolationsLoading(true);
@@ -370,7 +379,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(warning, room.id)
+                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit)
                         );
                     })
                     .catch(error => {
@@ -519,7 +528,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             if (r.backendId !== backendId) return r;
                             return {
                                 ...r,
-                                temp:     data.temperature != null ? `${formatNumber(data.temperature, 1)} °C` : r.temp,
+                                temp:     data.temperature != null ? `${formatNumber(convertTemp(data.temperature), 1)} ${tempUnit}` : r.temp,
                                 humidity: data.humidity    != null ? `${formatNumber(data.humidity, 0)} %`     : r.humidity,
                                 co2:      data.airQuality  != null ? `${formatNumber(data.airQuality, 0)} ppm` : r.co2,
                             };
@@ -603,7 +612,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                     <div className="kpi-card">
                         <h4>Average Temperature</h4>
-                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${deptAggregation.avgTemperature.toFixed(1).replace('.', ',')} °C` : 'n/a'}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${convertTemp(deptAggregation.avgTemperature).toFixed(1).replace('.', ',')} ${tempUnit}` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">

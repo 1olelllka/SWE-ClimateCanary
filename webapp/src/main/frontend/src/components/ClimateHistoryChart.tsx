@@ -6,6 +6,7 @@ import { Toast } from 'primereact/toast';
 import { Dropdown } from 'primereact/dropdown';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
+import { useTemperature } from '../hooks/useTemperature';
 
 const COLORS = {
     temperature: '#e05252',
@@ -113,6 +114,7 @@ const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pa
 
 export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = false }) => {
     const toastRef = useRef<Toast>(null);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
     const [timeFilter, setTimeFilter] = useState<TimeFilter>(hideDayView ? 'Week' : 'Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
@@ -298,16 +300,16 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             } : undefined,
         },
         showTemp && {
-            name:      'Temperature (°C)',
+            name:      `Temperature (${tempUnit})`,
             type:      'line',
             smooth:    true,
             symbol:    'none',
             lineStyle: { color: COLORS.temperature, width: 2 },
             itemStyle: { color: COLORS.temperature },
-            data:      data.map(d => round2(d.temperature)),
+            data:      data.map(d => round2(convertTemp(d.temperature))),
             markLine:  L && metric === 'Temperature' ? mkLimitLines([
-                { yAxis: L.tempMin, name: `T ${L.tempMin}°C` },
-                { yAxis: L.tempMax, name: `T ${L.tempMax}°C` },
+                { yAxis: round2(convertTemp(L.tempMin)), name: `T ${round2(convertTemp(L.tempMin))}${tempUnit}` },
+                { yAxis: round2(convertTemp(L.tempMax)), name: `T ${round2(convertTemp(L.tempMax))}${tempUnit}` },
             ], COLORS.temperature) : undefined,
             markArea: L ? mkViolationArea(
                 violationRanges(data, d => d.temperature, L.tempMin ?? null, L.tempMax ?? null),
@@ -358,7 +360,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const yAxisMax: number | undefined = (() => {
         if (L == null || !data.length) return undefined;
         if (metric === 'Temperature') {
-            const top = Math.max(data.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
+            const topC = Math.max(data.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
+            const top  = convertTemp(topC);
             return Math.ceil(top + Math.abs(top) * 0.1);
         }
         if (metric === 'Humidity') {
@@ -375,7 +378,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const yAxisMin: number | undefined = (() => {
         if (L == null || !data.length) return undefined;
         if (metric === 'Temperature') {
-            const bottom = Math.min(data.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
+            const bottomC = Math.min(data.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
+            const bottom  = convertTemp(bottomC);
             return Math.floor(bottom - Math.abs(bottom) * 0.1);
         }
         if (metric === 'Humidity') {
@@ -397,8 +401,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
                     const v = p.value as number;
                     let violated = false;
                     if (L) {
-                        if (p.seriesName === 'Temperature (°C)')
-                            violated = (L.tempMin != null && v < L.tempMin) || (L.tempMax != null && v > L.tempMax);
+                        if (p.seriesName === `Temperature (${tempUnit})`)
+                            violated = (L.tempMin != null && v < round2(convertTemp(L.tempMin))) || (L.tempMax != null && v > round2(convertTemp(L.tempMax)));
                         else if (p.seriesName === 'Humidity (%)')
                             violated = (L.humMin != null && v < L.humMin) || (L.humMax != null && v > L.humMax);
                         else if (p.seriesName === 'Air Quality (ppm)')
@@ -416,7 +420,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         legend: {
             show: showLegend,
             bottom: 0,
-            data: ['Temperature (°C)', 'Humidity (%)', 'Air Quality (ppm)'],
+            data: [`Temperature (${tempUnit})`, 'Humidity (%)', 'Air Quality (ppm)'],
             textStyle: {
                 fontSize: 11,
                 color: getComputedStyle(document.documentElement)

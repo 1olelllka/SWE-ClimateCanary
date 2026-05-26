@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DepartmentControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { useTemperature } from '../hooks/useTemperature';
 import { UserxDTO } from '../generated-skeleton-api';
 import { ThresholdViolationsTable, ThresholdViolationData } from '../components/ThresholdViolationsTable';
 import { PageHeader } from '../components/PageHeader';
@@ -33,15 +34,21 @@ const extractArrayResponse = <T,>(data: unknown): T[] => {
     return [];
 };
 
-const getMeasurementUnit = (t?: string) => t === 'TEMPERATURE' ? '°C' : t === 'HUMIDITY' ? '%' : t === 'AIR' ? 'ppm' : '';
+const getMeasurementUnit = (t?: string, tempUnit = '°C') => t === 'TEMPERATURE' ? tempUnit : t === 'HUMIDITY' ? '%' : t === 'AIR' ? 'ppm' : '';
 
 const formatSensorName = (t?: string) =>
     t === 'TEMPERATURE' ? 'Temperature' : t === 'HUMIDITY' ? 'Humidity' : t === 'AIR' ? 'CO₂' : (t ?? 'Unknown');
 
-const formatNumber = (value: number | null | undefined, t?: string): string => {
+const formatNumber = (
+    value: number | null | undefined,
+    t?: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+): string => {
     if (value == null || Number.isNaN(value)) return 'n/a';
-    const unit = getMeasurementUnit(t);
-    return t === 'AIR' ? `${value.toFixed(0)} ${unit}`.trim() : `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+    const unit = getMeasurementUnit(t, tempUnit);
+    const displayValue = t === 'TEMPERATURE' ? tempConvert(value) : value;
+    return t === 'AIR' ? `${displayValue.toFixed(0)} ${unit}`.trim() : `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
 const formatDatetime = (iso?: string): string => {
@@ -58,19 +65,25 @@ const parseDT = (dt: string): Date => {
     return new Date(+yyyy, +mm - 1, +dd, +hh, +min);
 };
 
-const mapWarning = (w: WarningDTO, roomLabel: string): ThresholdViolationData => ({
+const mapWarning = (
+    w: WarningDTO,
+    roomLabel: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+): ThresholdViolationData => ({
     id:           w.id,
     status:       w.status,
     active:       w.active,
     sensor:       formatSensorName(w.measurementType),
     room:         roomLabel,
-    limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType)}`,
-    measuredValue: formatNumber(w.triggeredValue, w.measurementType),
+    limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType, tempConvert, tempUnit)}`,
+    measuredValue: formatNumber(w.triggeredValue, w.measurementType, tempConvert, tempUnit),
     datetime:     formatDatetime(w.createdAt),
 });
 
 export const DepartmentViolationsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
     const [violations, setViolations] = useState<ThresholdViolationData[]>([]);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState<string | null>(null);
@@ -84,6 +97,7 @@ export const DepartmentViolationsPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const today = new Date().toISOString().slice(0, 10);
+        // convertTemp / tempUnit captured below — dep array keeps them fresh
 
         new UserxControllerApi().getAuthenticatedUser()
             .then(res => {
@@ -105,7 +119,7 @@ export const DepartmentViolationsPage: React.FC = () => {
                         .then(r => {
                             const warnings = Array.isArray(r.data) ? r.data as WarningDTO[] : [];
                             const label = room.roomNumber || room.name || room.id;
-                            return warnings.map(w => mapWarning(w, label));
+                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit));
                         })
                         .catch(() => [])
                     )
@@ -117,7 +131,7 @@ export const DepartmentViolationsPage: React.FC = () => {
             })
             .catch(() => setError('Could not load threshold violations.'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [convertTemp, tempUnit]);
 
     useEffect(() => { fetchViolations(); }, [fetchViolations]);
 

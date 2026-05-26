@@ -18,6 +18,7 @@ import '../styles/ClimateHistoryChart.css';
 import '../styles/TimeFilter.css';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { useTemperature } from '../hooks/useTemperature';
 
 const climateApi = new ClimateStatsControllerApi();
 const warningApi = new WarningControllerApi();
@@ -150,8 +151,10 @@ export const DepartmentDetailPage: React.FC = () => {
         };
     }, [deptId]);
 
+    const { convert: convertTemp, convertDelta, unit: tempUnit } = useTemperature();
+
     /* ── Climate sparklines ─────────────────────────────────────────────── */
-    const tempSparkline = weeklyData.map(d => d.avgTemperature ?? 0);
+    const tempSparkline = weeklyData.map(d => convertTemp(d.avgTemperature ?? 0));
     const humSparkline  = weeklyData.map(d => d.avgHumidity    ?? 0);
     const aqSparkline   = weeklyData.map(d => d.avgAirQuality  ?? 0);
 
@@ -167,13 +170,15 @@ export const DepartmentDetailPage: React.FC = () => {
         sparkline: number[],
         suffix: string,
         decimals = 1,
+        convertDeltaFn?: (v: number) => number,
     ): { text: string; icon: string } {
         const clean = sparkline.filter(v => v !== 0);
         if (clean.length < 2) return { text: 'No trend data', icon: 'pi-minus' };
         const delta = clean[clean.length - 1] - clean[0];
         if (Math.abs(delta) < 0.05) return { text: 'Stable this week', icon: 'pi-minus' };
+        const displayDelta = convertDeltaFn ? convertDeltaFn(delta) : delta;
         const icon = delta > 0 ? 'pi-caret-up' : 'pi-caret-down';
-        return { text: `${delta > 0 ? '+' : ''}${delta.toFixed(decimals)}${suffix} vs Mon`, icon };
+        return { text: `${displayDelta > 0 ? '+' : ''}${displayDelta.toFixed(decimals)}${suffix} vs Mon`, icon };
     }
 
     function scoreTrend(
@@ -188,7 +193,7 @@ export const DepartmentDetailPage: React.FC = () => {
         return { text: `${delta > 0 ? '+' : ''}${delta.toFixed(1)} pts this ${label}`, icon };
     }
 
-    const tempTrend       = climateCardTrend(tempSparkline, '°');
+    const tempTrend       = climateCardTrend(tempSparkline, tempUnit, 1, v => convertDelta(v));
     const humTrend        = climateCardTrend(humSparkline,  '%');
     const aqTrend         = climateCardTrend(aqSparkline,   ' ppm', 0);
     const weekScoreTrend  = scoreTrend(trendWeekValues,  'week');
@@ -196,6 +201,8 @@ export const DepartmentDetailPage: React.FC = () => {
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
+    const fmtTemp = (v: number | undefined, decimals = 1): string =>
+        v !== undefined ? convertTemp(v).toFixed(decimals) : (loading ? '…' : 'N/A');
 
     const fmtScore = (v: number | null): string =>
         v !== null ? Math.round(v).toString() : (loading ? '…' : 'N/A');
@@ -328,8 +335,8 @@ export const DepartmentDetailPage: React.FC = () => {
                 <div className="card-grid" style={{ marginBottom: '1.25rem' }}>
                     <Cards
                         title="Temperature"
-                        value={fmt(lastStats?.avgTemperature)}
-                        unit="°C"
+                        value={fmtTemp(lastStats?.avgTemperature)}
+                        unit={tempUnit}
                         color="#e05252"
                         dataPoints={tempSparkline}
                         trendIcon={tempTrend.icon}
