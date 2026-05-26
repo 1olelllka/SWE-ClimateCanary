@@ -139,10 +139,9 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
 
         if (timeFilter === 'Day') {
             const now = new Date();
-            // Align to last complete hour so labels are symmetric (e.g. 10:00–10:00)
+            // Floor to the current hour — this is the boundary where the last complete hour ends
             const end = new Date(now);
             end.setMinutes(0, 0, 0);
-            end.setHours(end.getHours() - 1);
             const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
             req = new RoomControllerApi().getOvertimeClimateData({
                     roomId,
