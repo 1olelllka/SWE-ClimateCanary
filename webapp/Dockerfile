@@ -9,7 +9,6 @@ COPY src/main/resources ./src/main/resources
 
 RUN mvn -q -B generate-sources -Dskip.frontend=true
 
-
 # ------------ STAGE 2 SEPARATOR -------------
 # This stage is for building the frontend
 # Build Frontend
@@ -60,7 +59,7 @@ RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
 
 # Limit memory for deployment server restriction reasons
 # TODO test if better option: -XX:MaxRAMPercentage=75
-ENV JAVA_OPTS="-Xmx256m"
+ENV JAVA_OPTS="-Xmx256m -Duser.timezone=Europe/Vienna"
 
 EXPOSE 8080
 
