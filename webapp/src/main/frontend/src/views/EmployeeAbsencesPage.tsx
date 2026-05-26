@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 import { UserxControllerApi, UserxDTO } from '../generated-skeleton-api';
 import { Toast } from 'primereact/toast';
 import { Dropdown } from 'primereact/dropdown';
@@ -89,6 +90,7 @@ const KpiCard = ({ title, value, max, displayValue, barColor = '#22c55e' }: KpiC
 
 export const EmployeeAbsencesPage: React.FC = () => {
     const toast = useRef<Toast>(null);
+    const { formatDate } = useTimeFormat();
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [selectedAbsence, setSelectedAbsence] = useState<AbsenceListDTO | null>(null);
@@ -275,7 +277,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                                     displayedAbsences.map(abs => (
                                         <tr key={abs.id}>
                                             <td>{formatEnum(abs.typeOfAbsence)}</td>
-                                            <td>{formatDateRange(abs.startDate, abs.endDate)}</td>
+                                            <td>{formatDate(abs.startDate) === formatDate(abs.endDate) ? formatDate(abs.startDate) : `${formatDate(abs.startDate)} – ${formatDate(abs.endDate)}`}</td>
                                             <td>{calculateAbsenceHours(abs.startDate, abs.endDate)} h</td>
                                             <td><StatusBadge status={abs.status} /></td>
                                             <td>

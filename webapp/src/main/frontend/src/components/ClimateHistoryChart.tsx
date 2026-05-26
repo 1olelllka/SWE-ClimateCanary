@@ -113,7 +113,7 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 
-/** Convert an "HH:MM" hour label to 12-hour format. Passes non-matching labels through unchanged. */
+/** Convert an "HH:MM" hour label to 12-hour format. Non-matching labels pass through. */
 function toHourLabel12(label: string): string {
     const m = label.match(/^(\d{2}):(\d{2})$/);
     if (!m) return label;
@@ -122,10 +122,30 @@ function toHourLabel12(label: string): string {
     return `${h % 12 || 12}:${m[2]} ${ampm}`;
 }
 
+/**
+ * Convert a chart x-axis label for display:
+ * - "HH:MM"      → 12h if is12Hour ("2:00 PM"), else unchanged
+ * - "YYYY-MM-DD" → reformatted by dateFormat ("24.05.2025", "05/24/2025", "2025-05-24")
+ * - anything else → unchanged
+ */
+function convertChartLabel(label: string, is12Hour: boolean, dateFormat: string): string {
+    if (/^\d{2}:\d{2}$/.test(label)) {
+        return is12Hour ? toHourLabel12(label) : label;
+    }
+    const dm = label.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dm) {
+        const [, yyyy, mm, dd] = dm;
+        if (dateFormat === 'MM_DD_YYYY') return `${mm}/${dd}/${yyyy}`;
+        if (dateFormat === 'YYYY_MM_DD') return label; // already correct
+        return `${dd}.${mm}.${yyyy}`;                  // DD_MM_YYYY default
+    }
+    return label;
+}
+
 export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = false }) => {
     const toastRef = useRef<Toast>(null);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
-    const { is12Hour } = useTimeFormat();
+    const { is12Hour, dateFormat } = useTimeFormat();
     const [timeFilter, setTimeFilter] = useState<TimeFilter>(hideDayView ? 'Week' : 'Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
@@ -133,10 +153,10 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const [limits,     setLimits]     = useState<Limits | null>(null);
     const [loading,    setLoading]    = useState(false);
 
-    /** Labels converted to 12h format when the user prefers it; raw data otherwise. */
+    /** Labels converted for display (12h time + date format preference). */
     const displayData = useMemo(
-        () => is12Hour ? data.map(d => ({ ...d, label: toHourLabel12(d.label) })) : data,
-        [data, is12Hour],
+        () => data.map(d => ({ ...d, label: convertChartLabel(d.label, is12Hour, dateFormat) })),
+        [data, is12Hour, dateFormat],
     );
 
     const metricOptions = [

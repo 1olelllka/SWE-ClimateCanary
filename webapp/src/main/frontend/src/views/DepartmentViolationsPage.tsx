@@ -52,14 +52,15 @@ const formatNumber = (
     return t === 'AIR' ? `${displayValue.toFixed(0)} ${unit}`.trim() : `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
+const _p2 = (n: number) => String(n).padStart(2, '0');
 const formatDatetime = (
     iso?: string,
-    fmtTimeFn: (d: Date) => string = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+    fmtTimeFn: (d: Date) => string = d => `${_p2(d.getHours())}:${_p2(d.getMinutes())}`,
+    fmtDateFn: (d: Date) => string = d => `${_p2(d.getDate())}.${_p2(d.getMonth() + 1)}.${d.getFullYear()}`,
 ): string => {
     if (!iso) return 'n/a';
     const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${fmtTimeFn(d)}`;
+    return `${fmtDateFn(d)} ${fmtTimeFn(d)}`;
 };
 
 const parseDT = (dt: string): Date => {
@@ -75,6 +76,7 @@ const mapWarning = (
     tempConvert: (c: number) => number = v => v,
     tempUnit = '°C',
     fmtTimeFn?: (d: Date) => string,
+    fmtDateFn?: (d: Date) => string,
 ): ThresholdViolationData => ({
     id:           w.id,
     status:       w.status,
@@ -83,14 +85,16 @@ const mapWarning = (
     room:         roomLabel,
     limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType, tempConvert, tempUnit)}`,
     measuredValue: formatNumber(w.triggeredValue, w.measurementType, tempConvert, tempUnit),
-    datetime:     formatDatetime(w.createdAt, fmtTimeFn),
+    datetime:     formatDatetime(w.createdAt, fmtTimeFn, fmtDateFn),
+    sortKey:      w.createdAt,
 });
 
 export const DepartmentViolationsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
-    const { formatTime } = useTimeFormat();
-    const fmtTimeFn = (d: Date) => formatTime(d);
+    const { formatTime, formatDate } = useTimeFormat();
+    const fmtTimeFn = useCallback((d: Date) => formatTime(d), [formatTime]);
+    const fmtDateFn = useCallback((d: Date) => formatDate(d), [formatDate]);
     const [violations, setViolations] = useState<ThresholdViolationData[]>([]);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState<string | null>(null);
@@ -126,19 +130,21 @@ export const DepartmentViolationsPage: React.FC = () => {
                         .then(r => {
                             const warnings = Array.isArray(r.data) ? r.data as WarningDTO[] : [];
                             const label = room.roomNumber || room.name || room.id;
-                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit, fmtTimeFn));
+                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit, fmtTimeFn, fmtDateFn));
                         })
                         .catch(() => [])
                     )
                 ).then(results => results.flat());
             })
             .then(flat => {
-                flat.sort((a, b) => parseDT(b.datetime).getTime() - parseDT(a.datetime).getTime());
+                flat.sort((a, b) =>
+                    new Date(b.sortKey ?? 0).getTime() - new Date(a.sortKey ?? 0).getTime()
+                );
                 setViolations(flat);
             })
             .catch(() => setError('Could not load threshold violations.'))
             .finally(() => setLoading(false));
-    }, [convertTemp, tempUnit, fmtTimeFn]);
+    }, [convertTemp, tempUnit, fmtTimeFn, fmtDateFn]);
 
     useEffect(() => { fetchViolations(); }, [fetchViolations]);
 
@@ -160,7 +166,8 @@ export const DepartmentViolationsPage: React.FC = () => {
             if (selectedRoom   && v.room   !== selectedRoom)   return false;
             if (selectedSensor && v.sensor !== selectedSensor) return false;
             if (start && end) {
-                const vt = parseDT(v.datetime).getTime();
+                // Use sortKey (ISO string) for reliable parsing regardless of display date format
+                const vt = new Date(v.sortKey ?? 0).getTime();
                 if (vt < start.getTime() || vt > end.getTime()) return false;
             }
             return true;

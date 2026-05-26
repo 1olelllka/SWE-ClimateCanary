@@ -44,7 +44,7 @@ const formatDate = (iso?: string | null) => {
 
 export const DepartmentAbsencesPage: React.FC = () => {
     const toastRef = useRef<Toast>(null);
-    const { formatDatetime } = useTimeFormat();
+    const { formatDatetime, formatDate } = useTimeFormat();
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [absences, setAbsences] = useState<AbsenceListDTO[]>([]);
     const [loading, setLoading] = useState(true);
@@ -232,11 +232,11 @@ export const DepartmentAbsencesPage: React.FC = () => {
                         <div className="absence-form-date-row">
                             <div className="absence-form-field">
                                 <span className="absence-form-label">Start Date</span>
-                                <input className="absence-form-input" value={formatDate(viewingAbsence.startDate)} readOnly />
+                                <input className="absence-form-input" value={formatDate(viewingAbsence.startDate, '-')} readOnly />
                             </div>
                             <div className="absence-form-field">
                                 <span className="absence-form-label">End Date</span>
-                                <input className="absence-form-input" value={formatDate(viewingAbsence.endDate)} readOnly />
+                                <input className="absence-form-input" value={formatDate(viewingAbsence.endDate, '-')} readOnly />
                             </div>
                         </div>
 
@@ -303,21 +303,27 @@ const AbsenceRow = ({
     absence: AbsenceListDTO;
     showActions?: boolean;
     onView?: (absence: AbsenceListDTO) => void;
-}) => (
-    <tr className="absence-table-row">
-        <td>{absence.firstName || '-'}</td>
-        <td>{absence.lastName || '-'}</td>
-        <td>{absence.roomNumber || '-'}</td>
-        <td>{formatDateRange(absence.startDate, absence.endDate)}</td>
-        <td>{formatEnum(absence.typeOfAbsence)}</td>
-        <td>
-            {showActions
-                ? <button className="btn-primary-small" onClick={() => onView?.(absence)}>View</button>
-                : formatEnum(absence.status)
-            }
-        </td>
-    </tr>
-);
+}) => {
+    const { formatDate } = useTimeFormat();
+    const dateRange = absence.startDate && absence.endDate
+        ? `${formatDate(absence.startDate, '-')} - ${formatDate(absence.endDate, '-')}`
+        : '-';
+    return (
+        <tr className="absence-table-row">
+            <td>{absence.firstName || '-'}</td>
+            <td>{absence.lastName || '-'}</td>
+            <td>{absence.roomNumber || '-'}</td>
+            <td>{dateRange}</td>
+            <td>{formatEnum(absence.typeOfAbsence)}</td>
+            <td>
+                {showActions
+                    ? <button className="btn-primary-small" onClick={() => onView?.(absence)}>View</button>
+                    : formatEnum(absence.status)
+                }
+            </td>
+        </tr>
+    );
+};
 
 const EmptyRow = () => (
     <tr>

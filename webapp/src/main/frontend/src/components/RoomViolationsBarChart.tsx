@@ -47,7 +47,8 @@ export const RoomViolationsBarChart: React.FC<Props> = ({ violations, loading = 
     const rankedRooms = useMemo(() => {
         const counts = new Map<string, number>();
         violations.forEach(v => {
-            if (parseDT(v.datetime) >= cutoff) {
+            // Use sortKey (ISO string) for reliable comparison regardless of display date format
+            if (new Date(v.sortKey ?? v.datetime) >= cutoff) {
                 counts.set(v.room, (counts.get(v.room) ?? 0) + 1);
             }
         });

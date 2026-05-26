@@ -15,6 +15,8 @@ export interface ThresholdViolationData {
     readonly limit: string;
     readonly measuredValue: string;
     readonly datetime: string;
+    /** ISO timestamp string — used for reliable sorting regardless of display date format. */
+    readonly sortKey?: string;
 }
 
 interface ThresholdViolationsTableProps {

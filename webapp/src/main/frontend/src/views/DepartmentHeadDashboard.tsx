@@ -230,14 +230,15 @@ const formatSensorName = (measurementType?: string): string => {
     return measurementType ?? 'Unknown';
 };
 
+const _ph = (n: number) => String(n).padStart(2, '0');
 const formatDatetime = (
     dateString?: string,
-    fmtTimeFn: (d: Date) => string = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+    fmtTimeFn: (d: Date) => string = d => `${_ph(d.getHours())}:${_ph(d.getMinutes())}`,
+    fmtDateFn: (d: Date) => string = d => `${_ph(d.getDate())}.${_ph(d.getMonth() + 1)}.${d.getFullYear()}`,
 ): string => {
     if (!dateString) return 'n/a';
     const d = new Date(dateString);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${fmtTimeFn(d)}`;
+    return `${fmtDateFn(d)} ${fmtTimeFn(d)}`;
 };
 
 const formatViolationNumber = (
@@ -259,6 +260,7 @@ const mapWarningToThresholdViolation = (
     tempConvert: (c: number) => number = v => v,
     tempUnit = '°C',
     fmtTimeFn?: (d: Date) => string,
+    fmtDateFn?: (d: Date) => string,
 ): ThresholdViolationData => {
     const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
@@ -269,22 +271,19 @@ const mapWarningToThresholdViolation = (
         room:         roomLabel,
         limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType, tempConvert, tempUnit)}`,
         measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType, tempConvert, tempUnit),
-        datetime:     formatDatetime(warning.createdAt, fmtTimeFn),
+        datetime:     formatDatetime(warning.createdAt, fmtTimeFn, fmtDateFn),
+        sortKey:      warning.createdAt,
     };
 };
 
 const formatAbsenceDateRange = (
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    fmtDateFn?: (d: Date) => string,
 ): string => {
-    if (!startDate || !endDate) {
-        return 'n/a';
-    }
-
-    const start = new Date(startDate).toLocaleDateString('de-DE');
-    const end = new Date(endDate).toLocaleDateString('de-DE');
-
-    return `${start} - ${end}`;
+    if (!startDate || !endDate) return 'n/a';
+    const fmt = fmtDateFn ?? ((d: Date) => d.toLocaleDateString('de-DE'));
+    return `${fmt(new Date(startDate))} - ${fmt(new Date(endDate))}`;
 };
 
 const formatAbsenceReason = (reason?: string): string => {
@@ -299,14 +298,15 @@ const formatAbsenceReason = (reason?: string): string => {
 };
 
 const mapAbsenceToPendingRequest = (
-    absence: AbsenceListDTO
+    absence: AbsenceListDTO,
+    fmtDateFn?: (d: Date) => string,
 ): PendingRequestData => {
     return {
         id: absence.id,
         first: absence.firstName,
         last: absence.lastName,
         room: absence.roomNumber || 'n/a',
-        date: formatAbsenceDateRange(absence.startDate, absence.endDate),
+        date: formatAbsenceDateRange(absence.startDate, absence.endDate, fmtDateFn),
         reason: formatAbsenceReason(absence.typeOfAbsence)
     };
 };
@@ -317,8 +317,9 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
-    const { formatTime, formatDatetime: formatDatetimeHook } = useTimeFormat();
-    const fmtTimeFn = (d: Date) => formatTime(d);
+    const { formatTime, formatDate, formatDatetime: formatDatetimeHook } = useTimeFormat();
+    const fmtTimeFn = useCallback((d: Date) => formatTime(d), [formatTime]);
+    const fmtDateFn = useCallback((d: Date) => formatDate(d), [formatDate]);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
     const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
@@ -386,7 +387,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit, fmtTimeFn)
+                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit, fmtTimeFn, fmtDateFn)
                         );
                     })
                     .catch(error => {
@@ -402,23 +403,15 @@ export const DepartmentHeadDashboard: React.FC = () => {
         )
             .then(results => {
                 const flattened = results.flat();
-
-                flattened.sort((a, b) => {
-                    const parse = (s: string) => {
-                        const [d, t = '00:00'] = s.split(' ');
-                        const [dd, mm, yyyy] = d.split('.');
-                        const [hh, min] = t.split(':');
-                        return new Date(+yyyy, +mm - 1, +dd, +hh, +min).getTime();
-                    };
-                    return parse(b.datetime) - parse(a.datetime);
-                });
-
+                flattened.sort((a, b) =>
+                    new Date(b.sortKey ?? 0).getTime() - new Date(a.sortKey ?? 0).getTime()
+                );
                 setThresholdViolations(flattened);
             })
             .finally(() => {
                 setViolationsLoading(false);
             });
-    }, [convertTemp, tempUnit, fmtTimeFn]);
+    }, [convertTemp, tempUnit, fmtTimeFn, fmtDateFn]);
 
     const fetchPendingRequests = useCallback(() => {
         setPendingRequestsLoading(true);
@@ -429,7 +422,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                 const pending = absences
                     .filter(absence => absence.status === 'PENDING')
-                    .map(mapAbsenceToPendingRequest);
+                    .map(absence => mapAbsenceToPendingRequest(absence, fmtDateFn));
 
                 setPendingRequests(pending);
             })
@@ -445,7 +438,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setPendingRequestsLoading(false);
             });
-    }, []);
+    }, [fmtDateFn]);
 
     const fetchDeptAggregation = useCallback((deptId: string) => {
         new ClimateStatsControllerApi()
