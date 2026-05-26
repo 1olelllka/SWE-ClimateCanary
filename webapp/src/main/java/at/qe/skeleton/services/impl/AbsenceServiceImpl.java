@@ -133,8 +133,9 @@ public class AbsenceServiceImpl implements AbsenceService {
         if (absence.getStatus() != AbsenceStatus.PENDING) {
             throw new ValidationException("Only pending absences can be cancelled.");
         }
+        if (absence.getTypeOfAbsence().equals(AbsenceType.VACATION))
+            user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
         absence.setStatus(AbsenceStatus.CANCELLED);
-        user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
         userxRepository.save(user);
         return absenceRepository.save(absence);
     }
