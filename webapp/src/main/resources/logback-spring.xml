@@ -3,22 +3,30 @@
 
     <property name="LOG_DIR"     value="logs" />
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+
+    <!-- Everything → console -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- ─── INFO file (INFO only) ──────────────────────────────────────────── -->
+    <!-- INFO + DEBUG only → info.log -->
     <appender name="INFO_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/info.log</file>
-
-        <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <level>INFO</level>
-            <onMatch>ACCEPT</onMatch>
-            <onMismatch>DENY</onMismatch>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
         </filter>
-
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>NEUTRAL</onMismatch>
+        </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_DIR}/archived/info.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
@@ -28,20 +36,17 @@
             <maxHistory>30</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
-
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- ─── WARN + ERROR file ──────────────────────────────────────────────── -->
+    <!-- WARN + ERROR only → warnings-errors.log -->
     <appender name="WARN_ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/warnings-errors.log</file>
-
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>WARN</level>
         </filter>
-
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${LOG_DIR}/archived/warnings-errors.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
@@ -51,26 +56,15 @@
             <maxHistory>30</maxHistory>
             <totalSizeCap>500MB</totalSizeCap>
         </rollingPolicy>
-
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- ─── Root logger ────────────────────────────────────────────────────── -->
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"         />
         <appender-ref ref="INFO_FILE"       />
         <appender-ref ref="WARN_ERROR_FILE" />
     </root>
-
-    <!-- ─── Per-package overrides ──────────────────────────────── -->
-    <!-- Silence noisy framework packages -->
-    <logger name="org.springframework"         level="WARN"  additivity="false">
-        <appender-ref ref="WARN_ERROR_FILE" />
-    </logger>
-    <logger name="org.hibernate"               level="WARN"  additivity="false">
-        <appender-ref ref="WARN_ERROR_FILE" />
-    </logger>
 
 </configuration>
