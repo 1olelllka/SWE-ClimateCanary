@@ -1864,6 +1864,54 @@
         }
       }
     },
+    "/api/users/settings": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getUserSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "updateUserSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSettingsPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/rooms/{room_id}/current-climate": {
       "get": {
         "tags": [
@@ -3811,6 +3859,54 @@
           "avgAirQuality": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "UserSettingsDTO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "darkMode": {
+            "type": "boolean"
+          },
+          "fahrenheit": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "YYYY_MM_DD",
+              "DD_MM_YYYY",
+              "MM_DD_YYYY"
+            ]
+          },
+          "twelveHourFormat": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserSettingsPatchDTO": {
+        "type": "object",
+        "properties": {
+          "darkMode": {
+            "type": "boolean"
+          },
+          "fahrenheit": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "YYYY_MM_DD",
+              "DD_MM_YYYY",
+              "MM_DD_YYYY"
+            ]
+          },
+          "twelveHourFormat": {
+            "type": "boolean"
           }
         }
       }
