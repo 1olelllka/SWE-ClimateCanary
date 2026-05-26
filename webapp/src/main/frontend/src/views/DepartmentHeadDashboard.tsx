@@ -2,13 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { AbsenceControllerApi, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { AbsenceControllerApi, AbsenceDTO, AbsencePatchDTOStatusEnum, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import { Toast } from 'primereact/toast';
+import '../styles/CreateAbsenceForm.css';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
 import { ThresholdViolationData } from '../components/ThresholdViolationsTable';
-import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
+import { PendingRequestsTable, PendingRequestData } from '../components/PendingRequestsTable';
 import { RoomViolationsBarChart } from '../components/RoomViolationsBarChart';
 import { UserxDTO } from '../generated-skeleton-api';
 interface RoomDTO {
@@ -297,6 +301,7 @@ const mapAbsenceToPendingRequest = (
 
 export const DepartmentHeadDashboard: React.FC = () => {
     const navigate = useNavigate();
+    const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
@@ -312,6 +317,13 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const [violationsLoading, setViolationsLoading] = useState(false);
     const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // --- Absence request dialog ---
+    const [viewDialogVisible, setViewDialogVisible] = useState(false);
+    const [viewingRequest, setViewingRequest] = useState<PendingRequestData | null>(null);
+    const [viewingAbsenceDetail, setViewingAbsenceDetail] = useState<AbsenceDTO | null>(null);
+    const [absenceDetailLoading, setAbsenceDetailLoading] = useState(false);
+    const [absenceActionLoading, setAbsenceActionLoading] = useState(false);
 
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
         return Promise.all([
@@ -523,12 +535,54 @@ export const DepartmentHeadDashboard: React.FC = () => {
         return () => { stompClient.current?.deactivate(); };
     }, [roomBackendIds]);
 
+    const handleViewRequest = useCallback((id: string) => {
+        const request = pendingRequests.find(r => r.id === id) ?? null;
+        setViewingRequest(request);
+        setViewingAbsenceDetail(null);
+        setViewDialogVisible(true);
+        setAbsenceDetailLoading(true);
+        new AbsenceControllerApi().getSpecificAbsence({ absenceId: id })
+            .then(res => setViewingAbsenceDetail(res.data))
+            .catch(() => setViewingAbsenceDetail(null))
+            .finally(() => setAbsenceDetailLoading(false));
+    }, [pendingRequests]);
+
+    const handleAbsenceAction = useCallback(async (status: 'APPROVED' | 'REJECTED') => {
+        if (!viewingRequest) return;
+        setAbsenceActionLoading(true);
+        try {
+            await new AbsenceControllerApi().updateStatusOfAbsence({
+                absenceId: viewingRequest.id,
+                absencePatchDTO: { status: status as AbsencePatchDTOStatusEnum },
+            });
+            toastRef.current?.show({
+                severity: status === 'APPROVED' ? 'success' : 'warn',
+                summary: status === 'APPROVED' ? 'Approved' : 'Rejected',
+                detail: `Request for ${viewingRequest.first} ${viewingRequest.last} has been ${status.toLowerCase()}.`,
+                life: 3000,
+            });
+            setViewDialogVisible(false);
+            fetchPendingRequests();
+        } catch {
+            toastRef.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Failed to ${status === 'APPROVED' ? 'approve' : 'reject'} the request.`,
+                life: 3000,
+            });
+        } finally {
+            setAbsenceActionLoading(false);
+        }
+    }, [viewingRequest, fetchPendingRequests]);
+
     const problemRoomsCount = useMemo(() => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
     }, [rooms]);
 
+
     return (
         <div className="dashboard-layout">
+            <Toast ref={toastRef} />
             <PageHeader
                 title={'Department Overview'}
                 subtitle={departmentName ?? undefined}
@@ -596,6 +650,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 <PendingRequestsTable
                     requests={pendingRequests}
                     loading={pendingRequestsLoading}
+                    onView={handleViewRequest}
                 />
 
                 <RoomViolationsBarChart
@@ -603,6 +658,92 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     loading={violationsLoading}
                 />
             </div>
+            {/* ── Absence Request Dialog ── */}
+            <Dialog
+                header="Absence Request"
+                visible={viewDialogVisible}
+                className="admin-form-dialog"
+                style={{ width: '480px' }}
+                onHide={() => setViewDialogVisible(false)}
+                draggable={false}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                        <Button
+                            label="Reject"
+                            icon="pi pi-times"
+                            severity="danger"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('REJECTED')}
+                        />
+                        <Button
+                            label="Approve"
+                            icon="pi pi-check"
+                            severity="success"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('APPROVED')}
+                        />
+                    </div>
+                }
+            >
+                {absenceDetailLoading ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b' }}>Loading…</div>
+                ) : viewingRequest && (
+                    <div className="admin-dialog-body">
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">First Name</span>
+                                <input className="absence-form-input" value={viewingRequest.first} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Last Name</span>
+                                <input className="absence-form-input" value={viewingRequest.last} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Room</span>
+                                <input className="absence-form-input" value={viewingRequest.room} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Reason</span>
+                                <input className="absence-form-input" value={viewingRequest.reason} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Start Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[0] ?? ''} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">End Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[1] ?? ''} readOnly />
+                            </div>
+                        </div>
+
+                        {viewingAbsenceDetail?.createdAt && (
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Submitted On</span>
+                                <input className="absence-form-input" value={formatDatetime(viewingAbsenceDetail.createdAt)} readOnly />
+                            </div>
+                        )}
+
+                        <div className="absence-form-field">
+                            <span className="absence-form-label">Message</span>
+                            <textarea
+                                className="absence-form-textarea"
+                                value={viewingAbsenceDetail?.comment ?? ''}
+                                rows={3}
+                                readOnly
+                                placeholder="No message provided"
+                            />
+                        </div>
+
+                    </div>
+                )}
+            </Dialog>
         </div>
     );
 };
