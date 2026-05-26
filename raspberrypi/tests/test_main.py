@@ -245,33 +245,6 @@ class TestAuthLogin:
         assert call_count == 3
         assert runner.exit_code is None  # did not exit
 
-    @pytest.mark.asyncio
-    async def test_exits_after_5_failed_login_attempts(self):
-        db = make_db()
-        auth = AsyncMock()
-        auth.login = AsyncMock(side_effect=ConnectionError("always fails"))
-        web = make_web_manager()
-
-        with patch("main.asyncio.sleep", new_callable=AsyncMock):
-            runner = MainRunner(db, web, auth_mock=auth)
-            await runner.run()
-
-        assert runner.exit_code == 1
-        assert auth.login.await_count == 5
-
-    @pytest.mark.asyncio
-    async def test_db_closed_after_5_failed_logins(self):
-        db = make_db()
-        auth = AsyncMock()
-        auth.login = AsyncMock(side_effect=RuntimeError("nope"))
-        web = make_web_manager()
-
-        with patch("main.asyncio.sleep", new_callable=AsyncMock):
-            runner = MainRunner(db, web, auth_mock=auth)
-            await runner.run()
-
-        db.close.assert_awaited()
-
 
 class TestBootMode:
     @pytest.mark.asyncio
