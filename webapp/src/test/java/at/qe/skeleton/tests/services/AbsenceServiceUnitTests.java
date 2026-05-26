@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -576,9 +575,29 @@ class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatCancelAbsenceSucceedsWhenValid() {
+    void testThatCancelIllnessAbsenceSucceedsWhenValid() {
         UUID absenceId = absence.getId();
         absence.setStatus(AbsenceStatus.PENDING);
+        int initialAbsences = user.getNumberOfAbsences();
+
+        when(absenceRepository.findById(absenceId)).thenReturn(Optional.of(absence));
+        when(userxRepository.save(any(Userx.class))).thenAnswer(i -> i.getArgument(0));
+        when(absenceRepository.save(any(Absence.class))).thenAnswer(i -> i.getArgument(0));
+
+        Absence result = absenceService.cancelAbsence(absenceId, user);
+
+        assertNotNull(result);
+        assertEquals(AbsenceStatus.CANCELLED, result.getStatus());
+        assertEquals(initialAbsences, user.getNumberOfAbsences());
+        verify(userxRepository).save(user);
+        verify(absenceRepository).save(absence);
+    }
+
+    @Test
+    void testThatCancelVacationAbsenceSucceedsWhenValid() {
+        UUID absenceId = absence.getId();
+        absence.setStatus(AbsenceStatus.PENDING);
+        absence.setTypeOfAbsence(AbsenceType.VACATION);
         int initialAbsences = user.getNumberOfAbsences();
         long absenceDays = ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate());
 
