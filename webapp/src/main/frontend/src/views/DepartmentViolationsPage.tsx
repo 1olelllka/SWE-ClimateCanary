@@ -199,7 +199,7 @@ export const DepartmentViolationsPage: React.FC = () => {
                         showButtonBar
                         dateFormat="dd.mm.yy"
                         placeholder="Date range"
-                        style={{ minWidth: '13rem' }}
+                        style={{ minWidth: '18rem' }}
                         panelClassName="compact-datepicker"
                     />
                 </div>
