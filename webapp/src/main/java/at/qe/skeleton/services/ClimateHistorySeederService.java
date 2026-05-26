@@ -87,7 +87,26 @@ public class ClimateHistorySeederService {
 
             OffsetDateTime warningOnset = now.minusHours(2);
 
+            // ── Simulated sensor outage for room 101 (roomIndex 0) ───────────
+            // No records are inserted for this window — exactly what happens
+            // when a real sensor stops sending data. The chart detects the gap
+            // by comparing the received timestamps against the requested range.
+            OffsetDateTime gapBase = now.truncatedTo(ChronoUnit.DAYS).plusHours(10);
+            if (!gapBase.isBefore(now)) {
+                gapBase = gapBase.minusDays(1); // use yesterday's 10:00 if today's is in the future
+            }
+            final OffsetDateTime noDataStart = (roomIndex == 0) ? gapBase             : null;
+            final OffsetDateTime noDataEnd   = (roomIndex == 0) ? gapBase.plusHours(2) : null;
+
             while (!cursor.isAfter(now)) {
+                // Skip this minute if it falls inside the simulated outage window
+                if (noDataStart != null
+                        && !cursor.isBefore(noDataStart)
+                        && cursor.isBefore(noDataEnd)) {
+                    cursor = cursor.plusMinutes(1);
+                    continue;
+                }
+
                 // For the most recent 2 hours elevate temperature above the 26 °C limit
                 // so the sparkline trend line visually breaches the dashed limit line.
                 double temp = cursor.isAfter(warningOnset)

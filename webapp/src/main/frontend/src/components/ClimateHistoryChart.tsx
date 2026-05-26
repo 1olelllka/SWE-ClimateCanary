@@ -23,6 +23,8 @@ interface DataPoint {
     temperature: number;
     humidity:    number;
     airQuality:  number;
+    /** True when there was no sensor data for this time bucket (gap in the DB). */
+    noData?:     boolean;
 }
 
 interface Limits {
@@ -75,9 +77,22 @@ const mean = (nums: number[]) =>
  * - bucketMs = MS_HOUR   → hourly averages,  label "HH:00"
  * - bucketMs = MS_MINUTE → minute averages,  label "HH:MM"
  * - bucketMs = MS_SECOND → 1-second buckets, label "HH:MM:SS"
+ *
+ * When `rangeStart` and `rangeEnd` are provided (Unix ms), the full time range is
+ * iterated and any bucket with no matching raw points is emitted as a `noData: true`
+ * placeholder — this is how we detect and visualise real sensor outage gaps.
+ *
+ * Pass range only for hourly / minutely resolution; omit for second-level zoom
+ * (86 400 empty-second buckets would be too many to render efficiently).
  */
-function aggregateByMs(raw: RawPoint[], bucketMs: number): DataPoint[] {
-    if (!raw.length) return [];
+function aggregateByMs(
+    raw: RawPoint[],
+    bucketMs: number,
+    rangeStart?: number,
+    rangeEnd?: number,
+): DataPoint[] {
+    if (!raw.length && rangeStart == null) return [];
+
     const p2 = (n: number) => String(n).padStart(2, '0');
     const groups = new Map<number, RawPoint[]>();
     for (const p of raw) {
@@ -87,25 +102,45 @@ function aggregateByMs(raw: RawPoint[], bucketMs: number): DataPoint[] {
         if (arr) arr.push(p);
         else     groups.set(bucketStart, [p]);
     }
-    return [...groups.entries()]
-        .sort(([a], [b]) => a - b)
-        .map(([bucket, pts]) => {
-            const d = new Date(bucket);
-            let label: string;
-            if (bucketMs >= MS_HOUR) {
-                label = `${p2(d.getHours())}:00`;
-            } else if (bucketMs >= MS_MINUTE) {
-                label = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
-            } else {
-                label = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
-            }
-            return {
+
+    // Determine the first / last bucket to iterate
+    let firstBucket: number;
+    let lastBucket:  number;
+    if (rangeStart != null && rangeEnd != null) {
+        firstBucket = Math.floor(rangeStart / bucketMs) * bucketMs;
+        lastBucket  = Math.floor(rangeEnd   / bucketMs) * bucketMs;
+    } else {
+        const sortedKeys = [...groups.keys()].sort((a, b) => a - b);
+        if (!sortedKeys.length) return [];
+        firstBucket = sortedKeys[0];
+        lastBucket  = sortedKeys[sortedKeys.length - 1];
+    }
+
+    const result: DataPoint[] = [];
+    for (let bucket = firstBucket; bucket <= lastBucket; bucket += bucketMs) {
+        const d = new Date(bucket);
+        let label: string;
+        if (bucketMs >= MS_HOUR) {
+            label = `${p2(d.getHours())}:00`;
+        } else if (bucketMs >= MS_MINUTE) {
+            label = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+        } else {
+            label = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+        }
+        const pts = groups.get(bucket);
+        if (pts && pts.length > 0) {
+            result.push({
                 label,
                 temperature: mean(pts.map(p => p.temperature)),
                 humidity:    mean(pts.map(p => p.humidity)),
                 airQuality:  mean(pts.map(p => p.airQuality)),
-            };
-        });
+            });
+        } else {
+            // No sensor data for this bucket — mark as gap
+            result.push({ label, temperature: 0, humidity: 0, airQuality: 0, noData: true });
+        }
+    }
+    return result;
 }
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
@@ -113,12 +148,18 @@ function round2(n: number) { return Math.round(n * 100) / 100; }
 function findNoDataZones(pts: DataPoint[]): Array<[{ xAxis: string }, { xAxis: string }]> {
     const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
     let start: string | null = null;
-    for (const pt of pts) {
-        const empty = Math.abs(pt.temperature) < 0.001
-                   && Math.abs(pt.humidity) < 0.001
-                   && Math.abs(pt.airQuality) < 0.001;
-        if (empty && start == null) { start = pt.label; }
-        else if (!empty && start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+    for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i];
+        if (pt.noData && start == null) {
+            // Anchor the grey zone at the PREVIOUS data point so there is no
+            // empty white strip between the line's last rendered segment and the
+            // shaded area.  The reading at that label remains visible because
+            // the overlay is semi-transparent (opacity 0.18).
+            start = i > 0 ? pts[i - 1].label : pt.label;
+        } else if (!pt.noData && start != null) {
+            out.push([{ xAxis: start }, { xAxis: pt.label }]);
+            start = null;
+        }
     }
     if (start != null && pts.length > 0) {
         out.push([{ xAxis: start }, { xAxis: pts[pts.length - 1].label }]);
@@ -205,11 +246,29 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         return MS_SECOND;
     }, [timeFilter, dayRawPoints.length, zoomStart, zoomEnd]);
 
-    /** Aggregated Day-view data; recomputed whenever zoom level or raw data changes. */
-    const dayData = useMemo(
-        () => (timeFilter === 'Day' ? aggregateByMs(dayRawPoints, dayBucketMs) : []),
-        [timeFilter, dayRawPoints, dayBucketMs],
-    );
+    /** Aggregated Day-view data; recomputed whenever zoom level or raw data changes.
+     *
+     * For hourly and minutely resolution we pass the full 24-hour window so that
+     * time buckets with no sensor readings are filled in as `noData: true` —
+     * this is what makes the outage gap visible as a grey zone on the chart.
+     * Second-level resolution is only active when very few (<10) points are
+     * visible, so the bucket count would be huge; skip range-filling there.
+     */
+    const dayData = useMemo(() => {
+        if (timeFilter !== 'Day') return [];
+        let rangeStart: number | undefined;
+        let rangeEnd:   number | undefined;
+        // Only fill the full range once we have actual data — avoids a flash of
+        // all-grey buckets before the initial fetch completes.
+        if (dayBucketMs >= MS_MINUTE && dayRawPoints.length > 0) {
+            // Match the exact window used by the fetch (last 24 h, truncated to hour)
+            const end = new Date();
+            end.setMinutes(0, 0, 0);
+            rangeEnd   = end.getTime();
+            rangeStart = rangeEnd - 24 * 60 * 60 * 1000;
+        }
+        return aggregateByMs(dayRawPoints, dayBucketMs, rangeStart, rangeEnd);
+    }, [timeFilter, dayRawPoints, dayBucketMs]);
 
     /**
      * The data actually fed to the chart.
@@ -354,6 +413,12 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
         let start: string | null = null;
         for (const pt of pts) {
+            // A gap in the sensor data must close any open violation range — we
+            // cannot declare a violation where there are no readings at all.
+            if (pt.noData) {
+                if (start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+                continue;
+            }
             const v   = getValue(pt);
             const bad = (min != null && v < min) || (max != null && v > max);
             if (bad && start == null)  { start = pt.label; }
@@ -402,13 +467,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             markArea:  noDataZones.length > 0 ? {
                 silent:    true,
                 itemStyle: { color: 'rgba(148, 163, 184, 0.18)', borderWidth: 0 },
-                label: {
-                    show:      true,
-                    position:  'insideTop' as const,
-                    color:     '#94a3b8',
-                    fontSize:  10,
-                    formatter: () => 'No data',
-                },
+                label:     { show: false },
                 data: noDataZones,
             } : undefined,
         },
@@ -419,7 +478,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.temperature, width: 2 },
             itemStyle: { color: COLORS.temperature },
-            data:      displayData.map(d => round2(convertTemp(d.temperature))),
+            data:      displayData.map(d => d.noData ? null : round2(convertTemp(d.temperature))),
             markLine:  L && metric === 'Temperature' ? mkLimitLines([
                 { yAxis: round2(convertTemp(L.tempMin)), name: `T ${round2(convertTemp(L.tempMin))}${tempUnit}` },
                 { yAxis: round2(convertTemp(L.tempMax)), name: `T ${round2(convertTemp(L.tempMax))}${tempUnit}` },
@@ -436,7 +495,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.humidity, width: 2 },
             itemStyle: { color: COLORS.humidity },
-            data:      displayData.map(d => round2(d.humidity)),
+            data:      displayData.map(d => d.noData ? null : round2(d.humidity)),
             markLine:  L && metric === 'Humidity' ? mkLimitLines([
                 { yAxis: L.humMin, name: `H ${L.humMin}%` },
                 { yAxis: L.humMax, name: `H ${L.humMax}%` },
@@ -453,7 +512,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.airQuality, width: 2 },
             itemStyle: { color: COLORS.airQuality },
-            data:      displayData.map(d => round2(d.airQuality)),
+            data:      displayData.map(d => d.noData ? null : round2(d.airQuality)),
             markLine:  L && metric === 'Air Quality' ? mkLimitLines([
                 { yAxis: L.co2Max, name: `CO₂ ${L.co2Max}` },
             ], COLORS.airQuality) : undefined,
@@ -472,33 +531,36 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         ? (rotateLabels ? 40 : 22) + (showLegend ? 32 : 0)
         : (rotateLabels ? 54 : 28) + (showLegend ? 46 : 0);
 
+    // Exclude no-data placeholders from min/max so gap zeros don't distort the y-axis
+    const validData = effectiveData.filter(d => !d.noData);
+
     const yAxisMax: number | undefined = (() => {
-        if (L == null || !effectiveData.length) return undefined;
+        if (L == null || !validData.length) return undefined;
         if (metric === 'Temperature') {
-            const topC = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
+            const topC = Math.max(validData.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
             const top  = convertTemp(topC);
             return Math.ceil(top + Math.abs(top) * 0.1);
         }
         if (metric === 'Humidity') {
-            const top = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.humidity), 0), L.humMax);
+            const top = Math.max(validData.reduce((m, d) => Math.max(m, d.humidity), 0), L.humMax);
             return Math.ceil(top * 1.1);
         }
         if (metric === 'Air Quality') {
-            const top = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.airQuality), 0), L.co2Max);
+            const top = Math.max(validData.reduce((m, d) => Math.max(m, d.airQuality), 0), L.co2Max);
             return Math.ceil(top * 1.1);
         }
         return undefined;
     })();
 
     const yAxisMin: number | undefined = (() => {
-        if (L == null || !effectiveData.length) return undefined;
+        if (L == null || !validData.length) return undefined;
         if (metric === 'Temperature') {
-            const bottomC = Math.min(effectiveData.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
+            const bottomC = Math.min(validData.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
             const bottom  = convertTemp(bottomC);
             return Math.floor(bottom - Math.abs(bottom) * 0.1);
         }
         if (metric === 'Humidity') {
-            const bottom = Math.min(effectiveData.reduce((m, d) => Math.min(m, d.humidity), Infinity), L.humMin);
+            const bottom = Math.min(validData.reduce((m, d) => Math.min(m, d.humidity), Infinity), L.humMin);
             return Math.max(0, Math.floor(bottom * 0.9));
         }
         return undefined;
@@ -515,9 +577,23 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             textStyle:   { fontSize: isMobile ? 11 : 12 },
             formatter: (params: any[]) => {
                 if (!params.length) return '';
-                let out = `<div style="margin-bottom:4px;font-weight:600">${params[0].name}</div>`;
+                const label = params[0]?.name ?? '';
+                // Check if every real series has a null value → sensor gap
+                const realParams = params.filter(p => p.seriesName !== '__nodata__');
+                const isGap = realParams.length > 0 && realParams.every(p => p.value == null);
+                if (isGap) {
+                    return `<div style="padding:2px 0">
+                        <div style="margin-bottom:4px;font-weight:600">${label}</div>
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+                            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8"></span>
+                            <span style="color:#94a3b8;font-style:italic">No sensor data for this period</span>
+                        </div>
+                    </div>`;
+                }
+                let out = `<div style="margin-bottom:4px;font-weight:600">${label}</div>`;
                 for (const p of params) {
                     if (p.seriesName === '__nodata__') continue;
+                    if (p.value == null) continue;
                     const v = p.value as number;
                     let violated = false;
                     if (L) {
