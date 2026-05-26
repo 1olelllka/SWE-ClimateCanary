@@ -17,6 +17,9 @@ interface AbsenceListDTO {
     createdAt?: string | null;
 }
 
+const getFullName = (absence: AbsenceListDTO) =>
+    `${absence.firstName ?? ''} ${absence.lastName ?? ''}`.trim() || '-';
+
 const formatEnum = (value?: string | null) => {
     if (!value) return '-';
     return value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' ');
@@ -108,8 +111,7 @@ export const DepartmentAbsencesPage: React.FC = () => {
 
     const AbsenceRow = ({ absence, showActions = false }: { absence: AbsenceListDTO; showActions?: boolean }) => (
         <tr className="absence-table-row">
-            <td>{absence.firstName || '-'}</td>
-            <td>{absence.lastName || '-'}</td>
+            <td>{getFullName(absence)}</td>
             <td>{absence.roomNumber || '-'}</td>
             <td>{formatDateRange(absence.startDate, absence.endDate)}</td>
             <td>{formatEnum(getReason(absence))}</td>
@@ -205,8 +207,7 @@ const AbsenceTable = ({ children }: { children: React.ReactNode }) => (
         <table className="absence-table">
             <thead>
             <tr>
-                <th>Firstname</th>
-                <th>Lastname</th>
+                <th>Name</th>
                 <th>Room</th>
                 <th>Date</th>
                 <th>Reason</th>
@@ -222,7 +223,7 @@ const AbsenceTable = ({ children }: { children: React.ReactNode }) => (
 
 const EmptyRow = () => (
     <tr>
-        <td colSpan={6} className="absence-empty-row">
+        <td colSpan={5} className="absence-empty-row">
             No absences found.
         </td>
     </tr>
