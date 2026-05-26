@@ -24,45 +24,58 @@
 }
 
 .department-chart-room-dropdown {
-    min-width: 9rem;
-    height: 2.25rem;
-    border-radius: 8px !important;
-    background: #f8fafc !important;
+    min-width: 170px;
+    height: 2.45rem;
+    border-radius: 999px !important;
+    background: #111827 !important;
     border: 1px solid var(--card-border) !important;
+    box-shadow: none !important;
+}
+
+.department-chart-room-dropdown.p-focus {
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25) !important;
 }
 
 .department-chart-room-dropdown .p-dropdown-label {
-    font-size: 0.875rem !important;
+    display: flex !important;
+    align-items: center !important;
+    padding-left: 1.15rem !important;
+    font-size: 0.95rem !important;
     font-weight: 600 !important;
-    color: var(--text-primary) !important;
-    padding: 0.45rem 2rem 0.45rem 0.75rem !important;
+    color: var(--app-text, #f8fafc) !important;
 }
 
 .department-chart-room-dropdown .p-dropdown-trigger {
-    width: 2rem !important;
-    color: var(--text-secondary) !important;
+    width: 2.5rem !important;
+    color: var(--app-text-muted, #94a3b8) !important;
 }
 
 .department-chart-room-dropdown-panel {
-    border-radius: 10px !important;
+    margin-top: 0.4rem !important;
+    border-radius: 14px !important;
     overflow: hidden !important;
+    background: #1f2937 !important;
+    border: 1px solid var(--app-border, #334155) !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35) !important;
 }
 
-@media (max-width: 700px) {
-    .department-chart-room-selector {
-        position: relative;
-    }
+.department-chart-room-dropdown-panel .p-dropdown-items {
+    padding: 0.35rem !important;
+}
 
-    .department-chart-room-dropdown {
-        min-width: 8.5rem;
-        max-width: 100%;
-    }
+.department-chart-room-dropdown-panel .p-dropdown-item {
+    border-radius: 10px !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.9rem !important;
+    color: var(--app-text, #f8fafc) !important;
+}
 
-    .department-chart-room-dropdown-panel {
-        left: 0 !important;
-        top: calc(100% + 0.35rem) !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        transform: none !important;
-    }
+.department-chart-room-dropdown-panel .p-dropdown-item.p-highlight {
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+
+.department-chart-room-dropdown-panel .p-dropdown-item:not(.p-highlight):hover {
+    background: #334155 !important;
 }

@@ -36,7 +36,6 @@ export const DepartmentClimateSection: React.FC<DepartmentClimateSectionProps> =
                     onChange={event => onSelectRoom(event.value)}
                     className="department-chart-room-dropdown"
                     panelClassName="department-chart-room-dropdown-panel"
-                    appendTo="self"
                 />
             </div>
 
