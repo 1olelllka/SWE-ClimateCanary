@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserxControllerApi, UserxDTO } from '../generated-skeleton-api';
 import { Toast } from 'primereact/toast';
+import { Dropdown } from 'primereact/dropdown';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
@@ -195,17 +196,19 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 </div>
 
                 <div className="employee-absences-controls">
-                    <select
-                        className="absence-status-filter"
+                    <Dropdown
                         value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                    >
-                        <option value="">All statuses</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="CANCELLED">Cancelled</option>
-                    </select>
+                        options={[
+                            { label: 'All statuses', value: '' },
+                            { label: 'Pending', value: 'PENDING' },
+                            { label: 'Approved', value: 'APPROVED' },
+                            { label: 'Rejected', value: 'REJECTED' },
+                            { label: 'Cancelled', value: 'CANCELLED' },
+                        ]}
+                        onChange={e => setStatusFilter(e.value)}
+                        placeholder="All statuses"
+                        className="absence-status-filter"
+                    />
                     <button
                         type="button"
                         className="absence-request-button"
