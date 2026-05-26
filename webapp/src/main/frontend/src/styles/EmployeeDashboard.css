@@ -1,25 +1,25 @@
+/* ── Container ──────────────────────────────────────────────────────────────── */
 .employee-dashboard-container {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
+/* ── Card grid: single column, full-width cards ─────────────────────────────── */
 .card-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
 }
 
-.card-grid > :nth-child(3) {
-    grid-column: 1 / -1;
-}
-
+/* ── Desktop (≥ 900 px): more breathing room ────────────────────────────────── */
 @media (min-width: 900px) {
+    .employee-dashboard-container {
+        padding: 1.5rem;
+    }
+
     .card-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
-    }
-
-    .card-grid > :nth-child(3) {
-        grid-column: auto;
+        margin-bottom: 2rem;
     }
 }

@@ -14,6 +14,11 @@
     gap: 0.75rem;
 }
 
+/* ECharts canvas wrapper — height controlled here so media queries can override */
+.chart-echarts-wrapper {
+    height: 300px;
+}
+
 .chart-loading {
     height: 300px;
     display: flex;
@@ -59,4 +64,54 @@ html[data-theme='dark'] {
 
 .metric-select-panel .p-dropdown-item {
     font-size: 0.8rem !important;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+    .chart-card {
+        padding: 0.85rem 0.85rem 1rem;
+    }
+
+    /*
+     * Single-row header: time filters on the left, metric selector on the right.
+     * flex-wrap: nowrap is critical — without it the metric-select wraps to a
+     * second line the moment available width is even 1 px too narrow.
+     */
+    .chart-header {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Time-filter pill grows to fill the remaining space, shrinks as needed */
+    .chart-header .time-filters {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /*
+     * Metric select: fixed to its natural content width, never grows or shrinks.
+     * 6 rem is enough for the widest label ("Temperature") at 0.75 rem font.
+     */
+    .chart-header .metric-select.p-dropdown {
+        flex: 0 0 auto;
+        min-width: 6rem !important;
+        height: 2rem !important;
+    }
+
+    /* Compact filter buttons so all four fit inside the pill on 390 px screens */
+    .chart-header .time-filter-btn {
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.72rem !important;
+    }
+
+    .chart-echarts-wrapper {
+        height: 290px;
+    }
+
+    .chart-loading {
+        height: 290px;
+    }
 }

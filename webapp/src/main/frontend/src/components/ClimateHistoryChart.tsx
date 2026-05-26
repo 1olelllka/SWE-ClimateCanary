@@ -34,17 +34,17 @@ interface Limits {
 }
 
 interface RawPoint {
-    timestamp:  string;
+    timestamp:   string;
     temperature: number;
     humidity:    number;
     airQuality:  number;
 }
 
 interface AggPoint {
-    date:            string;
-    avgTemperature:  number;
-    avgHumidity:     number;
-    avgAirQuality:   number;
+    date:           string;
+    avgTemperature: number;
+    avgHumidity:    number;
+    avgAirQuality:  number;
 }
 
 interface Props {
@@ -52,43 +52,60 @@ interface Props {
     hideDayView?: boolean;
 }
 
+// ── Bucket sizes for the Day-view progressive zoom ──────────────────────────
+const MS_HOUR   = 60 * 60 * 1000;
+const MS_MINUTE = 60 * 1000;
+const MS_SECOND = 1000;
+
+const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 899);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 899);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+    return isMobile;
+};
+
 const mean = (nums: number[]) =>
     nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
 
-function groupByHour(raw: RawPoint[]): DataPoint[] {
+/**
+ * Aggregate raw points into DataPoints by bucketing every `bucketMs` milliseconds.
+ * - bucketMs = MS_HOUR   → hourly averages,  label "HH:00"
+ * - bucketMs = MS_MINUTE → minute averages,  label "HH:MM"
+ * - bucketMs = MS_SECOND → 1-second buckets, label "HH:MM:SS"
+ */
+function aggregateByMs(raw: RawPoint[], bucketMs: number): DataPoint[] {
+    if (!raw.length) return [];
     const p2 = (n: number) => String(n).padStart(2, '0');
-    const groups = new Map<string, RawPoint[]>();
-    raw.forEach(p => {
-        const d = new Date(p.timestamp);
-        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}`;
-        groups.set(key, [...(groups.get(key) ?? []), p]);
-    });
+    const groups = new Map<number, RawPoint[]>();
+    for (const p of raw) {
+        const t           = new Date(p.timestamp).getTime();
+        const bucketStart = Math.floor(t / bucketMs) * bucketMs;
+        const arr         = groups.get(bucketStart);
+        if (arr) arr.push(p);
+        else     groups.set(bucketStart, [p]);
+    }
     return [...groups.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, pts]) => ({
-            label:       key.slice(11) + ':00',
-            temperature: mean(pts.map(p => p.temperature)),
-            humidity:    mean(pts.map(p => p.humidity)),
-            airQuality:  mean(pts.map(p => p.airQuality)),
-        }));
-}
-
-function groupByDay(raw: RawPoint[]): DataPoint[] {
-    const p2 = (n: number) => String(n).padStart(2, '0');
-    const groups = new Map<string, RawPoint[]>();
-    raw.forEach(p => {
-        const d = new Date(p.timestamp);
-        const key = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
-        groups.set(key, [...(groups.get(key) ?? []), p]);
-    });
-    return [...groups.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, pts]) => ({
-            label:       key,
-            temperature: mean(pts.map(p => p.temperature)),
-            humidity:    mean(pts.map(p => p.humidity)),
-            airQuality:  mean(pts.map(p => p.airQuality)),
-        }));
+        .sort(([a], [b]) => a - b)
+        .map(([bucket, pts]) => {
+            const d = new Date(bucket);
+            let label: string;
+            if (bucketMs >= MS_HOUR) {
+                label = `${p2(d.getHours())}:00`;
+            } else if (bucketMs >= MS_MINUTE) {
+                label = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
+            } else {
+                label = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+            }
+            return {
+                label,
+                temperature: mean(pts.map(p => p.temperature)),
+                humidity:    mean(pts.map(p => p.humidity)),
+                airQuality:  mean(pts.map(p => p.airQuality)),
+            };
+        });
 }
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
@@ -113,31 +130,34 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 
-/** Convert an "HH:MM" hour label to 12-hour format. Non-matching labels pass through. */
-function toHourLabel12(label: string): string {
-    const m = label.match(/^(\d{2}):(\d{2})$/);
-    if (!m) return label;
-    const h = parseInt(m[1], 10);
+/** Convert an "HH:MM" or "HH:MM:SS" label to 12-hour format. */
+function toTimeLabel12(label: string): string {
+    const parts = label.split(':');
+    if (parts.length < 2) return label;
+    const h    = parseInt(parts[0], 10);
     const ampm = h >= 12 ? 'PM' : 'AM';
-    return `${h % 12 || 12}:${m[2]} ${ampm}`;
+    const h12  = h % 12 || 12;
+    return parts.length === 3
+        ? `${h12}:${parts[1]}:${parts[2]} ${ampm}`
+        : `${h12}:${parts[1]} ${ampm}`;
 }
 
 /**
- * Convert a chart x-axis label for display:
- * - "HH:MM"      → 12h if is12Hour ("2:00 PM"), else unchanged
- * - "YYYY-MM-DD" → reformatted by dateFormat ("24.05.2025", "05/24/2025", "2025-05-24")
- * - anything else → unchanged
+ * Convert a chart x-axis label for display respecting time/date format preferences.
+ * Handles: "HH:MM", "HH:MM:SS", "YYYY-MM-DD"
  */
 function convertChartLabel(label: string, is12Hour: boolean, dateFormat: string): string {
-    if (/^\d{2}:\d{2}$/.test(label)) {
-        return is12Hour ? toHourLabel12(label) : label;
+    // Time labels
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(label)) {
+        return is12Hour ? toTimeLabel12(label) : label;
     }
+    // Date labels
     const dm = label.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (dm) {
         const [, yyyy, mm, dd] = dm;
         if (dateFormat === 'MM_DD_YYYY') return `${mm}/${dd}/${yyyy}`;
-        if (dateFormat === 'YYYY_MM_DD') return label; // already correct
-        return `${dd}.${mm}.${yyyy}`;                  // DD_MM_YYYY default
+        if (dateFormat === 'YYYY_MM_DD') return label;
+        return `${dd}.${mm}.${yyyy}`;   // DD_MM_YYYY default
     }
     return label;
 }
@@ -146,23 +166,67 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const toastRef = useRef<Toast>(null);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
     const { is12Hour, dateFormat } = useTimeFormat();
+    const isMobile = useIsMobile();
+
     const [timeFilter, setTimeFilter] = useState<TimeFilter>(hideDayView ? 'Week' : 'Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
-    const [data,       setData]       = useState<DataPoint[]>([]);
+    const [data,       setData]       = useState<DataPoint[]>([]);   // Week / Month / Custom
     const [limits,     setLimits]     = useState<Limits | null>(null);
     const [loading,    setLoading]    = useState(false);
 
-    /** Labels converted for display (12h time + date format preference). */
+    // ── Day-view progressive zoom state ──────────────────────────────────────
+    // All raw points fetched from the API for the current day
+    const [dayRawPoints, setDayRawPoints] = useState<RawPoint[]>([]);
+    // ECharts dataZoom position (percentages 0–100); tracked so we can persist
+    // them across option re-renders and use them to pick aggregation granularity
+    const [zoomStart, setZoomStart] = useState(0);
+    const [zoomEnd,   setZoomEnd]   = useState(100);
+
+    // Reset zoom to full range whenever the time filter changes
+    useEffect(() => {
+        setZoomStart(0);
+        setZoomEnd(100);
+    }, [timeFilter]);
+
+    /**
+     * Choose the bucket size based on how many raw Day-view points fall in the
+     * currently visible window:
+     *   > 180 visible → hourly   (smooth overview of the full day)
+     *   10–180        → minutely (trend within a few hours)
+     *   < 10          → 1-second (individual readings)
+     */
+    const dayBucketMs = useMemo(() => {
+        if (timeFilter !== 'Day' || !dayRawPoints.length) return MS_HOUR;
+        const visibleFraction = (zoomEnd - zoomStart) / 100;
+        const visibleCount    = dayRawPoints.length * visibleFraction;
+        if (visibleCount > 180) return MS_HOUR;
+        if (visibleCount > 10)  return MS_MINUTE;
+        return MS_SECOND;
+    }, [timeFilter, dayRawPoints.length, zoomStart, zoomEnd]);
+
+    /** Aggregated Day-view data; recomputed whenever zoom level or raw data changes. */
+    const dayData = useMemo(
+        () => (timeFilter === 'Day' ? aggregateByMs(dayRawPoints, dayBucketMs) : []),
+        [timeFilter, dayRawPoints, dayBucketMs],
+    );
+
+    /**
+     * The data actually fed to the chart.
+     * Day view uses zoom-reactive aggregation; all other views use static data.
+     */
+    const effectiveData = timeFilter === 'Day' ? dayData : data;
+
+    /** Labels converted for display (12-h time / date-format preference). */
     const displayData = useMemo(
-        () => data.map(d => ({ ...d, label: convertChartLabel(d.label, is12Hour, dateFormat) })),
-        [data, is12Hour, dateFormat],
+        () => effectiveData.map(d => ({ ...d, label: convertChartLabel(d.label, is12Hour, dateFormat) })),
+        [effectiveData, is12Hour, dateFormat],
     );
 
     const metricOptions = [
         { label: 'All metrics', value: 'All' },
         { label: 'Temperature', value: 'Temperature' },
-        { label: 'Humidity', value: 'Humidity' },
+        { label: 'Humidity',    value: 'Humidity' },
         { label: 'Air Quality', value: 'Air Quality' },
     ];
 
@@ -174,24 +238,30 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
 
     const fetchData = useCallback(() => {
         setLoading(true);
-        let req: Promise<DataPoint[]>;
 
+        // ── Day view: fetch all raw points; aggregation is done reactively ──
         if (timeFilter === 'Day') {
             const now = new Date();
-            // Floor to the current hour — this is the boundary where the last complete hour ends
             const end = new Date(now);
             end.setMinutes(0, 0, 0);
             const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-            req = new RoomControllerApi().getOvertimeClimateData({
-                    roomId,
-                    startDate: fmtDate(start),
-                    endDate:   fmtDate(end),
-                    startTime: fmtTime(start),
-                    endTime:   fmtTime(end),
-                })
-                .then(r => groupByHour(r.data as RawPoint[]));
+            new RoomControllerApi().getOvertimeClimateData({
+                roomId,
+                startDate: fmtDate(start),
+                endDate:   fmtDate(end),
+                startTime: fmtTime(start),
+                endTime:   fmtTime(end),
+            })
+            .then(r => setDayRawPoints(r.data as RawPoint[]))
+            .catch(() => setDayRawPoints([]))
+            .finally(() => setLoading(false));
+            return; // Day view is self-contained — skip the shared handler below
+        }
 
-        } else if (timeFilter === 'Custom' && dateRange?.[0] && dateRange?.[1]) {
+        // ── Week / Month / Custom: aggregated data from getClimateHistory ──
+        let req: Promise<DataPoint[]>;
+
+        if (timeFilter === 'Custom' && dateRange?.[0] && dateRange?.[1]) {
             const startDate = dateRange[0].toISOString().slice(0, 10);
             const endDate   = dateRange[1].toISOString().slice(0, 10);
             const diffDays  = Math.round(
@@ -209,36 +279,27 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
                 setTimeFilter('Week');
                 setDateRange(null);
                 return;
-            } else {
-                // Multi-day — use aggregated climate-history with smart granularity
-                const granularity = diffDays <= 4
-                    ? 'HOUR'
-                    : diffDays > 4 && diffDays < 45 ? 'DAY'
-                    : 'WEEK';
-
-                req = new RoomControllerApi().getClimateHistory({
-                        roomId,
-                        startDate,
-                        endDate,
-                        granularity: granularity as GetClimateHistoryGranularityEnum,
-                    })
-                    .then(r => (r.data as AggPoint[]).map(d => ({
-                        label:       d.date,
-                        temperature: d.avgTemperature,
-                        humidity:    d.avgHumidity,
-                        airQuality:  d.avgAirQuality,
-                    })));
-                req.then(setData).catch(() => setData([])).finally(() => setLoading(false));
             }
+
+            const granularity = diffDays <= 4
+                ? 'HOUR'
+                : diffDays < 45 ? 'DAY'
+                : 'WEEK';
+
+            req = new RoomControllerApi().getClimateHistory({
+                    roomId, startDate, endDate,
+                    granularity: granularity as GetClimateHistoryGranularityEnum,
+                })
+                .then(r => (r.data as AggPoint[]).map(d => ({
+                    label:       d.date,
+                    temperature: d.avgTemperature,
+                    humidity:    d.avgHumidity,
+                    airQuality:  d.avgAirQuality,
+                })));
         } else {
-            // const tfMap: Record<string, string> = { Week: 'WEEK', Month: 'MONTH' };
-            let startDate;
-            if (timeFilter == 'Month') {
-                startDate = fmtDate(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 31))
-            } else {
-                startDate = fmtDate(new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 7))
-            }
-
+            const startDate = fmtDate(new Date(
+                Date.now() - 1000 * 60 * 60 * 24 * (timeFilter === 'Month' ? 31 : 7),
+            ));
             req = new RoomControllerApi().getClimateHistory({
                     roomId,
                     startDate,
@@ -261,6 +322,21 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         fetchData();
     }, [fetchData, timeFilter, dateRange]);
 
+    // ── ECharts event: track zoom so we can switch aggregation granularity ──
+    const onEvents = useMemo(() => ({
+        datazoom: (params: any) => {
+            if (timeFilter !== 'Day') return;
+            // ECharts may fire with a batch array (inside zoom) or flat params (slider)
+            const ev     = Array.isArray(params.batch) ? params.batch[0] : params;
+            const s: number | undefined = ev?.start;
+            const e: number | undefined = ev?.end;
+            if (s != null && e != null) {
+                setZoomStart(s);
+                setZoomEnd(e);
+            }
+        },
+    }), [timeFilter]);
+
     const showTemp = metric === 'All' || metric === 'Temperature';
     const showHum  = metric === 'All' || metric === 'Humidity';
     const showAQ   = metric === 'All' || metric === 'Air Quality';
@@ -278,9 +354,9 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
         let start: string | null = null;
         for (const pt of pts) {
-            const v = getValue(pt);
+            const v   = getValue(pt);
             const bad = (min != null && v < min) || (max != null && v > max);
-            if (bad && start == null) { start = pt.label; }
+            if (bad && start == null)  { start = pt.label; }
             else if (!bad && start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
         }
         if (start != null) out.push([{ xAxis: start }, { xAxis: pts[pts.length - 1].label }]);
@@ -302,7 +378,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
 
     function mkViolationArea(
         ranges: Array<[{ xAxis: string }, { xAxis: string }]>,
-        color: string,
+        color:  string,
     ) {
         if (!ranges.length) return undefined;
         return {
@@ -316,21 +392,21 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const noDataZones = findNoDataZones(displayData);
 
     const series = [
-        // Phantom series — only used to render the no-data grey zones across all metrics
+        // Phantom series — renders no-data grey zones across all metrics
         {
-            name: '__nodata__',
-            type: 'line' as const,
-            data: [],
+            name:      '__nodata__',
+            type:      'line' as const,
+            data:      [],
             lineStyle: { opacity: 0 },
             itemStyle: { opacity: 0 },
-            markArea: noDataZones.length > 0 ? {
-                silent: true,
+            markArea:  noDataZones.length > 0 ? {
+                silent:    true,
                 itemStyle: { color: 'rgba(148, 163, 184, 0.18)', borderWidth: 0 },
                 label: {
-                    show: true,
-                    position: 'insideTop' as const,
-                    color: '#94a3b8',
-                    fontSize: 10,
+                    show:      true,
+                    position:  'insideTop' as const,
+                    color:     '#94a3b8',
+                    fontSize:  10,
                     formatter: () => 'No data',
                 },
                 data: noDataZones,
@@ -391,45 +467,52 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     const rotateLabels = timeFilter === 'Day' || timeFilter === 'Custom';
     const showLegend   = metric === 'All';
 
-    // Rotated labels need ~54 px; legend needs ~28 px; combine when both are present
-    const gridBottom = (rotateLabels ? 54 : 28) + (showLegend ? 46 : 0);
+    // Rotated labels need ~54 px; legend needs ~46 px; reduced on mobile
+    const gridBottom = isMobile
+        ? (rotateLabels ? 40 : 22) + (showLegend ? 32 : 0)
+        : (rotateLabels ? 54 : 28) + (showLegend ? 46 : 0);
 
     const yAxisMax: number | undefined = (() => {
-        if (L == null || !data.length) return undefined;
+        if (L == null || !effectiveData.length) return undefined;
         if (metric === 'Temperature') {
-            const topC = Math.max(data.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
+            const topC = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.temperature), -Infinity), L.tempMax);
             const top  = convertTemp(topC);
             return Math.ceil(top + Math.abs(top) * 0.1);
         }
         if (metric === 'Humidity') {
-            const top = Math.max(data.reduce((m, d) => Math.max(m, d.humidity), 0), L.humMax);
+            const top = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.humidity), 0), L.humMax);
             return Math.ceil(top * 1.1);
         }
         if (metric === 'Air Quality') {
-            const top = Math.max(data.reduce((m, d) => Math.max(m, d.airQuality), 0), L.co2Max);
+            const top = Math.max(effectiveData.reduce((m, d) => Math.max(m, d.airQuality), 0), L.co2Max);
             return Math.ceil(top * 1.1);
         }
         return undefined;
     })();
 
     const yAxisMin: number | undefined = (() => {
-        if (L == null || !data.length) return undefined;
+        if (L == null || !effectiveData.length) return undefined;
         if (metric === 'Temperature') {
-            const bottomC = Math.min(data.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
+            const bottomC = Math.min(effectiveData.reduce((m, d) => Math.min(m, d.temperature), Infinity), L.tempMin);
             const bottom  = convertTemp(bottomC);
             return Math.floor(bottom - Math.abs(bottom) * 0.1);
         }
         if (metric === 'Humidity') {
-            const bottom = Math.min(data.reduce((m, d) => Math.min(m, d.humidity), Infinity), L.humMin);
+            const bottom = Math.min(effectiveData.reduce((m, d) => Math.min(m, d.humidity), Infinity), L.humMin);
             return Math.max(0, Math.floor(bottom * 0.9));
         }
         return undefined;
     })();
 
+    const chartTextColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color').trim() || '#475569';
+
     const option = {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            confine:     true,
+            textStyle:   { fontSize: isMobile ? 11 : 12 },
             formatter: (params: any[]) => {
                 if (!params.length) return '';
                 let out = `<div style="margin-bottom:4px;font-weight:600">${params[0].name}</div>`;
@@ -439,7 +522,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
                     let violated = false;
                     if (L) {
                         if (p.seriesName === `Temperature (${tempUnit})`)
-                            violated = (L.tempMin != null && v < round2(convertTemp(L.tempMin))) || (L.tempMax != null && v > round2(convertTemp(L.tempMax)));
+                            violated = (L.tempMin != null && v < round2(convertTemp(L.tempMin))) ||
+                                       (L.tempMax != null && v > round2(convertTemp(L.tempMax)));
                         else if (p.seriesName === 'Humidity (%)')
                             violated = (L.humMin != null && v < L.humMin) || (L.humMax != null && v > L.humMax);
                         else if (p.seriesName === 'Air Quality (ppm)')
@@ -455,20 +539,23 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             },
         },
         legend: {
-            show: showLegend,
+            show:   showLegend,
             bottom: 0,
-            data: [`Temperature (${tempUnit})`, 'Humidity (%)', 'Air Quality (ppm)'],
-            textStyle: {
-                fontSize: 11,
-                color: getComputedStyle(document.documentElement)
-                    .getPropertyValue('--chart-text-color')
-                    .trim() || '#475569',
-            },
+            data:   [`Temperature (${tempUnit})`, 'Humidity (%)', 'Air Quality (ppm)'],
+            formatter: isMobile
+                ? (name: string) => {
+                    if (name.includes('Temperature')) return `Temp (${tempUnit})`;
+                    if (name === 'Humidity (%)')       return 'Hum (%)';
+                    if (name === 'Air Quality (ppm)')  return 'CO₂';
+                    return name;
+                }
+                : undefined,
+            textStyle: { fontSize: isMobile ? 10 : 11, color: chartTextColor },
         },
         grid: {
-            left:         48,
-            right:        24,
-            top:          16,
+            left:         isMobile ? 36 : 48,
+            right:        isMobile ? 14 : 24,
+            top:          isMobile ? 10 : 16,
             bottom:       gridBottom,
             containLabel: false,
         },
@@ -477,12 +564,11 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             boundaryGap: false,
             data:        displayData.map(d => d.label),
             axisLabel: {
-                rotate: rotateLabels ? 35 : 0,
-                fontSize: 11,
-                align: rotateLabels ? 'right' : 'center',
-                color: getComputedStyle(document.documentElement)
-                    .getPropertyValue('--chart-text-color')
-                    .trim() || '#475569',
+                rotate:   rotateLabels ? (isMobile ? 20 : 35) : 0,
+                fontSize: isMobile ? 10 : 11,
+                interval: 'auto' as const,
+                align:    rotateLabels ? 'right' : 'center',
+                color:    chartTextColor,
             },
             axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
@@ -490,15 +576,21 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             type:      'value' as const,
             max:       yAxisMax,
             min:       yAxisMin,
-            nice: true,
+            nice:      true,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel: {
-                fontSize: 11,
-                color: getComputedStyle(document.documentElement)
-                    .getPropertyValue('--chart-text-color')
-                    .trim() || '#475569',
-            },
+            axisLabel: { fontSize: isMobile ? 10 : 11, color: chartTextColor },
         },
+        dataZoom: [{
+            type:          'inside' as const,
+            xAxisIndex:    0,
+            filterMode:    'none' as const,
+            // Persist the zoom position across re-renders (needed when aggregation
+            // level changes and xAxis.data length changes)
+            start:         zoomStart,
+            end:           zoomEnd,
+            // Never allow zooming past 2 visible data points
+            minValueSpan:  1,
+        }],
         series,
     };
 
@@ -507,15 +599,17 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             <Toast ref={toastRef} position="top-right" />
             <div className="chart-header">
                 <div className="time-filters">
-                    {(['Day', 'Week', 'Month'] as TimeFilter[]).filter(f => !(hideDayView && f === 'Day')).map(f => (
-                        <button
-                            key={f}
-                            className={`time-filter-btn ${timeFilter === f ? 'active' : ''}`}
-                            onClick={() => { setTimeFilter(f); setDateRange(null); }}
-                        >
-                            {f}
-                        </button>
-                    ))}
+                    {(['Day', 'Week', 'Month'] as TimeFilter[])
+                        .filter(f => !(hideDayView && f === 'Day'))
+                        .map(f => (
+                            <button
+                                key={f}
+                                className={`time-filter-btn ${timeFilter === f ? 'active' : ''}`}
+                                onClick={() => { setTimeFilter(f); setDateRange(null); }}
+                            >
+                                {f}
+                            </button>
+                        ))}
                     <DashboardCalendar
                         dateRange={dateRange}
                         setDateRange={setDateRange}
@@ -535,10 +629,17 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
 
             {loading ? (
                 <div className="chart-loading">Loading…</div>
-            ) : data.length === 0 ? (
+            ) : effectiveData.length === 0 ? (
                 <div className="chart-loading">No data available</div>
             ) : (
-                <ReactECharts option={option} style={{ height: 300 }} notMerge />
+                <div className="chart-echarts-wrapper">
+                    <ReactECharts
+                        option={option}
+                        style={{ height: '100%', width: '100%' }}
+                        notMerge
+                        onEvents={onEvents}
+                    />
+                </div>
             )}
         </div>
     );
