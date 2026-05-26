@@ -328,7 +328,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
             const isStale = climate !== null
-                && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+                && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
             return mapToRoomData(room, isStale ? null : climate, warnings);
         });
     }, []);

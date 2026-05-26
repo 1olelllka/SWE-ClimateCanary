@@ -158,7 +158,7 @@ export const RoomDetailPage: React.FC = () => {
     }, [roomId]);
 
     const isClimateStale = climate !== null
-        && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+        && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
     const currentClimate = isClimateStale ? null : climate;
 
     const fmt = (v: number | undefined, decimals = 1): string =>

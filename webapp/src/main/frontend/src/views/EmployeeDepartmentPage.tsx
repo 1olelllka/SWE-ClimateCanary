@@ -185,7 +185,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
             .then(response => {
                 const data: ClimateDataPointDTO = response.data as any;
                 const isStale = data !== null
-                    && (Date.now() - new Date(data.timestamp).getTime()) > 5 * 60 * 1000;
+                    && (Date.now() - new Date(data.timestamp).getTime()) > 30 * 1000;
                 setCurrentClimate(isStale ? null : data);
             })
             .catch(err => {
