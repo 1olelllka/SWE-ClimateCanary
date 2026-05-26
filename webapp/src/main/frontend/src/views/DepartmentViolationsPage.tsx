@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DepartmentControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 import { UserxDTO } from '../generated-skeleton-api';
 import { ThresholdViolationsTable, ThresholdViolationData } from '../components/ThresholdViolationsTable';
 import { PageHeader } from '../components/PageHeader';
@@ -51,11 +52,14 @@ const formatNumber = (
     return t === 'AIR' ? `${displayValue.toFixed(0)} ${unit}`.trim() : `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
-const formatDatetime = (iso?: string): string => {
+const formatDatetime = (
+    iso?: string,
+    fmtTimeFn: (d: Date) => string = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+): string => {
     if (!iso) return 'n/a';
     const d = new Date(iso);
     const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${fmtTimeFn(d)}`;
 };
 
 const parseDT = (dt: string): Date => {
@@ -70,6 +74,7 @@ const mapWarning = (
     roomLabel: string,
     tempConvert: (c: number) => number = v => v,
     tempUnit = '°C',
+    fmtTimeFn?: (d: Date) => string,
 ): ThresholdViolationData => ({
     id:           w.id,
     status:       w.status,
@@ -78,12 +83,14 @@ const mapWarning = (
     room:         roomLabel,
     limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType, tempConvert, tempUnit)}`,
     measuredValue: formatNumber(w.triggeredValue, w.measurementType, tempConvert, tempUnit),
-    datetime:     formatDatetime(w.createdAt),
+    datetime:     formatDatetime(w.createdAt, fmtTimeFn),
 });
 
 export const DepartmentViolationsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { formatTime } = useTimeFormat();
+    const fmtTimeFn = (d: Date) => formatTime(d);
     const [violations, setViolations] = useState<ThresholdViolationData[]>([]);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState<string | null>(null);
@@ -119,7 +126,7 @@ export const DepartmentViolationsPage: React.FC = () => {
                         .then(r => {
                             const warnings = Array.isArray(r.data) ? r.data as WarningDTO[] : [];
                             const label = room.roomNumber || room.name || room.id;
-                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit));
+                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit, fmtTimeFn));
                         })
                         .catch(() => [])
                     )
@@ -131,7 +138,7 @@ export const DepartmentViolationsPage: React.FC = () => {
             })
             .catch(() => setError('Could not load threshold violations.'))
             .finally(() => setLoading(false));
-    }, [convertTemp, tempUnit]);
+    }, [convertTemp, tempUnit, fmtTimeFn]);
 
     useEffect(() => { fetchViolations(); }, [fetchViolations]);
 

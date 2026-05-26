@@ -9,6 +9,7 @@ import { Toast } from 'primereact/toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 interface ClimateData {
     timestamp: string;
@@ -220,15 +221,14 @@ export const EmployeeDashboard: React.FC = () => {
     const currentClimate = isClimateStale ? null : climate;
 
     const { convert: convertTemp, convertDelta, unit: tempUnit } = useTemperature();
+    const { formatTime } = useTimeFormat();
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
     const fmtTemp = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? convertTemp(v).toFixed(decimals) : (loading ? '…' : 'N/A');
 
-    const updatedAt = currentClimate
-        ? new Date(currentClimate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : '--:--';
+    const updatedAt = currentClimate ? formatTime(currentClimate.timestamp) : '--:--';
 
     // Sparkline: display only the last 10 minutes; trend uses full historyPoints to find 10-min-ago reference
     const tenMinAgo = Date.now() - 10 * 60 * 1000;

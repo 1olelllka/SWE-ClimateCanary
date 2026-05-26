@@ -8,6 +8,7 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import '../styles/CreateAbsenceForm.css';
 import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -229,11 +230,14 @@ const formatSensorName = (measurementType?: string): string => {
     return measurementType ?? 'Unknown';
 };
 
-const formatDatetime = (dateString?: string): string => {
+const formatDatetime = (
+    dateString?: string,
+    fmtTimeFn: (d: Date) => string = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`,
+): string => {
     if (!dateString) return 'n/a';
     const d = new Date(dateString);
     const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${fmtTimeFn(d)}`;
 };
 
 const formatViolationNumber = (
@@ -254,6 +258,7 @@ const mapWarningToThresholdViolation = (
     roomLabel: string,
     tempConvert: (c: number) => number = v => v,
     tempUnit = '°C',
+    fmtTimeFn?: (d: Date) => string,
 ): ThresholdViolationData => {
     const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
@@ -264,7 +269,7 @@ const mapWarningToThresholdViolation = (
         room:         roomLabel,
         limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType, tempConvert, tempUnit)}`,
         measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType, tempConvert, tempUnit),
-        datetime:     formatDatetime(warning.createdAt),
+        datetime:     formatDatetime(warning.createdAt, fmtTimeFn),
     };
 };
 
@@ -312,6 +317,8 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { formatTime, formatDatetime: formatDatetimeHook } = useTimeFormat();
+    const fmtTimeFn = (d: Date) => formatTime(d);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
     const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
@@ -379,7 +386,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit)
+                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit, fmtTimeFn)
                         );
                     })
                     .catch(error => {
@@ -411,7 +418,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setViolationsLoading(false);
             });
-    }, []);
+    }, [convertTemp, tempUnit, fmtTimeFn]);
 
     const fetchPendingRequests = useCallback(() => {
         setPendingRequestsLoading(true);
@@ -735,7 +742,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                         {viewingAbsenceDetail?.createdAt && (
                             <div className="absence-form-field">
                                 <span className="absence-form-label">Submitted On</span>
-                                <input className="absence-form-input" value={formatDatetime(viewingAbsenceDetail.createdAt)} readOnly />
+                                <input className="absence-form-input" value={formatDatetimeHook(viewingAbsenceDetail.createdAt)} readOnly />
                             </div>
                         )}
 

@@ -3,6 +3,7 @@ import { DepartmentControllerApi, RoomControllerApi, UserxControllerApi, Warning
 import { Toast } from 'primereact/toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -62,19 +63,10 @@ export const getRoomDisplayName = (room: RoomDTO) => {
     return room.name || room.roomNumber || 'Unnamed room';
 };
 
-const formatLastUpdated = (timestamp?: string | null) => {
-    if (!timestamp) {
-        return '-';
-    }
-
-    return new Date(timestamp).toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
 
 export const EmployeeDepartmentPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { formatTime } = useTimeFormat();
     const [currentUser, setCurrentUser] = useState<UserxDTO | null>(null);
     const [rooms, setRooms] = useState<RoomDTO[]>([]);
 
@@ -303,7 +295,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
 
                 <div className="employee-department-toolbar">
                     <span className="employee-department-last-updated">
-                        Last updated at {formatLastUpdated(currentClimate?.timestamp)}
+                        Last updated at {currentClimate?.timestamp ? formatTime(currentClimate.timestamp) : '-'}
                     </span>
 
                     <input

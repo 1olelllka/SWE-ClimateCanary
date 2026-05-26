@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { GetClimateHistoryGranularityEnum, RoomControllerApi } from '../generated-skeleton-api';
 import { DashboardCalendar } from './Calendar';
@@ -7,6 +7,7 @@ import { Dropdown } from 'primereact/dropdown';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 const COLORS = {
     temperature: '#e05252',
@@ -112,15 +113,31 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const fmtTime = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 
+/** Convert an "HH:MM" hour label to 12-hour format. Passes non-matching labels through unchanged. */
+function toHourLabel12(label: string): string {
+    const m = label.match(/^(\d{2}):(\d{2})$/);
+    if (!m) return label;
+    const h = parseInt(m[1], 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    return `${h % 12 || 12}:${m[2]} ${ampm}`;
+}
+
 export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = false }) => {
     const toastRef = useRef<Toast>(null);
     const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { is12Hour } = useTimeFormat();
     const [timeFilter, setTimeFilter] = useState<TimeFilter>(hideDayView ? 'Week' : 'Day');
     const [dateRange,  setDateRange]  = useState<Date[] | null>(null);
     const [metric,     setMetric]     = useState<Metric>('All');
     const [data,       setData]       = useState<DataPoint[]>([]);
     const [limits,     setLimits]     = useState<Limits | null>(null);
     const [loading,    setLoading]    = useState(false);
+
+    /** Labels converted to 12h format when the user prefers it; raw data otherwise. */
+    const displayData = useMemo(
+        () => is12Hour ? data.map(d => ({ ...d, label: toHourLabel12(d.label) })) : data,
+        [data, is12Hour],
+    );
 
     const metricOptions = [
         { label: 'All metrics', value: 'All' },
@@ -276,7 +293,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         };
     }
 
-    const noDataZones = findNoDataZones(data);
+    const noDataZones = findNoDataZones(displayData);
 
     const series = [
         // Phantom series — only used to render the no-data grey zones across all metrics
@@ -306,13 +323,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.temperature, width: 2 },
             itemStyle: { color: COLORS.temperature },
-            data:      data.map(d => round2(convertTemp(d.temperature))),
+            data:      displayData.map(d => round2(convertTemp(d.temperature))),
             markLine:  L && metric === 'Temperature' ? mkLimitLines([
                 { yAxis: round2(convertTemp(L.tempMin)), name: `T ${round2(convertTemp(L.tempMin))}${tempUnit}` },
                 { yAxis: round2(convertTemp(L.tempMax)), name: `T ${round2(convertTemp(L.tempMax))}${tempUnit}` },
             ], COLORS.temperature) : undefined,
             markArea: L ? mkViolationArea(
-                violationRanges(data, d => d.temperature, L.tempMin ?? null, L.tempMax ?? null),
+                violationRanges(displayData, d => d.temperature, L.tempMin ?? null, L.tempMax ?? null),
                 COLORS.temperature,
             ) : undefined,
         },
@@ -323,13 +340,13 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.humidity, width: 2 },
             itemStyle: { color: COLORS.humidity },
-            data:      data.map(d => round2(d.humidity)),
+            data:      displayData.map(d => round2(d.humidity)),
             markLine:  L && metric === 'Humidity' ? mkLimitLines([
                 { yAxis: L.humMin, name: `H ${L.humMin}%` },
                 { yAxis: L.humMax, name: `H ${L.humMax}%` },
             ], COLORS.humidity) : undefined,
             markArea: L ? mkViolationArea(
-                violationRanges(data, d => d.humidity, L.humMin ?? null, L.humMax ?? null),
+                violationRanges(displayData, d => d.humidity, L.humMin ?? null, L.humMax ?? null),
                 COLORS.temperature,
             ) : undefined,
         },
@@ -340,12 +357,12 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             symbol:    'none',
             lineStyle: { color: COLORS.airQuality, width: 2 },
             itemStyle: { color: COLORS.airQuality },
-            data:      data.map(d => round2(d.airQuality)),
+            data:      displayData.map(d => round2(d.airQuality)),
             markLine:  L && metric === 'Air Quality' ? mkLimitLines([
                 { yAxis: L.co2Max, name: `CO₂ ${L.co2Max}` },
             ], COLORS.airQuality) : undefined,
             markArea: L ? mkViolationArea(
-                violationRanges(data, d => d.airQuality, null, L.co2Max ?? null),
+                violationRanges(displayData, d => d.airQuality, null, L.co2Max ?? null),
                 COLORS.temperature,
             ) : undefined,
         },
@@ -438,7 +455,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         xAxis: {
             type:        'category' as const,
             boundaryGap: false,
-            data:        data.map(d => d.label),
+            data:        displayData.map(d => d.label),
             axisLabel: {
                 rotate: rotateLabels ? 35 : 0,
                 fontSize: 11,

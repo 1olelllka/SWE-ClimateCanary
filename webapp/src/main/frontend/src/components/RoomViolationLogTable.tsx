@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 export interface ViolationDTO {
     readonly id?: string;
@@ -31,13 +32,6 @@ const STATUS_COLOR: Record<string, string> = {
     GREEN: '#22c55e',
 };
 
-const formatDateTime = (value?: string | null) => {
-    if (!value) return '—';
-    return new Date(value).toLocaleString('de-DE', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit',
-    });
-};
 
 const fmt = (v?: number | null) =>
     v == null ? '—' : v.toFixed(1).replace('.', ',');
@@ -46,6 +40,7 @@ export const RoomViolationLogTable: React.FC<RoomViolationLogTableProps> = ({ vi
     const [sensorFilter, setSensorFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [activeOnly, setActiveOnly] = useState(false);
+    const { formatDatetime } = useTimeFormat();
 
     const filtered = useMemo(() => violations.filter(v => {
         if (sensorFilter !== 'ALL' && v.measurementType !== sensorFilter) return false;
@@ -54,7 +49,7 @@ export const RoomViolationLogTable: React.FC<RoomViolationLogTableProps> = ({ vi
         return true;
     }), [violations, sensorFilter, statusFilter, activeOnly]);
 
-    const dateTemplate    = (v: ViolationDTO) => formatDateTime(v.createdAt);
+    const dateTemplate    = (v: ViolationDTO) => v.createdAt ? formatDatetime(v.createdAt, '—') : '—';
     const sensorTemplate  = (v: ViolationDTO) => SENSOR_LABEL[v.measurementType ?? ''] ?? v.measurementType ?? '—';
     const measuredTemplate = (v: ViolationDTO) => fmt(v.triggeredValue);
     const limitTemplate   = (v: ViolationDTO) => fmt(v.activeLimitAtTime);

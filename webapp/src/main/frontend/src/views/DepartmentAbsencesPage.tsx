@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 import { AbsenceControllerApi, AbsenceDTO, AbsencePatchDTOStatusEnum } from '../generated-skeleton-api';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
@@ -40,15 +41,10 @@ const formatDate = (iso?: string | null) => {
     return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`;
 };
 
-const formatDatetime = (iso?: string | null) => {
-    if (!iso) return '-';
-    const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
-};
 
 export const DepartmentAbsencesPage: React.FC = () => {
     const toastRef = useRef<Toast>(null);
+    const { formatDatetime } = useTimeFormat();
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [absences, setAbsences] = useState<AbsenceListDTO[]>([]);
     const [loading, setLoading] = useState(true);
