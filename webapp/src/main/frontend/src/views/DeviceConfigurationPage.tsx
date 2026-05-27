@@ -17,6 +17,7 @@ import {
     SensorStationDTO,
     RoomDTO,
 } from '../generated-skeleton-api';
+import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -76,9 +77,13 @@ const DeviceConfigurationPage: React.FC = () => {
     const [piPort, setPiPort] = useState<number | null>(8080);
     const [piInterval, setPiInterval] = useState<number | null>(null);
 
+    // Confirm delete
+    const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
     // Sensor dialog
     const [showSensorDialog, setShowSensorDialog] = useState(false);
     const [editingSensorId, setEditingSensorId] = useState<string | null>(null);
+    const [editingSensorWriteId, setEditingSensorWriteId] = useState<string | null>(null);
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
@@ -144,15 +149,21 @@ const DeviceConfigurationPage: React.FC = () => {
     });
 
     const handleDeletePi = (id?: string) => {
-        if (!id || !globalThis.confirm('Delete this Raspberry Pi?')) return;
-        new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
-            .then(() => {
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
-                fetchData();
-            })
-            .catch(() => {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
-            });
+        if (!id) return;
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this Raspberry Pi? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
+                    .then(() => {
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
+                        fetchData();
+                    })
+                    .catch(() => {
+                        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+                    });
+            },
+        });
     };
 
     const handleRetryPiConnection = (id?: string) => {
@@ -167,15 +178,21 @@ const DeviceConfigurationPage: React.FC = () => {
     };
 
     const handleDeleteSensor = (id?: string) => {
-        if (!id || !globalThis.confirm('Delete this Sensor Station?')) return;
-        new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
-            .then(() => {
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
-                fetchData();
-            })
-            .catch(() => {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
-            });
+        if (!id) return;
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this Sensor Station? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
+                    .then(() => {
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
+                        fetchData();
+                    })
+                    .catch(() => {
+                        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
+                    });
+            },
+        });
     };
 
     const handleSettings = (label: string, id?: string) => {
@@ -211,12 +228,14 @@ const DeviceConfigurationPage: React.FC = () => {
 
     const openSensorDialog = () => {
         setEditingSensorId(null);
+        setEditingSensorWriteId(null);
         setSensorName(''); setSensorRoomId('');
         setShowSensorDialog(true);
     };
 
     const openEditSensorDialog = (row: SensorStationDTO) => {
         setEditingSensorId(row.readId ?? null);
+        setEditingSensorWriteId(row.writeId ?? null);
         setSensorName(row.name ?? '');
         setSensorRoomId(row.roomId ?? '');
         setShowSensorDialog(true);
@@ -253,8 +272,9 @@ const DeviceConfigurationPage: React.FC = () => {
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Raspberry Pi updated successfully.', life: 3000 });
                 setShowPiDialog(false);
                 fetchData();
-            } catch {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update Raspberry Pi.', life: 3000 });
+            } catch (err: any) {
+                const msg = err?.response?.data?.message ?? 'Failed to update Raspberry Pi.';
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: msg, life: 4000 });
             } finally {
                 setPiLoading(false);
             }
@@ -271,8 +291,9 @@ const DeviceConfigurationPage: React.FC = () => {
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'Raspberry Pi created successfully.', life: 3000 });
                 setShowPiDialog(false);
                 fetchData();
-            } catch {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to create Raspberry Pi.', life: 3000 });
+            } catch (err: any) {
+                const msg = err?.response?.data?.message ?? 'Failed to create Raspberry Pi.';
+                toast.current?.show({ severity: 'error', summary: 'Conflict', detail: msg, life: 4000 });
             } finally {
                 setPiLoading(false);
             }
@@ -332,6 +353,16 @@ const DeviceConfigurationPage: React.FC = () => {
             .catch(() => {
                 toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
             });
+    };
+
+    const handleRemoveSensorFromPi = (row: SensorStationDTO) => {
+        setConfirmDelete({
+            message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
+            onConfirm: () => {
+                setConfirmDelete(null);
+                handleDisconnectSensor(row.readId!);
+            },
+        });
     };
 
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
@@ -490,11 +521,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={(row: SensorStationDTO) => (
                                     <div className="admin-table-actions">
                                         <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryConnection(row.readId!)} />
-                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => {
-                                            if (globalThis.confirm(`Remove "${row.name ?? row.readId}" from this Raspberry Pi?`)) {
-                                                handleDisconnectSensor(row.readId!);
-                                            }
-                                        }} />
+                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => handleRemoveSensorFromPi(row)} />
                                     </div>
                                 )} />
                             </DataTable>
@@ -502,6 +529,13 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                     )}
                 </div>
             </Dialog>
+
+            <ConfirmDeleteDialog
+                visible={confirmDelete !== null}
+                message={confirmDelete?.message ?? ''}
+                onConfirm={confirmDelete?.onConfirm ?? (() => {})}
+                onHide={() => setConfirmDelete(null)}
+            />
 
             {/* ── Add / Edit Sensor Station Dialog ── */}
             <Dialog
@@ -528,6 +562,19 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
                         <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                     </div>
+
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </Dialog>
         </div>

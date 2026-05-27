@@ -15,6 +15,7 @@ export interface RoomData {
     readonly temp: string;
     readonly humidity: string;
     readonly status: 'red' | 'green' | 'yellow' | 'gray';
+    readonly warningCount: number;
 }
 
 interface RoomListTableProps {

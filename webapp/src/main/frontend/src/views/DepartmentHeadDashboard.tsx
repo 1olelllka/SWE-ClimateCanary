@@ -1,13 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
-import { BASE_PATH } from '../generated-skeleton-api/base';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { AbsenceControllerApi, AbsenceDTO, AbsencePatchDTOStatusEnum, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import { Toast } from 'primereact/toast';
+import '../styles/CreateAbsenceForm.css';
+import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import {ThresholdViolationsTable, ThresholdViolationData} from '../components/ThresholdViolationsTable';
-import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
-import {NumberOfViolationsTable, ViolationStatsData} from '../components/NumberOfViolationsTable';
+import { ThresholdViolationData } from '../components/ThresholdViolationsTable';
+import { PendingRequestsTable, PendingRequestData } from '../components/PendingRequestsTable';
+import { RoomViolationsBarChart } from '../components/RoomViolationsBarChart';
 import { UserxDTO } from '../generated-skeleton-api';
 interface RoomDTO {
     id: string;
@@ -186,7 +194,9 @@ const getRoomStatus = (
 const mapToRoomData = (
     room: RoomDTO,
     climate: ClimateData | null,
-    warnings: ActiveWarning[]
+    warnings: ActiveWarning[],
+    tempConvert: (c: number) => number,
+    tempUnit: string,
 ): RoomData => {
     return {
         id: getRoomDisplayId(room),
@@ -197,7 +207,7 @@ const mapToRoomData = (
             ? `${formatNumber(climate.airQuality, 0)} ppm`
             : 'n/a',
         temp: climate?.temperature !== null && climate?.temperature !== undefined
-            ? `${formatNumber(climate.temperature, 1)} °C`
+            ? `${formatNumber(tempConvert(climate.temperature), 1)} ${tempUnit}`
             : 'n/a',
         humidity: climate?.humidity !== null && climate?.humidity !== undefined
             ? `${formatNumber(climate.humidity, 0)} %`
@@ -206,100 +216,74 @@ const mapToRoomData = (
     } as RoomData;
 };
 
-const formatMeasurementType = (measurementType?: string): string => {
-    if (!measurementType) {
-        return 'Warning';
-    }
-
-    if (measurementType === 'TEMPERATURE') {
-        return 'Temperature';
-    }
-
-    if (measurementType === 'HUMIDITY') {
-        return 'Humidity';
-    }
-
-    if (measurementType === 'AIR') {
-        return 'Air Quality';
-    }
-
-    return measurementType
-        .toLowerCase()
-        .replace(/_/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase());
-};
-
-const getMeasurementUnit = (measurementType?: string): string => {
-    if (measurementType === 'TEMPERATURE') {
-        return '°C';
-    }
-
-    if (measurementType === 'HUMIDITY') {
-        return '%';
-    }
-
-    if (measurementType === 'AIR') {
-        return 'ppm';
-    }
-
+const getMeasurementUnit = (measurementType?: string, tempUnit = '°C'): string => {
+    if (measurementType === 'TEMPERATURE') return tempUnit;
+    if (measurementType === 'HUMIDITY') return '%';
+    if (measurementType === 'AIR') return 'ppm';
     return '';
 };
 
-const formatDate = (dateString?: string): string => {
-    if (!dateString) {
-        return 'n/a';
-    }
+const formatSensorName = (measurementType?: string): string => {
+    if (measurementType === 'TEMPERATURE') return 'Temperature';
+    if (measurementType === 'HUMIDITY') return 'Humidity';
+    if (measurementType === 'AIR') return 'CO₂';
+    return measurementType ?? 'Unknown';
+};
 
-    return new Date(dateString).toLocaleDateString('de-DE');
+const _ph = (n: number) => String(n).padStart(2, '0');
+const formatDatetime = (
+    dateString?: string,
+    fmtTimeFn: (d: Date) => string = d => `${_ph(d.getHours())}:${_ph(d.getMinutes())}`,
+    fmtDateFn: (d: Date) => string = d => `${_ph(d.getDate())}.${_ph(d.getMonth() + 1)}.${d.getFullYear()}`,
+): string => {
+    if (!dateString) return 'n/a';
+    const d = new Date(dateString);
+    return `${fmtDateFn(d)} ${fmtTimeFn(d)}`;
 };
 
 const formatViolationNumber = (
     value: number | null | undefined,
-    measurementType?: string
+    measurementType?: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
 ): string => {
-    if (value === null || value === undefined || Number.isNaN(value)) {
-        return 'n/a';
-    }
-
-    const unit = getMeasurementUnit(measurementType);
-
-    if (measurementType === 'AIR') {
-        return `${value.toFixed(0)} ${unit}`.trim();
-    }
-
-    return `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+    if (value === null || value === undefined || Number.isNaN(value)) return 'n/a';
+    const unit = getMeasurementUnit(measurementType, tempUnit);
+    const displayValue = measurementType === 'TEMPERATURE' ? tempConvert(value) : value;
+    if (measurementType === 'AIR') return `${displayValue.toFixed(0)} ${unit}`.trim();
+    return `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
 const mapWarningToThresholdViolation = (
     warning: WarningDTO,
     roomLabel: string,
-    roomType: string
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+    fmtTimeFn?: (d: Date) => string,
+    fmtDateFn?: (d: Date) => string,
 ): ThresholdViolationData => {
-    const measurementLabel = formatMeasurementType(warning.measurementType);
-
+    const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
-        id: warning.id,
-        warning: warning.message || `${measurementLabel} ${warning.status}`,
-        room: roomLabel,
-        type: roomType,
-        max: formatViolationNumber(warning.activeLimitAtTime, warning.measurementType),
-        real: formatViolationNumber(warning.triggeredValue, warning.measurementType),
-        date: formatDate(warning.createdAt)
+        id:           warning.id,
+        status:       warning.status,
+        active:       warning.active,
+        sensor:       formatSensorName(warning.measurementType),
+        room:         roomLabel,
+        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType, tempConvert, tempUnit)}`,
+        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType, tempConvert, tempUnit),
+        datetime:     formatDatetime(warning.createdAt, fmtTimeFn, fmtDateFn),
+        sortKey:      warning.createdAt,
     };
 };
 
 const formatAbsenceDateRange = (
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    fmtDateFn?: (d: Date) => string,
 ): string => {
-    if (!startDate || !endDate) {
-        return 'n/a';
-    }
-
-    const start = new Date(startDate).toLocaleDateString('de-DE');
-    const end = new Date(endDate).toLocaleDateString('de-DE');
-
-    return `${start} - ${end}`;
+    if (!startDate || !endDate) return 'n/a';
+    const fmt = fmtDateFn ?? ((d: Date) => d.toLocaleDateString('de-DE'));
+    return `${fmt(new Date(startDate))} - ${fmt(new Date(endDate))}`;
 };
 
 const formatAbsenceReason = (reason?: string): string => {
@@ -314,76 +298,69 @@ const formatAbsenceReason = (reason?: string): string => {
 };
 
 const mapAbsenceToPendingRequest = (
-    absence: AbsenceListDTO
+    absence: AbsenceListDTO,
+    fmtDateFn?: (d: Date) => string,
 ): PendingRequestData => {
     return {
         id: absence.id,
         first: absence.firstName,
         last: absence.lastName,
         room: absence.roomNumber || 'n/a',
-        date: formatAbsenceDateRange(absence.startDate, absence.endDate),
+        date: formatAbsenceDateRange(absence.startDate, absence.endDate, fmtDateFn),
         reason: formatAbsenceReason(absence.typeOfAbsence)
     };
 };
 
-const buildViolationStats = (
-    rooms: RoomData[],
-    violations: ThresholdViolationData[]
-): ViolationStatsData[] => {
-    return rooms.map(room => {
-        const roomViolations = violations.filter(
-            violation => violation.room === room.id
-        );
-
-        const lastViolation = roomViolations.length > 0
-            ? roomViolations
-                .map(violation => violation.date)
-                .sort((a, b) => {
-                    const dateA = new Date(a.split('.').reverse().join('-')).getTime();
-                    const dateB = new Date(b.split('.').reverse().join('-')).getTime();
-
-                    return dateB - dateA;
-                })[0]
-            : '-';
-
-        return {
-            room: room.id,
-            type: room.type,
-            violationsCount: roomViolations.length,
-            lastViolation
-        };
-    });
-};
 
 export const DepartmentHeadDashboard: React.FC = () => {
+    const navigate = useNavigate();
+    const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { formatTime, formatDate, formatDatetime: formatDatetimeHook } = useTimeFormat();
+    const fmtTimeFn = useCallback((d: Date) => formatTime(d), [formatTime]);
+    const fmtDateFn = useCallback((d: Date) => formatDate(d), [formatDate]);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
+    const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
+    const stompClient = useRef<Client | null>(null);
     const [thresholdViolations, setThresholdViolations] = useState<ThresholdViolationData[]>([]);
     const [pendingRequests, setPendingRequests] = useState<PendingRequestData[]>([]);
 
     const [departmentName, setDepartmentName] = useState<string | null>(null);
     const [departmentId, setDepartmentId] = useState<string | null>(null);
+    const [deptAggregation, setDeptAggregation] = useState<AggregatedDataPointDTO | null>(null);
     const [loading, setLoading] = useState(true);
     const [violationsLoading, setViolationsLoading] = useState(false);
     const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // --- Absence request dialog ---
+    const [viewDialogVisible, setViewDialogVisible] = useState(false);
+    const [viewingRequest, setViewingRequest] = useState<PendingRequestData | null>(null);
+    const [viewingAbsenceDetail, setViewingAbsenceDetail] = useState<AbsenceDTO | null>(null);
+    const [absenceDetailLoading, setAbsenceDetailLoading] = useState(false);
+    const [absenceActionLoading, setAbsenceActionLoading] = useState(false);
+
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
         return Promise.all([
-            globalAxios.get<ClimateData>(`${BASE_PATH}/api/rooms/${room.id}/current-climate`)
-                .then(response => response.data)
+            new RoomControllerApi().getCurrentClimate({ roomId: room.id! })
+                .then(response => response.data as ClimateData)
                 .catch(() => null),
-            // TODO: CHANGE THIS, just testing...
-            globalAxios.get<ActiveWarning[]>(`${BASE_PATH}/api/warnings/rooms/${room.id}?activeOnly=true&startDate=2025-04-04&endDate=2025-04-04`)
+            new WarningControllerApi().getWarningsForRoom({
+                    roomId: room.id!,
+                    activeOnly: true,
+                    startDate: '2000-01-01',
+                    endDate: new Date().toISOString().slice(0, 10),
+                })
                 .then(response => extractArrayResponse<ActiveWarning>(response.data))
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
             const isStale = climate !== null
-                && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
-            return mapToRoomData(room, isStale ? null : climate, warnings);
+                && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
+            return mapToRoomData(room, isStale ? null : climate, warnings, convertTemp, tempUnit);
         });
-    }, []);
+    }, [convertTemp, tempUnit]);
 
     const fetchThresholdViolations = useCallback((roomData: RoomData[]) => {
         setViolationsLoading(true);
@@ -397,20 +374,20 @@ export const DepartmentHeadDashboard: React.FC = () => {
         }
 
         Promise.all(
-            // TODO: CHANGE THIS, just testing...
             roomsWithBackendId.map(room =>
-                globalAxios.get<WarningDTO[]>(`${BASE_PATH}/api/warnings/rooms/${room.backendId}?activeOnly=false&startDate=2025-04-04&endDate=2025-04-04`)
+                new WarningControllerApi().getWarningsForRoom({
+                        roomId: room.backendId!,
+                        activeOnly: false,
+                        startDate: '2000-01-01',
+                        endDate: new Date().toISOString().slice(0, 10),
+                    })
                     .then(response => {
                         const warnings = Array.isArray(response.data)
-                            ? response.data
+                            ? response.data as WarningDTO[]
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(
-                                warning,
-                                room.id,
-                                room.type
-                            )
+                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit, fmtTimeFn, fmtDateFn)
                         );
                     })
                     .catch(error => {
@@ -426,31 +403,26 @@ export const DepartmentHeadDashboard: React.FC = () => {
         )
             .then(results => {
                 const flattened = results.flat();
-
-                flattened.sort((a, b) => {
-                    const dateA = new Date(a.date.split('.').reverse().join('-')).getTime();
-                    const dateB = new Date(b.date.split('.').reverse().join('-')).getTime();
-
-                    return dateB - dateA;
-                });
-
+                flattened.sort((a, b) =>
+                    new Date(b.sortKey ?? 0).getTime() - new Date(a.sortKey ?? 0).getTime()
+                );
                 setThresholdViolations(flattened);
             })
             .finally(() => {
                 setViolationsLoading(false);
             });
-    }, []);
+    }, [convertTemp, tempUnit, fmtTimeFn, fmtDateFn]);
 
     const fetchPendingRequests = useCallback(() => {
         setPendingRequestsLoading(true);
 
-        globalAxios.get(`${BASE_PATH}/api/absences?page=0&size=100`)
+        new AbsenceControllerApi().getAllAbsences({ pageable: { page: 0, size: 100, sort: [] } })
             .then(response => {
                 const absences = extractArrayResponse<AbsenceListDTO>(response.data);
 
                 const pending = absences
                     .filter(absence => absence.status === 'PENDING')
-                    .map(mapAbsenceToPendingRequest);
+                    .map(absence => mapAbsenceToPendingRequest(absence, fmtDateFn));
 
                 setPendingRequests(pending);
             })
@@ -466,20 +438,28 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setPendingRequestsLoading(false);
             });
+    }, [fmtDateFn]);
+
+    const fetchDeptAggregation = useCallback((deptId: string) => {
+        new ClimateStatsControllerApi()
+            .getLastAggregationForDepartment({ id: deptId })
+            .then(r => setDeptAggregation(r.data as AggregatedDataPointDTO))
+            .catch(() => setDeptAggregation(null));
     }, []);
 
     const fetchDepartmentRooms = useCallback(() => {
         setLoading(true);
         setError(null);
 
-        globalAxios.get("/api/users/me")
+        new UserxControllerApi().getAuthenticatedUser()
             .then(response => {
                 const id = (response.data as UserxDTO).myRoom?.departmentID;
                 if (!id) throw new Error("User has no department assigned.");
                 setDepartmentId(id);
+                fetchDeptAggregation(id);
                 return id;
             })
-            .then(id => globalAxios.get(`${BASE_PATH}/api/departments/${id}`))
+            .then(id => new DepartmentControllerApi().getSpecificDepartment({ departmentId: id }))
             .then(response => {
                 const apiRooms = extractArrayResponse<RoomDTO>(response.data.rooms);
                 if (apiRooms.length > 0) {
@@ -498,6 +478,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 return Promise.all(apiRooms.map(fetchRoomWithLiveData))
                     .then(roomData => {
                         setRooms(roomData);
+                        setRoomBackendIds(roomData.map(r => r.backendId!).filter(Boolean));
                         fetchThresholdViolations(roomData);
                     });
             })
@@ -515,65 +496,105 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setLoading(false);
             });
-    }, [fetchRoomWithLiveData, fetchThresholdViolations]);
+    }, [fetchRoomWithLiveData, fetchThresholdViolations, fetchDeptAggregation]);
 
     useEffect(() => {
         fetchDepartmentRooms();
         fetchPendingRequests();
 
         const interval = window.setInterval(() => {
-            fetchDepartmentRooms();
             fetchPendingRequests();
         }, 30_000);
 
         return () => window.clearInterval(interval);
     }, [fetchDepartmentRooms, fetchPendingRequests]);
 
+    useEffect(() => {
+        if (roomBackendIds.length === 0) return;
+
+        stompClient.current?.deactivate();
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
+            reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization": `Bearer ${localStorage.getItem("bearerToken")}`
+            },
+            onConnect: () => {
+                roomBackendIds.forEach(backendId => {
+                    stompClient.current?.subscribe(`/topic/climate-data/${backendId}`, (message) => {
+                        const data: ClimateData = JSON.parse(message.body);
+                        setRooms(prev => prev.map(r => {
+                            if (r.backendId !== backendId) return r;
+                            return {
+                                ...r,
+                                temp:     data.temperature != null ? `${formatNumber(convertTemp(data.temperature), 1)} ${tempUnit}` : r.temp,
+                                humidity: data.humidity    != null ? `${formatNumber(data.humidity, 0)} %`     : r.humidity,
+                                co2:      data.airQuality  != null ? `${formatNumber(data.airQuality, 0)} ppm` : r.co2,
+                            };
+                        }));
+                    });
+                });
+            },
+            onStompError: (frame) => { console.error('STOMP error:', frame); },
+        });
+
+        stompClient.current.activate();
+
+        return () => { stompClient.current?.deactivate(); };
+    }, [roomBackendIds]);
+
+    const handleViewRequest = useCallback((id: string) => {
+        const request = pendingRequests.find(r => r.id === id) ?? null;
+        setViewingRequest(request);
+        setViewingAbsenceDetail(null);
+        setViewDialogVisible(true);
+        setAbsenceDetailLoading(true);
+        new AbsenceControllerApi().getSpecificAbsence({ absenceId: id })
+            .then(res => setViewingAbsenceDetail(res.data))
+            .catch(() => setViewingAbsenceDetail(null))
+            .finally(() => setAbsenceDetailLoading(false));
+    }, [pendingRequests]);
+
+    const handleAbsenceAction = useCallback(async (status: 'APPROVED' | 'REJECTED') => {
+        if (!viewingRequest) return;
+        setAbsenceActionLoading(true);
+        try {
+            await new AbsenceControllerApi().updateStatusOfAbsence({
+                absenceId: viewingRequest.id,
+                absencePatchDTO: { status: status as AbsencePatchDTOStatusEnum },
+            });
+            toastRef.current?.show({
+                severity: status === 'APPROVED' ? 'success' : 'warn',
+                summary: status === 'APPROVED' ? 'Approved' : 'Rejected',
+                detail: `Request for ${viewingRequest.first} ${viewingRequest.last} has been ${status.toLowerCase()}.`,
+                life: 3000,
+            });
+            setViewDialogVisible(false);
+            fetchPendingRequests();
+        } catch {
+            toastRef.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Failed to ${status === 'APPROVED' ? 'approve' : 'reject'} the request.`,
+                life: 3000,
+            });
+        } finally {
+            setAbsenceActionLoading(false);
+        }
+    }, [viewingRequest, fetchPendingRequests]);
+
     const problemRoomsCount = useMemo(() => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
     }, [rooms]);
 
-    const averageTemperature = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.temp.replace(' °C', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${avg.toFixed(1).replace('.', ',')} °C`;
-    }, [rooms]);
-
-    const averageAirQuality = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.co2.replace(' ppm', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${Math.round(avg)} ppm`;
-    }, [rooms]);
-
-    const averageHumidity = useMemo(() => {
-        const values = rooms
-            .map(room => parseFloat(room.humidity.replace(' %', '').replace(',', '.')))
-            .filter((v): v is number => !Number.isNaN(v));
-
-        if (values.length === 0) return 'n/a';
-
-        const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-        return `${Math.round(avg)} %`;
-    }, [rooms]);
-
-    const violationStats = useMemo(() => {
-        return buildViolationStats(rooms, thresholdViolations);
-    }, [rooms, thresholdViolations]);
 
     return (
         <div className="dashboard-layout">
+            <Toast ref={toastRef} />
             <PageHeader
-                title={departmentName ? `Overview Department ${departmentName}` : 'Department Overview'}
+                title={'Department Overview'}
+                subtitle={departmentName ?? undefined}
                 onMenuClick={() => setSidebarVisible(true)}
             />
 
@@ -591,17 +612,17 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                     <div className="kpi-card">
                         <h4>Average Temperature</h4>
-                        <h2>{loading ? '…' : averageTemperature}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${convertTemp(deptAggregation.avgTemperature).toFixed(1).replace('.', ',')} ${tempUnit}` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">
                         <h4>Average Air Quality</h4>
-                        <h2>{loading ? '…' : averageAirQuality}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgAirQuality != null ? `${Math.round(deptAggregation.avgAirQuality)} ppm` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">
                         <h4>Average Humidity</h4>
-                        <h2>{loading ? '…' : averageHumidity}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgHumidity != null ? `${Math.round(deptAggregation.avgHumidity)} %` : 'n/a'}</h2>
                     </div>
                 </div>
 
@@ -623,23 +644,115 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     </p>
                 )}
 
-                <RoomListTable rooms={rooms} />
-
-                <ThresholdViolationsTable
-                    violations={thresholdViolations}
-                    loading={violationsLoading}
+                <RoomListTable
+                    rooms={rooms}
+                    onRowClick={(displayId) => {
+                        const room = rooms.find(r => r.id === displayId);
+                        if (!room?.backendId) return;
+                        const params = new URLSearchParams();
+                        params.set('name', displayId);
+                        params.set('shared', String(room.type === 'Common Area'));
+                        navigate(`/department/room/${encodeURIComponent(room.backendId)}?${params.toString()}`);
+                    }}
                 />
 
                 <PendingRequestsTable
                     requests={pendingRequests}
                     loading={pendingRequestsLoading}
+                    onView={handleViewRequest}
                 />
 
-                <NumberOfViolationsTable
-                    stats={violationStats}
+                <RoomViolationsBarChart
+                    violations={thresholdViolations}
                     loading={violationsLoading}
                 />
             </div>
+            {/* ── Absence Request Dialog ── */}
+            <Dialog
+                header="Absence Request"
+                visible={viewDialogVisible}
+                className="admin-form-dialog"
+                style={{ width: '480px' }}
+                onHide={() => setViewDialogVisible(false)}
+                draggable={false}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                        <Button
+                            label="Reject"
+                            icon="pi pi-times"
+                            severity="danger"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('REJECTED')}
+                        />
+                        <Button
+                            label="Approve"
+                            icon="pi pi-check"
+                            severity="success"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('APPROVED')}
+                        />
+                    </div>
+                }
+            >
+                {absenceDetailLoading ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b' }}>Loading…</div>
+                ) : viewingRequest && (
+                    <div className="admin-dialog-body">
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">First Name</span>
+                                <input className="absence-form-input" value={viewingRequest.first} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Last Name</span>
+                                <input className="absence-form-input" value={viewingRequest.last} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Room</span>
+                                <input className="absence-form-input" value={viewingRequest.room} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Reason</span>
+                                <input className="absence-form-input" value={viewingRequest.reason} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Start Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[0] ?? ''} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">End Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[1] ?? ''} readOnly />
+                            </div>
+                        </div>
+
+                        {viewingAbsenceDetail?.createdAt && (
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Submitted On</span>
+                                <input className="absence-form-input" value={formatDatetimeHook(viewingAbsenceDetail.createdAt)} readOnly />
+                            </div>
+                        )}
+
+                        <div className="absence-form-field">
+                            <span className="absence-form-label">Message</span>
+                            <textarea
+                                className="absence-form-textarea"
+                                value={viewingAbsenceDetail?.comment ?? ''}
+                                rows={3}
+                                readOnly
+                                placeholder="No message provided"
+                            />
+                        </div>
+
+                    </div>
+                )}
+            </Dialog>
         </div>
     );
 };

@@ -16,19 +16,23 @@ export interface PendingRequestData {
 interface PendingRequestsTableProps {
     readonly requests?: PendingRequestData[];
     readonly loading?: boolean;
+    readonly onView?: (id: string) => void;
 }
 
 export const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
-                                                                              requests = [],
-                                                                              loading = false
-                                                                          }) => {
-    const actionBodyTemplate = () => {
-        return <button className="btn-primary-small">View</button>;
-    };
+    requests = [],
+    loading = false,
+    onView,
+}) => {
+    const actionBodyTemplate = (row: PendingRequestData) => (
+        <button className="btn-primary-small" onClick={() => onView?.(row.id)}>View</button>
+    );
 
     return (
         <div className="table-container">
-            <h3>Pending Requests</h3>
+            <div className="flex-header">
+                <h3>Pending Requests</h3>
+            </div>
 
             <DataTable
                 value={requests}

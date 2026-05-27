@@ -93,18 +93,47 @@
 
 .absence-form-time-row {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    gap: 1.25rem;
 }
 
-.absence-form-time-label {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-}
-
-.absence-form-time-row .absence-form-input {
+.absence-form-time-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
     flex: 1;
+}
+
+.absence-form-time-selects {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.absence-form-time-select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.4rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.absence-form-time-select:focus {
+    border-color: #94a3b8;
+}
+
+.absence-form-time-colon {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
 .absence-form-actions {
@@ -252,6 +281,41 @@
     z-index: 12000 !important;
 }
 
+.absence-form-calendar-panel .p-datepicker {
+    min-width: unset;
+    font-size: 0.82rem;
+}
+
+.absence-form-calendar-panel .p-datepicker-header {
+    padding: 0.35rem 0.5rem;
+}
+
+.absence-form-calendar-panel .p-datepicker-title {
+    font-size: 0.85rem;
+}
+
+.absence-form-calendar-panel table th {
+    padding: 0.2rem;
+    font-size: 0.72rem;
+}
+
+.absence-form-calendar-panel table td {
+    padding: 0.1rem;
+}
+
+.absence-form-calendar-panel table td > span {
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    font-size: 0.82rem;
+}
+
+.absence-form-calendar-panel .p-datepicker-prev,
+.absence-form-calendar-panel .p-datepicker-next {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
 /* Read-only fields in detail dialog */
 
 .absence-form-input[readonly],
@@ -327,6 +391,20 @@ html[data-theme='dark'] .absence-form-dropdown:not(.p-disabled).p-focus {
 
 html[data-theme='dark'] .absence-form-checkbox {
     accent-color: var(--app-primary);
+}
+
+html[data-theme='dark'] .absence-form-time-select {
+    background-color: #111827 !important;
+    color: var(--app-text) !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .absence-form-time-select:focus {
+    border-color: var(--app-primary) !important;
+}
+
+html[data-theme='dark'] .absence-form-time-colon {
+    color: var(--app-text-muted) !important;
 }
 
 /* Dark mode PrimeReact Dropdown */

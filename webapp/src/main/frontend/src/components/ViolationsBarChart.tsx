@@ -7,11 +7,14 @@ interface Props {
     loading: boolean;
 }
 
-const BAR_COLORS = ['#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#e91e63', '#00bcd4', '#f44336', '#795548'];
-
+const BAR_COLORS = ["#1A5F96", "#2DAA9E", "#66BB6A", "#00BCD4", "#2E7D32", "#4FC3F7", "#004D40", "#81D4FA", "#1565C0", "#E8F5E9"];
 export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) => {
     const labels = departments.map(d => d.name);
     const values = departments.map(d => d.activeViolations);
+
+    const chartTextColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || '#475569';
 
     const option = {
         tooltip: {
@@ -21,18 +24,18 @@ export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) =>
                 return `${p.name}<br/>Active violations: <b>${p.value}</b>`;
             },
         },
-        grid: { left: 130, right: 30, top: 10, bottom: 30 },
+        grid: { left: 30, right: 30, top: 10, bottom: 30 },
         xAxis: {
             type: 'value' as const,
             minInterval: 1,
             min: 0,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: 11, color: chartTextColor },
         },
         yAxis: {
             type: 'category' as const,
             data: [...labels].reverse(),
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: 11, color: chartTextColor },
             axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
         series: [{
@@ -53,7 +56,7 @@ export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) =>
                     Based on real-time limit breaches from sensor data
                 </span>
             </div>
-            <div style={{ padding: '1rem 1.5rem 1.5rem' }}>
+            <div style={{ padding: '0.5rem 0.5rem 0.5rem' }}>
                 {loading ? (
                     <div className="bm-loading">Loading…</div>
                 ) : departments.length === 0 ? (

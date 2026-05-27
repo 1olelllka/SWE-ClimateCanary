@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import globalAxios from 'axios';
+import { AbsenceControllerApi } from '../generated-skeleton-api';
 import '../styles/ClockInOutButton.css';
 
 export const ClockInOutButton: React.FC = () => {
@@ -11,7 +11,7 @@ export const ClockInOutButton: React.FC = () => {
         setLoading(true);
         setMessage(null);
 
-        globalAxios.get('/api/absences/clock-status')
+        new AbsenceControllerApi().getClockStatus()
             .then(response => {
                 setClockedIn(Boolean(response.data.clockedIn));
             })
@@ -57,9 +57,8 @@ export const ClockInOutButton: React.FC = () => {
         setLoading(true);
         setMessage(null);
 
-        const request = clockedIn
-            ? globalAxios.delete('/api/absences/clock-out')
-            : globalAxios.post('/api/absences/clock-in');
+        const api = new AbsenceControllerApi();
+        const request = clockedIn ? api.clockOut() : api.clockIn();
 
         request
             .then(() => {

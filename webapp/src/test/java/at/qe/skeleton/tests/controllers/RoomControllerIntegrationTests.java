@@ -5,7 +5,7 @@ import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.RoomService;
-import at.qe.skeleton.services.UserxService;
+import at.qe.skeleton.services.UserService;
 import at.qe.skeleton.tests.TestDataUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +45,8 @@ class RoomControllerIntegrationTests {
     @Autowired RoomMonitoringRepository monitoringRepository;
     @Autowired RoomRepository roomRepository;
     @Autowired UserxRepository userxRepository;
-    @Autowired UserxService userxService;
+    @Autowired
+    UserService userxService;
     @Spy NotificationClient notificationClient;
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -152,7 +153,7 @@ class RoomControllerIntegrationTests {
         Room saved = roomService.createRoom(TestDataUtil.createRoomEntity(d));
 
         // Update to SHARED and 20 people
-        Userx newUser = userxService.saveUser(Userx.builder().username("Test").password("test").build());
+        Userx newUser = userxService.createNewUser(Userx.builder().username("Test").password("test").build());
         RoomPatchDTO patchDto = new RoomPatchDTO(d.getId(), RoomType.SHARED, true, 20, Set.of(newUser.getId()), "Test");
         String json = objectMapper.writeValueAsString(patchDto);
 

@@ -1,5 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { Toast } from 'primereact/toast';
+import SockJS from 'sockjs-client';
+import { Client } from '@stomp/stompjs';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
@@ -42,23 +46,27 @@ export interface ClimateDataPointDTO {
     airQuality: number;
 }
 
+export interface ActiveWarning {
+    id: string;
+    measurementType: string;
+    message: string;
+    tip: string;
+    createdAt: string;
+    status: 'GREEN' | 'YELLOW' | 'RED';
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
 export const getRoomDisplayName = (room: RoomDTO) => {
     return room.name || room.roomNumber || 'Unnamed room';
 };
 
-const formatLastUpdated = (timestamp?: string | null) => {
-    if (!timestamp) {
-        return '-';
-    }
-
-    return new Date(timestamp).toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-};
 
 export const EmployeeDepartmentPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { formatTime } = useTimeFormat();
     const [currentUser, setCurrentUser] = useState<UserxDTO | null>(null);
     const [rooms, setRooms] = useState<RoomDTO[]>([]);
 
@@ -69,6 +77,10 @@ export const EmployeeDepartmentPage: React.FC = () => {
     const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
 
     const [currentClimate, setCurrentClimate] = useState<ClimateDataPointDTO | null>(null);
+    const [warnings, setWarnings] = useState<ActiveWarning[]>([]);
+    const toastRef = useRef<Toast>(null);
+    const shownWarningIds = useRef<Set<string>>(new Set());
+    const stompClient = useRef<Client | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [loadingRooms, setLoadingRooms] = useState(true);
     const [loadingClimate, setLoadingClimate] = useState(false);
@@ -78,9 +90,9 @@ export const EmployeeDepartmentPage: React.FC = () => {
         setLoadingRooms(true);
         setError(null);
 
-        globalAxios.get('/api/users/me')
+        new UserxControllerApi().getAuthenticatedUser()
             .then(userResponse => {
-                const user: UserxDTO = userResponse.data;
+                const user: UserxDTO = userResponse.data as any;
                 const departmentId = user.myRoom?.departmentID;
 
                 setCurrentUser(user);
@@ -93,9 +105,9 @@ export const EmployeeDepartmentPage: React.FC = () => {
                     return;
                 }
 
-                return globalAxios.get('/api/departments/'+departmentId)
+                return new DepartmentControllerApi().getSpecificDepartment({ departmentId })
                     .then(roomResponse => {
-                        const departmentRooms: RoomDTO[] = roomResponse.data.rooms || [];
+                        const departmentRooms: RoomDTO[] = (roomResponse.data as any).rooms || [];
                         console.log(departmentRooms)
                         setRooms(departmentRooms)
                         if (departmentRooms.length === 0) {
@@ -135,14 +147,37 @@ export const EmployeeDepartmentPage: React.FC = () => {
             });
     }, []);
 
+    const fetchWarnings = useCallback((roomId: string) => {
+        new WarningControllerApi().getWarningsForRoom({
+            roomId,
+            activeOnly: true,
+            startDate: '2000-01-01',
+            endDate: fmtDate(new Date()),
+        })
+        .then(r => {
+            setWarnings(
+                Object.values(
+                    (r.data as ActiveWarning[]).reduce((acc, warning) => {
+                        const existing = acc[warning.measurementType];
+                        if (!existing || new Date(warning.createdAt) > new Date(existing.createdAt)) {
+                            acc[warning.measurementType] = warning;
+                        }
+                        return acc;
+                    }, {} as Record<string, ActiveWarning>)
+                )
+            );
+        })
+        .catch(() => {});
+    }, []);
+
     const fetchCurrentClimate = useCallback((roomId: string) => {
         setLoadingClimate(true);
 
-        globalAxios.get(`/api/rooms/${roomId}/current-climate`)
+        new RoomControllerApi().getCurrentClimate({ roomId })
             .then(response => {
-                const data: ClimateDataPointDTO = response.data;
+                const data: ClimateDataPointDTO = response.data as any;
                 const isStale = data !== null
-                    && (Date.now() - new Date(data.timestamp).getTime()) > 5 * 60 * 1000;
+                    && (Date.now() - new Date(data.timestamp).getTime()) > 30 * 1000;
                 setCurrentClimate(isStale ? null : data);
             })
             .catch(err => {
@@ -165,11 +200,97 @@ export const EmployeeDepartmentPage: React.FC = () => {
     useEffect(() => {
         if (!expandedRoomId) {
             setCurrentClimate(null);
+            setWarnings([]);
             return;
         }
 
         fetchCurrentClimate(expandedRoomId);
-    }, [expandedRoomId, fetchCurrentClimate]);
+        fetchWarnings(expandedRoomId);
+    }, [expandedRoomId, fetchCurrentClimate, fetchWarnings]);
+
+    useEffect(() => {
+        const sharedRooms = rooms.filter(r => r.roomType === 'SHARED');
+        if (!expandedRoomId && sharedRooms.length === 0) return;
+
+        stompClient.current?.deactivate();
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
+            reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization": `Bearer ${localStorage.getItem('bearerToken')}`
+            },
+            onConnect: () => {
+                // ── Expanded room: warnings (for UI display) + climate data ──
+                if (expandedRoomId) {
+                    stompClient.current?.subscribe(`/topic/active-warnings/${expandedRoomId}`, (message) => {
+                        const warning: ActiveWarning = JSON.parse(message.body);
+                        setWarnings(prev => [warning, ...prev.filter(w => w.measurementType !== warning.measurementType)]);
+                    });
+                    stompClient.current?.subscribe(`/topic/resolve-warnings/${expandedRoomId}`, (message) => {
+                        const warning: ActiveWarning = JSON.parse(message.body);
+                        setWarnings(prev => prev.filter(w => w.id !== warning.id));
+                    });
+                    stompClient.current?.subscribe(`/topic/climate-data/${expandedRoomId}`, (message) => {
+                        const data: ClimateDataPointDTO = JSON.parse(message.body);
+                        setCurrentClimate(data);
+                    });
+                }
+
+                // ── All SHARED rooms (not already expanded): toast-only ──
+                sharedRooms
+                    .filter(r => r.id !== expandedRoomId)
+                    .forEach(room => {
+                        stompClient.current?.subscribe(`/topic/active-warnings/${room.id}`, (message) => {
+                            const warning: ActiveWarning = JSON.parse(message.body);
+                            if (shownWarningIds.current.has(warning.id)) return;
+                            shownWarningIds.current.add(warning.id);
+                            const label =
+                                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+                            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+                            toastRef.current?.show({
+                                severity: 'warn',
+                                summary: `${room.roomNumber ?? room.name ?? room.id} — ${label}: ${warning.message}`,
+                                detail: hasTip ? warning.tip : undefined,
+                                life: 5000,
+                            });
+                        });
+                    });
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
+    }, [expandedRoomId, rooms]);
+
+    useEffect(() => {
+        if (!toastRef.current || warnings.length === 0) return;
+
+        for (const warning of warnings) {
+            if (shownWarningIds.current.has(warning.id)) continue;
+            shownWarningIds.current.add(warning.id);
+
+            const label =
+                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+
+            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+
+            toastRef.current.show({
+                severity: 'warn',
+                summary: `${label}: ${warning.message}`,
+                detail: hasTip ? warning.tip : undefined,
+                life: 5000,
+            });
+        }
+    }, [warnings]);
 
     const filteredRooms = useMemo(() => {
         const normalizedSearchTerm = searchTerm.trim().toLowerCase();
@@ -185,6 +306,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
 
     return (
         <div className="employee-department-page">
+            <Toast ref={toastRef} position="top-right" />
             <PageHeader
                 title="My Department"
                 subtitle={currentUser?.myRoom?.departmentName || 'Overview'}
@@ -200,7 +322,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
 
                 <div className="employee-department-toolbar">
                     <span className="employee-department-last-updated">
-                        Last updated at {formatLastUpdated(currentClimate?.timestamp)}
+                        Last updated at {currentClimate?.timestamp ? formatTime(currentClimate.timestamp) : '-'}
                     </span>
 
                     <input
@@ -231,6 +353,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
                             expandedRoomId={expandedRoomId}
                             currentClimate={currentClimate}
                             loadingClimate={loadingClimate}
+                            warnings={warnings}
                             onToggleRoom={(roomId) => {
                                 setExpandedRoomId(previousRoomId =>
                                     previousRoomId === roomId ? null : roomId

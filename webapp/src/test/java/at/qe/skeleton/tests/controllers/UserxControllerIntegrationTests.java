@@ -132,6 +132,23 @@ class UserxControllerIntegrationTests {
 
     @Test
     @WithMockUser(authorities = "CAN_MANAGE_USERS")
+    void testThatPatchSpecificUserReturnsHttp409Conflict() throws Exception {
+        Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
+        Userx user2 = userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId())));
+        user2.setUsername("updatedUser");
+        userService.createNewUser(user2);
+
+        UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
+        String json = objectMapper.writeValueAsString(patchDTO);
+
+        mockMvc.perform(MockMvcRequestBuilders.patch("/api/users/" + user.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(MockMvcResultMatchers.status().isConflict());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CAN_MANAGE_USERS")
     void testThatPatchSpecificUserReturnsHttp404NotFoundIfDoesNotExist() throws Exception {
         UserxPatchDTO patchDTO = new UserxPatchDTO("updatedUser", "Updated", "Name", false, Collections.emptySet(), null);
         String json = objectMapper.writeValueAsString(patchDTO);

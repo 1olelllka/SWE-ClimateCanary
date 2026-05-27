@@ -93,6 +93,7 @@ public class BuildingTrendSeederService {
         double normalizedTemp     = (temperature - 18.0) / (26.0 - 18.0);
         double normalizedHumidity = (humidity    - 30.0) / (70.0 - 30.0);
         double normalizedCo2      = (co2         - 400.0) / (2000.0 - 400.0);
-        return 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        double raw = 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        return Math.max(0.0, Math.min(100.0, (1.0 - raw) * 100.0));
     }
 }

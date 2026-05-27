@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { DashboardCalendar } from './Calendar';
 import { BuildingTrendControllerApi, BuildingTrendDTO } from '../generated-skeleton-api';
 import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
+import { Toast } from 'primereact/toast';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 
@@ -16,11 +17,20 @@ interface Props {
 const trendApi = new BuildingTrendControllerApi();
 
 const DEPT_COLORS = [
-    '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-    '#ef4444', '#06b6d4', '#84cc16', '#f97316',
-    '#6366f1', '#14b8a6', '#e879f9', '#fb923c',
+    '#1A5F96', // deep blue
+    '#2DAA9E', // teal
+    '#66BB6A', // green
+    '#00BCD4', // cyan
+    '#2E7D32', // dark green
+    '#4FC3F7', // sky blue
+    '#004D40', // dark teal
+    '#81D4FA', // light blue
+    '#1565C0', // royal blue
+    '#26A69A', // medium teal
+    '#43A047', // forest green
+    '#0288D1', // ocean blue
 ];
-const COMPANY_COLOR = '#1e3a8a';
+const COMPANY_COLOR = '#0f2d54'; // deep navy — always distinct from dept lines
 
 const pad2    = (n: number) => String(n).padStart(2, '0');
 const fmtDate = (d: Date)   => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -29,7 +39,7 @@ function dateRange(filter: TimeFilter, custom: Date[] | null): { startDate: stri
     const now = new Date();
     const end = fmtDate(now);
     if (filter === 'Week') {
-        const s = new Date(now); s.setDate(s.getDate() - 7);
+        const s = new Date(now); s.setDate(s.getDate() - 6);
         return { startDate: fmtDate(s), endDate: end };
     }
     if (filter === 'Month') {
@@ -43,12 +53,32 @@ function dateRange(filter: TimeFilter, custom: Date[] | null): { startDate: stri
 }
 
 export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
+    const toastRef = useRef<Toast>(null);
+
     const [selection,   setSelection]   = useState<Selection>('all');
     const [timeFilter,  setTimeFilter]  = useState<TimeFilter>('Week');
     const [customRange, setCustomRange] = useState<Date[] | null>(null);
     const [deptData,    setDeptData]    = useState<Map<string, BuildingTrendDTO[]>>(new Map());
     const [loading,     setLoading]     = useState(false);
     const [error,       setError]       = useState(false);
+
+    const handleDateRangeChange = (dates: Date[] | null) => {
+        if (dates?.[0]) {
+            const minAllowed = new Date();
+            minAllowed.setMonth(minAllowed.getMonth() - 3);
+            if (dates[0] < minAllowed) {
+                toastRef.current?.show({
+                    severity: 'warn',
+                    summary:  'Date out of range',
+                    detail:   'You can only select dates up to 3 months in the past.',
+                    life:     4000,
+                });
+                setCustomRange(null);
+                return;
+            }
+        }
+        setCustomRange(dates);
+    };
 
     const fetchAll = useCallback(() => {
         if (departments.length === 0) return;
@@ -119,7 +149,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                 series.push({
                     name:      dept.name,
                     type:      'line',
-                    smooth:    true,
+                    smooth:    0.3,
                     symbol:    'none',
                     lineStyle: { color, width: 1.5, opacity: 0.75 },
                     itemStyle: { color },
@@ -134,7 +164,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
             series.push({
                 name:      dept?.name ?? 'Department',
                 type:      'line',
-                smooth:    true,
+                smooth:    0.3,
                 symbol:    'none',
                 lineStyle: { color, width: 2 },
                 itemStyle: { color },
@@ -146,11 +176,12 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
             series.push({
                 name:      'Company',
                 type:      'line',
-                smooth:    true,
+                smooth:    0.3,
                 symbol:    'none',
                 z:         10,
-                lineStyle: { color: COMPANY_COLOR, width: 3 },
+                lineStyle: { color: COMPANY_COLOR, width: 5 },
                 itemStyle: { color: COMPANY_COLOR },
+                areaStyle: { color: COMPANY_COLOR, opacity: 0.06 },
                 data:      companyValues,
             });
         }
@@ -171,6 +202,10 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            formatter:   (params: any[]) =>
+                params.map(p =>
+                    `${p.marker}${p.seriesName}: ${p.value != null ? Number(p.value).toFixed(2) : '—'}`
+                ).join('<br/>'),
         },
         legend: {
             bottom:    0,
@@ -188,6 +223,8 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         },
         yAxis: {
             type:      'value' as const,
+            min:       0,
+            max:       100,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
             axisLabel: { fontSize: 11 },
         },
@@ -198,6 +235,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
 
     return (
         <div className="table-container card chart-card">
+            <Toast ref={toastRef} />
             <div className="flex-header">
                 <h3>Climate Trend Indicator</h3>
                 <div className="time-filters">
@@ -212,7 +250,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                     ))}
                     <DashboardCalendar
                         dateRange={customRange}
-                        setDateRange={setCustomRange}
+                        setDateRange={handleDateRangeChange}
                         isActive={timeFilter === 'Custom'}
                         onActivate={() => setTimeFilter('Custom')}
                     />

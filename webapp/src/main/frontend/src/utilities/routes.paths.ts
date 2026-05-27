@@ -16,4 +16,6 @@ export const ROUTES = {
     TIPMANAGEMENT: '/tipmanagement',
     MY_ROOM: '/my-room',
     COMPANY_TRENDS: '/senior/trends',
+    DEPARTMENT_VIOLATIONS: '/department-violations',
+    ROOM_DETAIL: '/department/room/:roomId',
 } as const;

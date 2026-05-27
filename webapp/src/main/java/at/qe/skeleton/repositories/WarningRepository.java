@@ -21,8 +21,8 @@ public interface WarningRepository extends JpaRepository<Warnings, UUID> {
     @Query("SELECT w FROM Warnings w WHERE w.resolvedAt IS NULL")
     List<Warnings> findAllActive();
 
-    @Query("SELECT w FROM Warnings w WHERE w.resolvedAt IS NULL AND w.measurementType = :type")
-    List<Warnings> findAllActiveByType(MeasurementType type);
+    @Query("SELECT w FROM Warnings w WHERE w.resolvedAt IS NULL AND w.measurementType = :type AND w.roomMonitoring.roomId = :roomId")
+    List<Warnings> findAllByRoomAndActiveByType(UUID roomId, MeasurementType type);
 
     List<Warnings> findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(List<UUID> rooms);
     List<Warnings> findByRoomMonitoring_RoomIdInAndResolvedAtIsNullAndCreatedAtBetween(List<UUID> rooms, LocalDateTime startDate, LocalDateTime endDate);

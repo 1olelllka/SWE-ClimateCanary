@@ -97,20 +97,32 @@
     margin-bottom: 1.5rem;
 }
 
-.absence-sort-button {
-    padding: 0.5rem 1rem;
+.absence-status-filter {
+    padding: 0.5rem 0.2rem 0.5rem 0.2rem;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 8px;
     font-size: 0.875rem;
-    font-weight: 600;
     color: var(--text-primary);
+    font-family: inherit;
     cursor: pointer;
+    outline: none;
     transition: border-color 0.15s;
+    min-width: 150px;
 }
 
-.absence-sort-button:hover {
+.absence-status-filter:focus {
     border-color: #94a3b8;
+}
+
+.absence-sortable-th {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.absence-sortable-th:hover {
+    color: var(--text-primary);
 }
 
 .absence-request-button {
@@ -315,10 +327,19 @@ html[data-theme='dark'] .employee-absences-page .absence-kpi-bar-track {
 }
 
 /* Controls */
-html[data-theme='dark'] .employee-absences-page .absence-sort-button {
+html[data-theme='dark'] .employee-absences-page .absence-status-filter {
     background-color: var(--app-surface-2) !important;
+    background-image: none !important;
     color: var(--app-text) !important;
     border: 1px solid var(--app-border) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-status-filter:focus {
+    border-color: var(--app-primary) !important;
+}
+
+html[data-theme='dark'] .employee-absences-page .absence-sortable-th:hover {
+    color: var(--app-text) !important;
 }
 
 html[data-theme='dark'] .employee-absences-page .absence-request-button {
@@ -384,4 +405,31 @@ html[data-theme='dark'] .employee-absences-page .absence-detail-trigger {
     background-color: transparent !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
+}
+
+.absence-status-filter {
+    width: 100%;
+    height: 2.25rem;
+    border-radius: 999px !important;
+    background: #111827 !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+.absence-status-filter .p-dropdown-label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.9rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #f8fafc !important;
+}
+
+.absence-status-filter .p-dropdown-trigger {
+    width: 2.2rem !important;
+    color: #cbd5e1 !important;
+}
+
+.p-dropdown-panel .p-dropdown-item {
+    font-size: 0.82rem !important;
 }

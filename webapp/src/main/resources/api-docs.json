@@ -1699,6 +1699,38 @@
         }
       }
     },
+    "/api/warnings/buildings/{building_id}/active": {
+      "get": {
+        "tags": [
+          "warning-controller"
+        ],
+        "summary": "Get count of active violations for a building",
+        "operationId": "getActiveViolationsForBuilding",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveViolationBuildingStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warnings/departments/{department_id}/summary": {
       "get": {
         "tags": [
@@ -1843,10 +1875,555 @@
           }
         }
       }
+    },
+    "/api/users/me": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getAuthenticatedUser",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserxDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/settings": {
+      "get": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "getUserSettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "userx-controller"
+        ],
+        "operationId": "updateUserSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSettingsPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/{room_id}/current-climate": {
+      "get": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "getCurrentClimate",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClimateDataPointDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/{room_id}/overtime": {
+      "get": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "getOvertimeClimateData",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "startTime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClimateDataPointDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/{room_id}/climate-history": {
+      "get": {
+        "tags": ["room-controller"],
+        "operationId": "getClimateHistory",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["HOUR", "DAY", "WEEK"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ClimateAggregationDTO" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rooms/{room_id}/limits": {
+      "get": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "getLimitsForRoom",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitDTO"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "room-controller"
+        ],
+        "operationId": "updateLimitsForRoom",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warnings/rooms/{room_id}": {
+      "get": {
+        "tags": [
+          "warning-controller"
+        ],
+        "operationId": "getWarningsForRoom",
+        "parameters": [
+          {
+            "name": "room_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WarningDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/absences/{absence_id}/cancel": {
+      "patch": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "cancelAbsence",
+        "parameters": [
+          {
+            "name": "absence_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/absences/clock-status": {
+      "get": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "getClockStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClockStatusDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/absences/clock-in": {
+      "post": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "clockIn",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/absences/clock-out": {
+      "delete": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "clockOut",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/absences/managers": {
+      "get": {
+        "tags": [
+          "absence-controller"
+        ],
+        "operationId": "getAvailableManagers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserxListDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tips": {
+      "get": {
+        "tags": [
+          "tip-controller"
+        ],
+        "operationId": "getAllTips",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "tip-controller"
+        ],
+        "operationId": "createNewTip",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tips/{tip_id}": {
+      "patch": {
+        "tags": [
+          "tip-controller"
+        ],
+        "operationId": "patchTip",
+        "parameters": [
+          {
+            "name": "tip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipPatchDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipDTO"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ActiveViolationBuildingStats": {
+        "type": "object",
+        "properties": {
+          "activeViolations": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "RaspberryTestDTO": {
         "type": "object",
         "properties": {
@@ -3146,6 +3723,231 @@
           "date": {
             "type": "string",
             "format": "date"
+          }
+        }
+      },
+      "ClimateDataPointDTO": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "humidity": {
+            "type": "number",
+            "format": "double"
+          },
+          "airQuality": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "LimitDTO": {
+        "type": "object",
+        "properties": {
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tempMin": {
+            "type": "number",
+            "format": "float"
+          },
+          "tempMax": {
+            "type": "number",
+            "format": "float"
+          },
+          "humMin": {
+            "type": "number",
+            "format": "float"
+          },
+          "humMax": {
+            "type": "number",
+            "format": "float"
+          },
+          "co2Max": {
+            "type": "number",
+            "format": "float"
+          }
+        }
+      },
+      "WarningDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roomId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "measurementType": {
+            "type": "string",
+            "enum": ["TEMPERATURE", "HUMIDITY", "CO2"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["GREEN", "YELLOW", "RED"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "tip": {
+            "type": "string"
+          },
+          "triggeredValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "activeLimitAtTime": {
+            "type": "number",
+            "format": "double"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ClockStatusDTO": {
+        "type": "object",
+        "properties": {
+          "clockedIn": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TipDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "violationStatus": {
+            "type": "string",
+            "enum": ["GREEN", "YELLOW", "RED"]
+          },
+          "violationType": {
+            "type": "string",
+            "enum": ["TEMPERATURE", "HUMIDITY", "CO2"]
+          },
+          "violatedSensor": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "TipCreateDTO": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "violationStatus": {
+            "type": "string",
+            "enum": ["GREEN", "YELLOW", "RED"]
+          },
+          "violationType": {
+            "type": "string",
+            "enum": ["TEMPERATURE", "HUMIDITY", "CO2"]
+          },
+          "violatedSensor": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "TipPatchDTO": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "ClimateAggregationDTO": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "avgTemperature": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgHumidity": {
+            "type": "number",
+            "format": "double"
+          },
+          "avgAirQuality": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "UserSettingsDTO": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "darkMode": {
+            "type": "boolean"
+          },
+          "fahrenheit": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "YYYY_MM_DD",
+              "DD_MM_YYYY",
+              "MM_DD_YYYY"
+            ]
+          },
+          "twelveHourFormat": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UserSettingsPatchDTO": {
+        "type": "object",
+        "properties": {
+          "darkMode": {
+            "type": "boolean"
+          },
+          "fahrenheit": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "YYYY_MM_DD",
+              "DD_MM_YYYY",
+              "MM_DD_YYYY"
+            ]
+          },
+          "twelveHourFormat": {
+            "type": "boolean"
           }
         }
       }

@@ -31,7 +31,9 @@ public class ClimateHistorySeederService {
 
     public void seed() {
         log.info("Running climate history seeder...");
-        if (climateStatsRepository.count() > 0) {
+        // Skip only if historical data already exists (older than 2 days).
+        // Recent-only data means the Pi just started sending; seed history anyway.
+        if (climateStatsRepository.existsByDateBefore(OffsetDateTime.now().minusDays(2))) {
             log.info("Climate history already seeded. Aborting...");
             return;
         }
@@ -85,7 +87,26 @@ public class ClimateHistorySeederService {
 
             OffsetDateTime warningOnset = now.minusHours(2);
 
+            // ── Simulated sensor outage for room 101 (roomIndex 0) ───────────
+            // No records are inserted for this window — exactly what happens
+            // when a real sensor stops sending data. The chart detects the gap
+            // by comparing the received timestamps against the requested range.
+            OffsetDateTime gapBase = now.truncatedTo(ChronoUnit.DAYS).plusHours(10);
+            if (!gapBase.isBefore(now)) {
+                gapBase = gapBase.minusDays(1); // use yesterday's 10:00 if today's is in the future
+            }
+            final OffsetDateTime noDataStart = (roomIndex == 0) ? gapBase             : null;
+            final OffsetDateTime noDataEnd   = (roomIndex == 0) ? gapBase.plusHours(2) : null;
+
             while (!cursor.isAfter(now)) {
+                // Skip this minute if it falls inside the simulated outage window
+                if (noDataStart != null
+                        && !cursor.isBefore(noDataStart)
+                        && cursor.isBefore(noDataEnd)) {
+                    cursor = cursor.plusMinutes(1);
+                    continue;
+                }
+
                 // For the most recent 2 hours elevate temperature above the 26 °C limit
                 // so the sparkline trend line visually breaches the dashed limit line.
                 double temp = cursor.isAfter(warningOnset)
@@ -141,12 +162,12 @@ public class ClimateHistorySeederService {
         int hour = dt.getHour();
         boolean isWeekend = dt.getDayOfWeek().getValue() >= 6;
         boolean isWorkHours = hour >= 8 && hour < 18;
-        double base = isWeekend ? 10.0 : 20.0;
+        double base = isWeekend ? 80.0 : 95.0;
         double workPeak = (!isWeekend && isWorkHours)
-                ? 25.0 * Math.sin(Math.PI * (hour - 8.0) / 10.0)
+                ? 30.0 * Math.sin(Math.PI * (hour - 8.0) / 10.0)
                 : 0.0;
-        double noise = RANDOM.nextGaussian() * 5.0;
-        return clamp(base + workPeak + noise, 2.0, 90.0);
+        double noise = RANDOM.nextGaussian() * 8.0;
+        return clamp(base + workPeak + noise, 60.0, 160.0);
     }
 
     private double clamp(double value, double min, double max) {

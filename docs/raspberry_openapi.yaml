@@ -1,148 +1,300 @@
 openapi: 3.0.3
 
 info:
-  title: ClimateCanary – Raspberry Pi REST Server API
+  title: ClimateCanary - Raspberry Pi REST Server API
   description: >
     This API is implemented **on the Raspberry Pi itself**.
     It is a minimal server that the central webapp calls to notify the Pi that
-    something has changed. To retrieve new information from Webapp like configurations 
-    or new limits it firstly receives lightweight notification pings here, then turns around and
-    pulls the actual updated data from the webapp's own API.
-
-    The Pi REST server runs on a configurable port on the Pi's
-    local IP address, which is registered in the webapp during device setup.
+    something has changed. Each concern (limits, occupancy, sensors, config) has
+    its own dedicated endpoint. Upon receiving a request the Pi applies the change
+    asynchronously and immediately returns HTTP 202 Accepted so the webapp is never
+    blocked.
+    The Pi REST server runs on a configurable port on the Pi's local IP address,
+    which is registered in the webapp during device setup.
 
   version: 1.0.0
 
 tags:
   - name: Notifications
-    description: >
-      Notifications Pi receives from the Web App about any new changes (config, new limits)
-  - name: Health
-    description: >
-      Used for checking whether Pi is online and 
-      operational
-  - name: System
-    description: >
-      Administrative endpoints on the Raspberry Pi for headless management
+    description: Endpoints the Webapp calls to push state-change notifications to the Pi.
 
 paths:
-  /notify:
+  /api/limits:
     post:
       tags: [Notifications]
-      summary: Webapp notifies Pi of a state change
-      description: |
-        **Triggered by the Webapp.** Upon receiving this notification, the Raspberry Pi must immediately fetch the updated state from the Webapp's REST API using the following mapping:
-
-        | Update Type | Webapp Sync Endpoint to Call |
-        | :--- | :--- |
-        | **LIMITS** | `GET /raspberry-pis/{piId}/sync/limits` |
-        | **CONFIG** | `GET /raspberry-pis/{id}/config` |
-        | **SENSORS** | `GET /raspberry-pis/{id}/config` (Update BLE whitelist) |
-        | **ABSENCE** | `GET /raspberry-pis/{id}/sync/occupancy` (Check Privacy Mode) |
-
-        *Note: The Pi should perform these calls asynchronously to avoid blocking the notification acknowledgment.*
+      summary: Update sensor threshold limits
+      description: >
+        Webapp pushes new min/max thresholds for temperature, humidity, and/or CO2.
+        At least one limit field must be present. The Pi persists the new limits and
+        immediately re-evaluates active violations.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NotifyRequestDTO'
-      responses:
-        '200':
-          description: Notification received and sync initiated.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotifyResponseDTO'
-        '400':
-          description: Invalid updateType.
-        '500':
-          description: Pi could not reach the Webapp to complete the sync.
-
-  /health:
-    get:
-      tags: [Health]
-      summary: Periodic liveness check
-      responses:
-        '200':
-          description: Pi is healthy.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthDTO'
-
-  /system/reboot:
-    post:
-      tags: [System]
-      summary: Graceful software service restart
+              $ref: '#/components/schemas/LimitChangeNotificationDTO'
       responses:
         '202':
-          description: Restart sequence initiated.
+          description: Limit change accepted and being applied asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponseDTO'
+        '400':
+          description: Invalid JSON or no limit fields provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
 
-  /system/log-level:
-    put:
-      tags: [System]
-      summary: Adjust logging verbosity
+  /api/occupancy:
+    post:
+      tags: [Notifications]
+      summary: Update effective room occupancy
+      description: >
+        Webapp pushes the current effective occupancy count (e.g. after an absence
+        period ends or a manual override) and privacy mode boolean.
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                level: { type: string, enum: [DEBUG, INFO, WARN, ERROR] }
+              $ref: '#/components/schemas/OccupancyDTO'
       responses:
-        '200':
-          description: Log level changed.
+        '202':
+          description: Occupancy change accepted and being applied asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponseDTO'
+        '400':
+          description: Invalid JSON or effectiveOccupancy is missing / not a non-negative integer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
 
-  /system/storage-cleanup:
+  /api/sensors:
     post:
-      tags: [System]
-      summary: Clear local DB cache
-      description: Deletes sensor data that has been successfully transmitted.
+      tags: [Notifications]
+      summary: Add, remove, or flush BLE sensors
+      description: >
+        Webapp instructs the Pi to update its active BLE sensor set. Three update
+        types are supported: SENSOR_ADD fetches the sensor config and starts BLE
+        tasks for the given IDs; SENSOR_DELETE stops the BLE tasks for those IDs;
+        FLUSH stops all active BLE tasks and clears the sensor list entirely.
+        SENSOR_ADD and SENSOR_DELETE require sensorIds to be provided as a
+        comma-separated query-string parameter. FLUSH ignores it.
+      parameters:
+        - name: sensorIds
+          in: query
+          description: >
+            Comma-separated list of sensor UUIDs (char_uuid or write_uuid).
+            Required for `SENSOR_ADD` and `SENSOR_DELETE`.
+          schema:
+            type: string
+          example: "uuid-1,uuid-2"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StateChangeNotificationDTO'
       responses:
-        '204':
-          description: Cache cleared.
+        '202':
+          description: Sensor change accepted and being applied asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorsAcceptedResponseDTO'
+        '400':
+          description: Invalid JSON, unknown updateType, or missing sensorIds for ADD/DELETE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
+
+  /api/config:
+    post:
+      tags: [Notifications]
+      summary: Re-fetch full device configuration
+      description: >
+        Webapp tells the Pi to re-pull its complete configuration (room assignment,
+        frequency, sensor list, limits) from the webapp's own REST API. Triggers a
+        full `ConfigManager.fetch_and_seed` cycle. If the room ID changes, stale
+        queued measurements are discarded and violation state is reset.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigRequestDTO'
+      responses:
+        '202':
+          description: Config re-fetch accepted and running asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponseDTO'
+        '400':
+          description: Invalid JSON or missing raspberryPi field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
+
+  /api/retry-sensor:
+    post:
+      tags: [Notifications]
+      summary: Trigger a reconnect attempt for a specific BLE sensor
+      description: >
+        Webapp (or an operator) asks the Pi to immediately retry connecting to one
+        or more BLE sensors identified by their UUIDs. If the BLE task for a sensor
+        is still alive it receives a `reconnect_event`; if the task has died it is
+        respawned from scratch.
+      parameters:
+        - name: sensorIds
+          in: query
+          required: true
+          description: Comma-separated list of sensor read_uuid or write_uuid values to retry.
+          schema:
+            type: string
+          example: "uuid-1,uuid-2"
+      responses:
+        '202':
+          description: Reconnect triggered for matched sensors.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrySensorResponseDTO'
+        '400':
+          description: sensorIds query param is missing or empty.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
+        '404':
+          description: No active BLE manager matched the provided sensorIds.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDTO'
 
 components:
   schemas:
-    NotifyRequestDTO:
+
+    LimitChangeNotificationDTO:
       type: object
-      required: [updateType, triggeredAt]
+      description: >
+        At least one limit field must be non-null. Omitted fields are left unchanged.
+      properties:
+        tempMin:
+          type: number
+          description: Minimum acceptable temperature (°C).
+          example: 18.0
+        tempMax:
+          type: number
+          description: Maximum acceptable temperature (°C).
+          example: 26.0
+        humMin:
+          type: number
+          description: Minimum acceptable relative humidity (%).
+          example: 30.0
+        humMax:
+          type: number
+          description: Maximum acceptable relative humidity (%).
+          example: 60.0
+        co2Max:
+          type: number
+          description: Maximum acceptable CO2 concentration (ppm).
+          example: 1000.0
+        triggeredAt:
+          type: string
+          example: "2020-02-02T20:00:00"
+
+    OccupancyDTO:
+      type: object
+      required: [effectiveOccupancy]
+      properties:
+        effectiveOccupancy:
+          type: integer
+          minimum: 0
+          description: Current effective number of occupants in the room.
+          example: 4
+        privayMode:
+          type: boolean
+          example: true
+        roomId:
+          type: string
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    StateChangeNotificationDTO:
+      type: object
+      required: [updateType]
       properties:
         updateType:
           type: string
-          enum: [LIMITS, SENSORS, ABSENCE, CONFIG]
+          enum: [SENSOR_ADD, SENSOR_DELETE, FLUSH]
+          description: The type of sensor-list change to apply.
         triggeredAt:
           type: string
-          format: date-time
+          example: "2020-02-02T20:00:00"
 
-    NotifyResponseDTO:
+    ConfigRequestDTO:
+      type: object
+      required: [raspberryPi]
+      properties:
+        raspberryPi:
+          type: string
+          description: The Pi's device ID. Used to fetch the correct config from the webapp.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+
+    AcceptedResponseDTO:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [accepted]
+          example: accepted
+
+    SensorsAcceptedResponseDTO:
       type: object
       required: [status, updateType]
       properties:
         status:
           type: string
-          enum: [ACCEPTED, FAILED]
-        updateType: { type: string }
-        message: { type: string }
+          enum: [accepted]
+          example: accepted
+        updateType:
+          type: string
+          enum: [SENSOR_ADD, SENSOR_DELETE, FLUSH]
+          example: SENSOR_ADD
 
-    HealthDTO:
+    RetrySensorResponseDTO:
       type: object
-      required: [piId, status]
+      required: [status, triggered]
       properties:
-        piId: { type: string, format: uuid }
-        status: { type: string, enum: [ACTIVE, OFFLINE] }
-        lastSyncAt: { type: string, format: date-time }
-        uptimeSeconds: { type: integer }
-        connectedSensorCount: { type: integer }
-        privacyModeActive: { type: boolean }
-        cpuLoad: { type: number }
-        storageUsagePercent: { type: integer }
+        status:
+          type: string
+          enum: [accepted]
+          example: accepted
+        triggered:
+          type: array
+          description: Names of BLE managers for which a reconnect was triggered.
+          items:
+            type: string
+          example: ["living-room-sensor", "office-sensor"]
 
     ErrorDTO:
       type: object
-      required: [error]
+      required: [status, message]
       properties:
-        error: { type: string }
-        detail: { type: string }
+        status:
+          type: string
+          enum: [error]
+          example: error
+        message:
+          type: string
+          description: Human-readable description of what went wrong.
+          example: "No limit fields provided"

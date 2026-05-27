@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import globalAxios from 'axios';
+import { RoomControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Toast } from 'primereact/toast';
 
@@ -8,7 +8,6 @@ import SidebarComponent from '../components/SidebarComponent';
 import RoomSensorHistoryCard from '../components/RoomSensorHistoryCard';
 import RoomViolationLogTable, { ViolationDTO } from '../components/RoomViolationLogTable';
 import RoomLimitSettings, { LimitState } from '../components/RoomLimitSettings';
-import { FooterComponent } from '../components/FooterComponent';
 
 import { ROUTES } from '../utilities/routes.paths';
 import { extractArrayResponse, getApiErrorMessage } from '../utilities/apiUtils';
@@ -40,15 +39,14 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
         setLoading(true);
 
         Promise.allSettled([
-            globalAxios.get<LimitDTO>(`/api/rooms/${roomId}/limits`),
-            globalAxios.get(`/api/warnings/rooms/${roomId}`, {
-                params: {
-                    activeOnly: false,
-                    startDate: '2000-01-01',
-                    endDate: new Date().toISOString().slice(0, 10),
-                },
+            new RoomControllerApi().getLimitsForRoom({ roomId }),
+            new WarningControllerApi().getWarningsForRoom({
+                roomId,
+                activeOnly: false,
+                startDate: '2000-01-01',
+                endDate: new Date().toISOString().slice(0, 10),
             }),
-            globalAxios.get('/api/rooms'),
+            new RoomControllerApi().getPageOfRooms({ pageable: { page: 0, size: 500, sort: [] } }),
         ]).then(([limitsResult, warningsResult, roomsResult]) => {
             if (roomsResult.status === 'fulfilled') {
                 const rooms = extractArrayResponse<RoomDTO>(roomsResult.value.data, []);
@@ -80,7 +78,7 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
         if (!roomId) return;
         setSavingLimits(true);
 
-        globalAxios.patch<LimitDTO>(`/api/rooms/${roomId}/limits`, mapLimitStateToDto(roomId, limits))
+        new RoomControllerApi().updateLimitsForRoom({ roomId, limitDTO: mapLimitStateToDto(roomId, limits) as any })
             .then(response => {
                 setLimits(mapLimitDtoToState(response.data));
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Limits saved successfully.', life: 3000 });
@@ -128,8 +126,6 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
                     />
                 </div>
             </div>
-
-            <FooterComponent />
         </div>
     );
 };

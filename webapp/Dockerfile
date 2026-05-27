@@ -9,7 +9,6 @@ COPY src/main/resources ./src/main/resources
 
 RUN mvn -q -B generate-sources -Dskip.frontend=true
 
-
 # ------------ STAGE 2 SEPARATOR -------------
 # This stage is for building the frontend
 # Build Frontend
@@ -55,16 +54,16 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=backend-build /app/target/*.jar app.jar
 
+RUN useradd -ms /bin/bash appuser
+RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+
 # Limit memory for deployment server restriction reasons
 # TODO test if better option: -XX:MaxRAMPercentage=75
-ENV JAVA_OPTS="-Xmx256m"
+ENV JAVA_OPTS="-Xmx256m -Duser.timezone=Europe/Vienna"
 
 EXPOSE 8080
 
-RUN useradd -ms /bin/bash appuser
 RUN echo '#!/bin/sh\nexec java $JAVA_OPTS -Dspring.profiles.active=prod -jar /app/app.jar' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh && chown appuser:appuser /app/app.jar /app/entrypoint.sh
 USER appuser
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-
-

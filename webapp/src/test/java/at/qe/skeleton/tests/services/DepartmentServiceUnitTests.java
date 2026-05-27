@@ -38,6 +38,7 @@ class DepartmentServiceUnitTests {
     @Mock private BuildingTrendRepository trendRepository;
     @Mock private RoomServiceImpl roomService;
     @Mock private AuthenticatedUserService authenticatedUserService;
+    @Mock private AggregatedDepartmentStatsRepository departmentStatsRepository;
 
     @InjectMocks
     private DepartmentServiceImpl departmentService;
@@ -357,6 +358,7 @@ class DepartmentServiceUnitTests {
 
         verify(departmentRepository).delete(sampleDepartment);
         verify(trendRepository).deleteAllByDepartmentId(departmentId);
+        verify(departmentStatsRepository).deleteAllByDepartmentId(departmentId);
     }
 
     @Test
@@ -377,6 +379,7 @@ class DepartmentServiceUnitTests {
         verify(roomService).deleteRoom(roomId2);
         verify(departmentRepository).delete(sampleDepartment);
         verify(trendRepository).deleteAllByDepartmentId(departmentId);
+        verify(departmentStatsRepository).deleteAllByDepartmentId(departmentId);
     }
 
     @Test
@@ -387,5 +390,6 @@ class DepartmentServiceUnitTests {
 
         verify(departmentRepository, never()).delete(any());
         verify(trendRepository).deleteAllByDepartmentId(departmentId);
+        verify(departmentStatsRepository).deleteAllByDepartmentId(departmentId);
     }
 }

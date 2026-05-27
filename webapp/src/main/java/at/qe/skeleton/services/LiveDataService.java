@@ -2,7 +2,6 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.WarningDTO;
-import at.qe.skeleton.model.ClimateStats;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -26,6 +25,26 @@ public class LiveDataService {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         try {
             messagingTemplate.convertAndSend("/topic/active-warnings/" + roomId.toString(), mapper.writeValueAsString(warning));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void pushActiveWarningDepartment(UUID departmentId, WarningDTO dto) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        try {
+            messagingTemplate.convertAndSend("/topic/active-warnings-department/" + departmentId.toString(), mapper.writeValueAsString(dto));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void resolveActiveWarningDepartment(UUID departmentId, WarningDTO dto) {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        try {
+            messagingTemplate.convertAndSend("/topic/resolve-warnings-department/" + departmentId.toString(), mapper.writeValueAsString(dto));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

@@ -119,11 +119,10 @@ const UserListComponent: React.FC<UserListProps> = ({
 
     return (
         // DataTable for displaying users
-        <DataTable value={users} loading={loading} emptyMessage="No users found." className="user-list-compact-table">
+        <DataTable value={users} loading={loading} emptyMessage="No users found." className="user-list-compact-table" tableStyle={{ width: 'auto', minWidth: '0' }}>
             <Column header="User" body={fullNameBodyTemplate} sortable sortField="lastName" />
             <Column field="username" header="Username" sortable />
             <Column header="Room" body={roomBodyTemplate} sortable />
-            <Column field="roles" header="Roles" body={rolesBodyTemplate} />
             <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" exportable={false} body={actionsBodyTemplate} />
         </DataTable>
     )

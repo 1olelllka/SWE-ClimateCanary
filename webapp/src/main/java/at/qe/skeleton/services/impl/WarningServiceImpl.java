@@ -3,6 +3,7 @@ package at.qe.skeleton.services.impl;
 import at.qe.skeleton.dtos.*;
 import at.qe.skeleton.exceptions.ForbiddenException;
 import at.qe.skeleton.exceptions.NotFoundException;
+import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
@@ -19,6 +20,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Transactional(readOnly = true)
@@ -85,11 +87,19 @@ public class WarningServiceImpl implements WarningService {
                         )
                 );
             }
-            // Office-level access: employees always see only active warnings for their own room
-            if (isOfficeUser && room.equals(user.getMyRoom())) {
-                return mapToDTOs(
-                        warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
-                );
+            // Office-level access: employees see only active warnings for their own room
+            // or any room in their department (shared/common rooms shown on the department page)
+            if (isOfficeUser) {
+                boolean sameRoom = room.equals(user.getMyRoom());
+                boolean sameDepartment = room.getDepartment() != null
+                        && user.getMyRoom().getDepartment() != null
+                        && room.getDepartment().getId().equals(user.getMyRoom().getDepartment().getId())
+                        && room.getRoomType().equals(RoomType.SHARED);
+                if (sameRoom || sameDepartment) {
+                    return mapToDTOs(
+                            warningsRepository.findByRoomMonitoring_RoomIdAndResolvedAtIsNull(roomId)
+                    );
+                }
             }
         }
         if (isBuildingManager) {
@@ -163,6 +173,7 @@ public class WarningServiceImpl implements WarningService {
         warning.setRoomMonitoring(room);
         WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.pushActiveWarning(room.getRoomId(), res);
+        liveDataService.pushActiveWarningDepartment(roomRepository.findById(res.roomId()).get().getDepartment().getId(), res);
         return res;
     }
 
@@ -182,15 +193,25 @@ public class WarningServiceImpl implements WarningService {
     public WarningDTO resolveWarning(UUID warningId) {
         Warnings warning = findActiveWarningById(warningId);
         warning.setResolvedAt(LocalDateTime.now());
-        warningsRepository.findAllActiveByType(warning.getMeasurementType())
+        AtomicInteger counter = new AtomicInteger(1);
+        if (warning.getRoomMonitoring() == null) throw new ValidationException("Warning does not have assigned room. Please contact system administrator.");
+        warningsRepository.findAllByRoomAndActiveByType(warning.getRoomMonitoring().getRoomId(), warning.getMeasurementType())
                 .forEach(w -> {
                     if (!w.getId().equals(warningId)) {
                         w.setResolvedAt(LocalDateTime.now());
                         warningsRepository.save(w);
+                        counter.addAndGet(1);
                     }
                 });
         WarningDTO dto = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.resolveActiveWarning(dto.roomId(), dto);
+        Room room = roomRepository.findById(dto.roomId()).orElse(null);
+        if (room != null) {
+            UUID deptId = room.getDepartment().getId();
+            for (int i = 0; i < counter.get(); i++) {
+                liveDataService.resolveActiveWarningDepartment(deptId, dto);
+            }
+        }
         return dto;
     }
 

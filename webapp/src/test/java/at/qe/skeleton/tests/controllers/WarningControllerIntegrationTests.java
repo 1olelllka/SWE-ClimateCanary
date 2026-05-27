@@ -114,6 +114,7 @@ class WarningControllerIntegrationTests {
         TestingAuthenticationToken auth = new TestingAuthenticationToken(this.employee.getUsername(), this.employee, this.employee.getAuthorities());
         Room room2 = TestDataUtil.createRoomEntity(departmentRepository.findAll().getFirst());
         room2.setRoomNumber("2ndRoom");
+        room2.setRoomType(RoomType.OFFICE);
         room2 = roomService.createRoom(room2);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/warnings/rooms/"+room2.getId()+"?activeOnly=true&startDate="+ LocalDate.now().minusDays(1)+"&endDate="+LocalDate.now())

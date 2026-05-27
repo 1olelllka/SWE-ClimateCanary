@@ -4,6 +4,7 @@ import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
 import { useNavigate } from 'react-router-dom';
 import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
+import { useTemperature } from '../hooks/useTemperature';
 
 interface Props {
     departments: DepartmentWithStats[];
@@ -29,18 +30,19 @@ function computeStatus(dept: DepartmentWithStats): 'red' | 'yellow' | 'green' | 
 
 export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading }) => {
     const navigate = useNavigate();
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
 
     const tableData: TableRow[] = departments.map(d => ({
         id:         d.id,
         department: d.name,
         co2:      d.stats?.avgAirQuality  != null ? `${d.stats.avgAirQuality.toFixed(0)} ppm`  : 'N/A',
-        temp:     d.stats?.avgTemperature != null ? `${d.stats.avgTemperature.toFixed(1)} °C`  : 'N/A',
+        temp:     d.stats?.avgTemperature != null ? `${convertTemp(d.stats.avgTemperature).toFixed(1)} ${tempUnit}` : 'N/A',
         humidity: d.stats?.avgHumidity    != null ? `${d.stats.avgHumidity.toFixed(1)} %`      : 'N/A',
         status:   computeStatus(d),
     }));
 
     const handleRowClick = (e: { data: TableRow }) => {
-        navigate(`/senior/department/${encodeURIComponent(e.data.department)}`);
+        navigate(`/senior/department/${encodeURIComponent(e.data.id)}?name=${encodeURIComponent(e.data.department)}`);
     };
 
     const statusTemplate = (row: TableRow) => (

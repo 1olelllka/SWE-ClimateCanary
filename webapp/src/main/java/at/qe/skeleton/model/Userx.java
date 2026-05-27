@@ -38,7 +38,6 @@ public class Userx implements Comparable<Userx>, UserDetails {
   
   private String firstName;
   private String lastName;
-  private LocalDateTime snoozedWarningsUntil;
   @Builder.Default
   private Integer numberOfAbsences = 25;
 

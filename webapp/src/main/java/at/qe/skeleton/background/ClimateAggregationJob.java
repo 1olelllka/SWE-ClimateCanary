@@ -2,7 +2,8 @@ package at.qe.skeleton.background;
 
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
-import jakarta.annotation.PostConstruct;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,7 +35,7 @@ public class ClimateAggregationJob {
     @Value("${app.aggregation.run-on-startup:true}")
     private boolean runOnStartup;
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     void init() {
         if (runOnStartup) {
             aggregateDaily();
@@ -152,7 +153,7 @@ public class ClimateAggregationJob {
     }
 
     private List<Department> getDepartments() {
-        return departmentRepository.findAll();
+        return departmentRepository.findAllWithRooms();
     }
 
     private <T> double avg(List<T> list, ToDoubleFunction<T> extractor) {

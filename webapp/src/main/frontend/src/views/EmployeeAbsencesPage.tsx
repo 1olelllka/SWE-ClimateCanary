@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import globalAxios from 'axios';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTimeFormat } from '../hooks/useTimeFormat';
+import { UserxControllerApi, UserxDTO } from '../generated-skeleton-api';
+import { Toast } from 'primereact/toast';
+import { Dropdown } from 'primereact/dropdown';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
@@ -86,6 +89,8 @@ const KpiCard = ({ title, value, max, displayValue, barColor = '#22c55e' }: KpiC
 };
 
 export const EmployeeAbsencesPage: React.FC = () => {
+    const toast = useRef<Toast>(null);
+    const { formatDate } = useTimeFormat();
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [selectedAbsence, setSelectedAbsence] = useState<AbsenceListDTO | null>(null);
@@ -93,16 +98,21 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [sortAscending, setSortAscending] = useState(false);
-
+    const [statusFilter, setStatusFilter] = useState('');
+    const [user, setUser] = useState<UserxDTO>();
     const fetchAbsences = useCallback(() => {
         setLoading(true);
 
-        globalAxios.get('/api/users/me')
-            .then(res => setCurrentUserId(res.data.id))
+        new UserxControllerApi().getAuthenticatedUser()
+            .then(res => {
+                setCurrentUserId((res.data as any).id)
+                console.log(res.data)
+                setUser(res.data);
+            })
             .catch(err => console.error('Could not load user', err));
 
-        globalAxios.get('/api/users/me/absences')
-            .then(res => setAbsences(res.data.content || []))
+        new UserxControllerApi().getPageOfAbsencesOfAuthenticatedUser({ pageable: { page: 0, size: 100, sort: [] } })
+            .then(res => setAbsences((res.data.content as any) || []))
             .catch(err => console.error('Could not load absences', err))
             .finally(() => setLoading(false));
     }, []);
@@ -115,18 +125,18 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     const currentYear = new Date().getFullYear();
 
-    const usedVacationDays = useMemo(() =>
-        absences
-            .filter(a =>
-                a.status === 'APPROVED' &&
-                a.typeOfAbsence === 'VACATION' &&
-                new Date(a.startDate).getFullYear() === currentYear,
-            )
-            .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
-        [absences, currentYear],
-    );
+    // const usedVacationDays = useMemo(() =>
+    //     absences
+    //         .filter(a =>
+    //             a.status === 'APPROVED' &&
+    //             a.typeOfAbsence === 'VACATION' &&
+    //             new Date(a.startDate).getFullYear() === currentYear,
+    //         )
+    //         .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
+    //     [absences, currentYear],
+    // );
 
-    const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
+    // const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
 
     const oldestPendingMinutes = useMemo(() => {
         const pending = absences
@@ -140,18 +150,21 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     // ── Table sort ────────────────────────────────────────────────────────────
 
-    const sortedAbsences = useMemo(() =>
-        [...absences].sort((a, b) => {
-            const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            return sortAscending ? diff : -diff;
-        }),
-        [absences, sortAscending],
+    const displayedAbsences = useMemo(() =>
+        [...absences]
+            .filter(a => !statusFilter || a.status === statusFilter)
+            .sort((a, b) => {
+                const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                return sortAscending ? diff : -diff;
+            }),
+        [absences, sortAscending, statusFilter],
     );
 
     // ─────────────────────────────────────────────────────────────────────────
 
     return (
         <div className="employee-absences-page">
+            <Toast ref={toast} position="top-right" />
             <PageHeader title="My Absences" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
@@ -162,12 +175,12 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 <div className="employee-absences-kpi-grid">
                     <KpiCard
                         title="Vacation Days Remaining"
-                        value={vacationRemaining}
+                        value={user == null || user.numberOfAbsences == undefined ? TOTAL_VACATION_DAYS : user.numberOfAbsences}
                         max={TOTAL_VACATION_DAYS}
                     />
                     <KpiCard
                         title="Used This Year"
-                        value={usedVacationDays}
+                        value={user == null || user.numberOfAbsences == undefined ? 0 : TOTAL_VACATION_DAYS - user.numberOfAbsences}
                         max={TOTAL_VACATION_DAYS}
                     />
                     <KpiCard
@@ -185,13 +198,19 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 </div>
 
                 <div className="employee-absences-controls">
-                    <button
-                        type="button"
-                        className="absence-sort-button"
-                        onClick={() => setSortAscending(prev => !prev)}
-                    >
-                        Sort by date {sortAscending ? '↑' : '↓'}
-                    </button>
+                    <Dropdown
+                        value={statusFilter}
+                        options={[
+                            { label: 'All statuses', value: '' },
+                            { label: 'Pending', value: 'PENDING' },
+                            { label: 'Approved', value: 'APPROVED' },
+                            { label: 'Rejected', value: 'REJECTED' },
+                            { label: 'Cancelled', value: 'CANCELLED' },
+                        ]}
+                        onChange={e => setStatusFilter(e.value)}
+                        placeholder="All statuses"
+                        className="absence-status-filter"
+                    />
                     <button
                         type="button"
                         className="absence-request-button"
@@ -210,6 +229,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                                 fetchAbsences();
                             }}
                             onCancel={() => setShowRequestForm(false)}
+                            onToast={opts => toast.current?.show(opts)}
                         />
                     </div>
                 )}
@@ -235,24 +255,29 @@ export const EmployeeAbsencesPage: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th>Request</th>
-                                    <th>Date</th>
+                                    <th
+                                        className="absence-sortable-th"
+                                        onClick={() => setSortAscending(prev => !prev)}
+                                    >
+                                        Date {sortAscending ? '↑' : '↓'}
+                                    </th>
                                     <th>Hours</th>
                                     <th>Status</th>
                                     <th />
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedAbsences.length === 0 ? (
+                                {displayedAbsences.length === 0 ? (
                                     <tr>
                                         <td colSpan={5} className="employee-absences-empty-cell">
                                             No absences found.
                                         </td>
                                     </tr>
                                 ) : (
-                                    sortedAbsences.map(abs => (
+                                    displayedAbsences.map(abs => (
                                         <tr key={abs.id}>
                                             <td>{formatEnum(abs.typeOfAbsence)}</td>
-                                            <td>{formatDateRange(abs.startDate, abs.endDate)}</td>
+                                            <td>{formatDate(abs.startDate) === formatDate(abs.endDate) ? formatDate(abs.startDate) : `${formatDate(abs.startDate)} – ${formatDate(abs.endDate)}`}</td>
                                             <td>{calculateAbsenceHours(abs.startDate, abs.endDate)} h</td>
                                             <td><StatusBadge status={abs.status} /></td>
                                             <td>

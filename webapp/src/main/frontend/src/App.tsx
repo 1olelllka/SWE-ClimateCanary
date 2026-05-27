@@ -19,15 +19,19 @@ import {
     BuildingRoomAnalysisRoute,
     TipManagementRoute,
     MyRoomRoute,
-    CompanyTrendsRoute
+    CompanyTrendsRoute,
+    DepartmentViolationsRoute,
+    RoomDetailRoute
 } from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
+import { UserPreferencesProvider } from "./Contexts/UserPreferencesContext";
 
 const App: React.FC = () => {
     return (
         <ThemeProvider>
             <UserProvider>
+                <UserPreferencesProvider>
                 <Suspense fallback={<div>Loading...</div>}>
                     <BrowserRouter>
                         <Routes>
@@ -48,10 +52,13 @@ const App: React.FC = () => {
                                 <Route path={TipManagementRoute.url} Component={TipManagementRoute.component}/>
                                 <Route path={MyRoomRoute.url} Component={MyRoomRoute.component}/>
                                 <Route path={CompanyTrendsRoute.url} Component={CompanyTrendsRoute.component}/>
+                                <Route path={DepartmentViolationsRoute.url} Component={DepartmentViolationsRoute.component}/>
+                                <Route path={RoomDetailRoute.url} Component={RoomDetailRoute.component}/>
                             </Route>
                         </Routes>
                     </BrowserRouter>
                 </Suspense>
+                </UserPreferencesProvider>
             </UserProvider>
         </ThemeProvider>
     );

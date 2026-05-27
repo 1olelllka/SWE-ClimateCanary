@@ -29,6 +29,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
+    private final AggregatedStatsRepository aggregatedStatsRepository;
     private final RoomMonitoringRepository monitoringRepository;
     private final UserxRepository userxRepository;
     private final RaspberryPiRepository raspberryPiRepository;
@@ -148,5 +149,6 @@ public class RoomServiceImpl implements RoomService {
             );
         }
         monitoringRepository.deleteById(id);
+        aggregatedStatsRepository.deleteAllByRoomId(id);
     }
 }

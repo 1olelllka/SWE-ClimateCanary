@@ -37,6 +37,7 @@ class RoomServiceUnitTest {
     @Mock private DepartmentRepository departmentRepository;
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private NotificationClient notificationClient;
+    @Mock private AggregatedStatsRepository aggregatedStatsRepository;
 
     @InjectMocks
     private RoomServiceImpl roomService;
@@ -270,6 +271,7 @@ class RoomServiceUnitTest {
         assertNull(user1.getMyRoom());
         assertNull(user2.getMyRoom());
         verify(userxRepository, times(2)).save(any(Userx.class));
+        verify(aggregatedStatsRepository).deleteAllByRoomId(roomId);
     }
 
     @Test
@@ -281,6 +283,7 @@ class RoomServiceUnitTest {
 
         assertFalse(department.getRooms().contains(sampleRoom));
         assertNull(sampleRoom.getDepartment());
+        verify(aggregatedStatsRepository).deleteAllByRoomId(roomId);
     }
 
     @Test
@@ -303,6 +306,7 @@ class RoomServiceUnitTest {
         verify(eventPublisher).publishEvent(any(NotifyRaspberryCommand.class));
         verify(roomRepository).delete(sampleRoom);
         verify(monitoringRepository).deleteById(roomId);
+        verify(aggregatedStatsRepository).deleteAllByRoomId(roomId);
     }
 
     @Test
@@ -315,6 +319,7 @@ class RoomServiceUnitTest {
         verify(roomRepository, never()).delete(any());
         verifyNoInteractions(userxRepository);
         verify(monitoringRepository).deleteById(roomId);
+        verify(aggregatedStatsRepository).deleteAllByRoomId(roomId);
     }
 
     @Test
@@ -327,5 +332,6 @@ class RoomServiceUnitTest {
         verify(roomRepository).delete(sampleRoom);
         verify(monitoringRepository).deleteById(roomId);
         verifyNoInteractions(raspberryPiRepository, eventPublisher);
+        verify(aggregatedStatsRepository).deleteAllByRoomId(roomId);
     }
 }
