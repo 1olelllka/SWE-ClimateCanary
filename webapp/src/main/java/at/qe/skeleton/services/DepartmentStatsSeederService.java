@@ -29,17 +29,18 @@ public class DepartmentStatsSeederService {
     private static final Random RANDOM = new Random(99);
 
     // Per-department climate profile: {tempBase, tempRange, humBase, co2Base, co2Peak}
+    // CO2 values are on the system scale (limit = 70); values above 70 trigger warnings
     private static final float[][] PROFILES = {
         // Engineering: warm + high CO2 (lots of servers/computers)
-        { 23.5f, 2.0f, 45f, 850f, 300f },
+        { 23.5f, 2.0f, 45f, 90f, 20f },
         // Marketing: comfortable, well-ventilated
-        { 21.5f, 1.5f, 52f, 620f, 150f },
+        { 21.5f, 1.5f, 52f, 65f, 15f },
         // Human Resources: slightly cool, higher humidity
-        { 20.5f, 1.5f, 58f, 560f, 120f },
-        // Finance: warm, borderline CO2 — will breach 1000 ppm on some days
-        { 24.5f, 2.5f, 44f, 980f, 250f },
+        { 20.5f, 1.5f, 58f, 60f, 12f },
+        // Finance: warm, borderline CO2 — will breach the 70 limit on some days
+        { 24.5f, 2.5f, 44f, 95f, 25f },
         // Operations: widest variation, temperature violations on some days
-        { 25.5f, 3.5f, 47f, 720f, 200f },
+        { 25.5f, 3.5f, 47f, 78f, 20f },
     };
 
     @Transactional
@@ -90,8 +91,8 @@ public class DepartmentStatsSeederService {
 
                 float co2 = round1(co2Base
                         + (float) (co2Peak * weekCycle)
-                        + (float) (RANDOM.nextGaussian() * 40));
-                co2 = clamp(co2, 400f, 1800f);
+                        + (float) (RANDOM.nextGaussian() * 8));
+                co2 = clamp(co2, 40f, 150f);
 
                 batch.add(AggregatedDepartmentStats.builder()
                         .departmentId(dept.getId())
