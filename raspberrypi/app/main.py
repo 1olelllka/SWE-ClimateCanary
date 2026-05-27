@@ -146,15 +146,17 @@ async def main(db_path: str):
         )
         web_manager._ble_tasks[sensor_name] = ble_task
         tasks.append(ble_task)
-    
-        tasks.append(asyncio.create_task(
+
+        proc_task = asyncio.create_task(
             processor.run(
                 sensor_name,
                 queues[sensor_name]['proc'],
                 write_uuid
             ),
             name=f"Proc:{sensor_name}",
-        ))
+        )
+        web_manager._proc_tasks[sensor_name] = proc_task
+        tasks.append(proc_task)
 
     try:
         await asyncio.gather(*tasks)
