@@ -1699,6 +1699,38 @@
         }
       }
     },
+    "/api/warnings/buildings/{building_id}/active": {
+      "get": {
+        "tags": [
+          "warning-controller"
+        ],
+        "summary": "Get count of active violations for a building",
+        "operationId": "getActiveViolationsForBuilding",
+        "parameters": [
+          {
+            "name": "building_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveViolationBuildingStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warnings/departments/{department_id}/summary": {
       "get": {
         "tags": [
@@ -2383,6 +2415,15 @@
   },
   "components": {
     "schemas": {
+      "ActiveViolationBuildingStats": {
+        "type": "object",
+        "properties": {
+          "activeViolations": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "RaspberryTestDTO": {
         "type": "object",
         "properties": {
