@@ -191,13 +191,6 @@ export const TipManagementForm: React.FC = () => {
                     ))}
                 </div>
 
-                <button
-                    type="button"
-                    className={`tip-sort-btn${sortDir !== 'none' ? ' active' : ''}`}
-                    onClick={cycleSortDir}
-                >
-                    Message{sortIcon}
-                </button>
             </div>
 
             <div className="tip-mgmt-table-wrapper">
