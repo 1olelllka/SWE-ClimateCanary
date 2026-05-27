@@ -1344,20 +1344,20 @@ html[data-theme='dark'] .user-list-compact-table .p-datatable-tbody > tr:hover >
     }
 
     .p-datatable .admin-actions-column-wide {
-        width: 5.9rem !important;
-        min-width: 5.9rem !important;
-        max-width: 5.9rem !important;
+        width: 7.2rem !important;
+        min-width: 7.2rem !important;
+        max-width: 7.2rem !important;
     }
 
     .admin-table-actions {
-        gap: 0.25rem;
+        gap: 0.15rem;
         justify-content: flex-end;
     }
 
     .admin-table-actions .p-button {
-        width: 1.8rem !important;
-        height: 1.8rem !important;
-        min-width: 1.8rem !important;
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+        min-width: 1.6rem !important;
     }
 
     .admin-table-actions .p-button-icon {
