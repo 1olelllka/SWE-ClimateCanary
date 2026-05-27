@@ -48,12 +48,22 @@ class DataProcessor:
             self._good_streak[sensor_name] = {k: 0 for k in limit_keys}
             self._active_warning[sensor_name] = {k: None for k in limit_keys}
 
+    def reset_sensor_state(self, sensor_name: str):
+        limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
+        self._bad_streak[sensor_name]     = {k: 0    for k in limit_keys}
+        self._good_streak[sensor_name]    = {k: 0    for k in limit_keys}
+        self._active_warning[sensor_name] = {k: None for k in limit_keys}
+
     async def run(self, sensor_name: str, processing_queue: asyncio.Queue, sensorWriteId):
         logger.info(f"[Processor:{sensor_name}] Worker started.")
         self._init_sensor_state(sensor_name)
 
         while True:
-            raw_data = await processing_queue.get()
+            try:
+                raw_data = await processing_queue.get()
+            except asyncio.CancelledError:
+                logger.info(f"[Processor:{sensor_name}] Worker stopped.")
+                return
 
             try:
                 limits = await self.db.get_all_limits()

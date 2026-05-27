@@ -96,7 +96,7 @@ class BLEManager:
 
                     async with self.scan_lock:
                         device = await BleakScanner.find_device_by_filter(
-                                lambda d, _: d.name and d.name.startswith("G1T4:") and target_name in d.name,
+                                lambda d, _, tn=target_name: d.name and d.name.startswith("G1T4:") and tn in d.name,
                                 timeout=15.0,
                                 )
 

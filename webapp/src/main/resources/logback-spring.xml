@@ -61,7 +61,7 @@
         </encoder>
     </appender>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"         />
         <appender-ref ref="INFO_FILE"       />
         <appender-ref ref="WARN_ERROR_FILE" />
