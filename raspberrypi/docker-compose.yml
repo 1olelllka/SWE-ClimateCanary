@@ -1,3 +1,5 @@
+name: pi
+
 services:
   gateway:
     build: ./app

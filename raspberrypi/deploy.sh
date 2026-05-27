@@ -15,6 +15,7 @@ fi
 echo "Syncing files to pi..."
 
 rsync -a --delete \
+  --rsync-path="sudo rsync" \
   --exclude="tests/" \
   --exclude="pytest.ini" \
   --exclude="requirements-dev.txt" \
