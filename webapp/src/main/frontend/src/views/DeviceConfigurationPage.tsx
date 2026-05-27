@@ -355,6 +355,16 @@ const DeviceConfigurationPage: React.FC = () => {
             });
     };
 
+    const handleRemoveSensorFromPi = (row: SensorStationDTO) => {
+        setConfirmDelete({
+            message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
+            onConfirm: () => {
+                setConfirmDelete(null);
+                handleDisconnectSensor(row.readId!);
+            },
+        });
+    };
+
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
         <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
@@ -511,15 +521,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={(row: SensorStationDTO) => (
                                     <div className="admin-table-actions">
                                         <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryConnection(row.readId!)} />
-                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => {
-                                            setConfirmDelete({
-                                                message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
-                                                onConfirm: () => {
-                                                    setConfirmDelete(null);
-                                                    handleDisconnectSensor(row.readId!);
-                                                },
-                                            });
-                                        }} />
+                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => handleRemoveSensorFromPi(row)} />
                                     </div>
                                 )} />
                             </DataTable>
