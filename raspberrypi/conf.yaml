@@ -1,5 +1,5 @@
 webapp:
-  server_url: "http://100.95.135.11:8080"
+  server_url: "http://100.99.97.3:8080"
   local_listen_port: 8080
 
 auth:

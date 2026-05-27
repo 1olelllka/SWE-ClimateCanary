@@ -303,6 +303,13 @@ class WebManager:
 
             await ConfigManager.fetch_and_seed(pi_id, self.server_url, self.db, self.auth)
 
+            all_sensors = await self.db.get_sensors()
+            sensor_by_name = {s['name']: s for s in all_sensors}
+            for name, ble in self.ble_managers.items():
+                if name in sensor_by_name:
+                    ble.sensor = sensor_by_name[name]
+                    logger.info(f"[WebManager] Config re-seed: refreshed sensor dict for '{name}'")
+
             new_freq = await self.db.get_config('frequency')
             if new_freq is not None:
                 logger.info(f"[WebManager] Config re-seeded. Broadcasting FREQUENCY:{new_freq} to all Arduinos.")
