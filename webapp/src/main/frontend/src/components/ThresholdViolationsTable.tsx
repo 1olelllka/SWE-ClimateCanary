@@ -32,6 +32,10 @@ const STATUS_LABEL: Record<string, string> = {
     RESOLVED: 'Resolved',
 };
 
+const sensorBody = (row: ThresholdViolationData) => {
+    return row.sensor === 'Temperature' ? 'Temp.' : row.sensor;
+};
+
 const statusBody = (row: ThresholdViolationData) => {
     const key = row.active ? row.status : 'RESOLVED';
     const label = STATUS_LABEL[key] ?? 'Resolved';
@@ -60,11 +64,11 @@ export const ThresholdViolationsTable: React.FC<ThresholdViolationsTableProps> =
                 emptyMessage="No threshold violations found."
             >
                 <Column header="Status" body={statusBody} sortable sortField="status" style={{ minWidth: '7rem' }} />
-                <Column field="sensor" header="Violated Sensor" sortable style={{ minWidth: '9rem' }} />
+                <Column field="sensor" header="Sensor" body={sensorBody} sortable style={{ minWidth: '6rem' }} />
                 <Column field="room" header="Room" sortable style={{ minWidth: '6rem' }} />
                 <Column field="limit" header="Limit" style={{ minWidth: '7rem' }} />
-                <Column field="measuredValue" header="Measured Value" style={{ minWidth: '8rem' }} />
-                <Column field="datetime" header="Date & Time" sortable style={{ minWidth: '10rem' }} />
+                <Column field="measuredValue" header="Measured" style={{ minWidth: '8rem' }} />
+                <Column field="datetime" header="Date" sortable style={{ minWidth: '10rem' }} />
             </DataTable>
 
             {!fullPage && (
