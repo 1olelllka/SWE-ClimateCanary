@@ -3,7 +3,6 @@ import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { DepartmentAveragesTable } from '../components/DepartmentAveragesTable';
 import { ViolationsBarChart } from '../components/ViolationsBarChart';
-import { FooterComponent } from '../components/FooterComponent';
 import {
     AggregatedDataPointDTO,
     BuildingTrendControllerApi,
@@ -191,7 +190,6 @@ export const SeniorManagerDashboard: React.FC = () => {
                 <ViolationsBarChart     departments={departments} loading={loading} />
             </div>
 
-            <FooterComponent />
         </div>
     );
 };

@@ -257,6 +257,10 @@ export const DepartmentDetailPage: React.FC = () => {
     const { labels: violLabels, counts: violCounts } = buildChart(violView);
     const maxViol = Math.max(...violCounts, 1);
 
+    const chartTextColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || '#475569';
+
     const violOption = {
         tooltip: {
             trigger: 'axis' as const,
@@ -269,7 +273,7 @@ export const DepartmentDetailPage: React.FC = () => {
         xAxis: {
             type:      'category' as const,
             data:      violLabels,
-            axisLabel: { rotate: violView === 'Month' ? 45 : 0, fontSize: 11 },
+            axisLabel: { rotate: violView === 'Month' ? 45 : 0, fontSize: 11, color: chartTextColor },
             axisLine:  { lineStyle: { color: '#e2e8f0' } },
         },
         yAxis: {
@@ -278,7 +282,7 @@ export const DepartmentDetailPage: React.FC = () => {
             min:         0,
             max:         maxViol + 1,
             splitLine:   { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel:   { fontSize: 11 },
+            axisLabel:   { fontSize: 11, color: chartTextColor },
         },
         series: [{
             type:        'bar' as const,

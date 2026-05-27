@@ -8,7 +8,6 @@ import SidebarComponent from '../components/SidebarComponent';
 import RoomSensorHistoryCard from '../components/RoomSensorHistoryCard';
 import RoomViolationLogTable, { ViolationDTO } from '../components/RoomViolationLogTable';
 import RoomLimitSettings, { LimitState } from '../components/RoomLimitSettings';
-import { FooterComponent } from '../components/FooterComponent';
 
 import { ROUTES } from '../utilities/routes.paths';
 import { extractArrayResponse, getApiErrorMessage } from '../utilities/apiUtils';
@@ -127,8 +126,6 @@ export const BuildingRoomAnalysisPage: React.FC = () => {
                     />
                 </div>
             </div>
-
-            <FooterComponent />
         </div>
     );
 };
