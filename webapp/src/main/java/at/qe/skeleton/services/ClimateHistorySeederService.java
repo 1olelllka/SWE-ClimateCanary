@@ -136,6 +136,18 @@ public class ClimateHistorySeederService {
                 climateStatsRepository.saveAll(batch);
             }
 
+            // Insert a point stamped at the actual current time so the dashboard
+            // freshness check (> 30 s) passes immediately after startup.
+            OffsetDateTime freshNow = OffsetDateTime.now();
+            double freshTemp = computeTemperature(freshNow, roomTempOffset);
+            climateStatsRepository.save(ClimateStats.builder()
+                    .tempVal(round2(freshTemp))
+                    .humVal(round2(computeHumidity(freshTemp, roomHumOffset)))
+                    .pollVal(round2(computePollution(freshNow)))
+                    .date(freshNow)
+                    .roomMonitoring(room)
+                    .build());
+
             log.info("Seeded room {} ({}/{})", room.getRoomNumber(), roomIndex + 1, rooms.size());
         }
 
