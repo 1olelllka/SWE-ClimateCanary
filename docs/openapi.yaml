@@ -1,1073 +1,3180 @@
-openapi: 3.0.0
+openapi: 3.1.0
 info:
-  title: ClimateCanary API
-  version: 1.0.0
-  description: API for out climate monitoring project with RBAC
-
+  title: SWE Skeleton API
+  description: This is the API documentation for the SWE Skeleton project.
+  contact:
+    name: SWE Skeleton Team
+  version: "0.1"
+servers:
+- url: http://localhost:8080
+  description: Development
 tags:
-  - name: Users
-    description: User management
-  - name: Roles
-    description: Role and permission management
-  - name: Absences
-    description: Absence management (vacation, illness, etc.)
-  - name: Building Structure
-    description: Managment of the buildings, departments and rooms
-  - name: Raspberry Pi
-    description: Raspberry Pi device management for the system admin
-  - name: Sensor Station
-    description: Sensor Station/Arduino management for the system admin
-  - name: Limit Management
-    description: Setting limit values per room
-  - name: Climate Data
-    description: Operations related to sensor readings, historical diagrams, and building-wide climate status.
+- name: Absences
+  description: User absences management
+- name: Building Trend
+  description: Calculating building trend
 paths:
-
-  # Sensor Station end-points
-  /sensor-stations:
-    get:
-      tags: [Sensor Station]
-      summary: List all Arduino sensor stations
-      parameters:
-        - name: piId
-          in: query
-          description: Filter by the Raspberry Pi they report to
-          schema: { type: string, format: uuid }
+  /api/warnings:
+    post:
+      tags:
+      - Warnings
+      summary: "Create new warning. One of Permissions Required: CAN_SEND_WARNINGS"
+      operationId: createWarning
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningCreateDTO"
+        required: true
       responses:
-        '200':
-          description: List of sensor stations
+        "201":
+          description: Created warning with tip.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WarningDTO"
+        "400":
+          description: Validation issue.
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/SensorStationDTO' }
-    post:
-      tags: [Sensor Station]
-      summary: Register a new Arduino station
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/SensorStationCreateDTO' }
-      responses:
-        '201':
-          description: Created
-
-  /sensor-stations/{id}:
-    patch:
-      tags: [Sensor Station]
-      summary: Update station details (e.g., move to a different Pi)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/SensorStationCreateDTO' }
-      responses:
-        '200':
-          description: Updated
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WarningDTO"
+  /api/users:
     get:
-      tags: [Sensor Station]
-      summary: Get details of a specific Arduino
-      description: Returns hardware details and connection status.
+      tags:
+      - User management
+      summary: "Get Page of Users. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: getPageOfUsers
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
-        '200':
+        "200":
+          description: Page of users.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageUserxDTO"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageUserxDTO"
+    post:
+      tags:
+      - User management
+      summary: "Create new User. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: createNewUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserxCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created user.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Username conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+  /api/tips:
+    get:
+      tags:
+      - Tip Management
+      summary: "Get all tips. One of Permissions Required: CAN_MANAGE_TIPS"
+      operationId: getAllTips
+      responses:
+        "200":
+          description: List of tips.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TipDTO"
+        "401":
+          description: Unauthorized.
+    post:
+      tags:
+      - Tip Management
+      summary: "Create new tip. One of Permissions Required: CAN_MANAGE_TIPS"
+      operationId: createNewTip
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TipCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created new tip.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TipDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Tip for one of types/statuses/sensors conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/sensor-stations:
+    get:
+      tags:
+      - Sensor Station Management
+      summary: "Get page of sensors. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: getAllSensorStations
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of sensors.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageSensorStationDTO"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageSensorStationDTO"
+    post:
+      tags:
+      - Sensor Station Management
+      summary: "Create new sensor station. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: createNewSensorStation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorStationCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created sensor.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Name conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+  /api/sensor-stations/{sensor_id}/retry-connection:
+    post:
+      tags:
+      - Sensor Station Management
+      summary: "Send retry command to raspberry. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: retrySensorStation
+      parameters:
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Sent request.
+        "404":
+          description: Sensor station not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/rooms:
+    get:
+      tags:
+      - Room management
+      summary: "Get page of rooms. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: getPageOfRooms
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of rooms.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageRoomDTO"
+        "401":
+          description: Unauthorized.
+    post:
+      tags:
+      - Room management
+      summary: "Create new room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: createNewRoom
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Department not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Room naming conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/raspberry-pis:
+    get:
+      tags:
+      - Raspberry Pi Management
+      summary: "Get page of Raspberries. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: getAllRaspberries
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of raspberries.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageRaspberryDTO"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageRaspberryDTO"
+    post:
+      tags:
+      - Raspberry Pi Management
+      summary: "Create new Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: createNewRaspberry
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RaspberryCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created raspberry.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Name/Ip/Port conflicts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+  /api/raspberry-pis/{raspberry_id}/rooms/{room_id}:
+    post:
+      tags:
+      - Raspberry Pi Management
+      summary: "Add room to Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: addTheRoomToRaspberry
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Successfully added new Room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+        "404":
+          description: Raspberry Pi/Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Room already assigned to other Raspberry..
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+    delete:
+      tags:
+      - Raspberry Pi Management
+      summary: "Remove Room from Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: removeTheRoomFromRaspberry
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Successfully removed Room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+        "404":
+          description: Raspberry Pi/Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+  /api/raspberry-pis/{raspberry_id}/retry-connection:
+    post:
+      tags:
+      - Raspberry Pi Management
+      summary: "Send retry command to raspberry. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: retryDevicesConnection
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Sent request.
+        "404":
+          description: Raspberry not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/measurements:
+    post:
+      tags:
+      - Climate Endpoints
+      summary: "Post measurement. One of Permissions Required: CAN_SEND_MEASUREMENTS"
+      operationId: postMeasurements
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementBatchDTO"
+        required: true
+      responses:
+        "201":
+          description: Created measurement.
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/login:
+    post:
+      tags:
+      - Auth
+      summary: Log in
+      operationId: authenticateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequestDTO"
+        required: true
+      responses:
+        "200":
+          description: Bearer Token.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LoginResponseDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/departments:
+    get:
+      tags:
+      - Department Management
+      summary: "Get page of departments. One of Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_COMPANY_AGGR"
+      operationId: getPageOfDepartments
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of departments.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageDepartmentListDTO"
+        "401":
+          description: Unauthorized.
+    post:
+      tags:
+      - Department Management
+      summary: "Create new department. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: createNewDepartment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentWithRoomsCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created new department.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DepartmentDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Name inside of a building is duplicate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/buildings:
+    get:
+      tags:
+      - Building Management
+      summary: "Get page of buildings. Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: getPageOfBuildings
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of buildings.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageBuildingListDTO"
+        "401":
+          description: Unauthorized.
+    post:
+      tags:
+      - Building Management
+      summary: "Create new building. Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: createNewBuilding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuildingCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created Building.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BuildingDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Either name or address is duplicate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/absences:
+    get:
+      tags:
+      - Absences
+      summary: "Get all absences. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE,\
+        \ CAN_VIEW_ABSENCE_VIEW"
+      operationId: getAllAbsences
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: List of Absences. For department management it'll return a
+            list of all employees of department. For employee only his own.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAbsenceListDTO"
+        "403":
+          description: Unauthorized.
+    post:
+      tags:
+      - Absences
+      summary: "Create new absence. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE"
+      operationId: createNewAbsence
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbsenceCreateDTO"
+        required: true
+      responses:
+        "201":
+          description: Created absence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AbsenceDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Manager not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+  /api/absences/clock-in:
+    post:
+      tags:
+      - Absences
+      summary: Clock-in
+      operationId: clockInForSpecificRoom
+      responses:
+        "200":
+          description: OK
+        "409":
+          description: Clock-in twice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+  /api/warnings/{warning_id}/resolve:
+    patch:
+      tags:
+      - Warnings
+      summary: "Resolve existing warnings. One of Permissions Required: CAN_SEND_WARNINGS"
+      operationId: resolveWarning
+      parameters:
+      - name: warning_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Resolved warning.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WarningDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/WarningDTO"
+  /api/users/{user_id}:
+    get:
+      tags:
+      - User management
+      summary: "Get specific user. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: getSpecificUser
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: User.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+        "404":
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+    delete:
+      tags:
+      - User management
+      summary: "Patch specific User. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: deleteSpecificUser
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: User deleted.
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - User management
+      summary: "Patch specific User. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: patchSpecificUser
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserxPatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Patched user.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Username conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: User not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+  /api/users/settings:
+    get:
+      tags:
+      - User management
+      summary: Get settings of a user.
+      operationId: getUserSettings
+      responses:
+        "200":
+          description: User settings.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserSettingsDTO"
+        "404":
+          description: User settings not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - User management
+      summary: Patch settings of a user.
+      operationId: updateUserSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSettingsPatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Patched User settings.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserSettingsDTO"
+        "404":
+          description: User settings not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/tips/{tip_id}:
+    delete:
+      tags:
+      - Tip Management
+      summary: "Delete specific tip. One of Permissions Required: CAN_MANAGE_TIPS"
+      operationId: deleteSpecificTip
+      parameters:
+      - name: tip_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Deleted.
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Tip Management
+      summary: "Update specific tip. One of Permissions Required: CAN_MANAGE_TIPS"
+      operationId: patchMessageForTip
+      parameters:
+      - name: tip_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TipPatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated tip.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TipDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Tip not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/sensor-stations/{sensor_id}:
+    get:
+      tags:
+      - Sensor Station Management
+      summary: "Get specific sensor. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: getSpecificSensorById
+      parameters:
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Specific sensor station.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+        "404":
+          description: Sensor not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+    delete:
+      tags:
+      - Sensor Station Management
+      summary: "Delete sensor. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: removeSpecificSensor
+      parameters:
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Deleted sensor station.
+        "404":
+          description: Sensor not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Sensor Station Management
+      summary: "Patch sensor station. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: patchExistingSensorStation
+      parameters:
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorStationPatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Patched sensor station.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Sensor station not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Naming issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+  /api/rooms/{room_id}:
+    delete:
+      tags:
+      - Room management
+      summary: "Delete specific room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: deleteSpecificRoom
+      parameters:
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Deleted room.
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Room management
+      summary: "Update specific room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: patchSpecificRoom
+      parameters:
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomPatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RoomDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room/User not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Room naming conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/rooms/{room_id}/limits:
+    get:
+      tags:
+      - Limits management
+      summary: "Get Limits for a room. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_SHARED_CLIMATE,\
+        \ CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      operationId: getAllLimitsForTheRoom
+      parameters:
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Updated room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LimitDTO"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Limits management
+      summary: "Update limit for a room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE,\
+        \ CAN_VIEW_ALL_ROOMS"
+      operationId: updateLimitsForTheRoom
+      parameters:
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LimitDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated limits.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/LimitDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/roles/{role_id}:
+    patch:
+      tags:
+      - User roles management
+      summary: "Update specific permission. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: updatePermission
+      parameters:
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRoleCreateDTO"
+        required: true
+      responses:
+        "200":
           description: OK
           content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserRoleDTO"
+        "400":
+          description: Validation issue.
+          content:
             application/json:
-              schema: { $ref: '#/components/schemas/SensorStationDTO' }
-        '404':
-          description: Sensor Station not found.
-
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Role not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/raspberry-pis/{raspberry_id}:
+    get:
+      tags:
+      - Raspberry Pi Management
+      summary: "Get specific Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: getSpecificRaspberry
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Specific Raspberry.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+        "404":
+          description: Raspberry Pi not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
     delete:
-      tags: [Sensor Station]
-      summary: Remove an Arduino from the system
-      description: >
-        Deletes the device from the DB. 
-        CRITICAL: The Webapp must then send a NOTIFY (updateType: SENSORS) 
-        to the parent Raspberry Pi so it clears its BLE whitelist.
+      tags:
+      - Raspberry Pi Management
+      summary: "Delete Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: deleteSpecificRaspberry
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Successfully deleted.
-        '404':
-          description: Sensor Station not found.
-
-  /auth/login:
-    post:
-      summary: Login user
-      requestBody:
+      - name: raspberry_id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginDTO'
+        schema:
+          type: string
+          format: uuid
       responses:
-        '200':
-          description: Successful login
-        '401':
-          description: Unauthorized
-
-  /auth/logout:
-    post:
-      summary: Logout user
-      responses:
-        '200':
-          description: Successful logout
-        '401':
-          description: Unauthorized
-
-  # CLIMATE DATA
-  /measurements:
-    post:
-      tags: [Climate Data]
-      summary: Raspberry Pi pushes new sensor data
-      description: "Hardware-facing endpoint. The Pi sends a batch of readings for a room every {frequency} seconds."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/MeasurementCreateDTO' }
-      responses:
-        '201':
-          description: Measurements successfully stored
-        '400':
-          description: Invalid data format
-
-  /rooms/{id}/current-climate:
-    get:
-      tags: [Climate Data]
-      summary: Get the latest reading for a specific room
-      description: "Used for Dashboard cards to show the most recent Temp, Humidity, and CO2.
-            Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission." 
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Latest data point retrieved
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ClimateDataPointDTO' }
-
-  /rooms/{id}/overtime:
-    get:
-      tags: [Climate Data]
-      summary: Get raw climate data with precise date and time window filtering
-      description: >
-        Returns measurements from ClimateStats. 
-        Example: Fetch data from 04:00 to 08:00 for the period between 23.03 and 26.03.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-        - name: startDate
-          in: query
-          required: true
-          description: "The starting day of the range (e.g., 2026-03-23)"
-          schema: { type: string, format: date }
-        - name: endDate
-          in: query
-          required: true
-          description: "The ending day of the range (e.g., 2026-03-26)"
-          schema: { type: string, format: date }
-        - name: startTime
-          in: query
-          required: false
-          description: "Filter for a specific time of day start (e.g., 04:00:00)"
-          schema: { type: string, example: "04:00:00" }
-        - name: endTime
-          in: query
-          required: false
-          description: "Filter for a specific time of day end (e.g., 08:00:00)"
-          schema: { type: string, example: "08:00:00" }
-      responses:
-        '200':
-          description: List of filtered raw data points
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/ClimateDataPointDTO' }
-
-  /rooms/{id}/climate-history:
-    get:
-      tags: [Climate Data]
-      summary: Get aggregated data for historical analysis
-      description: "Returns averaged data from AggregatedStats to reduce DB load for Day/Week/Month views."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-        - name: timeframe
-          in: query
-          required: true
-          schema: { type: string, enum: [MONTH, WEEK, DAY] }
-        - name: granularity
-          description: Aggregation level
-          in: query
-          schema: { type: string, enum: [HOUR, DAY] }
-      responses:
-        '200':
-          description: List of aggregated data points
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/ClimateDataPointDTO' }
-
-  /rooms/{id}/violations:
-    get:
-      tags: [Climate Data]
-      summary: Get historical violation log for a room
-      description: "Returns the table of limit breaches seen below the charts in the UI.
-        Needs CAN_VIEW_OWN_OFFICE_CLIMATE permission."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: List of past warnings/violations
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/ViolationLogDTO' }
-
-  /departments/{id}/summary:
-    get:
-      tags: [Climate Data]
-      summary: Get climate overview for a whole department
-      description: "Used for the 'Department Overview' screen to show averages and status colors.
-        Needs CAN_VIEW_DEPARTMENT_CLIMATE permission."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Department-wide climate summary
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/DepartmentClimateSummaryDTO' }
-
-  /buildings/global-status:
-    get:
-      tags: [Climate Data]
-      summary: Get status of the entire building. 
-      description: "Populates the landing page charts showing counts of Good vs. Critical rooms.
-       CAN_VIEW_COMPANY_AGGR required."
-      responses:
-        '200':
-          description: Global building health stats
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/BuildingGlobalStatusDTO' }
-
-  /warnings:
-    get:
-      tags: [Climate Data]
-      summary: Get all active climate warnings
-      description: "Used for the global notification bell or dashboard alert list."
-      responses:
-        '200':
-          description: List of current active warnings
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/WarningCreateDTO' }
-    post:
-      tags: [Climate Data]
-      summary: Raspberry Pi reports a limit violation
-      description: "Hardware-facing endpoint. Triggered instantly when a sensor crosses a threshold."
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/WarningCreateDTO' }
-      responses:
-        '201':
-          description: Warning recorded and notification triggered
-
-  # TIPS MANAGEMENT
-  /rooms/{id}/tips:
-    get:
-      tags: [Climate Data]
-      summary: Get all tips for a specific room. 
-      description: "Returns the tips for the 'Tips' section in the Room Analysis view."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: List of tips retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/TipDTO' }
-    post:
-      tags: [Climate Data]
-      summary: Create a new tip for a room
-      description: "Triggered when 'Save Limits & Tips' is clicked. CAN_MANAGE_TIPS required"
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/TipCreateDTO' }
-      responses:
-        '201':
-          description: Tip created
-
-  /tips/{tipId}:
-    delete:
-      tags: [Climate Data]
-      summary: Delete a specific tip. 
-      description: CAN_MANAGE_TIPS required
-      parameters:
-        - name: tipId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Tip deleted
-
-  # LIMIT MANAGEMENT
-  /rooms/{id}/limits:
-    get:
-      tags: [Limit Management]
-      summary: Get climate limits for a specific room
-      description: "Returns the configuration seen in the 'Limit Settings' UI for a single room. CAN_MANAGE_TIPS required."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Room limits successfully retrieved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/LimitsDTO'
-
+        "204":
+          description: Deleted Raspberry Pi.
+        "401":
+          description: Unauthorized.
     patch:
-      tags: [Limit Management]
-      summary: Update climate limits for a room
-      description: "Triggered when the Admin clicks 'Save' in the Limit Settings view. CAN_MANAGE_TIPS required."
+      tags:
+      - Raspberry Pi Management
+      summary: "Patch Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: patchSpecificRaspberry
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LimitsDTO'
+              $ref: "#/components/schemas/RaspberryPatchDTO"
+        required: true
       responses:
-        '200':
-          description: Room limits updated
-
-  # Special endpoint for the Raspberry Pi
-  /raspberry-pis/{id}/sync/occupancy:
-    get:
-      tags: [Raspberry Pi]
-      summary: Pi fetches current room occupancy and privacy status
-      description: >
-        Hardware-facing sync endpoint. Called by the Pi after receiving an 
-        ABSENCE updates. The Pi uses this to decide whether to 
-        suspend data transmission (Privacy Mode) based on the 5-person rule.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The UUID of the Raspberry Pi
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: "Occupancy data successfully retrieved."
+        "200":
+          description: Patched Raspberry Pi.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+        "400":
+          description: Validation issue.
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  effectiveOccupancy: 
-                    type: integer
-                    example: 4
-                  privacyModeActive: 
-                    type: boolean
-                    example: true
-        '404':
-          description: Raspberry Pi ID not found.
-
-  /raspberry-pis/{piId}/sync/limits:
-    get:
-      tags: [Limit Management]
-      summary: Raspberry Pi fetches limits for all its assigned rooms
-      description: "The Pi calls this to get a list of limits for every room it is monitoring."
-      parameters:
-        - name: piId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: A list of room limits for the Pi to store locally
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Raspberry Pi not found.
           content:
             application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Name/Ip/Port conflict.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/RaspberryDTO"
+  /api/departments/{department_id}:
+    get:
+      tags:
+      - Department Management
+      summary: "Get specific department. One of Permissions Required: CAN_VIEW_OWN_DEPARTMENT_MEASURES,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE"
+      operationId: getSpecificDepartment
+      parameters:
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Updated absence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DepartmentDTO"
+        "404":
+          description: Department not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Auth failure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+    delete:
+      tags:
+      - Department Management
+      summary: "Delete specific department. Deletes corresponding rooms too. One of\
+        \ Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: deleteSpecificDepartment
+      parameters:
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Deleted Department.
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Department Management
+      summary: "Update specific department. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: patchSpecificDepartment
+      parameters:
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentEditWithRoomsDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated specific department.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DepartmentDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Department/Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Conflicting names/rooms.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/buildings/{building_id}:
+    get:
+      tags:
+      - Building Management
+      summary: "Get specific building. Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: getSpecificBuilding
+      parameters:
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Specific building.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BuildingDTO"
+        "404":
+          description: Building not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+    delete:
+      tags:
+      - Building Management
+      summary: "Delete specific building. Deletes departments and rooms too. Permissions\
+        \ Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: deleteSpecificBuilding
+      parameters:
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Deleted.
+        "401":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Building Management
+      summary: "Update specific building. Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      operationId: patchSpecificBuilding
+      parameters:
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BuildingCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated building.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/BuildingDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Building not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "409":
+          description: Either name or address is duplicate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/absences/{absence_id}:
+    get:
+      tags:
+      - Absences
+      summary: "Get specific absence. One of Permissions Required: CAN_MANAGE_ABSENCES"
+      operationId: getSpecificAbsence
+      parameters:
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Found absence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AbsenceDTO"
+        "404":
+          description: Absence not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Absences
+      summary: "Update status of an absence. One of Permissions Required: CAN_MANAGE_ABSENCES"
+      operationId: updateStatusOfAbsence
+      parameters:
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AbsencePatchDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated absence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AbsenceDTO"
+        "400":
+          description: Validation issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Manager or absence not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+  /api/absences/{absence_id}/cancel:
+    patch:
+      tags:
+      - Absences
+      summary: "Cancel absence. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE"
+      operationId: cancelAbsence
+      parameters:
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Updated cancelled absence.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AbsenceDTO"
+        "400":
+          description: Pending absence issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Absence not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+  /api/warnings/rooms/{room_id}:
+    get:
+      tags:
+      - Warnings
+      summary: "Get warnings for a room. One of Permissions Required: CAN_VIEW_OWN_OFFICE_WARNINGS,\
+        \ CAN_VIEW_OWN_DEPARTMENT_WARNINGS, CAN_VIEW_ALL_ROOMS"
+      operationId: getWarningsForRoom
+      parameters:
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: activeOnly
+        in: query
+        required: true
+        schema:
+          type: boolean
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: List of warnings.
+          content:
+            '*/*':
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/LimitsDTO'
-
-  /raspberry-pis/{id}/retry-connection:
-    post:
-      tags: [Raspberry Pi]
-      summary: Manually trigger a connection retry for a Raspberry Pi
-      description: >
-        Forces the Webapp to attempt to re-establish communication with a specific 
-        Raspberry Pi. This endpoint is restricted to System Administrators.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: The unique ID of the Raspberry Pi generated by the Webapp.
-          schema: { type: string, format: uuid }
-      responses:
-        '202':
-          description: >
-            Accepted. The system has initiated the retry process. 
-            Check the Webserver log files for the result of the attempt[cite: 542].
-        '404':
-          description: Raspberry Pi ID not found in the PostgreSQL database.
-        '500':
-          description: Server-side error while attempting to reach the Raspberry Pi.
-
-  # RASPBERRY PI MANAGEMENT
-  /raspberry-pis:
-    get:
-      tags: [Raspberry Pi]
-      summary: List all Raspberry Pis
-      description: CAN_MANAGE_DEVICES permission required.
-      parameters:
-        - name: roomId
-          in: query
-          required: false
-          schema:
-            type: string
-            format: uuid
-          description: "Filter Raspberry Pi devices by a specific room"
-        - name: status
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [ACTIVE, SLEEP, OFFLINE]
-          description: "Filter Raspberry Pi devices by their current status"
-      responses:
-        '200':
-          description: A filtered list of Raspberry Pi devices
+                  $ref: "#/components/schemas/WarningDTO"
+        "400":
+          description: Validation issue.
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/RaspberryDTO' }
-    post:
-      tags: [Raspberry Pi]
-      summary: Add a new Raspberry Pi device (Add Device button in UI)
-      description: CAN_MANAGE_DEVICES permission required.
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RaspberryCreateDTO' }
-      responses:
-        '201':
-          description: Device successfully registered
-
-  /raspberry-pis/{id}:
-    get:
-      tags: [Raspberry Pi]
-      summary: Get details for a specific Raspberry Pi device
-      description: CAN_MANAGE_DEVICES permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Device details
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/RaspberryDTO' }
-    
-    patch:
-      tags: [Raspberry Pi]
-      summary: Update Raspberry Pi device configuration 
-      description: CAN_MANAGE_DEVICES permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RaspberryCreateDTO' }
-      responses:
-        '200':
-          description: Raspberry Pi updated
-
-    delete:
-      tags: [Raspberry Pi]
-      summary: Remove Raspberry Pi
-      description: CAN_MANAGE_DEVICES permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Raspberry Pi deleted
-  
-  /raspberry-pis/{id}/config:
-    get:
-      tags: [Raspberry Pi]
-      summary: Fetch Raspberry Pi operational configuration
-      description: "Called by the Pi to get its heartbeat frequency and its list of child sensors."
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "The UUID of the Raspberry Pi itself"
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Configuration successfully retrieved
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PiConfigDTO'
-
-  # BUILDING STRUCTURE MANAGEMENT
-  /buildings:
-    get:
-      tags: [Building Structure]
-      summary: Get all buildings
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      responses:
-        '200':
-          description: List of buildings
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
           content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/BuildingDTO' }
-    post:
-      tags: [Building Structure]
-      summary: Add a new building
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/BuildingCreateDTO' }
-      responses:
-        '201':
-          description: Building created
-  
-  /buildings/{id}:
-    patch:
-      tags: [Building Structure]
-      summary: Update building details
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/BuildingCreateDTO' }
-      responses:
-        '200':
-          description: Building updated
-    delete:
-      tags: [Building Structure]
-      summary: Delete a building
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Building deleted
-
-  /departments:
-    get:
-      tags: [Building Structure]
-      summary: Get all departments for the table view
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      responses:
-        '200':
-          description: Returns departments with building names and room lists
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/DepartmentDTO' }
-    post:
-      tags: [Building Structure]
-      summary: Create a new department
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/DepartmentCreateDTO' }
-      responses:
-        '201':
-          description: Department created
-
-  /departments/{id}:
-    patch:
-      tags: [Building Structure]
-      summary: Update department details
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/DepartmentCreateDTO' }
-      responses:
-        '200':
-          description: Department updated
-    delete:
-      tags: [Building Structure]
-      summary: Remove a department 
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Department deleted
-
-  /rooms:
-    get:
-      tags: [Building Structure]
-      summary: Get all rooms
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      responses:
-        '200':
-          description: List of rooms
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/RoomDTO' }
-    post:
-      tags: [Building Structure]
-      summary: Create a new room
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RoomCreateDTO' }
-      responses:
-        '201':
-          description: Room created
-
-  /rooms/{id}:
-    patch:
-      tags: [Building Structure]
-      summary: Update room details 
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RoomCreateDTO' }
-      responses:
-        '200':
-          description: Room updated
-    delete:
-      tags: [Building Structure]
-      summary: Delete a room
-      description: CAN_MANAGE_BUILDING_STRUCTURE permission required.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '204':
-          description: Room deleted
-
-  #USER MANAGEMENT
-  /users:
-    get:
-      tags: [Users]
-      summary: Get all users
-      description: Requires CAN_MANAGE_USERS permission
-      responses:
-        '200':
-          description: List of all users
-          content:
-            application/json:
+            '*/*':
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/UserDTO'
-        '401':
-          description: Unauthorized
-
-    post:
-      tags: [Users]
-      summary: Create new user
-      description: Requires CAN_MANAGE_USERS permission
-      requestBody:
+                  $ref: "#/components/schemas/WarningDTO"
+  /api/warnings/departments/{department_id}/summary:
+    get:
+      tags:
+      - Warnings
+      summary: "Get warnings summary for department. One of Permissions Required:\
+        \ CAN_VIEW_VIOLATIONS_PER_DEPARTMENT, CAN_VIEW_OWN_DEPARTMENT_WARNINGS"
+      operationId: getWarningsSummaryForDepartment
+      parameters:
+      - name: department_id
+        in: path
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreateDTO'
-      responses:
-        '201':
-          description: Created user
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserDTO'
-
-  /users/{id}:
-    get:
-      tags: [Users]
-      summary: Get user by ID
-      description: Requires CAN_MANAGE_USERS permission
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-      responses:
-        '200':
-          description: Requested user 
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserDTO'
-
-    patch:
-      tags: [Users]
-      summary: Update user
-      description: Requires CAN_MANAGE_USERS permission
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreateDTO'
-      responses:
-        '200':
-          description: Updated user
-
-    delete:
-      tags: [Users]
-      summary: Delete user
-      description: Requires CAN_MANAGE_USERS permission
-      parameters:
-         - $ref: '#/components/parameters/UserId'
-      responses:
-        '204':
-          description: User deleted
-
-  # ROLE MANAGEMENT
-  /roles:
-    get:
-      tags: [Roles]
-      summary: Get all roles
-      description: Requires CAN_MANAGE_USERS permission
-      responses:
-        '200':
-          description: List of roles
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RoleDTO'
-
-    patch:
-      tags: [Roles]
-      summary: Update role
-      description: Requires CAN_MANAGE_USERS permission
-      parameters:
-        - $ref: '#/components/parameters/RoleId'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RoleUpdateDTO'
-      responses:
-        '200':
-          description: Role updated
-
-  # ABSENCES MANAGEMENT
-  /absences:
-
-    get:
-      tags: [Absences]
-      summary: List absences 
-      description: |
-        Returns absences based on the requester's role:
-        - **Worker**: Returns only their own absences (same as /users/me/absences).
-        - **Manager**: Returns all absences for users within their assigned department.
-      parameters:
-        - name: departmentId
-          in: query
-          description: Optional filter for Managers to view a specific department.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: A list of absences the user is authorized to see.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AbsenceListDTO'
-
-    post:
-      tags: [Absences]
-      summary: Create a new absence
-      description: Workers create for themselves. CAN_MANAGE_OWN_ABSENCE permission required.
-      requestBody:
+        schema:
+          type: string
+          format: uuid
+      - name: onlyActive
+        in: query
         required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AbsenceCreateDTO'
+        schema:
+          type: boolean
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
       responses:
-        '201':
-          description: Absence created successfully.
-
-  /absences/{id}:
-    parameters:
+        "200":
+          description: List of warnings.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+        "404":
+          description: Department not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized/Department rights issue.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items: {}
+  /api/warnings/buildings/{building_id}/active:
+    get:
+      tags:
+      - Warnings
+      summary: "Get active warnings for building. One of Permissions Required: CAN_VIEW_ALL_ROOMS"
+      operationId: getActiveViolationsForBuilding
+      parameters:
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "201":
+          description: Active warnings for building.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ActiveViolationBuildingStats"
+        "404":
+          description: Building not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
+  /api/users/me:
+    get:
+      tags:
+      - User management
+      summary: Get authenticated User.
+      operationId: getAuthenticatedUser
+      responses:
+        "200":
+          description: User.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UserxDTO"
+  /api/users/me/absences:
+    get:
+      tags:
+      - User management
+      summary: "Get page of Absences. One of Permissions Required: CAN_MANAGE_OWN_ABSENCES"
+      operationId: getPageOfAbsencesOfAuthenticatedUser
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
+      responses:
+        "200":
+          description: Page of absences.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAbsenceListDTO"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageAbsenceListDTO"
+  /api/rooms/{id}/overtime:
+    get:
+      tags:
+      - Climate Endpoints
+      summary: "Get climate overtime. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      operationId: getOvertime
+      parameters:
       - name: id
         in: path
         required: true
         schema:
           type: string
-    get:
-      tags: [Absences]
-      summary: Get details of a specific absence. CAN_MANAGE_ABSENCES permission required.
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: startTime
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: endTime
+        in: query
+        required: false
+        schema:
+          type: string
       responses:
-        '200':
-          description: Details of a specific absence returned successfully.
+        "200":
+          description: Overtime of a room.
           content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AbsenceListDTO'
-    patch:
-      tags: [Absences]
-      summary: Approve or reject an absence. CAN_APPROVE_ABSENCES permission required.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AbsenceUpdateDTO'
-      responses:
-        '200':
-          description: Updated
-
-    delete:
-      tags: [Absences]
-      summary: Delete an absence
-      description: CAN_MANAGE_OWN_ABSENCE permission required.
-      responses:
-        '204':
-          description: Deleted
-
-  /users/me/absences:
-    get:
-      tags: [Absences, Users]
-      summary: Get absences for the logged-in user
-      description: A shortcut for the "My Absences" view. CAN_MANAGE_OWN_ABSENCE permission required.
-      responses:
-        '200':
-          description: List of the current user's absences.
-          content:
-            application/json:
+            '*/*':
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AbsenceListDTO'
-
+                  $ref: "#/components/schemas/ClimateDataPointDTO"
+        "403":
+          description: Right/Rooms issues.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: Validation issues.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/rooms/{id}/current-climate:
+    get:
+      tags:
+      - Climate Endpoints
+      summary: "Get current climate. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      operationId: getCurrentClimate
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Current climate of a room.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ClimateDataPointDTO"
+        "403":
+          description: Right/Rooms issues.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/rooms/{id}/climate-history:
+    get:
+      tags:
+      - Climate Endpoints
+      summary: "Get climate history (full & reduced). One of Permissions Required:\
+        \ CAN_VIEW_ALL_ROOMS, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE,\
+        \ CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      operationId: getClimateHistory
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: granularity
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DAY
+      - name: isGeneralArea
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "200":
+          description: Climate History.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AggregatedDataPointDTO"
+        "403":
+          description: Right/Rooms issues.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "400":
+          description: Validation issues.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/roles:
+    get:
+      tags:
+      - User roles management
+      summary: "Get all permissions. One of Permissions Required: CAN_MANAGE_USERS"
+      operationId: getAllPermissions
+      responses:
+        "200":
+          description: List of roles.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserRoleDTO"
+        "401":
+          description: Unauthorized.
+  /api/raspberry-pis/{raspberry_id}/sync/occupancy:
+    get:
+      tags:
+      - Raspberry Pi Management
+      summary: "Synchronize occupancy for Raspberry Pi. One of Permissions Required:\
+        \ CAN_MANAGE_DEVICES"
+      operationId: syncOccupancy
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Specific Raspberry.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OccupancyDTO"
+        "404":
+          description: Raspberry Pi not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OccupancyDTO"
+  /api/raspberry-pis/{raspberry_id}/config:
+    get:
+      tags:
+      - Raspberry Pi Management
+      summary: "Get relevant Raspberry Pi Config. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: getRaspberryPiConfig
+      parameters:
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "204":
+          description: Config.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PiConfigDTO"
+        "404":
+          description: Raspberry Pi not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PiConfigDTO"
+  /api/departments/{id}/last-aggregation:
+    get:
+      tags:
+      - Climate Endpoints
+      summary: "Get Department's last aggregation. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
+      operationId: getAggregatedDataForDepartment
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Last aggregated data for department.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AggregatedDataPointDTO"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/departments/{id}/climate-aggregation:
+    get:
+      tags:
+      - Climate Endpoints
+      summary: "Get Department's aggregations. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
+      operationId: getAggregatedDataInPeriodOfTime
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: All of aggregated data for department.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AggregatedDataPointDTO"
+        "400":
+          description: Timestamps issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/building-trend/departments/{department_id}:
+    get:
+      tags:
+      - Building Trend
+      summary: "Trend per department. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
+      operationId: getTrendsForSpecificDepartment
+      parameters:
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        "200":
+          description: List of trends of department
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BuildingTrendDTO"
+        "400":
+          description: Timestamp issue.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+  /api/absences/managers:
+    get:
+      tags:
+      - Absences
+      summary: "Get all managers available for absence application. One of Permissions\
+        \ Required: CAN_MANAGE_OWN_ABSENCE"
+      operationId: getAvailableManagersForAbsence
+      responses:
+        "200":
+          description: List of available department managers.
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserxListDTO"
+        "403":
+          description: Unauthorized.
+  /api/absences/clock-status:
+    get:
+      tags:
+      - Absences
+      summary: Get clock status of authenticated user
+      operationId: getClockStatus
+      responses:
+        "200":
+          description: Clock Status of a user.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ClockStatusDTO"
+        "403":
+          description: Unauthorized.
+  /api/sensor-stations/{sensor_id}/room:
+    delete:
+      tags:
+      - Sensor Station Management
+      summary: "Disconnect sensor from a room. One of Permissions Required: CAN_MANAGE_DEVICES"
+      operationId: disconnectSensorFromRoom
+      parameters:
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Specific sensor station.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+        "404":
+          description: Sensor not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          description: Unauthorized.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SensorStationDTO"
+  /api/absences/clock-out:
+    delete:
+      tags:
+      - Absences
+      summary: Clock-out
+      operationId: clockOutForSpecificRoom
+      responses:
+        "200":
+          description: OK
+        "409":
+          description: Clock-out twice.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Room not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
 components:
-
-  parameters:
-    UserId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-
-    RoleId:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-
   schemas:
-
-    PermissionEnum:
-      type: string
-      description: "All possible permission constants"
-      enum:
-        - CAN_VIEW_OWN_OFFICE_CLIMATE
-        - CAN_VIEW_OWN_SHARED_CLIMATE
-        - CAN_MANAGE_OWN_ABSENCE
-        - CAN_VIEW_OWN_DEPARTMENT_MEASURES
-        - CAN_VIEW_OWN_DEPARTMENT_WARNINGS
-        - CAN_VIEW_ABSENCE_VIEW
-        - CAN_VIEW_COMPANY_AGGR
-        - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
-        - CAN_CHANGE_LIMITS
-        - CAN_MANAGE_TIPS
-        - CAN_VIEW_ALL_ROOMS
-        - CAN_MANAGE_USERS
-        - CAN_MANAGE_BUILDING_STRUCTURE
-        - CAN_MANAGE_DEVICES
-
-    UserDTO:
+    WarningCreateDTO:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+        measurementType:
+          type: string
+          enum:
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
+        status:
+          type: string
+          enum:
+          - GREEN
+          - YELLOW
+          - RED
+        triggeredValue:
+          type: number
+          format: double
+        activeLimitAtTime:
+          type: number
+          format: double
+        message:
+          type: string
+          minLength: 1
+        sensorWriteId:
+          type: string
+          format: uuid
+      required:
+      - activeLimitAtTime
+      - measurementType
+      - message
+      - roomId
+      - sensorWriteId
+      - status
+      - triggeredValue
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        properties:
+          type: object
+          additionalProperties: {}
+    WarningDTO:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        employeeId:
+        roomId:
           type: string
+          format: uuid
+        writeId:
+          type: string
+          format: uuid
+        measurementType:
+          type: string
+          enum:
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
+        status:
+          type: string
+          enum:
+          - GREEN
+          - YELLOW
+          - RED
+        message:
+          type: string
+        triggeredValue:
+          type: number
+          format: double
+        activeLimitAtTime:
+          type: number
+          format: double
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+        tip:
+          type: string
+        active:
+          type: boolean
+    UserxCreateDTO:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+        firstName:
+          type: string
+        lastName:
+          type: string
+        enabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        roomId:
+          type: string
+          format: uuid
+      required:
+      - password
+      - roles
+      - username
+    UserRoleDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+            - CAN_VIEW_OWN_OFFICE_CLIMATE
+            - CAN_VIEW_OWN_SHARED_CLIMATE
+            - CAN_VIEW_OWN_OFFICE_WARNINGS
+            - CAN_MANAGE_OWN_ABSENCE
+            - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+            - CAN_VIEW_OWN_DEPARTMENT_WARNINGS
+            - CAN_VIEW_ABSENCE_VIEW
+            - CAN_MANAGE_ABSENCES
+            - CAN_VIEW_COMPANY_AGGR
+            - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+            - CAN_CHANGE_LIMITS
+            - CAN_MANAGE_TIPS
+            - CAN_VIEW_ALL_ROOMS
+            - CAN_VIEW_ALL_BUILDINGS
+            - CAN_MANAGE_USERS
+            - CAN_MANAGE_BUILDING_STRUCTURE
+            - CAN_MANAGE_DEVICES
+            - CAN_GET_RASPBERRY_CONFIG
+            - CAN_VIEW_OCCUPANCY
+            - CAN_SEND_WARNINGS
+            - CAN_SEND_MEASUREMENTS
+            - CAN_LIMITED_MANAGE_DEVICES
+          uniqueItems: true
+    UserRoom:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        departmentID:
+          type: string
+          format: uuid
+        departmentName:
+          type: string
+        roomType:
+          type: string
+          enum:
+          - OFFICE
+          - SHARED
+        roomNumber:
+          type: string
+    UserxDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        createDate:
+          type: string
+          format: date-time
+        updateDate:
+          type: string
+          format: date-time
         username:
           type: string
         firstName:
           type: string
         lastName:
           type: string
+        enabled:
+          type: boolean
         roles:
           type: array
           items:
-            $ref: '#/components/schemas/RoleDTO'
-
-    # what Frontend sends for creating of an entity
-    UserCreateDTO:
+            $ref: "#/components/schemas/UserRole"
+          uniqueItems: true
+        myRoom:
+          $ref: "#/components/schemas/UserRoom"
+        numberOfAbsences:
+          type: integer
+          format: int32
+    TipCreateDTO:
       type: object
-      required: [username, password, employeeId, secondName]
       properties:
-        employeeId:
+        violationType:
           type: string
-          description: "The unique company employee number"
+          enum:
+          - OVER
+          - UNDER
+        violatedSensor:
+          type: string
+          enum:
+          - TEMPERATURE
+          - AIR
+          - HUMIDITY
+        violationStatus:
+          type: string
+          enum:
+          - GREEN
+          - YELLOW
+          - RED
+        message:
+          type: string
+          minLength: 1
+      required:
+      - message
+      - violatedSensor
+      - violationStatus
+      - violationType
+    TipDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        violationStatus:
+          type: string
+          enum:
+          - GREEN
+          - YELLOW
+          - RED
+        violationType:
+          type: string
+          enum:
+          - OVER
+          - UNDER
+        violatedSensor:
+          type: string
+          enum:
+          - TEMPERATURE
+          - AIR
+          - HUMIDITY
+        message:
+          type: string
+    SensorStationCreateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        roomId:
+          type: string
+          format: uuid
+      required:
+      - name
+      - roomId
+    SensorStationDTO:
+      type: object
+      properties:
+        readId:
+          type: string
+          format: uuid
+        writeId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+        roomId:
+          type: string
+          format: uuid
+        connectedToPiId:
+          type: string
+          format: uuid
+    RoomCreateDTO:
+      type: object
+      properties:
+        departmentID:
+          type: string
+          format: uuid
+        roomType:
+          type: string
+          enum:
+          - OFFICE
+          - SHARED
+        isActive:
+          type: boolean
+        defaultPeopleCount:
+          type: integer
+          format: int32
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+      required:
+      - defaultPeopleCount
+      - departmentID
+      - name
+      - roomType
+    RoomDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        departmentID:
+          type: string
+          format: uuid
+        departmentName:
+          type: string
+        isActive:
+          type: boolean
+        roomType:
+          type: string
+          enum:
+          - OFFICE
+          - SHARED
+        defaultPeopleCount:
+          type: integer
+          format: int32
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserxListDTO"
+          uniqueItems: true
+        name:
+          type: string
+    UserxListDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        createDate:
+          type: string
+          format: date-time
         username:
           type: string
-        password:
-          type: string
-          format: password
-          description: "Plain text password (will be hashed with bcrypt by the server)"
         firstName:
           type: string
-        secondName:
+        lastName:
           type: string
-        roleIds:
+    RaspberryCreateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        ipAddress:
+          type: string
+          minLength: 1
+        port:
+          type: integer
+          format: int32
+          maximum: 9999
+          minimum: 1000
+        roomId:
+          type: string
+          format: uuid
+        frequency:
+          type: integer
+          format: int32
+      required:
+      - frequency
+      - ipAddress
+      - name
+      - port
+      - roomId
+    RaspberryDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        ipAddress:
+          type: string
+        port:
+          type: integer
+          format: int32
+        frequency:
+          type: integer
+          format: int32
+        status:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+        room:
+          $ref: "#/components/schemas/RoomRaspberry"
+    RoomRaspberry:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+        roomName:
+          type: string
+    MeasurementBatchDTO:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        readings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadingDTO"
+          minItems: 1
+      required:
+      - readings
+      - roomId
+      - timestamp
+    ReadingDTO:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
+          minLength: 1
+        value:
+          type: number
+          format: double
+      required:
+      - type
+      - value
+    LoginRequestDTO:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - password
+      - username
+    LoginResponseDTO:
+      type: object
+      properties:
+        bearerToken:
+          type: string
+    DepartmentWithRoomsCreateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        buildingID:
+          type: string
+          format: uuid
+        existingRoomIds:
           type: array
           items:
             type: string
             format: uuid
-          description: "List of Role UUIDs to assign to the new user"
-
-    RoleDTO:
+        newRooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewRoomInDepartmentDTO"
+      required:
+      - buildingID
+      - name
+    NewRoomInDepartmentDTO:
       type: object
-      required: [id, name]
       properties:
-        id: 
+        name:
+          type: string
+          minLength: 1
+        roomType:
+          type: string
+          enum:
+          - OFFICE
+          - SHARED
+        defaultPeopleCount:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+      - defaultPeopleCount
+      - name
+      - roomType
+    DepartmentDTO:
+      type: object
+      properties:
+        id:
           type: string
           format: uuid
-          description: "Unique identifier from the Entity"
-        name: 
+        name:
           type: string
-        permissions: 
+        buildingID:
+          type: string
+        buildingName:
+          type: string
+        rooms:
           type: array
-          description: "List of permission strings assigned to this role"
-          items: 
-            $ref: '#/components/schemas/PermissionEnum'
-
-    RoleUpdateDTO:
+          items:
+            $ref: "#/components/schemas/UserRoom"
+    BuildingCreateDTO:
       type: object
-      description: "Fields for updating an existing role. ID is excluded as it is in the path."
       properties:
-        name: 
+        name:
           type: string
-        permissions: 
+          minLength: 1
+        address:
+          type: string
+      required:
+      - name
+    BuildingDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        address:
+          type: string
+        name:
+          type: string
+        departments:
           type: array
-          description: "List of permission strings assigned to this role"
-          items: 
-            $ref: '#/components/schemas/PermissionEnum'
-
-    LoginDTO:
+          items:
+            $ref: "#/components/schemas/BuildingDepartmentsDTO"
+    BuildingDepartmentsDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    AbsenceCreateDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          enum:
+          - VACATION
+          - ILLNESS
+          - OTHER
+        comment:
+          type: string
+        assignedTo:
+          type: string
+          format: uuid
+      required:
+      - assignedTo
+      - endDate
+      - reason
+      - startDate
+      - userId
+    AbsenceDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        typeOfAbsense:
+          type: string
+          enum:
+          - VACATION
+          - ILLNESS
+          - OTHER
+        status:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - CANCELLED
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        assignedTo:
+          type: string
+          format: uuid
+        comment:
+          type: string
+    UserxPatchDTO:
       type: object
       properties:
         username:
           type: string
-        password:
+        firstName:
           type: string
-
-    AbsenceDTO:
+        lastName:
+          type: string
+        isEnabled:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        roomId:
+          type: string
+          format: uuid
+    UserSettingsPatchDTO:
       type: object
-      required: [id, userId, startDate, endDate, typeOfAbsence, status, createdAt]
+      properties:
+        darkMode:
+          type: boolean
+        fahrenheit:
+          type: boolean
+        format:
+          type: string
+          enum:
+          - YYYY_MM_DD
+          - DD_MM_YYYY
+          - MM_DD_YYYY
+        twelveHourFormat:
+          type: boolean
+    UserSettingsDTO:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        darkMode:
+          type: boolean
+        fahrenheit:
+          type: boolean
+        format:
+          type: string
+          enum:
+          - YYYY_MM_DD
+          - DD_MM_YYYY
+          - MM_DD_YYYY
+        twelveHourFormat:
+          type: boolean
+    TipPatchDTO:
+      type: object
+      properties:
+        message:
+          type: string
+          minLength: 1
+      required:
+      - message
+    SensorStationPatchDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: ^(?!\s*$).+
+        lastHeartBeat:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+        roomId:
+          type: string
+          format: uuid
+    RoomPatchDTO:
+      type: object
+      properties:
+        departmentID:
+          type: string
+          format: uuid
+        roomType:
+          type: string
+          enum:
+          - OFFICE
+          - SHARED
+        isActive:
+          type: boolean
+        defaultPeopleCount:
+          type: integer
+          format: int32
+          minimum: 1
+        users:
+          type: array
+          items:
+            type: string
+            format: uuid
+          uniqueItems: true
+        roomNumber:
+          type: string
+          pattern: ^(?!\s*$).+
+    LimitDTO:
+      type: object
+      properties:
+        roomId:
+          type: string
+          format: uuid
+        tempMin:
+          type: number
+          format: float
+        tempMax:
+          type: number
+          format: float
+        humMin:
+          type: number
+          format: float
+        humMax:
+          type: number
+          format: float
+        co2Max:
+          type: number
+          format: float
+    UserRoleCreateDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            enum:
+            - CAN_VIEW_OWN_OFFICE_CLIMATE
+            - CAN_VIEW_OWN_SHARED_CLIMATE
+            - CAN_VIEW_OWN_OFFICE_WARNINGS
+            - CAN_MANAGE_OWN_ABSENCE
+            - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+            - CAN_VIEW_OWN_DEPARTMENT_WARNINGS
+            - CAN_VIEW_ABSENCE_VIEW
+            - CAN_MANAGE_ABSENCES
+            - CAN_VIEW_COMPANY_AGGR
+            - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+            - CAN_CHANGE_LIMITS
+            - CAN_MANAGE_TIPS
+            - CAN_VIEW_ALL_ROOMS
+            - CAN_VIEW_ALL_BUILDINGS
+            - CAN_MANAGE_USERS
+            - CAN_MANAGE_BUILDING_STRUCTURE
+            - CAN_MANAGE_DEVICES
+            - CAN_GET_RASPBERRY_CONFIG
+            - CAN_VIEW_OCCUPANCY
+            - CAN_SEND_WARNINGS
+            - CAN_SEND_MEASUREMENTS
+            - CAN_LIMITED_MANAGE_DEVICES
+          uniqueItems: true
+    RaspberryPatchDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: ^(?!\s*$).+
+        ipAddress:
+          type: string
+        frequency:
+          type: integer
+          format: int32
+        port:
+          type: integer
+          format: int32
+          maximum: 9999
+          minimum: 1000
+    DepartmentEditWithRoomsDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        buildingID:
+          type: string
+          format: uuid
+        roomIdsToDelete:
+          type: array
+          items:
+            type: string
+            format: uuid
+        existingRoomIdsToAssign:
+          type: array
+          items:
+            type: string
+            format: uuid
+        newRooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewRoomInDepartmentDTO"
+      required:
+      - buildingID
+      - name
+    AbsencePatchDTO:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - CANCELLED
+      required:
+      - status
+    ActiveViolationBuildingStats:
+      type: object
+      properties:
+        activeViolations:
+          type: integer
+          format: int32
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageUserxDTO:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserxDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        pageNumber:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageSize:
+          type: integer
+          format: int32
+        paged:
+          type: boolean
+        offset:
+          type: integer
+          format: int64
+    SortObject:
+      type: object
+      properties:
+        unsorted:
+          type: boolean
+        sorted:
+          type: boolean
+        empty:
+          type: boolean
+    AbsenceListDTO:
+      type: object
       properties:
         id:
           type: string
@@ -1075,13 +3182,11 @@ components:
         userId:
           type: string
           format: uuid
-        # Included from User Entity for Frontend convenience
-        firstName: 
+        firstName:
           type: string
-        secondName: 
+        lastName:
           type: string
-        # Included from Room Entity for Frontend convenience
-        room:
+        roomNumber:
           type: string
         startDate:
           type: string
@@ -1091,348 +3196,338 @@ components:
           format: date-time
         typeOfAbsence:
           type: string
-          enum: [ILLNESS, VACATION, OTHER]
+          enum:
+          - VACATION
+          - ILLNESS
+          - OTHER
         status:
           type: string
-          enum: [PENDING, APPROVED, REJECTED]
+          enum:
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - CANCELLED
         createdAt:
           type: string
-          format: date-time 
-          description: "Timestamp when the request was created"
-
-    AbsenceCreateDTO:
-      type: object
-      required: [startDate, endDate, reasonOfAbsence]
-      properties:
-        # Maps to the 'Select date' and 'From' / 'Till' fields in the UI:
-        startDate:
-          type: string
           format: date-time
-          description: "Starting date (and optionally time) of the absence."
-        endDate:
-          type: string
-          format: date-time
-          description: "Ending date (and optionally time) of the absence."
-        # Maps to the 'Reason of absence' dropdown in the UI:
-        reasonOfAbsence:
-          type: string
-          enum: [VACATION, ILLNESS, OTHER] 
-        # Maps to the 'Optional message' text box at the bottom of the UI:
         comment:
           type: string
-          description: "Optional message or context provided by the requesting user."
-        managerId:
+        managerFirstName:
           type: string
-          format: uuid
-          description: "The UUID of the specific manager selected to approve this request"
-
-    AbsenceUpdateDTO:
+        managerLastName:
+          type: string
+    PageAbsenceListDTO:
       type: object
       properties:
-        status:
-          type: string
-          enum: [PENDING, APPROVED, REJECTED]
-
-    BuildingDTO:
-      type: object
-      required: [id, name, address]
-      properties:
-        id: { type: string, format: uuid }
-        name: { type: string, example: "HQ" }
-        address:
-          type: string
-          example: "Main Street 5, 6020 Innsbruck"
-
-    DepartmentDTO:
-      type: object
-      required: [id, name, buildingId]
-      properties:
-        id: { type: string, format: uuid }
-        name: { type: string, example: "IT" }
-        buildingId: { type: string, format: uuid }
-        buildingName: { type: string, example: "HQ" } 
-        roomNumbers: 
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
           type: array
-          items: { type: string }
-
-    RoomDTO:
-      type: object
-      required: [id, roomNumber, departmentId]
-      properties:
-        id: { type: string, format: uuid }
-        roomNumber: { type: string, example: "101" }
-        departmentId: { type: string, format: uuid }
-        roomType:
-          type: string
-          enum: [OFFICE, SHARED]
-        defaultPeopleCnt:
-          type: integer
-          description: "The standard number of people assigned to this room"
-
-    BuildingCreateDTO:
-      type: object
-      required: [name]
-      properties:
-        name:
-          type: string
-          example: "Finance Centre West"
-        address:
-          type: string
-          example: "Main Street 5, 6020 Innsbruck"
-
-    DepartmentCreateDTO:
-      type: object
-      required: [name, buildingId]
-      properties:
-        name:
-          type: string
-          example: "HR"
-        buildingId:
-          type: string
-          format: uuid
-          description: "The UUID of the building this department belongs to"
-
-    RoomCreateDTO:
-      type: object
-      required: [roomNumber, departmentId]
-      properties:
-        roomNumber:
-          type: string
-          example: "101"
-          description: "The human-readable number/name of the room"
-        departmentId:
-          type: string
-          format: uuid
-          description: "The UUID of the department this room belongs to"
-        roomType:
-          type: string
-          enum: [OFFICE, SHARED]
-        defaultPeopleCnt:
-          type: integer
-          description: "The standard number of people assigned to this room"
-
-    PiConfigDTO:
-      type: object
-      required: [frequency, sensors]
-      properties:
-        frequency:
-          type: integer
-          example: 60
-          description: "How often (seconds) the Pi pushes sensor batches to /measurements"
-        sensors:
-          type: array
-          description: "List of Sensor Stations (Arduinos) this Pi must listen to via BLE"
           items:
-            type: object
-            properties:
-              sensorId:
-                type: string
-                format: uuid
-              name: 
-                type: string
-                example: "Station_Alpha_01"
-              bleHardwareAddress:
-                type: string
-                example: "D4:36:39:C1:22:AA"
-                description: "The MAC address used for BLE pairing/filtering"
-
-    PiOccupancyDTO:
+            $ref: "#/components/schemas/AbsenceListDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    PageSensorStationDTO:
       type: object
-      required: [effectiveOccupancy, privacyModeActive]
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/SensorStationDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    PageRoomDTO:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    ClimateDataPointDTO:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        temperature:
+          type: number
+          format: double
+        humidity:
+          type: number
+          format: double
+        airQuality:
+          type: number
+          format: double
+    AggregatedDataPointDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        avgTemperature:
+          type: number
+          format: double
+        avgHumidity:
+          type: number
+          format: double
+        avgAirQuality:
+          type: number
+          format: double
+    PageRaspberryDTO:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/RaspberryDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    OccupancyDTO:
+      type: object
       properties:
         effectiveOccupancy:
           type: integer
-          example: 4
-          description: "Total people currently in the room (Default count minus active absences)"
-        privacyModeActive:
+          format: int32
+        roomId:
+          type: string
+          format: uuid
+        privacyMode:
           type: boolean
-          example: true
-          description: "If true, the Pi must stop sending climate data (5-person rule)"
-        lastUpdated:
-          type: string
-          format: date-time
-
-    RaspberryDTO:
+    PiConfigDTO:
       type: object
-      required: [id, name, status, ipAddress, roomId]
-      properties:
-        id: { type: string, format: uuid }
-        name: { type: string, example: "Pi-Gateway-Room101" }
-        ipAddress: 
-          type: string
-          example: "192.168.1.50"
-          description: "The local IP used by the Webapp to send /notify pings"
-        status:
-          type: string
-          enum: [ACTIVE, OFFLINE, MAINTENANCE]
-        roomId: { type: string, format: uuid }
-        roomNumber: { type: string, example: "101" }
-
-    RaspberryCreateDTO:
-      type: object
-      required: [name, ipAddress, roomId]
-      properties:
-        name: { type: string }
-        ipAddress: { type: string }
-        roomId: { type: string, format: uuid }
-    
-    LimitsDTO:
-      type: object
-      required: [roomId]
       properties:
         roomId:
           type: string
           format: uuid
-        tempMin: 
-          type: number
-          format: float
-          example: 20.0
-        tempMax: 
-          type: number
-          format: float
-          example: 26.0
-        humMin: 
-          type: number
-          format: float
-          example: 40.0
-        humMax: 
-          type: number
-          format: float
-          example: 60.0
-        co2Max: 
+        raspberryId:
+          type: string
+          format: uuid
+        frequency:
           type: integer
-          example: 1000
-          description: "PPM threshold for Air Quality warnings"
-
-    MeasurementCreateDTO:
-      type: object
-      required: [roomId, timestamp, readings]
-      description: Sent by Pi every {frequency} seconds.
-      properties:
-        roomId: { type: string, format: uuid }
-        timestamp: { type: string, format: date-time }
-        readings:
+          format: int32
+        limits:
+          $ref: "#/components/schemas/LimitDTO"
+        sensors:
           type: array
           items:
-            type: object
-            properties:
-              type: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
-              value: { type: number, example: 22.5 }
-
-    WarningCreateDTO:
-      type: object
-      required: [roomId, sensorType, value, limitExceeded]
-      description: Sent by Pi ONLY when a limit is exceeded
-      properties:
-        roomId: { type: string, format: uuid }
-        sensorType: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
-        value: { type: number, example: 1200 }
-        limitExceeded: { type: number, example: 1000 }
-        message: { type: string, example: "Critical CO2 level in Room 101" }
-
-    ClimateDataPointDTO:
+            $ref: "#/components/schemas/ReducedSensorDTO"
+          uniqueItems: true
+        occupancy:
+          $ref: "#/components/schemas/OccupancyDTO"
+    ReducedSensorDTO:
       type: object
       properties:
-        timestamp: { type: string, format: date-time }
-        temperature: { type: number }
-        humidity: { type: number }
-        co2: { type: integer }
-        tempMax: { type: number }
-        tempMin: { type: number }
-
-    DepartmentClimateSummaryDTO:
-      type: object
-      properties:
-        departmentId: { type: string, format: uuid }
-        avgTemperature: { type: number }
-        activeWarnings: { type: integer }
-        status: { type: string, enum: [GOOD, WARNING, CRITICAL] }
-
-    # For the "Building Overview" / "Department Trend" charts
-    BuildingGlobalStatusDTO:
-      type: object
-      properties:
-        totalRooms: { type: integer }
-        roomsGood: { type: integer }    # Green count
-        roomsWarning: { type: integer } # Yellow count
-        roomsCritical: { type: integer } # Red count
-        avgAirQuality: { type: number }
-        trend: { type: string, enum: [UP, DOWN, STABLE] }
-
-    # For the "Violation Log" table in the Room Analysis view
-    ViolationLogDTO:
-      type: object
-      properties:
-        timestamp: { type: string, format: date-time }
-        sensorType: { type: string, enum: [TEMPERATURE, HUMIDITY, CO2] }
-        value: { type: number }
-        limitViolated: { type: number }
-        duration: { type: string, example: "15 min" }
-
-    TipDTO:
-      type: object
-      required: [id, roomId, violationType, violatedSensor, message]
-      properties:
-        id: { type: string, format: uuid }
-        roomId: { type: string, format: uuid }
-        violationType:
+        name:
           type: string
-          enum: [OVER, UNDER]
-          example: "OVER"
-        violatedSensor:
+        readId:
           type: string
-          enum: [TEMPERATURE, AIR, HUMIDITY]
-          example: "TEMPERATURE"
-        message:
+          format: uuid
+        writeId:
           type: string
-          example: "Please open windows for 5 minutes."
-
-    TipCreateDTO:
+          format: uuid
+    DepartmentListDTO:
       type: object
-      required: [roomId, violationType, violatedSensor, message]
-      properties:
-        roomId: { type: string, format: uuid }
-        violationType:
-          type: string
-          enum: [OVER, UNDER]
-          example: "OVER"
-        violatedSensor:
-          type: string
-          enum: [TEMPERATURE, AIR, HUMIDITY]
-          example: "TEMPERATURE"
-        message: { type: string }
-
-    SensorStationDTO:
-      type: object
-      required: [id, name, bleHardwareAddress, status, roomId]
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-          example: "Arduino-Nano-01"
-        bleHardwareAddress:
+        buildingID:
           type: string
-          example: "AA:BB:CC:DD:EE:FF"
-          description: "The hardcoded MAC address for BLE identification."
-        status:
+        buildingName:
           type: string
-          enum: [ACTIVE, OFFLINE]
-        roomId:
-          type: string
-          format: uuid
-        connectedToPiId:
-          type: string
-          format: uuid
-          nullable: true
-          description: "The UUID of the Raspberry Pi acting as the BLE gateway."
-
-    SensorStationCreateDTO:
+    PageDepartmentListDTO:
       type: object
-      required: [name, bleHardwareAddress, roomId]
       properties:
-        name: { type: string, example: "Office North Sensor" }
-        bleHardwareAddress: { type: string, example: "AA:BB:CC:DD:EE:FF" }
-        roomId: { type: string, format: uuid }
-        connectedToPiId: { type: string, format: uuid }
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/DepartmentListDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    BuildingListDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+    PageBuildingListDTO:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuildingListDTO"
+        number:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    BuildingTrendDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        departmentId:
+          type: string
+          format: uuid
+        departmentName:
+          type: string
+        trend:
+          type: string
+          enum:
+          - UP
+          - DOWN
+          - STABLE
+        value:
+          type: number
+          format: double
+        date:
+          type: string
+          format: date
+    ClockStatusDTO:
+      type: object
+      properties:
+        clockedIn:
+          type: boolean
