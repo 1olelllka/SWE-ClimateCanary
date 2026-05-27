@@ -24,7 +24,7 @@ public:
   SensorReading getReading() const;
 
 private:
-  static constexpr uint8_t NUM_SAMPLES = 5;       //average over 5 readings ~15s at 3s interval
+  static constexpr uint8_t NUM_SAMPLES = 5;
 
   Adafruit_BME680 bme;
   SensorReading reading = {0, 0, 0, false};
