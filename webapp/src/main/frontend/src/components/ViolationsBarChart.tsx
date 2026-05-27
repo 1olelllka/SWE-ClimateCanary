@@ -12,6 +12,10 @@ export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) =>
     const labels = departments.map(d => d.name);
     const values = departments.map(d => d.activeViolations);
 
+    const chartTextColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--chart-text-color')
+        .trim() || '#475569';
+
     const option = {
         tooltip: {
             trigger: 'axis' as const,
@@ -20,18 +24,18 @@ export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) =>
                 return `${p.name}<br/>Active violations: <b>${p.value}</b>`;
             },
         },
-        grid: { left: 130, right: 30, top: 10, bottom: 30 },
+        grid: { left: 30, right: 30, top: 10, bottom: 30 },
         xAxis: {
             type: 'value' as const,
             minInterval: 1,
             min: 0,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: 11, color: chartTextColor },
         },
         yAxis: {
             type: 'category' as const,
             data: [...labels].reverse(),
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: 11, color: chartTextColor },
             axisLine: { lineStyle: { color: '#e2e8f0' } },
         },
         series: [{
@@ -52,7 +56,7 @@ export const ViolationsBarChart: React.FC<Props> = ({ departments, loading }) =>
                     Based on real-time limit breaches from sensor data
                 </span>
             </div>
-            <div style={{ padding: '1rem 1.5rem 1.5rem' }}>
+            <div style={{ padding: '0.5rem 0.5rem 0.5rem' }}>
                 {loading ? (
                     <div className="bm-loading">Loading…</div>
                 ) : departments.length === 0 ? (
