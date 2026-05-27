@@ -1,13 +1,8 @@
-openapi: 3.1.0
+openapi: 3.0.0
 info:
-  title: SWE Skeleton API
-  description: This is the API documentation for the SWE Skeleton project.
-  contact:
-    name: SWE Skeleton Team
-  version: "0.1"
-servers:
-  - url: http://localhost:8080
-    description: Development
+  title: ClimateCanary API
+  version: 1.0.0
+  description: API for out climate monitoring project with RBAC
 tags:
   - name: Absences
     description: User absences management
