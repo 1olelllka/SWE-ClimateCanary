@@ -10,6 +10,7 @@
 #define TIMESTAMP_MAX_LENGTH 19
 
 BLEManager* BLEManager::instance = nullptr;
+extern bool isAdvertising;
 extern FaultManager faultManager;
 extern LedManager ledManager;
 extern ReadingBuffer readingBuffer;
@@ -48,6 +49,7 @@ void BLEManager::poll() {
     piConnectionCount++;
     piAddress = currentCentral.address();
     BLE.stopAdvertise();
+    isAdvertising = false;
 
     Serial.println("Connected to: " + currentCentral.address() + " (Historical connections: " + String(piConnectionCount) + ")");
     

@@ -14,7 +14,7 @@
 #define PREVIOUS_PAGE_BUTTON_PIN D4
 #define SENSOR_WARMUP_TIME_MS 30000
 #define DISPLAY_UPDATE_INTERVAL_MS 1000
-#define LCD_SCROLL_INTERVAL_MS 250
+#define LCD_REFRESH_INTERVAL 250
 
 SensorManager sensorManager;
 BLEManager bleManager;
@@ -98,7 +98,7 @@ void loop() {
     return;
   }
 
-  if (now - lastLcdScrollRefresh >= LCD_SCROLL_INTERVAL_MS) {
+  if (now - lastLcdScrollRefresh >= LCD_REFRESH_INTERVAL) {
     lastLcdScrollRefresh = now;
 
     const SensorReading reading = sensorManager.getReading();
