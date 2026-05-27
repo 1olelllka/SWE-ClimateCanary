@@ -159,21 +159,25 @@ class WebManager:
 
         return web.json_response({"status": "accepted", "triggered": triggered}, status=202)
 
-    async def _handle_tip(self, data: dict):
+    async def _handle_tip(self, data: dict, sensor_name: str = None):
         violation_type   = str(data.get('measurementType', '')).upper()
         violated_sensor_wId  = str(data.get('writeId', ''))
         violation_status = str(data.get('status', '')).upper()
         tip = data.get('tip', '')
-    
-        if not violation_type or not violated_sensor_wId or not violation_status or not tip:
+
+        if not violation_type or not violation_status or not tip:
             logger.warning(f"[WebManager] Tip missing required fields, skipping: {data}")
             return
-    
-        ble = next(
-            (b for b in self.ble_managers.values() if b.sensor.get('write_uuid') == violated_sensor_wId),
-            None
-        )
-    
+
+        # Prefer lookup by name — write_uuid can change after a backend restart.
+        if sensor_name and sensor_name in self.ble_managers:
+            ble = self.ble_managers[sensor_name]
+        else:
+            ble = next(
+                (b for b in self.ble_managers.values() if b.sensor.get('write_uuid') == violated_sensor_wId),
+                None
+            )
+
         if not ble:
             logger.warning(f"[WebManager] No active BLE manager for write_uuid='{violated_sensor_wId}' - tip not forwarded.")
             return
@@ -297,6 +301,7 @@ class WebManager:
                         # Task never existed or has already exited — spawn fresh
                         if name in self.ble_managers:
                             logger.info(f"[WebManager] SENSOR_ADD: stale BLE manager found for '{name}', respawning.")
+                        self.processor.reset_sensor_state(name)
                         self._spawn_sensor_tasks(name, sensor)
 
             elif update_type == "SENSOR_DELETE":
@@ -527,7 +532,7 @@ class WebManager:
                     data = await response.json()
             logger.debug(f"Response after warning: {data}")
             warning_id = str(data.get("id", ""))
-            await self._handle_tip(data)
+            await self._handle_tip(data, sensor_name=sensor_name)
             if warning_id:
                 await self.db.save_warning_id(sensor_name, limit_key, warning_id)
                 logger.info(
