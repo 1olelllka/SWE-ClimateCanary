@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { useTimeFormat } from '../hooks/useTimeFormat';
+import { Dropdown } from "primereact/dropdown";
 
 export interface ViolationDTO {
     readonly id?: string;
@@ -68,29 +69,38 @@ export const RoomViolationLogTable: React.FC<RoomViolationLogTableProps> = ({ vi
         ? <span className="bra-active-text">Active</span>
         : formatDatetime(v.resolvedAt ?? undefined, '—');
 
+    const sensorOptions = [
+        { label: 'All Sensors', value: 'ALL' },
+        { label: 'Temperature', value: 'TEMPERATURE' },
+        { label: 'Humidity', value: 'HUMIDITY' },
+        { label: 'CO₂', value: 'CO2' },
+    ];
+
+    const statusOptions = [
+        { label: 'All Statuses', value: 'ALL' },
+        { label: 'Green', value: 'GREEN' },
+        { label: 'Yellow', value: 'YELLOW' },
+        { label: 'Red', value: 'RED' },
+    ];
+
     return (
         <div className="table-container">
             <div className="bra-table-controls">
-                <select
-                    className="bra-filter-select"
+                <Dropdown
                     value={sensorFilter}
-                    onChange={e => setSensorFilter(e.target.value)}
-                >
-                    <option value="ALL">All Sensors</option>
-                    <option value="TEMPERATURE">Temperature</option>
-                    <option value="HUMIDITY">Humidity</option>
-                    <option value="CO2">CO₂</option>
-                </select>
-                <select
-                    className="bra-filter-select"
+                    options={sensorOptions}
+                    onChange={e => setSensorFilter(e.value)}
+                    className="metric-select"
+                    panelClassName="metric-select-panel"
+                />
+
+                <Dropdown
                     value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
-                >
-                    <option value="ALL">All Statuses</option>
-                    <option value="GREEN">Green</option>
-                    <option value="YELLOW">Yellow</option>
-                    <option value="RED">Red</option>
-                </select>
+                    options={statusOptions}
+                    onChange={e => setStatusFilter(e.value)}
+                    className="metric-select"
+                    panelClassName="metric-select-panel"
+                />
                 <button
                     type="button"
                     className={`bra-toggle-btn${activeOnly ? ' active' : ''}`}

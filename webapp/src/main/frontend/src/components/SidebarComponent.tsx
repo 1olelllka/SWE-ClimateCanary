@@ -42,9 +42,6 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
         }).catch(() => {});
     }, [isDepartmentManager]);
 
-    const deptMatch = location.pathname.match(/^\/senior\/department\/(.+)$/);
-    const currentDept = deptMatch ? decodeURIComponent(deptMatch[1]) : null;
-
     // Exakte Bezeichnungen für die Startseite je nach Rolle
     const getOverviewLabel = () => {
         if (isSeniorManager) return 'Company Overview';
@@ -62,18 +59,6 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             icon: 'pi-home',
             route: '/',
             visible: true // Jeder sieht eigene Startseite
-        },
-        {
-            label: 'Company Overview',
-            icon: 'pi-list',
-            route: '/',
-            visible: isSeniorManager && currentDept !== null
-        },
-        {
-            label: currentDept ? `${currentDept} Overview` : '',
-            icon: 'pi-chart-bar',
-            route: location.pathname,
-            visible: isSeniorManager && currentDept !== null
         },
         {
             label: 'My Department',
