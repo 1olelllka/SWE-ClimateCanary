@@ -11,6 +11,9 @@ import at.qe.skeleton.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +21,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private UserxRepository userxRepository;
     private PasswordEncoder passwordEncoder;
@@ -102,4 +105,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new NotFoundException("User " + username + " was not found."));
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return userxRepository.findFirstByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    }
 }
