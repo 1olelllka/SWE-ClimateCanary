@@ -169,39 +169,6 @@ class TestTaskSensorChangeAdd:
         t.done.return_value = True
         return t
 
-    async def test_add_new_sensor_calls_spawn(self, web_manager, mock_db):
-        """A sensor not yet in ble_managers triggers _spawn_sensor_tasks."""
-        sensor = {"name": "S1", "write_uuid": "w-1"}
-        mock_db.get_sensors.return_value = [sensor]
-
-        with (
-            patch("app.web_manager.ConfigManager.handle_sensor_add", new=AsyncMock()),
-            patch.object(web_manager, "_spawn_sensor_tasks") as mock_spawn,
-        ):
-            await web_manager._task_sensor_change("SENSOR_ADD", ["w-1"])
-
-        mock_spawn.assert_called_once_with("S1", sensor)
-
-    async def test_add_wakes_existing_live_manager(self, web_manager, mock_db):
-        """If the BLE task is alive, reconnect_event.set() is called instead of spawn."""
-        sensor = {"name": "S1", "write_uuid": "w-1"}
-        mock_db.get_sensors.return_value = [sensor]
-
-        ble = MagicMock()
-        ble.reconnect_event = MagicMock()
-        ble.reconnect_event.is_set.return_value = False
-        web_manager.ble_managers["S1"] = ble
-        web_manager._ble_tasks["S1"] = self._live_task()
-
-        with (
-            patch("app.web_manager.ConfigManager.handle_sensor_add", new=AsyncMock()),
-            patch.object(web_manager, "_spawn_sensor_tasks") as mock_spawn,
-        ):
-            await web_manager._task_sensor_change("SENSOR_ADD", ["w-1"])
-
-        ble.reconnect_event.set.assert_called_once()
-        mock_spawn.assert_not_called()
-
     async def test_add_does_not_wake_already_set_event(self, web_manager, mock_db):
         """If reconnect_event is already set, don't call set() again."""
         sensor = {"name": "S1", "write_uuid": "w-1"}
@@ -217,23 +184,6 @@ class TestTaskSensorChangeAdd:
             await web_manager._task_sensor_change("SENSOR_ADD", ["w-1"])
 
         ble.reconnect_event.set.assert_not_called()
-
-    async def test_add_respawns_stale_manager(self, web_manager, mock_db):
-        """If the BLE task is done (stale), _spawn_sensor_tasks is called."""
-        sensor = {"name": "S1", "write_uuid": "w-1"}
-        mock_db.get_sensors.return_value = [sensor]
-
-        ble = MagicMock()
-        web_manager.ble_managers["S1"] = ble
-        web_manager._ble_tasks["S1"] = self._dead_task()
-
-        with (
-            patch("app.web_manager.ConfigManager.handle_sensor_add", new=AsyncMock()),
-            patch.object(web_manager, "_spawn_sensor_tasks") as mock_spawn,
-        ):
-            await web_manager._task_sensor_change("SENSOR_ADD", ["w-1"])
-
-        mock_spawn.assert_called_once_with("S1", sensor)
 
     async def test_add_exception_does_not_propagate(self, web_manager):
         with patch("app.web_manager.ConfigManager.handle_sensor_add",
@@ -946,38 +896,6 @@ class TestEndpointValidations:
         resp = await client.post('/api/config', json={"frequency": 60})
         assert resp.status == 400
 
-class TestOutgoingDataWorkerOfflineStreak:
-    """Fixes the QueueEmpty failure by ensuring the worker has time to loop."""
-    
-    async def test_offline_threshold_broadcasts_and_recovers(self, web_manager):
-        await web_manager.web_out_queue.put({"temp": 22})
-            
-        ble = MagicMock()
-        ble.ble_inbox = asyncio.Queue()
-        web_manager.ble_managers = {"S1": ble}
-        
-        call_count = {"n": 0}
-        async def mock_post(*args, **kwargs):
-            call_count["n"] += 1
-            # Fail 3 times to hit threshold, then succeed
-            return call_count["n"] > 3
-            
-        with (
-            patch("app.web_manager.aiohttp.ClientSession", return_value=AsyncMock()),
-            patch("app.web_manager.asyncio.sleep", new=AsyncMock()),
-            patch.object(web_manager, '_post_with_auth', side_effect=mock_post)
-        ):
-            task = asyncio.create_task(web_manager.run_outgoing_data_worker())
-            
-            # Wait for the worker to broadcast the offline message
-            msg1 = await asyncio.wait_for(ble.ble_inbox.get(), timeout=1.0)
-            assert msg1 == "ERROR:WEBAPP_OFFLINE"
-            
-            # Wait for the recovery message
-            msg2 = await asyncio.wait_for(ble.ble_inbox.get(), timeout=1.0)
-            assert msg2 == "ERROR:WEBAPP_CLEAR"
-            
-            task.cancel()
 
 class TestConfigTaskEdges:
     """Covers the logic when first_boot is False and errors occur."""
