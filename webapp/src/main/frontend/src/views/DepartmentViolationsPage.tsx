@@ -149,11 +149,11 @@ export const DepartmentViolationsPage: React.FC = () => {
     useEffect(() => { fetchViolations(); }, [fetchViolations]);
 
     const roomOptions = useMemo(() =>
-        [...new Set(violations.map(v => v.room))].sort().map(r => ({ label: r, value: r })),
+        [...new Set(violations.map(v => v.room))].sort((a, b) => a.localeCompare(b)).map(r => ({ label: r, value: r })),
     [violations]);
 
     const sensorOptions = useMemo(() =>
-        [...new Set(violations.map(v => v.sensor))].sort().map(s => ({ label: s, value: s })),
+        [...new Set(violations.map(v => v.sensor))].sort((a, b) => a.localeCompare(b)).map(s => ({ label: s, value: s })),
     [violations]);
 
     const filtered = useMemo(() => {

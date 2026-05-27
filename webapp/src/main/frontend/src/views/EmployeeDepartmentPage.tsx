@@ -209,7 +209,10 @@ export const EmployeeDepartmentPage: React.FC = () => {
     }, [expandedRoomId, fetchCurrentClimate, fetchWarnings]);
 
     useEffect(() => {
-        if (!expandedRoomId) return;
+        const sharedRooms = rooms.filter(r => r.roomType === 'SHARED');
+        if (!expandedRoomId && sharedRooms.length === 0) return;
+
+        stompClient.current?.deactivate();
 
         stompClient.current = new Client({
             webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
@@ -218,18 +221,42 @@ export const EmployeeDepartmentPage: React.FC = () => {
                 "Authorization": `Bearer ${localStorage.getItem('bearerToken')}`
             },
             onConnect: () => {
-                stompClient.current?.subscribe(`/topic/active-warnings/${expandedRoomId}`, (message) => {
-                    const warning: ActiveWarning = JSON.parse(message.body);
-                    setWarnings(prev => [warning, ...prev.filter(w => w.measurementType !== warning.measurementType)]);
-                });
-                stompClient.current?.subscribe(`/topic/resolve-warnings/${expandedRoomId}`, (message) => {
-                    const warning: ActiveWarning = JSON.parse(message.body);
-                    setWarnings(prev => prev.filter(w => w.id !== warning.id));
-                });
-                stompClient.current?.subscribe(`/topic/climate-data/${expandedRoomId}`, (message) => {
-                    const data: ClimateDataPointDTO = JSON.parse(message.body);
-                    setCurrentClimate(data);
-                });
+                // ── Expanded room: warnings (for UI display) + climate data ──
+                if (expandedRoomId) {
+                    stompClient.current?.subscribe(`/topic/active-warnings/${expandedRoomId}`, (message) => {
+                        const warning: ActiveWarning = JSON.parse(message.body);
+                        setWarnings(prev => [warning, ...prev.filter(w => w.measurementType !== warning.measurementType)]);
+                    });
+                    stompClient.current?.subscribe(`/topic/resolve-warnings/${expandedRoomId}`, (message) => {
+                        const warning: ActiveWarning = JSON.parse(message.body);
+                        setWarnings(prev => prev.filter(w => w.id !== warning.id));
+                    });
+                    stompClient.current?.subscribe(`/topic/climate-data/${expandedRoomId}`, (message) => {
+                        const data: ClimateDataPointDTO = JSON.parse(message.body);
+                        setCurrentClimate(data);
+                    });
+                }
+
+                // ── All SHARED rooms (not already expanded): toast-only ──
+                sharedRooms
+                    .filter(r => r.id !== expandedRoomId)
+                    .forEach(room => {
+                        stompClient.current?.subscribe(`/topic/active-warnings/${room.id}`, (message) => {
+                            const warning: ActiveWarning = JSON.parse(message.body);
+                            if (shownWarningIds.current.has(warning.id)) return;
+                            shownWarningIds.current.add(warning.id);
+                            const label =
+                                warning.measurementType === 'TEMPERATURE' ? 'Temperature' :
+                                warning.measurementType === 'HUMIDITY'    ? 'Humidity'    : 'CO₂';
+                            const hasTip = warning.tip && warning.tip !== "There's no tip.";
+                            toastRef.current?.show({
+                                severity: 'warn',
+                                summary: `${room.roomNumber ?? room.name ?? room.id} — ${label}: ${warning.message}`,
+                                detail: hasTip ? warning.tip : undefined,
+                                life: 5000,
+                            });
+                        });
+                    });
             },
             onStompError: (frame) => {
                 console.error('STOMP error:', frame);
@@ -241,7 +268,7 @@ export const EmployeeDepartmentPage: React.FC = () => {
         return () => {
             stompClient.current?.deactivate();
         };
-    }, [expandedRoomId]);
+    }, [expandedRoomId, rooms]);
 
     useEffect(() => {
         if (!toastRef.current || warnings.length === 0) return;
