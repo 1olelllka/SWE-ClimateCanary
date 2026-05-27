@@ -149,9 +149,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
             <form className="absence-form-body" onSubmit={handleSubmit}>
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Reason of absence</label>
+                    <label className="absence-form-label" htmlFor="reason">Reason of absence</label>
 
                     <Dropdown
+                        inputId="reason"
                         value={reason}
                         options={reasonOptions}
                         onChange={(e) => setReason(e.value as AbsenceReason)}
@@ -163,9 +164,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
                 <div className="absence-form-date-row">
                     <div className="absence-form-field">
-                        <label className="absence-form-label">Start Date</label>
+                        <label className="absence-form-label" htmlFor="startDate">Start Date</label>
 
                         <Calendar
+                            inputId="startDate"
                             value={startDate}
                             onChange={(e) => setStartDate(e.value as Date | null)}
                             dateFormat="dd.mm.yy"
@@ -180,9 +182,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                     </div>
 
                     <div className="absence-form-field">
-                        <label className="absence-form-label">End Date</label>
+                        <label className="absence-form-label" htmlFor="endDate">End Date</label>
 
                         <Calendar
+                            inputId="endDate"
                             value={endDate}
                             onChange={(e) => setEndDate(e.value as Date | null)}
                             dateFormat="dd.mm.yy"
@@ -214,9 +217,9 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 {includeTime && (
                     <div className="absence-form-time-row">
                         <div className="absence-form-time-group">
-                            <label className="absence-form-label">From</label>
+                            <label className="absence-form-label" htmlFor="startHour">From</label>
                             <div className="absence-form-time-selects">
-                                <select className="absence-form-time-select" value={startHour} onChange={e => setStartHour(e.target.value)}>
+                                <select id="startHour" className="absence-form-time-select" value={startHour} onChange={e => setStartHour(e.target.value)}>
                                     {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
                                         <option key={h} value={h}>{h}</option>
                                     ))}
@@ -231,9 +234,9 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                         </div>
 
                         <div className="absence-form-time-group">
-                            <label className="absence-form-label">Till</label>
+                            <label className="absence-form-label" htmlFor="endHour">Till</label>
                             <div className="absence-form-time-selects">
-                                <select className="absence-form-time-select" value={endHour} onChange={e => setEndHour(e.target.value)}>
+                                <select id="endHour" className="absence-form-time-select" value={endHour} onChange={e => setEndHour(e.target.value)}>
                                     {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
                                         <option key={h} value={h}>{h}</option>
                                     ))}
@@ -250,9 +253,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 )}
 
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Select your manager</label>
+                    <label className="absence-form-label" htmlFor="managerId">Select your manager</label>
 
                     <Dropdown
+                        inputId="managerId"
                         value={managerId}
                         options={managerOptions}
                         onChange={(e) => setManagerId(e.value)}
@@ -271,9 +275,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 </div>
 
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Optional message</label>
+                    <label className="absence-form-label" htmlFor="comment">Optional message</label>
 
                     <textarea
+                        id="comment"
                         className="absence-form-textarea"
                         value={comment}
                         onChange={e => setComment(e.target.value)}
