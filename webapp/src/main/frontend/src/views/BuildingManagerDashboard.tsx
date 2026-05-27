@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
-import { BuildingListDTO, DepartmentListDTO, RoomControllerApi, BuildingControllerApi, DepartmentControllerApi, WarningControllerApi } from '../generated-skeleton-api/api';
+import { ActiveViolationBuildingStats, BuildingListDTO, DepartmentListDTO, RoomControllerApi, BuildingControllerApi, DepartmentControllerApi, WarningControllerApi } from '../generated-skeleton-api/api';
 import { extractArrayResponse } from '../utilities/apiUtils';
 import { useTemperature } from '../hooks/useTemperature';
 
@@ -83,6 +83,7 @@ const makeInitialRow = (room: RoomDTO): RoomData => ({
     temp: 'n/a',
     humidity: 'n/a',
     status: 'gray',
+    warningCount: 0,
 } as RoomData);
 
 const mapToRoomData = (
@@ -101,6 +102,7 @@ const mapToRoomData = (
     temp: climate?.temperature != null ? `${formatNumber(tempConvert(climate.temperature), 1)} ${tempUnit}` : 'n/a',
     humidity: climate?.humidity != null ? `${formatNumber(climate.humidity, 0)} %` : 'n/a',
     status: getRoomStatus(warnings),
+    warningCount: warnings.filter(w => w.active === true).length,
 } as RoomData);
 
 const plural = (n: number, word: string) => `${n} ${word}${n !== 1 ? 's' : ''}`;
@@ -116,6 +118,7 @@ export const BuildingManagerDashboard: React.FC = () => {
     const [buildings, setBuildings] = useState<BuildingListDTO[]>([]);
     const [allDepts, setAllDepts] = useState<DepartmentListDTO[]>([]);
     const [allRooms, setAllRooms] = useState<RoomData[]>([]);
+    const [buildingViolations, setBuildingViolations] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -126,6 +129,8 @@ export const BuildingManagerDashboard: React.FC = () => {
 
     // Keeps the raw DTOs so the interval can re-fetch live data without re-fetching the room list
     const roomDTOsRef = useRef<RoomDTO[]>([]);
+    // Keeps buildings list accessible inside the interval without stale closure
+    const buildingsRef = useRef<BuildingListDTO[]>([]);
 
     // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -144,6 +149,19 @@ export const BuildingManagerDashboard: React.FC = () => {
             const roomData = mapToRoomData(room, climate, warnings ?? [], convertTemp, tempUnit);
             setAllRooms(prev => prev.map(r => r.backendId === room.id ? roomData : r));
         }).catch(() => {});
+    }, []);
+
+    // Fetch active violation count for each building from the dedicated endpoint (1 call per building)
+    const loadBuildingViolations = useCallback((buildingList: BuildingListDTO[]): void => {
+        buildingList.forEach(b => {
+            if (!b.id) return;
+            new WarningControllerApi().getActiveViolationsForBuilding({ buildingId: b.id })
+                .then(r => {
+                    const count = (r.data as ActiveViolationBuildingStats).activeViolations ?? 0;
+                    setBuildingViolations(prev => ({ ...prev, [b.id!]: count }));
+                })
+                .catch(() => {});
+        });
     }, []);
 
     // Fetch room list, show rows immediately with N/A, then update each row as live data arrives
@@ -168,7 +186,9 @@ export const BuildingManagerDashboard: React.FC = () => {
         ])
             .then(([blds, depts]) => {
                 setBuildings(blds);
+                buildingsRef.current = blds;
                 setAllDepts(depts);
+                loadBuildingViolations(blds);
             })
             .catch(err => {
                 console.error('Could not load building data', err);
@@ -179,10 +199,11 @@ export const BuildingManagerDashboard: React.FC = () => {
         // On interval, only refresh live data — no N/A flash, no re-fetch of room list
         const interval = window.setInterval(() => {
             roomDTOsRef.current.forEach(updateRoomLiveData);
+            loadBuildingViolations(buildingsRef.current);
         }, 30_000);
 
         return () => window.clearInterval(interval);
-    }, [loadRooms, updateRoomLiveData]);
+    }, [loadRooms, updateRoomLiveData, loadBuildingViolations]);
 
     // Restore building/dept selection when returning from room analysis
     useEffect(() => {
@@ -221,26 +242,23 @@ export const BuildingManagerDashboard: React.FC = () => {
         return {
             deptCount: depts.length,
             roomCount: rooms.length,
-            violationCount: rooms.filter(r => r.status === 'red').length,
+            violationCount: buildingViolations[b.id!] ?? 0,
         };
-    }, [allDepts, allRooms]);
+    }, [allDepts, allRooms, buildingViolations]);
 
     const getDeptStats = useCallback((d: DepartmentListDTO) => {
         const rooms = allRooms.filter(r => r.department === d.name);
         return {
             roomCount: rooms.length,
-            violationCount: rooms.filter(r => r.status === 'red').length,
+            violationCount: rooms.reduce((sum, r) => sum + r.warningCount, 0),
         };
     }, [allRooms]);
 
     const totalViolations = useMemo(() => {
-        if (navLevel === 'rooms') return currentRooms.filter(r => r.status === 'red').length;
-        if (navLevel === 'departments') {
-            const names = new Set(currentDepts.map(d => d.name));
-            return allRooms.filter(r => names.has(r.department || '') && r.status === 'red').length;
-        }
-        return allRooms.filter(r => r.status === 'red').length;
-    }, [navLevel, currentRooms, currentDepts, allRooms]);
+        if (navLevel === 'rooms') return currentRooms.reduce((sum, r) => sum + r.warningCount, 0);
+        if (navLevel === 'departments') return buildingViolations[selectedBuilding?.id ?? ''] ?? 0;
+        return Object.values(buildingViolations).reduce((sum, n) => sum + n, 0);
+    }, [navLevel, currentRooms, selectedBuilding, buildingViolations]);
 
     // ── Handlers ───────────────────────────────────────────────────────────────
 
