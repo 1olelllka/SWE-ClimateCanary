@@ -66,7 +66,7 @@ export const RoomViolationLogTable: React.FC<RoomViolationLogTableProps> = ({ vi
 
     const resolvedTemplate = (v: ViolationDTO) => v.active
         ? <span className="bra-active-text">Active</span>
-        : formatDateTime(v.resolvedAt);
+        : formatDatetime(v.resolvedAt ?? undefined, '—');
 
     return (
         <div className="table-container">
