@@ -162,12 +162,12 @@ public class ClimateHistorySeederService {
         int hour = dt.getHour();
         boolean isWeekend = dt.getDayOfWeek().getValue() >= 6;
         boolean isWorkHours = hour >= 8 && hour < 18;
-        double base = isWeekend ? 80.0 : 95.0;
+        double base = isWeekend ? 35.0 : 45.0;
         double workPeak = (!isWeekend && isWorkHours)
-                ? 30.0 * Math.sin(Math.PI * (hour - 8.0) / 10.0)
+                ? 15.0 * Math.sin(Math.PI * (hour - 8.0) / 10.0)
                 : 0.0;
-        double noise = RANDOM.nextGaussian() * 8.0;
-        return clamp(base + workPeak + noise, 60.0, 160.0);
+        double noise = RANDOM.nextGaussian() * 4.0;
+        return clamp(base + workPeak + noise, 20.0, 69.0);
     }
 
     private double clamp(double value, double min, double max) {
