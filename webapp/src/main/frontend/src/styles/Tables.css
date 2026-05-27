@@ -1982,3 +1982,28 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
         min-width: 560px !important;
     }
 }
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: max-content !important;
+    min-width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+    width: auto !important;
+}
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    white-space: nowrap;
+}
