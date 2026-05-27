@@ -27,9 +27,17 @@
     min-width: 170px;
     height: 2.45rem;
     border-radius: 999px !important;
-    background: #111827 !important;
+    background: #ffffff !important;
     border: 1px solid var(--card-border) !important;
     box-shadow: none !important;
+}
+
+.department-chart-room-dropdown .p-dropdown-label {
+    color: var(--text-primary, #1a3a4a) !important;
+}
+
+.department-chart-room-dropdown .p-dropdown-trigger {
+    color: var(--text-secondary, #64748b) !important;
 }
 
 .department-chart-room-dropdown.p-focus {
@@ -78,4 +86,16 @@
 
 .department-chart-room-dropdown-panel .p-dropdown-item:not(.p-highlight):hover {
     background: #334155 !important;
+}
+
+html[data-theme='dark'] .department-chart-room-dropdown {
+    background: #111827 !important;
+}
+
+html[data-theme='dark'] .department-chart-room-dropdown .p-dropdown-label {
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .department-chart-room-dropdown .p-dropdown-trigger {
+    color: #94a3b8 !important;
 }
