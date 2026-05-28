@@ -123,21 +123,6 @@ export const EmployeeAbsencesPage: React.FC = () => {
 
     // ── KPI computations ──────────────────────────────────────────────────────
 
-    const currentYear = new Date().getFullYear();
-
-    // const usedVacationDays = useMemo(() =>
-    //     absences
-    //         .filter(a =>
-    //             a.status === 'APPROVED' &&
-    //             a.typeOfAbsence === 'VACATION' &&
-    //             new Date(a.startDate).getFullYear() === currentYear,
-    //         )
-    //         .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
-    //     [absences, currentYear],
-    // );
-
-    // const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
-
     const oldestPendingMinutes = useMemo(() => {
         const pending = absences
             .filter(a => a.status === 'PENDING' && a.createdAt)
