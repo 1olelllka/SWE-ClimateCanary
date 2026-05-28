@@ -1,93 +1,19 @@
-# G1T4
+# ClimateCanary – G1T4
 
+## Usage & Configuration
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+In order to run Webapp use ```docker compose up``` command with environmental variables:
+```bash
+TEAM_NAME=G1T4 APP_JWT_SECRET=<your_jwt_secret> docker compose up --build
 ```
-cd existing_repo
-git remote add origin https://git.uibk.ac.at/informatik/qe/swa_swe/swe/swess26/group1/g1t4.git
-git branch -M main
-git push -uf origin main
+Example:
+```bash
+TEAM_NAME=G1T4 APP_JWT_SECRET=1a7783f6abab21b127e728d54043df9e6dbd9b1ae21ea1a743b6f04db60f3a02f16cae655b0de03bfc7b415572af35c865a083f061b4e37d333b9316516c4f557274c5988483056494ca9940de53b24b8547b1b9d06f9f4bc4515fcc9b9cdd241e027dd575744b4e9b028f4fb3b2a90956afc0685d6c5a12d47aceb9b39f451714e08dc6e0722dffc3481ac5a1a765ad12a37eecbcc218d03a6f742ac6de3c879bea46b8233fc5cee438371664cb1b323c2d52dae01b0673878507cf8b9d54f7f53519ca05e5a9e17cc831118348eca0d26de394a648d7f4ce78f2e3788b22add2bc37c401061cdacc18d5aa5a7d379b57085856d85a01127061ba9205504f5265ce6d806354daac802d0252d021e45676318ca8b89039bef8a75f68765958159d9a3c4ecaca061d7950081e9ad171fac2bcaed214f7ab19e323e4b7d47d41bd7bff38cd80949ab6b078cef870372252851e14d7f31fe137abd946ff7676fdc6ff9003054f65b4fdc8ea1e126294197461ace716da9fc1a8bd7a6edcb8d1d585280a59799798e13276d5797ce133ed3b8503d2cefca9b4022b95360b3cc2865fc02b8968741dcae7cd48ee6d16fe376d841215458fb7
+36783182a06a3730c2f57f0f2e5e3b39bdfb86cbc2536e6e73522408ccf422686653f0efeee0662721de13069bcb37090d788c6393d7ce9dc8d9b463764232f7f1dc7f074f6ccb1a3232 docker compose up --build
 ```
 
-## Integrate with your tools
+#### For Raspberry Pi configuration refer to this [readme](raspberrypi/README.md).
 
-- [ ] [Set up project integrations](https://git.uibk.ac.at/informatik/qe/swa_swe/swe/swess26/group1/g1t4/-/settings/integrations)
+## Authors
 
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Diana Postupaieva | Jacob Solomon | Josua Rebay | Matthias Tiefenthaler | Oleh Sichko 
