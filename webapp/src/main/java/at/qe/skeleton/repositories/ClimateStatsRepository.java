@@ -15,6 +15,8 @@ import java.util.UUID;
 public interface ClimateStatsRepository extends JpaRepository<ClimateStats, UUID> {
     Optional<ClimateStats> findTopByRoomMonitoring_RoomIdOrderByDateDesc(UUID roomId);
 
+    boolean existsByDateBefore(OffsetDateTime cutoff);
+
     List<ClimateStats> findByRoomMonitoring_RoomIdAndDateBetween(UUID roomId, OffsetDateTime from, OffsetDateTime to);
 
     @Query("""

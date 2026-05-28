@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
 @DisplayName("AggregatedStatsRepository")
@@ -162,6 +163,22 @@ class AggregatedStatsRepositoryDataJPATests {
             assertThat(repository.existsByRoomIdAndDateAndGranularity(
                     roomId, base, Granularity.DAILY)).isFalse();
         }
+    }
+
+    @Nested
+    @DisplayName("deleteAllByRoomId")
+    class DeleteAllByRoomId {
+
+        @Test
+        @DisplayName("deletes all records for specific room")
+        void deletesAllRecords() {
+            persist(roomId, base, 20, 50, 300, Granularity.DAILY);
+            persist(roomId, base, 20, 50, 300, Granularity.DAILY);
+            em.flush();
+            repository.deleteAllByRoomId(roomId);
+            assertEquals(0, repository.findAll().size());
+        }
+
     }
 
     private void persist(UUID rId, LocalDate date, float temp, float hum, float co2) {

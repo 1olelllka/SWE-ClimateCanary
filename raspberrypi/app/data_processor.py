@@ -8,14 +8,12 @@ logger = logging.getLogger(__name__)
 
 VIOLATION_THRESHOLD = 4
 
-# Each sensor key maps to (limit_db_key, direction, measurement_type)
-# direction: 'max' = violation when value > limit, 'min' = violation when value < limit
 SENSOR_CHECKS = [
     ("temperature", "max_temp",     "max", "TEMPERATURE"),
     ("temperature", "min_temp",     "min", "TEMPERATURE"),
     ("humidity",    "max_moisture", "max", "HUMIDITY"),
     ("humidity",    "min_moisture", "min", "HUMIDITY"),
-    ("iaq",         "max_co2",      "max", "CO2"),
+    ("co2",         "max_co2",      "max", "IAQ"),
 ]
 
 def _warning_status(actual: float, limit: float, direction: str) -> str:
@@ -40,19 +38,32 @@ class DataProcessor:
 
         self._bad_streak:  dict[str, dict[str, int]] = {}
         self._good_streak: dict[str, dict[str, int]] = {}
+        # tracks last sent warning status per (sensor_name, limit_key) -> "GREEN"|"YELLOW"|"RED"|None
+        self._active_warning: dict[str, dict[str, str | None]] = {}
 
     def _init_sensor_state(self, sensor_name: str):
         if sensor_name not in self._bad_streak:
             limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
             self._bad_streak[sensor_name]  = {k: 0 for k in limit_keys}
             self._good_streak[sensor_name] = {k: 0 for k in limit_keys}
+            self._active_warning[sensor_name] = {k: None for k in limit_keys}
+
+    def reset_sensor_state(self, sensor_name: str):
+        limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
+        self._bad_streak[sensor_name]     = {k: 0    for k in limit_keys}
+        self._good_streak[sensor_name]    = {k: 0    for k in limit_keys}
+        self._active_warning[sensor_name] = {k: None for k in limit_keys}
 
     async def run(self, sensor_name: str, processing_queue: asyncio.Queue, sensorWriteId):
         logger.info(f"[Processor:{sensor_name}] Worker started.")
         self._init_sensor_state(sensor_name)
 
         while True:
-            raw_data = await processing_queue.get()
+            try:
+                raw_data = await processing_queue.get()
+            except asyncio.CancelledError:
+                logger.info(f"[Processor:{sensor_name}] Worker stopped.")
+                return
 
             try:
                 limits = await self.db.get_all_limits()
@@ -62,9 +73,9 @@ class DataProcessor:
 
                 if room_id is None or freq is None:
                     logger.warning(
-                            f"[Processor:{sensor_name}] Config has null values (room_id={room_id}, frequency={freq}) - discarding measurement until valid config arrives."
-                            )
-                    continue 
+                        f"[Processor:{sensor_name}] Config has null values (room_id={room_id}, frequency={freq}) - discarding measurement until valid config arrives."
+                    )
+                    continue
 
                 null_limits = [k for k in ('max_temp','min_temp','max_moisture','min_moisture','max_co2') if limits.get(k) is None]
                 if null_limits:
@@ -76,7 +87,6 @@ class DataProcessor:
                 if isinstance(raw_data, bytes):
                     raw_data = raw_data.decode('utf-8')
                 data = json.loads(raw_data)
-
 
                 time_base = data.get('time_base')
                 offset_ms = data.get('millis_offset')
@@ -92,11 +102,11 @@ class DataProcessor:
                     logger.warning(f"[Processor:{sensor_name}] Privacy Mode active. Discarding.")
                     await self._check_violations(sensor_name, data, limits, room_id, timestamp, sensorWriteId)
                     continue
-                
+
                 logger.info(f"[Arduino -> Pi] Received: {raw_data}")
 
                 await self._check_violations(sensor_name, data, limits, room_id, timestamp, sensorWriteId)
-                
+
                 await self.db.insert_measurement(
                     sensor_name=sensor_name,
                     temp=data.get('temperature'),
@@ -158,35 +168,42 @@ class DataProcessor:
                     f"{direction} limit: {val} {'>' if direction == 'max' else '<'} {limit} (streak {bad}/{VIOLATION_THRESHOLD})"
                 )
 
-                if bad == VIOLATION_THRESHOLD:
-                    await self.db.register_violation(sensor_name, limit_key, limit, val)
-
+                if bad >= VIOLATION_THRESHOLD:
                     status = _warning_status(val, limit, direction)
-                    message = _violation_message(sensor_key, direction, val, limit, status)
+                    last_sent = self._active_warning[sensor_name][limit_key]
 
-                    violation_report = {
-                        "type": "violation_warning",
-                        "roomId": room_id,
-                        "sensor_name": sensor_name,
-                        "limit_key": limit_key,
-                        "measurement_type": measurement_type,
-                        "status": status,
-                        "triggeredValue": val,
-                        "activeLimitAtTime": limit,
-                        "message": message,
-                        "sensorWriteId": sensorWriteId,
-                    }
-                    await self.web_violation_queue.put(violation_report)
+                    if last_sent != status:
+                        await self.db.register_violation(sensor_name, limit_key, limit, val)
 
-                    logger.warning(
-                        f"[Processor:{sensor_name}] Violation confirmed for {limit_key}: "
-                        f"{val} {'>' if direction == 'max' else '<'} {limit} "
-                        f"after {VIOLATION_THRESHOLD} consecutive readings. Status={status}"
-                    )
+                        message = _violation_message(sensor_key, direction, val, limit, status)
+                        violation_report = {
+                            "type": "violation_warning",
+                            "roomId": room_id,
+                            "sensor_name": sensor_name,
+                            "limit_key": limit_key,
+                            "measurement_type": measurement_type,
+                            "status": status,
+                            "triggeredValue": val,
+                            "activeLimitAtTime": limit,
+                            "message": message,
+                            "sensorWriteId": sensorWriteId,
+                        }
+                        await self.web_violation_queue.put(violation_report)
+                        self._active_warning[sensor_name][limit_key] = status
+
+                        logger.info(
+                            f"[Processor:{sensor_name}] Violation {'escalated to' if last_sent else 'confirmed for'} "
+                            f"{limit_key}: {val} {'>' if direction == 'max' else '<'} {limit} "
+                            f"[{last_sent or 'new'} -> {status}]"
+                        )
+                    else:
+                        logger.debug(
+                            f"[Processor:{sensor_name}] Violation for {limit_key} ongoing at {status}, suppressing duplicate."
+                        )
 
             else:
                 self._good_streak[sensor_name][limit_key] += 1
-                self._bad_streak[sensor_name][limit_key]   = 0
+                self._bad_streak[sensor_name][limit_key] = 0
 
                 good = self._good_streak[sensor_name][limit_key]
 
@@ -197,6 +214,8 @@ class DataProcessor:
                     if limit_key in active_keys:
                         await self.db.resolve_violation(sensor_name, limit_key)
                         any_newly_resolved = True
+
+                        self._active_warning[sensor_name][limit_key] = None
 
                         resolve_report = {
                             "type": "violation_resolve",

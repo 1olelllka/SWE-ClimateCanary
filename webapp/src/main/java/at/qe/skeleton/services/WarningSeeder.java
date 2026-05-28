@@ -10,7 +10,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Order(6)
+@Order(9)
 @ConditionalOnProperty(name = "app.seeder.warning.enabled", havingValue = "true", matchIfMissing = true)
 public class WarningSeeder implements ApplicationRunner {
 

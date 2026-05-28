@@ -10,6 +10,7 @@ import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
+import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.impl.ClimateStatsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +40,7 @@ class ClimateStatsServiceUnitTests {
     @Mock private AuthenticatedUserService authenticatedUserService;
     @Mock private AggregatedDepartmentStatsRepository departmentStatsRepository;
     @Mock private Userx user;
+    @Mock private LiveDataService liveDataService;
 
     @InjectMocks
     private ClimateStatsServiceImpl climateStatsService;
@@ -293,6 +295,7 @@ class ClimateStatsServiceUnitTests {
                             stats.getPollVal() == 420.0 &&
                             stats.getRoomMonitoring().equals(monitoring)
             ));
+            verify(liveDataService, times(1)).pushLiveClimateData(eq(monitoringId), any());
         }
 
         @Test
@@ -336,6 +339,7 @@ class ClimateStatsServiceUnitTests {
                             stats.getHumVal() == 60.0 &&
                             stats.getPollVal() == 0.0
             ));
+            verify(liveDataService, times(1)).pushLiveClimateData(eq(monitoringId), any());
         }
     }
 

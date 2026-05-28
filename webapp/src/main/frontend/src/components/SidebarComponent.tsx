@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import globalAxios from 'axios';
+import { DepartmentControllerApi, UserxControllerApi } from '../generated-skeleton-api';
 import { Sidebar } from 'primereact/sidebar';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../Contexts/AuthenticatedUserContext';
@@ -32,23 +32,20 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
 
     useEffect(() => {
         if (!isDepartmentManager) return;
-        globalAxios.get('/api/users/me').then(res => {
-            const deptId = res.data?.myRoom?.departmentID;
+        new UserxControllerApi().getAuthenticatedUser().then(res => {
+            const deptId = (res.data as any)?.myRoom?.departmentID;
             if (!deptId) return;
-            return globalAxios.get(`/api/departments/${deptId}`).then(r => {
-                const name = r.data?.name || r.data?.departmentName || null;
+            return new DepartmentControllerApi().getSpecificDepartment({ departmentId: deptId }).then(r => {
+                const name = r.data?.name || (r.data as any)?.departmentName || null;
                 setDeptManagerDeptName(name);
             });
         }).catch(() => {});
     }, [isDepartmentManager]);
 
-    const deptMatch = location.pathname.match(/^\/senior\/department\/(.+)$/);
-    const currentDept = deptMatch ? decodeURIComponent(deptMatch[1]) : null;
-
     // Exakte Bezeichnungen für die Startseite je nach Rolle
     const getOverviewLabel = () => {
         if (isSeniorManager) return 'Company Overview';
-        if (isDepartmentManager) return 'Department Dashboard';
+        if (isDepartmentManager) return 'Department Overview';
         if (isBuildingManager) return 'Building Overview';
         if (isEmployee) return 'My Office';
         return 'Overview'; // Für SysAdmin
@@ -64,26 +61,20 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             visible: true // Jeder sieht eigene Startseite
         },
         {
-            label: 'Company Overview',
-            icon: 'pi-list',
-            route: '/',
-            visible: isSeniorManager && currentDept !== null
-        },
-        {
-            label: currentDept ? `${currentDept} Overview` : '',
-            icon: 'pi-chart-bar',
-            route: location.pathname,
-            visible: isSeniorManager && currentDept !== null
-        },
-        {
             label: 'My Department',
             icon: 'pi-sitemap',
             route: ROUTES.EMPLOYEE_DEPARTMENT,
             visible: isEmployee
         },
         {
+            label: 'Threshold Violations',
+            icon: 'pi-exclamation-triangle',
+            route: ROUTES.DEPARTMENT_VIOLATIONS,
+            visible: isDepartmentManager
+        },
+        {
             label: 'My Room',
-            icon: 'pi-home',
+            icon: 'pi-th-large',
             route: ROUTES.MY_ROOM,
             visible: isDepartmentManager
         },
@@ -94,8 +85,8 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             visible: isEmployee || isDepartmentManager
         },
         {
-            label: 'Absences',
-            icon: 'pi-list',
+            label: 'Team Absences',
+            icon: 'pi-users',
             route: '/department-absences',
             visible: isDepartmentManager
         },
@@ -130,12 +121,6 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
             route: ROUTES.TIPMANAGEMENT,
             visible: isBuildingManager
         },
-        {
-            label: 'Settings',
-            icon: 'pi-cog',
-            route: ROUTES.SETTINGS,
-            visible: true
-        }
     ];
 
     // Filtert alle Menüpunkte raus, bei denen visible: false ist
@@ -186,21 +171,24 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
                     />
                 </div>
 
-                {isEmployee && (
+                {(isEmployee || isDepartmentManager) && (
                     <div className="sidebar-clock-wrapper">
                         <ClockInOutButton />
                     </div>
                 )}
 
                 <div className="user-profile">
-                    <div className="user-avatar">
-                        <i className="pi pi-user" style={{ fontSize: '1.35rem' }}></i>
-                    </div>
-
                     <div className="user-info">
                         <span className="user-name">{currentUser?.username || 'User'}</span>
                         <span className="user-email">Logged in</span>
                     </div>
+                    <button
+                        className="user-settings-btn"
+                        onClick={() => handleNavigation(ROUTES.SETTINGS)}
+                        aria-label="Settings"
+                    >
+                        <i className="pi pi-cog" aria-hidden="true" />
+                    </button>
                 </div>
             </div>
 

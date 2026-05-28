@@ -169,6 +169,57 @@ html[data-theme='dark'] .p-datepicker table td > span.p-highlight {
     color: #ffffff !important;
 }
 
+/* ── Mobile inline calendar drop-down ──────────────────────────────────────── */
+
+.dashboard-calendar-mobile {
+    position: relative;
+}
+
+.dashboard-calendar-mobile-panel {
+    /* position / top / right / width / z-index are set via inline styles in Calendar.tsx
+       so the panel is always anchored correctly within the viewport */
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    padding: 0.4rem;
+    overflow: hidden; /* crop any PrimeReact overflow */
+}
+
+/* Make the inline PrimeReact calendar fill the panel width and honour our sizing */
+.dashboard-calendar-mobile-panel .p-calendar,
+.dashboard-calendar-mobile-panel .p-datepicker {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Shrink cells slightly so the calendar fits within 308 px comfortably */
+.dashboard-calendar-mobile-panel .p-datepicker table td > span {
+    width: 2rem !important;
+    height: 2rem !important;
+    font-size: 0.78rem !important;
+}
+
+.dashboard-calendar-mobile-panel .p-datepicker table td {
+    padding: 1px !important;
+}
+
+.dashboard-calendar-mobile-panel .p-datepicker-header {
+    padding: 0.3rem 0.5rem !important;
+}
+
+.dashboard-calendar-mobile-panel .p-datepicker-title {
+    font-size: 0.85rem !important;
+}
+
+html[data-theme='dark'] .dashboard-calendar-mobile-panel {
+    background: #1f2937;
+    border-color: #334155;
+}
+
 /* Mobile calendar overlay */
 
 @media (max-width: 768px) {

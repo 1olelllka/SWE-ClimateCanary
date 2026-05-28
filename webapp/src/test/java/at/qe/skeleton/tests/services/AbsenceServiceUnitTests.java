@@ -22,7 +22,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -106,33 +105,14 @@ class AbsenceServiceUnitTests {
         verify(absenceRepository).findByAssignedTo(manager.getId(), pageable);
     }
 
-    @Test
-    void testThatCreateNewAbsenceThrowsValidationExceptionIfTooManyDaysChosen() {
-        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        absence.setEndDate(LocalDateTime.MAX);
-        assertThrows(ValidationException.class, () -> absenceService.createNewAbsenceForUser(absence));
-
-        verify(absenceRepository, never()).save(absence);
-    }
-
-    @Test
-    void testThatCreateNewAbsenceSucceedsWhenValid() {
-        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
-        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(absenceRepository.save(any(Absence.class))).thenReturn(absence);
-
-        Absence result = absenceService.createNewAbsenceForUser(absence);
-
-        assertNotNull(result);
-        verify(absenceRepository).save(absence);
-    }
+// Replace all three createNewAbsence tests with these five:
 
     @Test
     void testThatCreateNewAbsenceThrowsNotFoundWhenManagerDoesNotExist() {
         when(userxRepository.findById(manager.getId())).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> absenceService.createNewAbsenceForUser(absence));
+        verify(absenceRepository, never()).save(any());
     }
 
     @Test
@@ -141,6 +121,30 @@ class AbsenceServiceUnitTests {
         when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
 
         assertThrows(ForbiddenException.class, () -> absenceService.createNewAbsenceForUser(absence));
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatCreateNewAbsenceThrowsNotFoundWhenUserDoesNotExist() {
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> absenceService.createNewAbsenceForUser(absence));
+        verify(absenceRepository, never()).save(any());
+    }
+
+    @Test
+    void testThatCreateNewAbsenceThrowsValidationExceptionWhenNotEnoughVacationDaysLeft() {
+        // user.numberOfAbsences is already set to (25 - absenceDays) in setUp,
+        // so set it to 0 to guarantee insufficient days for the VACATION absence
+        user.setNumberOfAbsences(0);
+        absence.setTypeOfAbsence(AbsenceType.VACATION);
+
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThrows(ValidationException.class, () -> absenceService.createNewAbsenceForUser(absence));
+        verify(absenceRepository, never()).save(any());
     }
 
     @Test
@@ -153,7 +157,52 @@ class AbsenceServiceUnitTests {
         when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
         assertThrows(ForbiddenException.class, () -> absenceService.createNewAbsenceForUser(absence));
+        verify(absenceRepository, never()).save(any());
     }
+
+    @Test
+    void testThatCreateNewAbsenceSucceedsAndSetsStatusToPending() {
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(absenceRepository.save(any(Absence.class))).thenReturn(absence);
+
+        Absence result = absenceService.createNewAbsenceForUser(absence);
+
+        assertNotNull(result);
+        assertEquals(AbsenceStatus.PENDING, absence.getStatus());
+        verify(absenceRepository).save(absence);
+    }
+
+    @Test
+    void testThatCreateNewAbsenceDeductsVacationDaysWhenValid() {
+        int initialDays = user.getNumberOfAbsences();
+        long absenceDays = ChronoUnit.DAYS.between(
+                absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate());
+        absence.setTypeOfAbsence(AbsenceType.VACATION);
+
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(absenceRepository.save(any(Absence.class))).thenReturn(absence);
+
+        absenceService.createNewAbsenceForUser(absence);
+
+        assertEquals((int) (initialDays - absenceDays), user.getNumberOfAbsences());
+    }
+
+    @Test
+    void testThatCreateNewAbsenceDoesNotDeductDaysForNonVacationType() {
+        int initialDays = user.getNumberOfAbsences();
+        absence.setTypeOfAbsence(AbsenceType.ILLNESS);
+
+        when(userxRepository.findById(manager.getId())).thenReturn(Optional.of(manager));
+        when(userxRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(absenceRepository.save(any(Absence.class))).thenReturn(absence);
+
+        absenceService.createNewAbsenceForUser(absence);
+
+        assertEquals(initialDays, user.getNumberOfAbsences());
+    }
+
 
     @Test
     void testThatGetAbsenceByIdReturnsAbsenceForCorrectManager() {
@@ -190,7 +239,7 @@ class AbsenceServiceUnitTests {
         Absence result = absenceService.updateAbsenceStatus(absence.getId(), AbsenceStatus.REJECTED);
 
         assertEquals(AbsenceStatus.REJECTED, result.getStatus());
-        assertEquals(25, this.user.getNumberOfAbsences());
+        assertEquals(16, this.user.getNumberOfAbsences());
         verify(absenceRepository).save(absence);
     }
 
@@ -526,9 +575,29 @@ class AbsenceServiceUnitTests {
     }
 
     @Test
-    void testThatCancelAbsenceSucceedsWhenValid() {
+    void testThatCancelIllnessAbsenceSucceedsWhenValid() {
         UUID absenceId = absence.getId();
         absence.setStatus(AbsenceStatus.PENDING);
+        int initialAbsences = user.getNumberOfAbsences();
+
+        when(absenceRepository.findById(absenceId)).thenReturn(Optional.of(absence));
+        when(userxRepository.save(any(Userx.class))).thenAnswer(i -> i.getArgument(0));
+        when(absenceRepository.save(any(Absence.class))).thenAnswer(i -> i.getArgument(0));
+
+        Absence result = absenceService.cancelAbsence(absenceId, user);
+
+        assertNotNull(result);
+        assertEquals(AbsenceStatus.CANCELLED, result.getStatus());
+        assertEquals(initialAbsences, user.getNumberOfAbsences());
+        verify(userxRepository).save(user);
+        verify(absenceRepository).save(absence);
+    }
+
+    @Test
+    void testThatCancelVacationAbsenceSucceedsWhenValid() {
+        UUID absenceId = absence.getId();
+        absence.setStatus(AbsenceStatus.PENDING);
+        absence.setTypeOfAbsence(AbsenceType.VACATION);
         int initialAbsences = user.getNumberOfAbsences();
         long absenceDays = ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate());
 

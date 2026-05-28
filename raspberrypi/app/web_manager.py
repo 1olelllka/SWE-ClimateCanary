@@ -37,6 +37,8 @@ class WebManager:
         self.queues: dict[str, dict[str, asyncio.Queue]] = {}
         self.scan_lock: asyncio.Lock | None = None
         self._running_tasks: list[asyncio.Task] = []
+        self._ble_tasks: dict[str, asyncio.Task] = {}
+        self._proc_tasks: dict[str, asyncio.Task] = {}
 
 # Webapp -> Pi
 
@@ -134,9 +136,18 @@ class WebManager:
         triggered = []
         for name, ble in self.ble_managers.items():
             if ble.read_uuid in sensor_ids or ble.sensor.get('write_uuid') in sensor_ids:
-                ble.reconnect_event.set()
-                triggered.append(name)
-                logger.info(f"[Web -> Pi] /api/retry-sensor: reconnect_event set for '{name}'")
+                existing_task = self._ble_tasks.get(name)
+                task_alive = existing_task is not None and not existing_task.done()
+
+                if task_alive:
+                    ble.reconnect_event.set()
+                    triggered.append(name)
+                    logger.info(f"[Web -> Pi] /api/retry-sensor: reconnect_event set for '{name}'")
+                else:
+                    # Task is dead — respawn it so there's a live coroutine to reconnect
+                    logger.info(f"[Web -> Pi] /api/retry-sensor: BLE task for '{name}' is dead, respawning.")
+                    self._spawn_sensor_tasks(name, ble.sensor)
+                    triggered.append(name)
 
         if not triggered:
             logger.warning(f"[Web -> Pi] /api/retry-sensor: no matching sensor for ids={sensor_ids}. "
@@ -148,30 +159,34 @@ class WebManager:
 
         return web.json_response({"status": "accepted", "triggered": triggered}, status=202)
 
-    async def _handle_tip(self, data: dict):
+    async def _handle_tip(self, data: dict, sensor_name: str = None):
         violation_type   = str(data.get('measurementType', '')).upper()
         violated_sensor_wId  = str(data.get('writeId', ''))
         violation_status = str(data.get('status', '')).upper()
         tip = data.get('tip', '')
-    
-        if not violation_type or not violated_sensor_wId or not violation_status or not tip:
+
+        if not violation_type or not violation_status or not tip:
             logger.warning(f"[WebManager] Tip missing required fields, skipping: {data}")
             return
-    
-        ble = next(
-            (b for b in self.ble_managers.values() if b.sensor.get('write_uuid') == violated_sensor_wId),
-            None
-        )
-    
+
+        # Prefer lookup by name — write_uuid can change after a backend restart.
+        if sensor_name and sensor_name in self.ble_managers:
+            ble = self.ble_managers[sensor_name]
+        else:
+            ble = next(
+                (b for b in self.ble_managers.values() if b.sensor.get('write_uuid') == violated_sensor_wId),
+                None
+            )
+
         if not ble:
             logger.warning(f"[WebManager] No active BLE manager for write_uuid='{violated_sensor_wId}' - tip not forwarded.")
             return
     
         ble_msg = await self._build_ble_warn_message(ble.name, violation_type, violation_status, tip)
-        logger.info(f"[Pi -> Arduino] BLE message built: {ble_msg}")
+        logger.debug(f"[Pi -> Arduino] BLE message built: {ble_msg}")
     
         await ble.ble_inbox.put(ble_msg)
-        logger.info(f"[Pi -> Arduino] Tip forwarded to Arduino '{ble.name}'")
+        logger.debug(f"[Pi -> Arduino] Tip forwarded to Arduino '{ble.name}'")
 
     async def _build_ble_warn_message( self, sensor_name: str, violation_type: str, violation_status: str, tip: str,) -> str:
         type_to_limit_keys = {
@@ -193,7 +208,42 @@ class WebManager:
                 break
 
         threshold_str = str(threshold) if threshold is not None else "N/A"
-        return f"WARNTEXT:{warntext}THRESHOLD:{threshold_str}TIP:{tip}STATUS:{violation_status}"
+        return f"WARNTEXT:{warntext}THRESHOLD:{threshold_str}TIP:{tip}STATUS:{violation_status}TYPE:{violation_type}"
+
+# Sensor task lifecycle
+
+    def _spawn_sensor_tasks(self, name: str, sensor: dict):
+        """Create fresh BLEManager + Processor tasks for a sensor, replacing any stale ones."""
+        if self.processor is None or self.scan_lock is None:
+            logger.error(
+                f"[WebManager] Cannot spawn tasks for '{name}' - "
+                "processor/scan_lock not yet set on WebManager."
+            )
+            return
+
+        # Reuse existing queues if present so no messages are lost, otherwise create new ones
+        q = self.queues.get(name) or {'proc': asyncio.Queue(), 'inbox': asyncio.Queue()}
+        self.queues[name] = q
+
+        ble = BLEManager(
+            self.db,
+            sensor,
+            q['proc'],
+            q['inbox'],
+            self.status_queue,
+            self.scan_lock,
+        )
+        self.ble_managers[name] = ble
+
+        t1 = asyncio.create_task(ble.run(), name=f"BLE:{name}")
+        t2 = asyncio.create_task(
+            self.processor.run(name, q['proc'], sensor['write_uuid']),
+            name=f"Proc:{name}",
+        )
+        self._ble_tasks[name] = t1
+        self._proc_tasks[name] = t2
+        self._running_tasks.extend([t1, t2])
+        logger.info(f"[WebManager] Spawned BLE + Processor tasks for '{name}'")
 
 # Background tasks
 
@@ -220,41 +270,39 @@ class WebManager:
 
                 for sensor in all_sensors:
                     name = sensor['name']
+                    existing_task = self._ble_tasks.get(name)
+                    task_alive = existing_task is not None and not existing_task.done()
 
-                    if name in self.ble_managers:
+                    if name in self.ble_managers and task_alive:
+                        # Manager is running and parked at reconnect_event.wait() - just wake it
                         ble = self.ble_managers[name]
+                        ble.sensor = sensor
+
+                        # Processor task holds a stale write_uuid closure — cancel and respawn
+                        # so violation reports use the new IDs (backend restart changes UUIDs).
+                        old_proc = self._proc_tasks.get(name)
+                        if old_proc and not old_proc.done():
+                            old_proc.cancel()
+                        # Reset violation state so the new proc re-evaluates and re-sends
+                        # warnings from scratch rather than suppressing them as "duplicates".
+                        self.processor.reset_sensor_state(name)
+                        new_proc = asyncio.create_task(
+                            self.processor.run(name, self.queues[name]['proc'], sensor['write_uuid']),
+                            name=f"Proc:{name}",
+                        )
+                        self._proc_tasks[name] = new_proc
+                        self._running_tasks.append(new_proc)
+                        logger.info(f"[WebManager] SENSOR_ADD: respawned Processor task for '{name}' with write_uuid={sensor['write_uuid']}")
+
                         if not ble.reconnect_event.is_set():
                             ble.reconnect_event.set()
                             logger.info(f"[WebManager] SENSOR_ADD: woke existing BLE manager for '{name}'")
                     else:
-                        if self.processor is None or self.scan_lock is None:
-                            logger.error(
-                                f"[WebManager] SENSOR_ADD: cannot spawn tasks for '{name}' - "
-                                "processor/scan_lock not yet set on WebManager."
-                            )
-                            continue
-
-                        q = {'proc': asyncio.Queue(), 'inbox': asyncio.Queue()}
-                        self.queues[name] = q
-
-                        ble = BLEManager(
-                            self.db,
-                            sensor,
-                            q['proc'],
-                            q['inbox'],
-                            self.status_queue,
-                            self.scan_lock,
-                        )
-                        self.ble_managers[name] = ble
-
-                        t1 = asyncio.create_task(ble.run(), name=f"BLE:{name}")
-                        t2 = asyncio.create_task(
-                            self.processor.run(name, q['proc'], sensor['write_uuid']), name=f"Proc:{name}"
-                        )
-                        self._running_tasks.extend([t1, t2])
-                        logger.info(
-                            f"[WebManager] SENSOR_ADD: started BLE + Processor tasks for '{name}'"
-                        )
+                        # Task never existed or has already exited — spawn fresh
+                        if name in self.ble_managers:
+                            logger.info(f"[WebManager] SENSOR_ADD: stale BLE manager found for '{name}', respawning.")
+                        self.processor.reset_sensor_state(name)
+                        self._spawn_sensor_tasks(name, sensor)
 
             elif update_type == "SENSOR_DELETE":
                 await ConfigManager.handle_sensor_delete(self.db, sensor_ids)
@@ -277,7 +325,37 @@ class WebManager:
             # Always refresh the auth token before a full config re-fetch
             await self.auth.refresh_if_needed()
 
+            old_room_id = await self.db.get_config('room_id')
             await ConfigManager.fetch_and_seed(pi_id, self.server_url, self.db, self.auth)
+            new_room_id = await self.db.get_config('room_id')
+
+            if old_room_id and old_room_id != new_room_id:
+                drained = 0
+                while not self.web_out_queue.empty():
+                    try:
+                        self.web_out_queue.get_nowait()
+                        self.web_out_queue.task_done()
+                        drained += 1
+                    except asyncio.QueueEmpty:
+                        break
+                if drained:
+                    logger.info(
+                        f"[WebManager] Room changed ({old_room_id} → {new_room_id}): "
+                        f"discarded {drained} stale queued measurement(s)."
+                    )
+
+                for name in self.ble_managers:
+                    self.processor.reset_sensor_state(name)
+                logger.info(
+                    f"[WebManager] Room changed: reset violation state for {list(self.ble_managers.keys())}."
+                )
+
+            all_sensors = await self.db.get_sensors()
+            sensor_by_name = {s['name']: s for s in all_sensors}
+            for name, ble in self.ble_managers.items():
+                if name in sensor_by_name:
+                    ble.sensor = sensor_by_name[name]
+                    logger.info(f"[WebManager] Config re-seed: refreshed sensor dict for '{name}'")
 
             new_freq = await self.db.get_config('frequency')
             if new_freq is not None:
@@ -321,93 +399,111 @@ class WebManager:
 
 # Pi -> Webapp
 
-    async def _post_with_auth(self, session, url: str, payload: dict) -> bool:
+    async def _post_with_auth(self, session, url: str, payload: dict) -> int:
         async with session.post(url, json=payload, headers=self.auth.get_headers()) as response:
             if response.status == 401:
                 await self.auth.refresh_if_needed()
                 async with session.post(url, json=payload, headers=self.auth.get_headers()) as retry:
-                    return retry.status in (200, 201)
-            return response.status in (200, 201)
+                    return retry.status
+            return response.status
 
     async def run_outgoing_data_worker(self):
         logger.info("[WebManager] Outgoing data worker started.")
         timeout = aiohttp.ClientTimeout(total=10)
-
+    
         failure_streak = 0
         OFFLINE_THRESHOLD = 3
         is_webapp_offline = False
-
+    
         async def _broadcast_to_arduinos(command: str):
             for ble in self.ble_managers.values():
                 await ble.ble_inbox.put(command)
+    
+        async def _make_session():
+            return aiohttp.ClientSession(timeout=timeout)
+    
+        session = await _make_session()
+    
+        while True:
+            payload = await self.web_out_queue.get()
+    
+            try:
+                api_url = f"{self.server_url}/api/measurements"
+                status = await self._post_with_auth(session, api_url, payload)
 
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            while True:
-                payload = await self.web_out_queue.get()
-
-                try:
-                    api_url = f"{self.server_url}/api/measurements"
-                    success = await self._post_with_auth(session, api_url, payload)
-
-                    if success:
-                        failure_streak = 0
-                        if is_webapp_offline:
-                            is_webapp_offline = False
-                            logger.info("[WebManager] Webapp back online - notifying Arduinos.")
-                            await _broadcast_to_arduinos("ERROR:WEBAPP_CLEAR")
-                    else:
-                        failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
-                        if not is_webapp_offline: 
-                            logger.warning(
-                                f"[WebManager] Webapp rejected measurement payload "
-                                f"(streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 5s..."
-                            )
-                            await asyncio.sleep(5)
-                        await self.web_out_queue.put(payload)
-
-                except Exception as e:
+                if status in (200, 201):
+                    failure_streak = 0
+                    if is_webapp_offline:
+                        is_webapp_offline = False
+                        logger.info("[WebManager] Webapp back online - notifying Arduinos.")
+                        await session.close()
+                        session = await _make_session()
+                        await _broadcast_to_arduinos("ERROR:WEBAPP_CLEAR")
+                elif 400 <= status < 500:
+                    # Permanent rejection (stale roomId, unknown sensor, etc.) — drop, don't requeue.
+                    logger.warning(
+                        f"[WebManager] Webapp permanently rejected measurement (HTTP {status}) — dropping."
+                    )
+                else:
                     failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
-                    if not is_webapp_offline: 
-                        logger.error(f"[WebManager] Network error (streak {failure_streak}/{OFFLINE_THRESHOLD}): {e}")
-                        await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
-                        await asyncio.sleep(10)
+                    logger.warning(
+                        f"[WebManager] Webapp rejected measurement payload (HTTP {status}, "
+                        f"streak {failure_streak}/{OFFLINE_THRESHOLD}). Requeueing in 10s..."
+                    )
                     await self.web_out_queue.put(payload)
-
-                finally:
-                    if failure_streak >= OFFLINE_THRESHOLD and not is_webapp_offline:
-                        is_webapp_offline = True
-                        logger.warning("[WebManager] Webapp confirmed offline - notifying Arduinos.")
-                        await _broadcast_to_arduinos("ERROR:WEBAPP_OFFLINE")
-                    self.web_out_queue.task_done()
+                    await asyncio.sleep(10)
+    
+            except Exception as e:
+                failure_streak = min(failure_streak + 1, OFFLINE_THRESHOLD)
+                logger.error(f"[WebManager] Network error (streak {failure_streak}/{OFFLINE_THRESHOLD}): {e}")
+                await self.db.log_event("NETWORK", f"Failed to reach Webapp: {e}", "ERROR")
+                await self.web_out_queue.put(payload)
+                await asyncio.sleep(10)
+    
+            finally:
+                if failure_streak >= OFFLINE_THRESHOLD and not is_webapp_offline:
+                    is_webapp_offline = True
+                    logger.warning("[WebManager] Webapp confirmed offline - notifying Arduinos.")
+                    # Close stale session and open a fresh one for when webapp recovers
+                    await session.close()
+                    session = await _make_session()
+                    await _broadcast_to_arduinos("ERROR:WEBAPP_OFFLINE")
+                self.web_out_queue.task_done()
 
     async def run_outgoing_violation_worker(self):
         logger.info("[WebManager] Outgoing violation report worker started.")
         timeout = aiohttp.ClientTimeout(total=10)
-
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            while True:
-                event = await self.web_violation_queue.get()
-
-                try:
-                    event_type = event.get("type")
-
-                    if event_type == "violation_warning":
-                        await self._handle_violation_warning(session, event)
-
-                    elif event_type == "violation_resolve":
-                        await self._handle_violation_resolve(session, event)
-
-                    else:
-                        logger.warning(f"[WebManager] Unknown violation event type: {event_type!r}")
-
-                except Exception as e:
-                    logger.error(f"[WebManager] Violation worker unexpected error: {e}")
-                    await self.db.log_event("NETWORK", f"Violation worker error: {e}", "ERROR")
-                    await asyncio.sleep(10)
-                    await self.web_violation_queue.put(event)
-
-                finally:
-                    self.web_violation_queue.task_done()
+    
+        async def _make_session():
+            return aiohttp.ClientSession(timeout=timeout)
+    
+        session = await _make_session()
+    
+        while True:
+            event = await self.web_violation_queue.get()
+    
+            try:
+                event_type = event.get("type")
+    
+                if event_type == "violation_warning":
+                    await self._handle_violation_warning(session, event)
+    
+                elif event_type == "violation_resolve":
+                    await self._handle_violation_resolve(session, event)
+    
+                else:
+                    logger.warning(f"[WebManager] Unknown violation event type: {event_type!r}")
+    
+            except Exception as e:
+                logger.error(f"[WebManager] Violation worker unexpected error: {e}")
+                await self.db.log_event("NETWORK", f"Violation worker error: {e}", "ERROR")
+                await session.close()
+                session = await _make_session()
+                await asyncio.sleep(10)
+                await self.web_violation_queue.put(event)
+    
+            finally:
+                self.web_violation_queue.task_done()
 
     async def _handle_violation_warning(self, session, event: dict):
         api_url = f"{self.server_url}/api/warnings"
@@ -434,9 +530,9 @@ class WebManager:
                 else:
                     response.raise_for_status()
                     data = await response.json()
-            logger.info(f"Response after warning: {data}")
+            logger.debug(f"Response after warning: {data}")
             warning_id = str(data.get("id", ""))
-            await self._handle_tip(data)
+            await self._handle_tip(data, sensor_name=sensor_name)
             if warning_id:
                 await self.db.save_warning_id(sensor_name, limit_key, warning_id)
                 logger.info(

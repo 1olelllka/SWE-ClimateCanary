@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 
 interface MiniSparklineProps {
     readonly color: string;
-    readonly points?: string;        // legacy SVG string — used by DepartmentDetailPage etc.
+    readonly points?: string;        // legacy SVG string — used by RoomDetailPage etc.
     readonly dataPoints?: number[];  // ECharts mode: actual metric values
 }
 
@@ -63,7 +63,7 @@ export const LineChart: React.FC<MiniSparklineProps> = ({
     if (dataPoints !== undefined) {
         if (dataPoints.length === 0) {
             return (
-                <div style={{ height: 56, display: 'flex', alignItems: 'center', margin: '0.25rem 0' }}>
+                <div className="sparkline-wrapper" style={{ display: 'flex', alignItems: 'center' }}>
                     <svg width="100%" height="2" style={{ display: 'block', opacity: 0.2 }}>
                         <line x1="0" y1="1" x2="100%" y2="1"
                             stroke={color} strokeWidth="1.5" strokeDasharray="4 3" />
@@ -73,16 +73,18 @@ export const LineChart: React.FC<MiniSparklineProps> = ({
         }
 
         return (
-            <ReactECharts
-                option={buildOption(color, dataPoints)}
-                style={{ height: 56, width: '100%', margin: '0.25rem 0' }}
-                opts={{ renderer: 'svg' }}
-                notMerge
-            />
+            <div className="sparkline-wrapper">
+                <ReactECharts
+                    option={buildOption(color, dataPoints)}
+                    style={{ height: '100%', width: '100%' }}
+                    opts={{ renderer: 'svg' }}
+                    notMerge
+                />
+            </div>
         );
     }
 
-    // ── Legacy SVG mode (DepartmentDetailPage, static mock data) ─────────────
+    // ── Legacy SVG mode (RoomDetailPage, static mock data) ─────────────
     return (
         <div style={{ height: '40px', width: '100%' }}>
             <svg viewBox="0 0 100 30" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>

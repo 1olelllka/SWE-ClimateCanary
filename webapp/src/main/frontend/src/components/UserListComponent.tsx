@@ -70,31 +70,31 @@ const UserListComponent: React.FC<UserListProps> = ({
      * Renders the edit button for a user.
      * @param rowData
      */
-    const editButtonTemplate = (rowData: UserListItem) => {
+    const actionsBodyTemplate = (rowData: UserListItem) => {
         return (
-            <Button
-                label={"Edit"}
-                onClick={() => onEditUser(rowData)}
-                aria-label={`Edit ${rowData.username}`}
-            />
-        );
-    };
+            <div className="admin-table-actions">
+                <Button
+                    icon="pi pi-cog"
+                    rounded
+                    text
+                    severity="secondary"
+                    onClick={() => onEditUser(rowData)}
+                    aria-label={`Edit ${rowData.username}`}
+                    title="Edit user"
+                />
 
-    /**
-     * Renders the delete button for a user.
-     * @param rowData
-     */
-    const deleteButtonTemplate = (rowData: UserListItem) => {
-        if (!showDelete || !onDeleteUser) {
-            return null;
-        }
-
-        return (
-            <Button
-                label={"Delete"}
-                onClick={() => onDeleteUser(rowData)}
-                aria-label={`Delete ${rowData.username}`}
-            />
+                {showDelete && onDeleteUser && (
+                    <Button
+                        icon="pi pi-trash"
+                        rounded
+                        text
+                        severity="danger"
+                        onClick={() => onDeleteUser(rowData)}
+                        aria-label={`Delete ${rowData.username}`}
+                        title="Delete user"
+                    />
+                )}
+            </div>
         );
     };
 
@@ -113,19 +113,17 @@ const UserListComponent: React.FC<UserListProps> = ({
         return getRoomLabel(rowData);
     };
 
+    const fullNameBodyTemplate = (rowData: UserListItem) => {
+        return `${rowData.firstName} ${rowData.lastName}`;
+    };
+
     return (
         // DataTable for displaying users
-        <DataTable value={users} loading={loading} emptyMessage="No users found.">
-            <Column field="id" header="ID"></Column>
-            <Column field="firstName" header="First Name" sortable></Column>
-            <Column field="lastName" header="Last Name" sortable></Column>
+        <DataTable value={users} loading={loading} emptyMessage="No users found." className="user-list-compact-table" tableStyle={{ width: 'auto', minWidth: '0' }}>
+            <Column header="User" body={fullNameBodyTemplate} sortable sortField="lastName" />
+            <Column field="username" header="Username" sortable />
             <Column header="Room" body={roomBodyTemplate} sortable />
-            <Column field="roles" header="Roles" body={rolesBodyTemplate}></Column>
-            <Column field="enabled" header="Enabled" body={enableButtonTemplate}></Column>
-            {showDelete && <Column body={deleteButtonTemplate} exportable={false}
-                                   style={{minWidth: '6rem'}}></Column>}
-            <Column body={editButtonTemplate} exportable={false}
-                    style={{minWidth: '6rem'}}></Column>
+            <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" exportable={false} body={actionsBodyTemplate} />
         </DataTable>
     )
 };

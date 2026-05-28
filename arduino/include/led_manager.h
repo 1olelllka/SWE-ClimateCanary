@@ -11,6 +11,7 @@ class LedManager {
 public:
   enum class LedMode {
     Off,
+    White,
     Green,
     Blue,
     Red
@@ -22,6 +23,7 @@ public:
 
 private:
   void setOff();
+  void setWhite();
   void setGreen();
   void setBlue();
   void setRed();

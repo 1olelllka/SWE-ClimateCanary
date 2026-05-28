@@ -11,6 +11,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.ClimateStatsService;
+import at.qe.skeleton.services.LiveDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
@@ -44,6 +45,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
     private final LimitMapper            limitMapper;
     private final AuthenticatedUserService authenticatedUserService;
     private final AggregatedDepartmentStatsRepository departmentStatsRepository;
+    private final LiveDataService liveDataService;
 
     // for current climate values (only 3 latest are shown)
     @Override
@@ -108,13 +110,14 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             }
         }
         log.info("Received: Temperature – {}, Humidity – {}, CO2 – {}", temp, hum, poll);
-        climateStatsRepository.save(ClimateStats.builder()
+        ClimateStats res = climateStatsRepository.save(ClimateStats.builder()
                 .roomMonitoring(room)
                 .date(batch.timestamp())
                 .tempVal(temp)
                 .humVal(hum)
                 .pollVal(poll)
                 .build());
+        liveDataService.pushLiveClimateData(room.getRoomId(), climateMapper.mapTo(res));
     }
 
     // to get values for a specific timeframe for a specific room

@@ -43,17 +43,12 @@ interface Props {
 }
 
 const UserFormDialog: React.FC<Props> = ({
-    visible, isNewUser, form, formErrors, roomOptions, roleOptions, loading, onHide, onSave, onChange,
-}) => {
+                                             visible, isNewUser, form, formErrors, roomOptions, roleOptions, loading, onHide, onSave, onChange,
+                                         }) => {
     const footer = (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <div className="admin-dialog-footer">
             <Button label="Cancel" severity="secondary" outlined onClick={onHide} />
-            <Button
-                label={isNewUser ? 'Create' : 'Save'}
-                icon="pi pi-check"
-                loading={loading}
-                onClick={onSave}
-            />
+            <Button label={isNewUser ? 'Create' : 'Save'} icon="pi pi-check" loading={loading} onClick={onSave} />
         </div>
     );
 
@@ -61,12 +56,13 @@ const UserFormDialog: React.FC<Props> = ({
         <Dialog
             header={isNewUser ? 'Add User' : 'Edit User'}
             visible={visible}
-            style={{ width: '500px' }}
+            className="admin-form-dialog"
+            style={{ width: '480px' }}
             onHide={onHide}
             footer={footer}
             draggable={false}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="admin-dialog-body">
                 <div>
                     <label htmlFor="uf-firstname" style={labelStyle}>First Name *</label>
                     <InputText

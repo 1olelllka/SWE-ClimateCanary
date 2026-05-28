@@ -112,10 +112,23 @@ class UserServiceUnitTests {
     }
 
     @Test
+    void testThatUpdateUserThrowsExceptionIfUsernameAlreadyExists() {
+        Userx patchData = Userx.builder().username("new.username").firstName("NewFirst").enabled(false).build();
+
+        when(userxRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
+        when(userxRepository.existsByUsername(patchData.getUsername())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> userService.updateUser(userId, patchData));
+        verify(userxRepository, never()).save(any(Userx.class));
+    }
+
+
+    @Test
     void testThatUpdateUserUpdatesFieldsSuccessfully() {
         Userx patchData = Userx.builder().username("new.username").firstName("NewFirst").enabled(false).build();
 
         when(userxRepository.findById(userId)).thenReturn(Optional.of(sampleUser));
+        when(userxRepository.existsByUsername(patchData.getUsername())).thenReturn(false);
         when(userxRepository.save(any(Userx.class))).thenAnswer(a -> a.getArgument(0));
 
         Userx result = userService.updateUser(userId, patchData);

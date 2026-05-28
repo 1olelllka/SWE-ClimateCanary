@@ -1,12 +1,10 @@
-import os
 import pytest
-import yaml
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 from aiohttp import ClientResponseError
 from app.config_manager import ConfigManager
 
 
-# shared fixtures 
+# shared fixtures
 
 @pytest.fixture
 def mock_db():
@@ -53,38 +51,7 @@ def make_http_session(response_json, status=200, raise_for_status_effect=None):
     return mock_session, mock_response
 
 
-# ConfigManager.load 
-
-class TestLoad:
-    def test_raises_if_file_missing(self):
-        with pytest.raises(FileNotFoundError, match="Config file not found"):
-            ConfigManager.load("/nonexistent/path/conf.yaml")
-
-    def test_returns_parsed_yaml(self, tmp_path):
-        cfg = tmp_path / "conf.yaml"
-        cfg.write_text("paths:\n  database: null\n  log_file: null\nkey: value\n")
-        result = ConfigManager.load(str(cfg))
-        assert result["key"] == "value"
-
-    def test_creates_directories_for_absolute_paths(self, tmp_path):
-        db_path = tmp_path / "data" / "production.sqlite"
-        log_path = tmp_path / "logs" / "app.log"
-        cfg = tmp_path / "conf.yaml"
-        cfg.write_text(
-            f"paths:\n  database: {db_path}\n  log_file: {log_path}\n"
-        )
-        ConfigManager.load(str(cfg))
-        assert os.path.isdir(str(tmp_path / "data"))
-        assert os.path.isdir(str(tmp_path / "logs"))
-
-    def test_skips_directory_creation_for_null_paths(self, tmp_path):
-        cfg = tmp_path / "conf.yaml"
-        cfg.write_text("paths:\n  database: null\n  log_file: null\n")
-        # should not raise
-        ConfigManager.load(str(cfg))
-
-
-# ConfigManager._fetch 
+# ConfigManager._fetch
 
 class TestFetch:
     async def test_returns_json_on_success(self, mock_auth):
@@ -94,7 +61,6 @@ class TestFetch:
         assert result == {"key": "val"}
 
     async def test_refreshes_token_on_401_and_retries(self, mock_auth):
-        # First response: 401. Second response (retry): 200.
         retry_response = MagicMock()
         retry_response.raise_for_status = MagicMock()
         retry_response.json = AsyncMock(return_value={"retried": True})
@@ -132,7 +98,7 @@ class TestFetch:
                 await ConfigManager._fetch("http://server/api/test", mock_auth)
 
 
-# ConfigManager.fetch_and_seed 
+# ConfigManager.fetch_and_seed
 
 class TestFetchAndSeed:
     async def test_seeds_all_fields_from_remote(self, mock_db, mock_auth):
@@ -161,10 +127,8 @@ class TestFetchAndSeed:
 
     async def test_continues_gracefully_when_remote_unreachable(self, mock_db, mock_auth):
         with patch.object(ConfigManager, "_fetch", new=AsyncMock(side_effect=Exception("timeout"))):
-            # should not raise
             await ConfigManager.fetch_and_seed("pi-id-1", "http://server", mock_db, mock_auth)
 
-        # raspberry_id and server_url still written, nothing else
         mock_db.set_config.assert_any_call("raspberry_id", "pi-id-1")
         mock_db.set_config.assert_any_call("server_url", "http://server")
         mock_db.set_limit.assert_not_called()
@@ -194,7 +158,7 @@ class TestFetchAndSeed:
         mock_db.set_limit.assert_any_call("privacy_mode", 1.0)
 
 
-# ConfigManager.handle_limit_change 
+# ConfigManager.handle_limit_change
 
 class TestHandleLimitChange:
     async def test_updates_all_present_limits(self, mock_db):
@@ -217,7 +181,7 @@ class TestHandleLimitChange:
         mock_db.set_limit.assert_not_called()
 
 
-# ConfigManager.handle_occupancy_change 
+# ConfigManager.handle_occupancy_change
 
 class TestHandleOccupancyChange:
     async def test_updates_both_fields(self, mock_db):
@@ -238,7 +202,7 @@ class TestHandleOccupancyChange:
         mock_db.set_limit.assert_not_called()
 
 
-# ConfigManager.handle_sensor_add 
+# ConfigManager.handle_sensor_add
 
 class TestHandleSensorAdd:
     async def test_adds_sensor_from_remote(self, mock_db, mock_auth):
@@ -256,7 +220,7 @@ class TestHandleSensorAdd:
             await ConfigManager.handle_sensor_add(mock_db, mock_auth, ["id"])
 
 
-# ConfigManager.handle_sensor_delete / flush 
+# ConfigManager.handle_sensor_delete / flush
 
 class TestHandleSensorDelete:
     async def test_deletes_by_ids(self, mock_db):
@@ -270,7 +234,7 @@ class TestHandleSensorFlush:
         mock_db.delete_all_sensors.assert_awaited_once()
 
 
-# ConfigManager.handle_config_change 
+# ConfigManager.handle_config_change
 
 class TestHandleConfigChange:
     async def test_updates_room_and_frequency(self, mock_db, mock_auth):

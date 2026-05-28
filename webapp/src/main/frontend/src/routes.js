@@ -13,11 +13,13 @@ import EmployeeAbsencesPage from "./views/EmployeeAbsencesPage";
 import DepartmentAbsencesPage from "./views/DepartmentAbsencesPage";
 import EmployeeDepartmentPage from "./views/EmployeeDepartmentPage";
 import SettingsPage from "./views/SettingsPage";
+import RoomDetailPage from "./views/RoomDetailPage";
 import DepartmentDetailPage from "./views/DepartmentDetailPage";
 import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
 import EmployeeDashboard from "./views/EmployeeDashboard";
 import { CompanyTrendPage } from "./views/CompanyTrendPage";
+import DepartmentViolationsPage from "./views/DepartmentViolationsPage";
 
 /**
  * Define the routes of the application.
@@ -81,6 +83,11 @@ export const DepartmentDetailRoute = {
     component: DepartmentDetailPage
 }
 
+export const RoomDetailRoute = {
+    url: '/department/room/:roomId',
+    component: RoomDetailPage
+}
+
 export const BuildingRoomAnalysisRoute = {
     url: '/building-room-analysis/:roomId',
     component: BuildingRoomAnalysisPage
@@ -99,4 +106,9 @@ export const MyRoomRoute = {
 export const CompanyTrendsRoute = {
     url: '/senior/trends',
     component: CompanyTrendPage
+}
+
+export const DepartmentViolationsRoute = {
+    url: '/department-violations',
+    component: DepartmentViolationsPage
 }

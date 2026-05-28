@@ -1,13 +1,13 @@
 #pragma once
 
 #define STATION_PREFIX "G1T4:"
-#define STATION_NAME "SensorStation"
+#define STATION_NAME "SensorStation1"
 #define STATION_COMPLETE_NAME STATION_PREFIX STATION_NAME
 
 #define BLE_SERVICE_UUID "19B10000-E8F2-537E-4F6C-D104768A1214"
-#define BLE_TX_UUID "93a65c7f-ed13-45d8-ac27-c4eb40af987b"
-#define BLE_RX_UUID "950a0e76-c48e-4e45-a6ec-5ebc6c995172" 
+#define BLE_TX_UUID "bc17f2d3-ad6c-4ce8-8f8b-f84a5c432e08"
+#define BLE_RX_UUID "f1d27c0f-7160-4441-93aa-f3c3e92fcf8d"
 
 #define MEASURE_AND_SEND_INTERVAL_MS  5000
 #define BME688_I2C_ADDR 0x76	
-	
+		

@@ -1,13 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import globalAxios from 'axios';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AbsenceControllerApi } from '../generated-skeleton-api';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
+import { Toast } from 'primereact/toast';
 import '../styles/CreateAbsenceForm.css';
+
+interface ToastOptions {
+    severity: 'success' | 'error' | 'warn' | 'info';
+    summary: string;
+    detail: string;
+    life?: number;
+}
 
 interface CreateAbsenceFormProps {
     currentUserId: string | null;
     onSuccess: () => void;
     onCancel: () => void;
+    onToast?: (options: ToastOptions) => void;
 }
 
 interface ManagerDTO {
@@ -42,24 +51,28 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                                                                         currentUserId,
                                                                         onSuccess,
                                                                         onCancel,
+                                                                        onToast,
                                                                     }) => {
     const [reason, setReason] = useState<AbsenceReason>('VACATION');
     const [startDate, setStartDate] = useState<Date | null>(null);
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [includeTime, setIncludeTime] = useState(false);
-    const [startTime, setStartTime] = useState('07:00');
-    const [endTime, setEndTime] = useState('15:00');
+    const [startHour, setStartHour] = useState('07');
+    const [startMinute, setStartMinute] = useState('00');
+    const [endHour, setEndHour] = useState('15');
+    const [endMinute, setEndMinute] = useState('00');
     const [managerId, setManagerId] = useState('');
     const [managers, setManagers] = useState<ManagerDTO[]>([]);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [managerLoading, setManagerLoading] = useState(true);
+    const toast = useRef<Toast>(null);
 
     useEffect(() => {
         setManagerLoading(true);
 
-        globalAxios.get('/api/absences/managers')
-            .then(res => setManagers(res.data || []))
+        new AbsenceControllerApi().getAvailableManagers()
+            .then(res => setManagers((res.data as any) || []))
             .catch(err => {
                 console.error('Could not load managers', err);
                 setManagers([]);
@@ -78,17 +91,17 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
         e.preventDefault();
 
         if (!currentUserId) {
-            alert('Error: User ID not found. Please log in again.');
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'User ID not found. Please log in again.', life: 4000 });
             return;
         }
 
         if (!startDate || !endDate) {
-            alert('Please select start and end date.');
+            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Please select a start and end date.', life: 4000 });
             return;
         }
 
         if (!managerId) {
-            alert('Please select a manager.');
+            toast.current?.show({ severity: 'warn', summary: 'Validation', detail: 'Please select a manager.', life: 4000 });
             return;
         }
 
@@ -98,29 +111,31 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
         const endDateString = formatDateForBackend(endDate);
 
         const startIso = includeTime
-            ? `${startDateString}T${startTime}:00`
+            ? `${startDateString}T${startHour}:${startMinute}:00`
             : `${startDateString}T00:00:00`;
 
         const endIso = includeTime
-            ? `${endDateString}T${endTime}:00`
+            ? `${endDateString}T${endHour}:${endMinute}:00`
             : `${endDateString}T23:59:59`;
 
-        globalAxios.post('/api/absences', {
-            userId: currentUserId,
-            startDate: startIso,
-            endDate: endIso,
-            reason,
-            comment,
-            assignedTo: managerId,
+        new AbsenceControllerApi().createNewAbsence({
+            absenceCreateDTO: {
+                userId: currentUserId!,
+                startDate: startIso,
+                endDate: endIso,
+                reason: reason as any,
+                comment,
+                assignedTo: managerId,
+            },
         })
             .then(() => {
-                alert('Absence request submitted successfully!');
                 onSuccess();
+                onToast?.({ severity: 'success', summary: 'Submitted', detail: 'Absence request sent successfully.', life: 3000 });
             })
             .catch(err => {
-                const serverError = err.response?.data?.message || err.response?.data || err.message;
-                console.error('Server error:', serverError);
-                alert('Server error:\n' + JSON.stringify(serverError, null, 2));
+                const detail = err.response?.data?.detail || err.response?.data?.message || err.message || 'An unexpected error occurred.';
+                console.error('Server error:', err.response?.data || err);
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: String(detail), life: 5000 });
             })
             .finally(() => setIsSubmitting(false));
     };
@@ -129,13 +144,15 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
     return (
         <div className="absence-form-card">
+            <Toast ref={toast} position="top-right" />
             <h2 className="absence-form-title">Absence Request</h2>
 
             <form className="absence-form-body" onSubmit={handleSubmit}>
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Reason of absence</label>
+                    <label className="absence-form-label" htmlFor="reason">Reason of absence</label>
 
                     <Dropdown
+                        inputId="reason"
                         value={reason}
                         options={reasonOptions}
                         onChange={(e) => setReason(e.value as AbsenceReason)}
@@ -147,9 +164,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
                 <div className="absence-form-date-row">
                     <div className="absence-form-field">
-                        <label className="absence-form-label">Start Date</label>
+                        <label className="absence-form-label" htmlFor="startDate">Start Date</label>
 
                         <Calendar
+                            inputId="startDate"
                             value={startDate}
                             onChange={(e) => setStartDate(e.value as Date | null)}
                             dateFormat="dd.mm.yy"
@@ -164,9 +182,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                     </div>
 
                     <div className="absence-form-field">
-                        <label className="absence-form-label">End Date</label>
+                        <label className="absence-form-label" htmlFor="endDate">End Date</label>
 
                         <Calendar
+                            inputId="endDate"
                             value={endDate}
                             onChange={(e) => setEndDate(e.value as Date | null)}
                             dateFormat="dd.mm.yy"
@@ -197,30 +216,47 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
 
                 {includeTime && (
                     <div className="absence-form-time-row">
-                        <label className="absence-form-time-label">From</label>
+                        <div className="absence-form-time-group">
+                            <label className="absence-form-label" htmlFor="startHour">From</label>
+                            <div className="absence-form-time-selects">
+                                <select id="startHour" className="absence-form-time-select" value={startHour} onChange={e => setStartHour(e.target.value)}>
+                                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <span className="absence-form-time-colon">:</span>
+                                <select className="absence-form-time-select" value={startMinute} onChange={e => setStartMinute(e.target.value)}>
+                                    {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
 
-                        <input
-                            className="absence-form-input"
-                            type="time"
-                            value={startTime}
-                            onChange={e => setStartTime(e.target.value)}
-                        />
-
-                        <label className="absence-form-time-label">Till</label>
-
-                        <input
-                            className="absence-form-input"
-                            type="time"
-                            value={endTime}
-                            onChange={e => setEndTime(e.target.value)}
-                        />
+                        <div className="absence-form-time-group">
+                            <label className="absence-form-label" htmlFor="endHour">Till</label>
+                            <div className="absence-form-time-selects">
+                                <select id="endHour" className="absence-form-time-select" value={endHour} onChange={e => setEndHour(e.target.value)}>
+                                    {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                    ))}
+                                </select>
+                                <span className="absence-form-time-colon">:</span>
+                                <select className="absence-form-time-select" value={endMinute} onChange={e => setEndMinute(e.target.value)}>
+                                    {Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0')).map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 )}
 
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Select your manager</label>
+                    <label className="absence-form-label" htmlFor="managerId">Select your manager</label>
 
                     <Dropdown
+                        inputId="managerId"
                         value={managerId}
                         options={managerOptions}
                         onChange={(e) => setManagerId(e.value)}
@@ -239,9 +275,10 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 </div>
 
                 <div className="absence-form-field">
-                    <label className="absence-form-label">Optional message</label>
+                    <label className="absence-form-label" htmlFor="comment">Optional message</label>
 
                     <textarea
+                        id="comment"
                         className="absence-form-textarea"
                         value={comment}
                         onChange={e => setComment(e.target.value)}

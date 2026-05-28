@@ -19,13 +19,9 @@ export interface RoomDraft {
 export interface DepartmentFormState {
     name: string;
     buildingID: string;
-    /** Edit: rooms already in this dept. Create: unused (stays []). */
     currentRoomIds: string[];
-    /** Rooms being assigned from other depts via MultiSelect. */
     existingRoomIds: string[];
-    /** New rooms to create inline. */
     rooms: RoomDraft[];
-    /** Edit only: IDs removed from currentRoomIds → will be deleted on save. */
     roomIdsToDelete: string[];
 }
 
@@ -38,8 +34,8 @@ export const emptyDepartmentForm = (): DepartmentFormState => ({
     roomIdsToDelete: [],
 });
 
-type CurrentRow  = { kind: 'current';   id: string; name: string; roomType: string; defaultPeopleCount: number };
-type AssignedRow = { kind: 'assigned';  id: string; name: string; roomType: string; defaultPeopleCount: number };
+type CurrentRow  = { kind: 'current'; id: string; name: string; roomType: string; defaultPeopleCount: number };
+type AssignedRow = { kind: 'assigned'; id: string; name: string; roomType: string; defaultPeopleCount: number };
 type NewRow      = { kind: 'new'; draftIndex: number } & RoomDraft;
 type RoomRow = CurrentRow | AssignedRow | NewRow;
 
@@ -66,12 +62,10 @@ interface Props {
 }
 
 const DepartmentFormDialog: React.FC<Props> = ({
-    visible, isNew, form, formErrors, buildingOptions, availableRooms, loading, onHide, onSave, onChange,
-}) => {
+                                                   visible, isNew, form, formErrors, buildingOptions, availableRooms, loading, onHide, onSave, onChange,
+                                               }) => {
     const addRoom = () => {
-        onChange({
-            rooms: [...form.rooms, { name: '', roomType: RoomCreateDTORoomTypeEnum.OFFICE, defaultPeopleCount: 1 }],
-        });
+        onChange({ rooms: [...form.rooms, { name: '', roomType: RoomCreateDTORoomTypeEnum.OFFICE, defaultPeopleCount: 1 }] });
     };
 
     const updateRoom = (draftIndex: number, patch: Partial<RoomDraft>) => {
@@ -106,7 +100,6 @@ const DepartmentFormDialog: React.FC<Props> = ({
     });
 
     const newRows: NewRow[] = form.rooms.map((r, i) => ({ kind: 'new', draftIndex: i, ...r }));
-
     const allRows: RoomRow[] = [...currentRows, ...assignedRows, ...newRows];
 
     const sourceTemplate = (row: RoomRow) => {
@@ -116,52 +109,31 @@ const DepartmentFormDialog: React.FC<Props> = ({
 
     const nameTemplate = (row: RoomRow) =>
         row.kind === 'new' ? (
-            <InputText
-                value={row.name}
-                onChange={e => updateRoom(row.draftIndex, { name: e.target.value })}
-                placeholder="Room name"
-                style={{ width: '100%' }}
-            />
+            <InputText value={row.name} onChange={e => updateRoom(row.draftIndex, { name: e.target.value })} placeholder="Room name" style={{ width: '100%' }} />
         ) : <span>{row.name}</span>;
 
     const typeTemplate = (row: RoomRow) =>
         row.kind === 'new' ? (
-            <Dropdown
-                value={row.roomType}
-                options={ROOM_TYPE_OPTIONS}
-                onChange={e => updateRoom(row.draftIndex, { roomType: e.value })}
-                style={{ width: '100%' }}
-            />
+            <Dropdown value={row.roomType} options={ROOM_TYPE_OPTIONS} onChange={e => updateRoom(row.draftIndex, { roomType: e.value })} style={{ width: '100%' }} />
         ) : <span>{row.roomType}</span>;
 
     const capacityTemplate = (row: RoomRow) =>
         row.kind === 'new' ? (
-            <InputNumber
-                value={row.defaultPeopleCount}
-                onValueChange={e => updateRoom(row.draftIndex, { defaultPeopleCount: e.value ?? 1 })}
-                min={1}
-                style={{ width: '100%' }}
-                inputStyle={{ width: '100%' }}
-            />
+            <InputNumber value={row.defaultPeopleCount} onValueChange={e => updateRoom(row.draftIndex, { defaultPeopleCount: e.value ?? 1 })} min={1} style={{ width: '100%' }} inputStyle={{ width: '100%' }} />
         ) : <span>{row.defaultPeopleCount}</span>;
 
     const actionsTemplate = (row: RoomRow) => (
-        <Button
-            icon="pi pi-trash"
-            rounded
-            text
-            severity="danger"
-            title="Remove"
-            onClick={() => {
+        <div className="admin-table-actions">
+            <Button icon="pi pi-trash" rounded text severity="danger" title="Remove" onClick={() => {
                 if (row.kind === 'current')  removeCurrent(row.id);
                 if (row.kind === 'assigned') removeAssigned(row.id);
                 if (row.kind === 'new')      removeNew(row.draftIndex);
-            }}
-        />
+            }} />
+        </div>
     );
 
-    // Rooms excluded from the MultiSelect: already in current dept, already assigned, or pending delete
     const excludedIds = new Set([...form.currentRoomIds, ...form.existingRoomIds, ...form.roomIdsToDelete]);
+
     const multiSelectOptions = availableRooms
         .filter(r => r.id && r.name && !excludedIds.has(r.id))
         .map(r => ({
@@ -170,7 +142,7 @@ const DepartmentFormDialog: React.FC<Props> = ({
         }));
 
     const footer = (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+        <div className="admin-dialog-footer">
             <Button label="Cancel" severity="secondary" outlined onClick={onHide} />
             <Button label={isNew ? 'Create' : 'Save'} icon="pi pi-check" loading={loading} onClick={onSave} />
         </div>
@@ -178,9 +150,9 @@ const DepartmentFormDialog: React.FC<Props> = ({
 
     const roomsSection = (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div className="admin-dialog-section-header">
                 <span style={labelStyle as React.CSSProperties}>Rooms</span>
-                <Button label="Add New Room" icon="pi pi-plus" size="small" onClick={addRoom} />
+                <Button label="Add New Room" icon="pi pi-plus" size="small" className="admin-add-button" onClick={addRoom} />
             </div>
 
             <MultiSelect
@@ -197,7 +169,7 @@ const DepartmentFormDialog: React.FC<Props> = ({
             />
 
             {allRows.length > 0 ? (
-                <DataTable value={allRows} size="small" emptyMessage="No rooms.">
+                <DataTable value={allRows} size="small" emptyMessage="No rooms." className="admin-dialog-table">
                     <Column header="" body={sourceTemplate} style={{ width: '6rem' }} />
                     <Column header="Name" body={nameTemplate} />
                     <Column header="Type" body={typeTemplate} style={{ width: '9rem' }} />
@@ -205,7 +177,7 @@ const DepartmentFormDialog: React.FC<Props> = ({
                     <Column header="" body={actionsTemplate} style={{ width: '3rem' }} />
                 </DataTable>
             ) : (
-                <span style={{ color: '#9e9e9e', fontSize: '0.9rem' }}>
+                <span className="admin-dialog-empty-text">
                     No rooms yet. Search above to assign existing ones, or click "Add New Room".
                 </span>
             )}
@@ -216,12 +188,13 @@ const DepartmentFormDialog: React.FC<Props> = ({
         <Dialog
             header={isNew ? 'Add Department' : 'Edit Department'}
             visible={visible}
+            className="admin-form-dialog admin-form-dialog-wide"
             style={{ width: '700px' }}
             onHide={onHide}
             footer={footer}
             draggable={false}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="admin-dialog-body">
                 <div>
                     <label htmlFor="df-name" style={labelStyle}>Name *</label>
                     <InputText

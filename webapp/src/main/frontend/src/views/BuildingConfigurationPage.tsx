@@ -18,6 +18,7 @@ import RoomTable from '../components/RoomTable';
 import BuildingFormDialog, { BuildingFormState, emptyBuildingForm } from '../components/BuildingFormDialog';
 import DepartmentFormDialog, { DepartmentFormState, emptyDepartmentForm } from '../components/DepartmentFormDialog';
 import RoomFormDialog, { RoomFormState, emptyRoomForm } from '../components/RoomFormDialog';
+import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
 
 type TabKey = 'buildings' | 'departments' | 'rooms';
@@ -32,6 +33,8 @@ const BuildingConfigurationPage: React.FC = () => {
     const [buildings, setBuildings] = useState<BuildingListDTO[]>([]);
     const [departments, setDepartments] = useState<DepartmentListDTO[]>([]);
     const [rooms, setRooms] = useState<RoomDTO[]>([]);
+    const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
     const [loadingBuildings, setLoadingBuildings] = useState(false);
     const [loadingDepartments, setLoadingDepartments] = useState(false);
     const [loadingRooms, setLoadingRooms] = useState(false);
@@ -150,13 +153,18 @@ const BuildingConfigurationPage: React.FC = () => {
     };
 
     const handleDeleteBuilding = (id: string) => {
-        if (!globalThis.confirm('Delete this building?')) return;
-        new BuildingControllerApi().deleteSpecificBuilding({ buildingId: id })
-            .then(() => {
-                setBuildings(prev => prev.filter(b => b.id !== id));
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Building deleted.', life: 3000 });
-            })
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete building.', life: 3000 }));
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this building? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new BuildingControllerApi().deleteSpecificBuilding({ buildingId: id })
+                    .then(() => {
+                        setBuildings(prev => prev.filter(b => b.id !== id));
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Building deleted.', life: 3000 });
+                    })
+                    .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete building.', life: 3000 }));
+            },
+        });
     };
 
     // --- Department handlers ---
@@ -256,13 +264,18 @@ const BuildingConfigurationPage: React.FC = () => {
     };
 
     const handleDeleteDepartment = (id: string) => {
-        if (!globalThis.confirm('Delete this department?')) return;
-        new DepartmentControllerApi().deleteSpecificDepartment({ departmentId: id })
-            .then(() => {
-                setDepartments(prev => prev.filter(d => d.id !== id));
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Department deleted.', life: 3000 });
-            })
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete department.', life: 3000 }));
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this department? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new DepartmentControllerApi().deleteSpecificDepartment({ departmentId: id })
+                    .then(() => {
+                        setDepartments(prev => prev.filter(d => d.id !== id));
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Department deleted.', life: 3000 });
+                    })
+                    .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete department.', life: 3000 }));
+            },
+        });
     };
 
     // --- Room handlers ---
@@ -332,13 +345,18 @@ const BuildingConfigurationPage: React.FC = () => {
     };
 
     const handleDeleteRoom = (id: string) => {
-        if (!globalThis.confirm('Delete this room?')) return;
-        new RoomControllerApi().deleteSpecificRoom({ roomId: id })
-            .then(() => {
-                setRooms(prev => prev.filter(r => r.id !== id));
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Room deleted.', life: 3000 });
-            })
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete room.', life: 3000 }));
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this room? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new RoomControllerApi().deleteSpecificRoom({ roomId: id })
+                    .then(() => {
+                        setRooms(prev => prev.filter(r => r.id !== id));
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Room deleted.', life: 3000 });
+                    })
+                    .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete room.', life: 3000 }));
+            },
+        });
     };
 
     const TAB_LABELS: Record<TabKey, string> = {
@@ -354,13 +372,9 @@ const BuildingConfigurationPage: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="dashboard-content">
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div className="device-tab-row">
                     {(Object.keys(TAB_LABELS) as TabKey[]).map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`admin-tab-btn${activeTab === tab ? ' active' : ''}`}
-                        >
+                        <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`admin-tab-btn${activeTab === tab ? ' active' : ''}`}>
                             {TAB_LABELS[tab]}
                         </button>
                     ))}
@@ -394,6 +408,13 @@ const BuildingConfigurationPage: React.FC = () => {
                     />
                 )}
             </div>
+
+            <ConfirmDeleteDialog
+                visible={confirmDelete !== null}
+                message={confirmDelete?.message ?? ''}
+                onConfirm={confirmDelete?.onConfirm ?? (() => {})}
+                onHide={() => setConfirmDelete(null)}
+            />
 
             <BuildingFormDialog
                 visible={showBuildingDialog}

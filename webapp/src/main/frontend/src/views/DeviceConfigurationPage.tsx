@@ -17,6 +17,7 @@ import {
     SensorStationDTO,
     RoomDTO,
 } from '../generated-skeleton-api';
+import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -76,9 +77,13 @@ const DeviceConfigurationPage: React.FC = () => {
     const [piPort, setPiPort] = useState<number | null>(8080);
     const [piInterval, setPiInterval] = useState<number | null>(null);
 
+    // Confirm delete
+    const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
     // Sensor dialog
     const [showSensorDialog, setShowSensorDialog] = useState(false);
     const [editingSensorId, setEditingSensorId] = useState<string | null>(null);
+    const [editingSensorWriteId, setEditingSensorWriteId] = useState<string | null>(null);
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
@@ -144,15 +149,21 @@ const DeviceConfigurationPage: React.FC = () => {
     });
 
     const handleDeletePi = (id?: string) => {
-        if (!id || !globalThis.confirm('Delete this Raspberry Pi?')) return;
-        new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
-            .then(() => {
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
-                fetchData();
-            })
-            .catch(() => {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
-            });
+        if (!id) return;
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this Raspberry Pi? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new RaspberryControllerApi().deleteSpecificRaspberry({ raspberryId: id })
+                    .then(() => {
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Raspberry Pi deleted.', life: 3000 });
+                        fetchData();
+                    })
+                    .catch(() => {
+                        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Raspberry Pi.', life: 3000 });
+                    });
+            },
+        });
     };
 
     const handleRetryPiConnection = (id?: string) => {
@@ -167,15 +178,21 @@ const DeviceConfigurationPage: React.FC = () => {
     };
 
     const handleDeleteSensor = (id?: string) => {
-        if (!id || !globalThis.confirm('Delete this Sensor Station?')) return;
-        new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
-            .then(() => {
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
-                fetchData();
-            })
-            .catch(() => {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
-            });
+        if (!id) return;
+        setConfirmDelete({
+            message: 'Are you sure you want to delete this Sensor Station? This action cannot be undone.',
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new SensorStationControllerApi().removeSpecificSensor({ sensorId: id })
+                    .then(() => {
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'Sensor Station deleted.', life: 3000 });
+                        fetchData();
+                    })
+                    .catch(() => {
+                        toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete Sensor Station.', life: 3000 });
+                    });
+            },
+        });
     };
 
     const handleSettings = (label: string, id?: string) => {
@@ -211,12 +228,14 @@ const DeviceConfigurationPage: React.FC = () => {
 
     const openSensorDialog = () => {
         setEditingSensorId(null);
+        setEditingSensorWriteId(null);
         setSensorName(''); setSensorRoomId('');
         setShowSensorDialog(true);
     };
 
     const openEditSensorDialog = (row: SensorStationDTO) => {
         setEditingSensorId(row.readId ?? null);
+        setEditingSensorWriteId(row.writeId ?? null);
         setSensorName(row.name ?? '');
         setSensorRoomId(row.roomId ?? '');
         setShowSensorDialog(true);
@@ -253,8 +272,9 @@ const DeviceConfigurationPage: React.FC = () => {
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Raspberry Pi updated successfully.', life: 3000 });
                 setShowPiDialog(false);
                 fetchData();
-            } catch {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to update Raspberry Pi.', life: 3000 });
+            } catch (err: any) {
+                const msg = err?.response?.data?.message ?? 'Failed to update Raspberry Pi.';
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: msg, life: 4000 });
             } finally {
                 setPiLoading(false);
             }
@@ -271,8 +291,9 @@ const DeviceConfigurationPage: React.FC = () => {
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'Raspberry Pi created successfully.', life: 3000 });
                 setShowPiDialog(false);
                 fetchData();
-            } catch {
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to create Raspberry Pi.', life: 3000 });
+            } catch (err: any) {
+                const msg = err?.response?.data?.message ?? 'Failed to create Raspberry Pi.';
+                toast.current?.show({ severity: 'error', summary: 'Conflict', detail: msg, life: 4000 });
             } finally {
                 setPiLoading(false);
             }
@@ -334,6 +355,16 @@ const DeviceConfigurationPage: React.FC = () => {
             });
     };
 
+    const handleRemoveSensorFromPi = (row: SensorStationDTO) => {
+        setConfirmDelete({
+            message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
+            onConfirm: () => {
+                setConfirmDelete(null);
+                handleDisconnectSensor(row.readId!);
+            },
+        });
+    };
+
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
         <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ margin: 0 }}>{title}</h3>
@@ -355,76 +386,37 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
             <div className="dashboard-content">
 
                 {/* ── Tab switcher ── */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <Button
-                        label="Raspberry Pi List"
-                        severity={activeTab === 'raspberry' ? undefined : 'secondary'}
-                        outlined={activeTab !== 'raspberry'}
-                        onClick={() => setActiveTab('raspberry')}
-                        style={{ borderRadius: '20px' }}
-                    />
-                    <Button
-                        label="Sensor Station List"
-                        severity={activeTab === 'sensor' ? undefined : 'secondary'}
-                        outlined={activeTab !== 'sensor'}
-                        onClick={() => { setActiveTab('sensor'); setIdFilter(''); }}
-                        style={{ borderRadius: '20px' }}
-                    />
-                </div>
-
-                {/* ── Shared search & filter bar ── */}
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span className="p-input-icon-left">
-                        <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
-                        <InputText
-                            value={roomSearch}
-                            onChange={e => setRoomSearch(e.target.value)}
-                            placeholder="Search by room"
-                            style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
-                        />
-                    </span>
-                    {activeTab === 'raspberry' && (
-                        <span className="p-input-icon-left">
-                            <i className="pi pi-filter" style={{ marginLeft: '0.7rem' }} />
-                            <InputText
-                                value={idFilter}
-                                onChange={e => setIdFilter(e.target.value)}
-                                placeholder="Filter by ID"
-                                style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
-                            />
-                        </span>
-                    )}
-                    <Dropdown
-                        value={statusFilter}
-                        options={statusOptions}
-                        onChange={e => setStatusFilter(e.value)}
-                        placeholder="Status Filter"
-                        showClear
-                        style={{ borderRadius: '20px', minWidth: '160px' }}
-                    />
+                <div className="device-tab-row">
+                    <Button label="Raspberry Pi List" severity={activeTab === 'raspberry' ? undefined : 'secondary'} outlined={activeTab !== 'raspberry'} onClick={() => setActiveTab('raspberry')} className="admin-tab-btn" />
+                    <Button label="Sensor Station List" severity={activeTab === 'sensor' ? undefined : 'secondary'} outlined={activeTab !== 'sensor'} onClick={() => { setActiveTab('sensor'); setIdFilter(''); }} className="admin-tab-btn" />
                 </div>
 
                 {/* ── Raspberry Pi table ── */}
                 {activeTab === 'raspberry' && (
                     <div className="table-container">
-                        <TableSectionHeader title="Raspberry Pi List" tab="raspberry" />
+                        <div className="flex-header">
+                            <h3>Raspberry Pi List</h3>
+                            <Button label="Add Raspberry Pi" icon="pi pi-plus" className="admin-add-button" onClick={openPiDialog} />
+                        </div>
+
+                        <div className="table-filter-row">
+                <span className="p-input-icon-left">
+                    <i className="pi pi-search" />
+                    <InputText value={roomSearch} onChange={e => setRoomSearch(e.target.value)} placeholder="Search by room" />
+                </span>
+                            <Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />
+                        </div>
+
                         <DataTable value={filteredRaspberries} loading={loading} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll">
-                            <Column field="id" header="ID" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                            <Column field="name" header="Name" />
+                            <Column field="name" header="Name" sortable />
                             <Column header="Room" body={(row: RaspberryDTOReal) => row.room?.roomName ?? <span style={{ color: '#9e9e9e' }}>N/A</span>} />
-                            <Column field="ipAddress" header="IP Address" />
-                            <Column field="port" header="Port" style={{ width: '6rem' }} />
-                            <Column
-                                header="Sensor Stations"
-                                body={(row: RaspberryDTOReal) => {
-                                    const assigned = getAssignedSensors(row.id);
-                                    if (assigned.length === 0) return <span style={{ color: '#9e9e9e' }}>None</span>;
-                                    return <span title={assigned.map(s => s.name).join(', ')}>{assigned.length} station{assigned.length !== 1 ? 's' : ''}</span>;
-                                }}
-                            />
+                            <Column header="Sensors" body={(row: RaspberryDTOReal) => {
+                                const assigned = getAssignedSensors(row.id);
+                                return assigned.length > 0 ? <span title={assigned.map(s => s.name).join(', ')}>{assigned.length}</span> : <span style={{ color: '#9e9e9e' }}>None</span>;
+                            }} />
                             <Column header="Status" body={(row: RaspberryDTOReal) => statusBadge(row.status)} />
-                            <Column header="" style={{ width: '8rem' }} exportable={false} body={(row: RaspberryDTOReal) => (
-                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                            <Column header="" className="admin-actions-column admin-actions-column-wide" headerClassName="admin-actions-column admin-actions-column-wide" exportable={false} body={(row: RaspberryDTOReal) => (
+                                <div className="admin-table-actions">
                                     <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)} />
                                     <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)} />
                                     <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)} />
@@ -437,23 +429,31 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                 {/* ── Sensor Station table ── */}
                 {activeTab === 'sensor' && (
                     <div className="table-container">
-                        <TableSectionHeader title="Sensor Station List" tab="sensor" />
+                        <div className="flex-header">
+                            <h3>Sensor Station List</h3>
+                            <Button label="Add Sensor Station" icon="pi pi-plus" className="admin-add-button" onClick={openSensorDialog} />
+                        </div>
+
+                        <div className="table-filter-row">
+                <span className="p-input-icon-left">
+                    <i className="pi pi-search" />
+                    <InputText value={roomSearch} onChange={e => setRoomSearch(e.target.value)} placeholder="Search by room" />
+                </span>
+                            <Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />
+                        </div>
+
                         <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
-                            <Column field="readId" header="Read ID" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                            <Column field="writeId" header="Write ID" style={{ maxWidth: '12rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                            <Column header="Room" body={row => getRoomName(row.roomId)} />
-                            <Column
-                                header="Assigned To"
-                                body={row => {
-                                    const pi = raspberries.find(p => p.id === row.connectedToPiId);
-                                    return pi ? (pi.name ?? pi.id) : <span style={{ color: '#9e9e9e' }}>None</span>;
-                                }}
-                            />
-                            <Column header="Status" body={row => statusBadge(row.status)} />
-<Column header="" style={{ width: '8rem' }} exportable={false} body={(row: SensorStationDTO) => (
-                                <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
+                            <Column field="name" header="Name" sortable />
+                            <Column header="Room" body={(row: SensorStationDTO) => getRoomName(row.roomId)} />
+                            <Column header="Assigned Pi" body={(row: SensorStationDTO) => {
+                                const pi = raspberries.find(p => p.id === row.connectedToPiId);
+                                return pi ? (pi.name ?? pi.id) : <span style={{ color: '#9e9e9e' }}>None</span>;
+                            }} />
+                            <Column header="Status" body={(row: SensorStationDTO) => statusBadge(row.status)} />
+                            <Column header="" className="admin-actions-column admin-actions-column-wide" headerClassName="admin-actions-column admin-actions-column-wide" exportable={false} body={(row: SensorStationDTO) => (
+                                <div className="admin-table-actions">
                                     <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection to Raspberry Pi" onClick={() => handleRetryConnection(row.readId!)} />
-                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit sensor station" onClick={() => openEditSensorDialog(row)} />
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Sensor Station" onClick={() => openEditSensorDialog(row)} />
                                     <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)} />
                                 </div>
                             )} />
@@ -463,24 +463,27 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
             </div>
 
             {/* ── Add / Edit Raspberry Pi Dialog ── */}
+            {/* ── Add / Edit Raspberry Pi Dialog ── */}
             <Dialog
                 header={editingPiId ? 'Edit Raspberry Pi' : 'Add Raspberry Pi'}
                 visible={showPiDialog}
+                className="admin-form-dialog"
                 style={{ width: '480px' }}
                 onHide={() => setShowPiDialog(false)}
                 footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <div className="admin-dialog-footer">
                         <Button label="Cancel" severity="secondary" outlined onClick={() => setShowPiDialog(false)} />
                         <Button label={editingPiId ? 'Save' : 'Create'} icon="pi pi-check" loading={piLoading} onClick={handleSavePi} />
                     </div>
                 }
                 draggable={false}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="admin-dialog-body">
                     <div>
                         <label htmlFor="pi-name" style={labelStyle}>Name *</label>
                         <InputText id="pi-name" value={piName} onChange={e => setPiName(e.target.value)} placeholder="e.g. Pi-Lab-01" style={{ width: '100%' }} />
                     </div>
+
                     {!editingPiId ? (
                         <div>
                             <label htmlFor="pi-room" style={labelStyle}>Room *</label>
@@ -489,62 +492,36 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                     ) : (
                         <div>
                             <label htmlFor="pi-room-edit" style={labelStyle}>Room</label>
-                            <Dropdown
-                                inputId="pi-room-edit"
-                                value={piRoomId}
-                                options={editAvailableRoomOptions}
-                                onChange={e => setPiRoomId(e.value)}
-                                placeholder="Select room"
-                                style={{ width: '100%' }}
-                                filter
-                            />
+                            <Dropdown inputId="pi-room-edit" value={piRoomId} options={editAvailableRoomOptions} onChange={e => setPiRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                         </div>
                     )}
+
                     <div>
                         <label htmlFor="pi-ip" style={labelStyle}>IP Address *</label>
                         <InputText id="pi-ip" value={piIpAddress} onChange={e => setPiIpAddress(e.target.value)} placeholder="e.g. 192.168.1.10" style={{ width: '100%' }} />
                     </div>
+
                     <div>
                         <label htmlFor="pi-port" style={labelStyle}>Port *</label>
-                        <InputNumber inputId="pi-port" value={piPort} onValueChange={e => setPiPort(e.value ?? null)} placeholder="e.g. 1000–9999" style={{ width: '100%' }} min={1000} max={9999} useGrouping={false} />
+                        <InputNumber inputId="pi-port" value={piPort} onValueChange={e => setPiPort(e.value ?? null)} placeholder="e.g. 1000–9999" style={{ width: '100%' }} inputStyle={{ width: '100%' }} min={1000} max={9999} useGrouping={false} />
                     </div>
+
                     <div>
                         <label htmlFor="pi-interval" style={labelStyle}>Pushing Data Interval (seconds)</label>
-                        <InputNumber inputId="pi-interval" value={piInterval} onValueChange={e => setPiInterval(e.value ?? null)} placeholder="e.g. 60" style={{ width: '100%' }} min={1} />
+                        <InputNumber inputId="pi-interval" value={piInterval} onValueChange={e => setPiInterval(e.value ?? null)} placeholder="e.g. 60" style={{ width: '100%' }} inputStyle={{ width: '100%' }} min={1} />
                     </div>
+
                     {editingPiId && (
                         <div>
                             <label style={labelStyle}>Connected Sensor Stations</label>
-                            <DataTable
-                                value={sensors.filter(s => s.connectedToPiId === editingPiId)}
-                                size="small"
-                                emptyMessage="No sensor stations connected."
-                            >
+                            <DataTable value={sensors.filter(s => s.connectedToPiId === editingPiId)} size="small" emptyMessage="No sensor stations connected.">
                                 <Column field="name" header="Name" />
-                                <Column field="writeId" header="Write ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                                <Column field="readId" header="Read ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                                <Column header="" style={{ width: '6rem' }} body={(row: SensorStationDTO) => (
-                                    <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-                                        <Button
-                                            icon="pi pi-refresh"
-                                            rounded
-                                            text
-                                            severity="warning"
-                                            title="Retry connection"
-                                            onClick={() => handleRetryConnection(row.readId!)}
-                                        />
-                                        <Button
-                                            icon="pi pi-trash"
-                                            rounded
-                                            text
-                                            severity="danger"
-                                            title="Remove from this Raspberry Pi"
-                                            onClick={() => {
-                                                if (globalThis.confirm(`Remove "${row.name ?? row.readId}" from this Raspberry Pi?`)) {
-                                                    handleDisconnectSensor(row.readId!);
-                                                }
-                                            }}
-                                        />
+                                <Column field="writeId" header="Write ID" style={{ maxWidth: '8rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+                                <Column field="readId" header="Read ID" style={{ maxWidth: '8rem', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+                                <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={(row: SensorStationDTO) => (
+                                    <div className="admin-table-actions">
+                                        <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryConnection(row.readId!)} />
+                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => handleRemoveSensorFromPi(row)} />
                                     </div>
                                 )} />
                             </DataTable>
@@ -553,29 +530,51 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                 </div>
             </Dialog>
 
+            <ConfirmDeleteDialog
+                visible={confirmDelete !== null}
+                message={confirmDelete?.message ?? ''}
+                onConfirm={confirmDelete?.onConfirm ?? (() => {})}
+                onHide={() => setConfirmDelete(null)}
+            />
+
             {/* ── Add / Edit Sensor Station Dialog ── */}
             <Dialog
                 header={editingSensorId ? 'Edit Sensor Station' : 'Add Sensor Station'}
                 visible={showSensorDialog}
+                className="admin-form-dialog"
                 style={{ width: '480px' }}
                 onHide={() => setShowSensorDialog(false)}
                 footer={
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <div className="admin-dialog-footer">
                         <Button label="Cancel" severity="secondary" outlined onClick={() => setShowSensorDialog(false)} />
                         <Button label={editingSensorId ? 'Save' : 'Create'} icon="pi pi-check" loading={sensorLoading} onClick={handleSaveSensor} />
                     </div>
                 }
                 draggable={false}
             >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="admin-dialog-body">
                     <div>
                         <label htmlFor="sensor-name" style={labelStyle}>Name *</label>
                         <InputText id="sensor-name" value={sensorName} onChange={e => setSensorName(e.target.value)} placeholder="e.g. Station-A1" style={{ width: '100%' }} />
                     </div>
+
                     <div>
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
                         <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                     </div>
+
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </Dialog>
         </div>

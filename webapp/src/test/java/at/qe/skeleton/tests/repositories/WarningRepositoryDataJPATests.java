@@ -411,11 +411,10 @@ class WarningRepositoryDataJPATests {
             persist(roomA, now, null, MeasurementType.HUMIDITY);
             em.flush();
 
-            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+            List<Warnings> result = repository.findAllByRoomAndActiveByType(roomA.getRoomId(), MeasurementType.TEMPERATURE);
 
-            assertThat(result).hasSize(2)
-                    .allMatch(w -> w.getMeasurementType() == MeasurementType.TEMPERATURE)
-                    .allMatch(w -> w.getResolvedAt() == null);
+            assertThat(result).hasSize(1)
+                    .anyMatch(w -> w.getMeasurementType() == MeasurementType.TEMPERATURE);
         }
 
         @Test
@@ -424,7 +423,7 @@ class WarningRepositoryDataJPATests {
             persist(roomA, now, now.minusHours(1), MeasurementType.TEMPERATURE);
             em.flush();
 
-            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+            assertThat(repository.findAllByRoomAndActiveByType(roomA.getRoomId(), MeasurementType.TEMPERATURE)).isEmpty();
         }
 
         @Test
@@ -433,13 +432,13 @@ class WarningRepositoryDataJPATests {
             persist(roomA, now, null, MeasurementType.HUMIDITY);
             em.flush();
 
-            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+            assertThat(repository.findAllByRoomAndActiveByType(roomA.getRoomId(), MeasurementType.TEMPERATURE)).isEmpty();
         }
 
         @Test
         @DisplayName("returns empty list when no warnings exist at all")
         void returnsEmptyOnCleanDatabase() {
-            assertThat(repository.findAllActiveByType(MeasurementType.TEMPERATURE)).isEmpty();
+            assertThat(repository.findAllByRoomAndActiveByType(UUID.randomUUID(), MeasurementType.TEMPERATURE)).isEmpty();
         }
 
         @Test
@@ -449,11 +448,11 @@ class WarningRepositoryDataJPATests {
             persist(roomB, now, null, MeasurementType.TEMPERATURE);
             em.flush();
 
-            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+            List<Warnings> result = repository.findAllByRoomAndActiveByType(roomA.getRoomId(), MeasurementType.TEMPERATURE);
 
-            assertThat(result).hasSize(2)
+            assertThat(result).hasSize(1)
                     .map(Warnings::getRoomMonitoring)
-                    .containsExactlyInAnyOrder(roomA, roomB);
+                    .containsExactlyInAnyOrder(roomA);
         }
 
         @Test
@@ -465,7 +464,7 @@ class WarningRepositoryDataJPATests {
             persist(roomB, now, now.minusHours(1), MeasurementType.HUMIDITY);    // resolved + wrong type   ✗
             em.flush();
 
-            List<Warnings> result = repository.findAllActiveByType(MeasurementType.TEMPERATURE);
+            List<Warnings> result = repository.findAllByRoomAndActiveByType(roomA.getRoomId(), MeasurementType.TEMPERATURE);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getMeasurementType()).isEqualTo(MeasurementType.TEMPERATURE);

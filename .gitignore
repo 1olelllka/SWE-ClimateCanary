@@ -300,3 +300,10 @@ webapp/src/main/frontend/src/generated-skeleton-api/
 # pycache
 raspberrypi/app/__pycache__
 raspberrypi/tests/__pycache__
+
+# Python coverage artifacts (generated in CI, must not be committed)
+raspberrypi/.coverage
+raspberrypi/coverage.xml
+
+# Python virtual environment
+raspberrypi/.venv

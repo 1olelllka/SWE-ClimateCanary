@@ -80,7 +80,7 @@ class UserxMapperUnitTests {
         UserRoom userRoom = new UserRoom(roomId, UUID.randomUUID(), "IT", RoomType.OFFICE, "IT-101");
         UserxDTO dto = new UserxDTO(
                 UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now(),
-                "jdoe", "John", "Doe", true, null,
+                "jdoe", "John", "Doe", true,
                 Set.of(sampleRoleDto), userRoom, 25
         );
 
@@ -98,7 +98,7 @@ class UserxMapperUnitTests {
     void testThatMapFromWhenRoomDtoIsNullShouldReturnNullRoomInEntity() {
         UserxDTO dto = new UserxDTO(
                 UUID.randomUUID(), LocalDateTime.now(), LocalDateTime.now(),
-                "jdoe", "John", "Doe", true, null,
+                "jdoe", "John", "Doe", true,
                 Set.of(sampleRoleDto), null, 25
         );
         when(roleMapper.mapFrom(any())).thenReturn(sampleRole);

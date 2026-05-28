@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
 class AggregatedDepartmentStatsRepositoryJPATests {
@@ -277,4 +278,17 @@ class AggregatedDepartmentStatsRepositoryJPATests {
         assertThat(stat.getAvgHumidity()).isEqualTo(61.2f);
         assertThat(stat.getAvgCO2()).isEqualTo(415.5f);
     }
+
+    // -------------------------------------------------------------------------
+    // deleteAllByDepartmentId
+    // -------------------------------------------------------------------------
+    @Test
+    void deleteAllByDepartmentIdDeletesAllStatsForDepartment() {
+        persist(departmentId, TODAY, 23.7f, 61.2f, 415.5f);
+        persist(departmentId, YESTERDAY, 23.7f, 61.2f, 415.5f);
+
+        repository.deleteAllByDepartmentId(departmentId);
+        assertEquals(0, repository.findAll().size());
+    }
+
 }

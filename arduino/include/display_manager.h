@@ -57,4 +57,10 @@ private:
   String currentThreshold = "";
   String currentTip = "";
   String currentFaultText = "";
+
+  unsigned long lastScrollUpdate = 0;
+  uint8_t scrollIndex = 0;
+  String lastScrollText = "";
+
+  String scrollText(const String& text);
 };

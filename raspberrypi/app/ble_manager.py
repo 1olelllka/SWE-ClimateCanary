@@ -73,6 +73,8 @@ class BLEManager:
                 if not sensor_cfg:
                     logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                     return
+                
+                self.sensor = sensor_cfg
 
                 target_name = sensor_cfg['name']
                 char_uuid = sensor_cfg['char_uuid']
@@ -86,13 +88,15 @@ class BLEManager:
                     if not sensor_cfg:
                         logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                         return
+
+                    self.sensor = sensor_cfg 
                     
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
                     async with self.scan_lock:
                         device = await BleakScanner.find_device_by_filter(
-                                lambda d, _: d.name and d.name.startswith("G1T4:") and target_name in d.name,
+                                lambda d, _, tn=target_name: d.name and d.name.startswith("G1T4:") and tn in d.name,
                                 timeout=15.0,
                                 )
 

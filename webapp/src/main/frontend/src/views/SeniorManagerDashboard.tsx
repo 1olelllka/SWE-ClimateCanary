@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { DepartmentAveragesTable } from '../components/DepartmentAveragesTable';
 import { ViolationsBarChart } from '../components/ViolationsBarChart';
-import { DepartmentHeatmap } from '../components/DepartmentHeatmap';
-import { FooterComponent } from '../components/FooterComponent';
 import {
     AggregatedDataPointDTO,
+    BuildingTrendControllerApi,
+    BuildingTrendDTO,
     ClimateStatsControllerApi,
     DepartmentControllerApi,
     DepartmentListDTO,
@@ -14,6 +14,8 @@ import {
 } from '../generated-skeleton-api';
 import '../styles/BuildingManagerDashboard.css';
 import '../styles/Tables.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 export interface DepartmentWithStats {
     id: string;
@@ -25,6 +27,10 @@ export interface DepartmentWithStats {
 const climateApi    = new ClimateStatsControllerApi();
 const departmentApi = new DepartmentControllerApi();
 const warningApi    = new WarningControllerApi();
+const trendApi      = new BuildingTrendControllerApi();
+
+const pad2    = (n: number) => String(n).padStart(2, '0');
+const fmtDate = (d: Date)   => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
 const EPOCH_START = '1970-01-01';
 const FAR_FUTURE  = '2099-12-31';
@@ -34,6 +40,11 @@ export const SeniorManagerDashboard: React.FC = () => {
     const [departments, setDepartments]        = useState<DepartmentWithStats[]>([]);
     const [loading, setLoading]                = useState(true);
     const [error, setError]                    = useState<string | null>(null);
+    const [companyScore, setCompanyScore]      = useState<number | null>(null);
+    const [trendLoading, setTrendLoading]      = useState(false);
+    const [totalViolations, setTotalViolations] = useState(0);
+
+    const stompClient = useRef<Client | null>(null);
 
     useEffect(() => {
         departmentApi
@@ -60,7 +71,6 @@ export const SeniorManagerDashboard: React.FC = () => {
                         const activeViolations = violationsResult.status === 'fulfilled'
                             ? (violationsResult.value.data?.length ?? 0)
                             : 0;
-
                         return { id: dept.id, name: dept.name, stats, activeViolations };
                     })
                 );
@@ -70,12 +80,85 @@ export const SeniorManagerDashboard: React.FC = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    const totalViolations = departments.reduce((s, d) => s + d.activeViolations, 0);
+    useEffect(() => {
+        if (departments.length === 0) return;
+        const now = new Date();
+        const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+        const startDate = fmtDate(weekAgo);
+        const endDate   = fmtDate(now);
+        setTotalViolations(departments.reduce((s, v) => s + v.activeViolations, 0))
 
-    const deptsWithData = departments.filter(d => d.stats !== null);
-    const avgCO2 = deptsWithData.length > 0
-        ? deptsWithData.reduce((s, d) => s + (d.stats?.avgAirQuality ?? 0), 0) / deptsWithData.length
-        : null;
+        setTrendLoading(true);
+        Promise.all(
+            departments.map(d =>
+                trendApi
+                    .getTrendsForSpecificDepartment({ departmentId: d.id, startDate, endDate })
+                    .then(r => r.data ?? [])
+                    .catch(() => [] as BuildingTrendDTO[])
+            )
+        ).then(allRows => {
+            const latestValues: number[] = [];
+            for (const rows of allRows) {
+                if (rows.length === 0) continue;
+                const latest = rows.reduce((a, b) =>
+                    new Date(a.date ?? 0) >= new Date(b.date ?? 0) ? a : b
+                );
+                if (latest.value != null) latestValues.push(latest.value);
+            }
+            if (latestValues.length > 0) {
+                const avg = latestValues.reduce((s, v) => s + v, 0) / latestValues.length;
+                setCompanyScore(Math.round(avg));
+            }
+        }).finally(() => setTrendLoading(false));
+    }, [departments]);
+
+    useEffect(() => {
+        if (!departments || departments.length == 0) return;
+
+        stompClient.current = new Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/active-events'),
+            reconnectDelay: 5000,
+            connectHeaders: {
+                "Authorization":`Bearer ${localStorage.getItem("bearerToken")}`
+            },
+            onConnect: () => {
+                console.log('Connected');
+                departments.forEach(dep => {
+                    stompClient.current?.subscribe(`/topic/active-warnings-department/${dep.id}`, (message) => {
+                        setDepartments(prev => prev.map(r => {
+                            if (r.id !== dep.id) return r;
+                            return {
+                                ...r,
+                                activeViolations: r.activeViolations + 1
+                            };
+                        }));
+                    setTotalViolations((prev) => prev + 1);
+                    });
+                    stompClient.current?.subscribe(`/topic/resolve-warnings-department/${dep.id}`, (message) => {
+                        setDepartments(prev => prev.map(r => {
+                            if (r.id !== dep.id) return r;
+                            return {
+                                ...r,
+                                activeViolations: r.activeViolations > 0 ? r.activeViolations - 1 : 0
+                            };
+                        }));
+                        setTotalViolations((prev) => prev - 1);
+                    });
+                })
+            },
+            onStompError: (frame) => {
+                console.error('STOMP error:', frame);
+            },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+            stompClient.current?.deactivate();
+        };
+    }, [departments]);
+
+    // const totalViolations = departments.reduce((s, d) => s + d.activeViolations, 0);
 
     return (
         <div className="bm-page">
@@ -96,19 +179,17 @@ export const SeniorManagerDashboard: React.FC = () => {
                         </span>
                     </div>
                     <div className="bm-kpi-card">
-                        <span className="bm-kpi-title">Avg CO₂</span>
-                        <span className="bm-kpi-value">
-                            {loading ? '…' : avgCO2 !== null ? `${avgCO2.toFixed(0)} ppm` : '—'}
+                        <span className="bm-kpi-title">Current Climate Score</span>
+                        <span className={`bm-kpi-value${companyScore !== null && companyScore < 30 ? ' bm-kpi-value--red' : ''}`}>
+                            {trendLoading ? '…' : companyScore !== null ? companyScore : '—'}
                         </span>
                     </div>
                 </div>
 
                 <DepartmentAveragesTable departments={departments} loading={loading} />
                 <ViolationsBarChart     departments={departments} loading={loading} />
-                <DepartmentHeatmap      departments={departments} />
             </div>
 
-            <FooterComponent />
         </div>
     );
 };

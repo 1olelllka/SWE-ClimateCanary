@@ -1,10 +1,18 @@
+name: pi
+
 services:
   gateway:
     build: ./app
     restart: unless-stopped
     network_mode: host
     privileged: true
+    environment:
+      - UV_CACHE_DIR=/tmp/uv-cache
     volumes:
       - /home/pi/data:/home/pi/data
       - /home/pi/logs:/home/pi/logs
       - /home/pi/conf.yaml:/app/conf.yaml:ro
+      - /var/run/dbus:/var/run/dbus
+      - /run/dbus:/run/dbus
+    devices:
+      - /dev/hci0:/dev/hci0

@@ -4,13 +4,12 @@ import SidebarComponent from '../components/SidebarComponent';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
-import { Divider } from 'primereact/divider';
 import { Toast } from 'primereact/toast';
-import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO } from '../generated-skeleton-api';
-import globalAxios from 'axios';
+import { UserRoleControllerApi, RoomControllerApi, UserRoleDTO, RoomDTO, UserxControllerApi } from '../generated-skeleton-api';
 import RoleManagement from '../components/RoleManagement';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
 import UserListComponent from '../components/UserListComponent';
+import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
@@ -46,6 +45,8 @@ const UserConfigurationPage: React.FC = () => {
     const [roleFilter, setRoleFilter] = useState<string | null>(null);
     const [roomFilter, setRoomFilter] = useState<string | null>(null);
 
+    const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
+
     const [showDialog, setShowDialog] = useState(false);
     const [isNewUser, setIsNewUser] = useState(true);
     const [editingUserId, setEditingUserId] = useState<string | undefined>();
@@ -56,11 +57,11 @@ const UserConfigurationPage: React.FC = () => {
     const fetchData = () => {
         setLoading(true);
         Promise.all([
-            globalAxios.get<{ content: FullUser[] }>('/api/users?size=1000'),
+            new UserxControllerApi().getPageOfUsers({ pageable: { page: 0, size: 1000, sort: [] } }),
             new UserRoleControllerApi().getAllPermissions(),
             new RoomControllerApi().getPageOfRooms({ pageable: PAGEABLE }),
         ]).then(([usersRes, rolesRes, roomsRes]) => {
-            setUsers(usersRes.data.content ?? []);
+            setUsers((usersRes.data as any).content ?? []);
             setRoleDTOs(rolesRes.data ?? []);
             setRooms(roomsRes.data.content ?? []);
         }).catch(() => {
@@ -127,27 +128,32 @@ const UserConfigurationPage: React.FC = () => {
         setDialogLoading(true);
         try {
             if (isNewUser) {
-                const res = await globalAxios.post<FullUser>('/api/users', {
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    username: form.username,
-                    enabled: form.enabled,
-                    roles: form.roleIds,
-                    password: form.password,
-                    roomId: form.roomId || null,
+                const res = await new UserxControllerApi().createNewUser({
+                    userxCreateDTO: {
+                        firstName: form.firstName,
+                        lastName: form.lastName,
+                        username: form.username,
+                        enabled: form.enabled,
+                        roles: form.roleIds,
+                        password: form.password,
+                        roomId: form.roomId || null,
+                    } as any,
                 });
-                setUsers(prev => [...prev, res.data]);
+                setUsers(prev => [...prev, res.data as any]);
                 toast.current?.show({ severity: 'success', summary: 'Created', detail: 'User created successfully.', life: 3000 });
             } else {
-                const res = await globalAxios.patch<FullUser>(`/api/users/${editingUserId}`, {
-                    firstName: form.firstName,
-                    lastName: form.lastName,
-                    username: form.username,
-                    isEnabled: form.enabled,
-                    roles: form.roleIds,
-                    roomId: form.roomId || null,
+                const res = await new UserxControllerApi().patchSpecificUser({
+                    userId: editingUserId!,
+                    userxPatchDTO: {
+                        firstName: form.firstName,
+                        lastName: form.lastName,
+                        username: form.username,
+                        isEnabled: form.enabled,
+                        roles: form.roleIds,
+                        roomId: form.roomId || null,
+                    } as any,
                 });
-                setUsers(prev => prev.map(u => u.id === res.data.id ? res.data : u));
+                setUsers(prev => prev.map(u => u.id === (res.data as any).id ? res.data as any : u));
                 toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'User updated successfully.', life: 3000 });
             }
             setShowDialog(false);
@@ -159,13 +165,19 @@ const UserConfigurationPage: React.FC = () => {
     };
 
     const handleDelete = (user: FullUser) => {
-        if (!user.id || !globalThis.confirm(`Delete user "${user.username}"?`)) return;
-        globalAxios.delete(`/api/users/${user.id}`)
-            .then(() => {
-                setUsers(prev => prev.filter(u => u.id !== user.id));
-                toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000 });
-            })
-            .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete user.', life: 3000 }));
+        if (!user.id) return;
+        setConfirmDelete({
+            message: `Are you sure you want to delete user "${user.username}"? This action cannot be undone.`,
+            onConfirm: () => {
+                setConfirmDelete(null);
+                new UserxControllerApi().deleteSpecificUser({ userId: user.id })
+                    .then(() => {
+                        setUsers(prev => prev.filter(u => u.id !== user.id));
+                        toast.current?.show({ severity: 'success', summary: 'Deleted', detail: 'User deleted.', life: 3000 });
+                    })
+                    .catch(() => toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete user.', life: 3000 }));
+            },
+        });
     };
 
     return (
@@ -176,53 +188,37 @@ const UserConfigurationPage: React.FC = () => {
 
             <div className="dashboard-content">
 
+                {/* ── User List ── */}
                 <div className="table-container">
-                    <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                        <h3 style={{ margin: 0 }}>User List</h3>
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <span className="p-input-icon-left">
-            <i className="pi pi-search" style={{ marginLeft: '0.7rem' }} />
-            <InputText
-                value={lastNameSearch}
-                onChange={e => setLastNameSearch(e.target.value)}
-                placeholder="Search by last name"
-                style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
-            />
-        </span>
-                            <Dropdown
-                                value={roleFilter}
-                                options={roleFilterOptions}
-                                onChange={e => setRoleFilter(e.value)}
-                                placeholder="Role Filter"
-                                showClear
-                                style={{ borderRadius: '20px', minWidth: '180px' }}
-                            />
-                            <Dropdown
-                                value={roomFilter}
-                                options={roomFilterOptions}
-                                onChange={e => setRoomFilter(e.value)}
-                                placeholder="Room Filter"
-                                showClear
-                                filter
-                                style={{ borderRadius: '20px', minWidth: '180px' }}
-                            />
-                            <Button label="Add User" icon="pi pi-user-plus" onClick={openCreate} />
-                        </div>
+                    <div className="flex-header">
+                        <h3>User List</h3>
+                        <Button label="Add User" icon="pi pi-user-plus" className="admin-add-button" onClick={openCreate} />
                     </div>
 
-                    <UserListComponent
-                        users={filteredUsers}
-                        loading={loading}
-                        onEditUser={openEdit}
-                        onDeleteUser={handleDelete}
-                        showDelete
-                    />
+                    <div className="table-filter-row">
+                    <span className="p-input-icon-left">
+                        <i className="pi pi-search" />
+                        <InputText value={lastNameSearch} onChange={e => setLastNameSearch(e.target.value)} placeholder="Search by last name" />
+                    </span>
+
+                        <Dropdown value={roleFilter} options={roleFilterOptions} onChange={e => setRoleFilter(e.value)} placeholder="Role Filter" showClear />
+                        <Dropdown value={roomFilter} options={roomFilterOptions} onChange={e => setRoomFilter(e.value)} placeholder="Room Filter" showClear filter />
+                    </div>
+
+                    <UserListComponent users={filteredUsers} loading={loading} onEditUser={openEdit} onDeleteUser={handleDelete} showDelete />
                 </div>
 
-                <Divider />
-
+                {/* ── Role Management ── */}
                 <RoleManagement roleDTOs={roleDTOs} onRoleDTOsChange={setRoleDTOs} />
+
             </div>
+
+            <ConfirmDeleteDialog
+                visible={confirmDelete !== null}
+                message={confirmDelete?.message ?? ''}
+                onConfirm={confirmDelete?.onConfirm ?? (() => {})}
+                onHide={() => setConfirmDelete(null)}
+            />
 
             <UserFormDialog
                 visible={showDialog}

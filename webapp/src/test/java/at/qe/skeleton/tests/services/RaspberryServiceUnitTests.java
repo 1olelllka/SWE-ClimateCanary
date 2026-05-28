@@ -6,13 +6,11 @@ import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.mappers.LimitMapper;
-import at.qe.skeleton.model.RaspberryPi;
-import at.qe.skeleton.model.RoomMonitoring;
-import at.qe.skeleton.model.RoomOccupancy;
-import at.qe.skeleton.model.SensorStation;
+import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.impl.RaspberryServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +41,7 @@ class RaspberryServiceUnitTests {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private NotificationClient notificationClient;
     @Mock private RoomOccupancyRepository occupancyRepository;
+    @Mock private RoomRepository roomRepository;
     @Mock private LimitMapper limitMapper;
 
     @InjectMocks
@@ -525,6 +524,7 @@ class RaspberryServiceUnitTests {
                 .peopleCnt(4)
                 .build();
 
+        when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
         when(occupancyRepository.findById(roomId.toString())).thenReturn(Optional.of(occupancy));
 
@@ -540,7 +540,24 @@ class RaspberryServiceUnitTests {
                 .peopleCnt(5)
                 .build();
 
+        when(roomRepository.findById(roomId)).thenReturn(Optional.empty());
         when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(occupancyRepository.findById(roomId.toString())).thenReturn(Optional.of(occupancy));
+
+        PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);
+
+        assertFalse(config.occupancy().privacyMode());
+    }
+
+    @Test
+    void testThatGetConfigForRaspberryOccupancyCapacityFlagIsFalseWhenSharedRoom() {
+        RoomOccupancy occupancy = RoomOccupancy.builder()
+                .roomId(roomId)
+                .peopleCnt(5)
+                .build();
+
+        when(raspberryPiRepository.findById(piId)).thenReturn(Optional.of(samplePi));
+        when(roomRepository.findById(roomId)).thenReturn(Optional.of(Room.builder().roomType(RoomType.SHARED).build()));
         when(occupancyRepository.findById(roomId.toString())).thenReturn(Optional.of(occupancy));
 
         PiConfigDTO config = raspberryService.getConfigForRaspberry(piId);

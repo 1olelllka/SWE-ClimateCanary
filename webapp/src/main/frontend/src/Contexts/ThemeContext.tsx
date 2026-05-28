@@ -9,6 +9,7 @@ interface ThemeContextValue {
     readonly theme: ThemeMode;
     readonly isDarkMode: boolean;
     readonly toggleTheme: () => void;
+    readonly setTheme: (mode: ThemeMode) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -58,7 +59,8 @@ export const ThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) =
     const value = useMemo(() => ({
         theme,
         isDarkMode: theme === 'dark',
-        toggleTheme
+        toggleTheme,
+        setTheme,
     }), [theme]);
 
     return (

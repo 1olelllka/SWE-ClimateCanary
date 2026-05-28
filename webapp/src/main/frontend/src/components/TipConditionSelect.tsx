@@ -23,11 +23,12 @@ export const TipConditionSelect: React.FC<TipConditionSelectProps> = ({
 
     return (
         <div className="tip-management-condition-row">
-            <label className="tip-management-condition-label">
+            <label className="tip-management-condition-label" htmlFor="tipCondition">
                 Condition
             </label>
 
             <Dropdown
+                inputId="tipCondition"
                 value={selectedOptionKey}
                 options={dropdownOptions}
                 optionLabel="label"
