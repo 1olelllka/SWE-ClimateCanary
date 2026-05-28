@@ -63,10 +63,10 @@ const statusBadge = (status?: string) => {
     return (
         <span style={{
             background: online ? '#4caf50' : '#9e9e9e',
-            color: 'white', padding: '2px 10px', borderRadius: '12px',
-            fontSize: '0.8rem', fontWeight: 500,
+            color: 'white', padding: '1px 7px', borderRadius: '12px',
+            fontSize: '0.72rem', fontWeight: 600,
         }}>
-            {status ?? 'N/A'}
+            {online ? 'Online' : status ? 'Offline' : 'N/A'}
         </span>
     );
 };
@@ -115,6 +115,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({ title, search, onSearch, sear
 const SysAdminDashboard: React.FC = () => {
     const toast = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
 
     // --- Data ---
     const [raspberries, setRaspberries] = useState<RaspberryDTOReal[]>([]);
@@ -210,6 +211,12 @@ const SysAdminDashboard: React.FC = () => {
     const fetchDepartments = () =>
         new DepartmentControllerApi().getPageOfDepartments({ pageable: PAGEABLE })
             .then(res => setDepartments(res.data.content ?? [])).catch(() => {});
+
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 700);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
 
     useEffect(() => {
         fetchRaspberries();

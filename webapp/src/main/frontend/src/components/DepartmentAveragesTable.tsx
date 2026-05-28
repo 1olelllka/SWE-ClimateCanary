@@ -62,11 +62,11 @@ export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading 
                 className="row-clickable"
                 rows={10}
             >
-                <Column field="department" header="Department" sortable />
-                <Column field="co2"        header="CO₂"        sortable />
-                <Column field="temp"       header="Temp"       sortable />
-                <Column field="humidity"   header="Humidity"   sortable />
-                <Column header="Status"    body={statusTemplate} />
+                <Column field="department" header="Department" sortable style={{ width: '32%' }} />
+                <Column field="co2"        header="CO₂"        sortable style={{ width: '18%' }} />
+                <Column field="temp"       header="Temp"       sortable style={{ width: '18%' }} />
+                <Column field="humidity"   header="Humidity"   sortable style={{ width: '19%' }} />
+                <Column header="Status"    body={statusTemplate} style={{ width: '13%', textAlign: 'center' }} />
             </DataTable>
         </div>
     );

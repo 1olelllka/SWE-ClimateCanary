@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
@@ -33,6 +33,13 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
     onRowClick,
     onSettingsClick,
 }) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 700);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+
     const handleRowClick = (e: any) => {
         if (e.originalEvent.target.closest('.p-button')) return;
         if (onRowClick) onRowClick((e.data as RoomData).id);
@@ -61,14 +68,14 @@ export const RoomListTable: React.FC<RoomListTableProps> = ({
                 onRowClick={handleRowClick}
                 rowClassName={() => ({ 'row-clickable': !!onRowClick })}
             >
-                <Column field="id" header="Room" sortable />
-                {showDepartment && <Column field="department" header="Dep." sortable />}
-                <Column field="type" header="Type" sortable />
-                <Column field="co2" header="CO2" />
-                <Column field="temp" header="Temp" />
-                <Column field="humidity" header="Humidity" />
-                <Column header="Status" body={statusTemplate} />
-                {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '4rem' }} />}
+                <Column field="id" header="Room" sortable style={{ width: '22%' }} />
+                {showDepartment && <Column field="department" header="Dep." sortable style={{ width: '15%' }} />}
+                {!isMobile && <Column field="type" header="Type" sortable />}
+                <Column field="co2" header="CO₂" style={{ width: isMobile ? '20%' : undefined }} />
+                <Column field="temp" header="Temp" style={{ width: isMobile ? '20%' : undefined }} />
+                <Column field="humidity" header="Humidity" style={{ width: isMobile ? '20%' : undefined }} />
+                <Column header="Status" body={statusTemplate} style={{ width: isMobile ? '18%' : '5rem', textAlign: 'center' }} />
+                {showSettings && <Column body={settingsTemplate} exportable={false} style={{ width: '3.5rem' }} />}
             </DataTable>
         </div>
     );

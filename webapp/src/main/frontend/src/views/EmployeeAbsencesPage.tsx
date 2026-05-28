@@ -189,7 +189,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                         max={10}
                     />
                     <KpiCard
-                        title="How Long Manager Ignores Me"
+                        title="Manager Ignores Me"
                         value={Math.min(oldestPendingMinutes, MAX_IGNORE_MINUTES)}
                         max={MAX_IGNORE_MINUTES}
                         displayValue={formatIgnoreTime(oldestPendingMinutes)}

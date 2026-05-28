@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
@@ -24,6 +24,17 @@ export const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
     loading = false,
     onView,
 }) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 700);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+
+    const handleRowClick = (e: any) => {
+        if (onView) onView((e.data as PendingRequestData).id);
+    };
+
     const actionBodyTemplate = (row: PendingRequestData) => (
         <button className="btn-primary-small" onClick={() => onView?.(row.id)}>View</button>
     );
@@ -39,17 +50,21 @@ export const PendingRequestsTable: React.FC<PendingRequestsTableProps> = ({
                 {...defaultTableProps}
                 loading={loading}
                 emptyMessage="No pending requests found."
+                onRowClick={handleRowClick}
+                rowClassName={() => ({ 'row-clickable': true })}
             >
-                <Column field="first" header="Firstname" sortable />
-                <Column field="last" header="Lastname" sortable />
+                <Column field="first" header="First" sortable />
+                <Column field="last" header="Last" sortable />
                 <Column field="room" header="Room" sortable />
-                <Column field="date" header="Date" />
+                {!isMobile && <Column field="date" header="Date" />}
                 <Column field="reason" header="Reason" />
-                <Column
-                    body={actionBodyTemplate}
-                    exportable={false}
-                    style={{ minWidth: '8rem' }}
-                />
+                {!isMobile && (
+                    <Column
+                        body={actionBodyTemplate}
+                        exportable={false}
+                        style={{ width: '4rem' }}
+                    />
+                )}
             </DataTable>
         </div>
     );
