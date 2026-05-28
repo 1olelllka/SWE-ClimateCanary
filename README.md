@@ -2,6 +2,8 @@
 
 ## Usage & Configuration
 
+### Webapp
+
 In order to run Webapp use ```docker compose up``` command with environmental variables:
 ```bash
 TEAM_NAME=G1T4 APP_JWT_SECRET=<your_jwt_secret> docker compose up --build
@@ -12,7 +14,37 @@ TEAM_NAME=G1T4 APP_JWT_SECRET=1a7783f6abab21b127e728d54043df9e6dbd9b1ae21ea1a743
 36783182a06a3730c2f57f0f2e5e3b39bdfb86cbc2536e6e73522408ccf422686653f0efeee0662721de13069bcb37090d788c6393d7ce9dc8d9b463764232f7f1dc7f074f6ccb1a3232 docker compose up --build
 ```
 
+### Raspberry Pi
+
 #### For Raspberry Pi configuration refer to this [readme](raspberrypi/README.md).
+
+### Arduino
+
+*Note*: For Arduino you need PlatformIO
+
+PlatformIO configuration file (platformio.ini):
+```ini
+[env:nano33ble]
+platform = nordicnrf52
+board = nano33ble
+framework = arduino
+monitor_speed = 9600
+
+lib_deps =
+    adafruit/Adafruit BME680 Library
+    adafruit/Adafruit Unified Sensor
+    arduino-libraries/ArduinoBLE
+    seeed-studio/Grove - LCD RGB Backlight
+```
+
+Installation steps on linux (python preinstalled needed):
+
+1. ```python3 -m pip install --user platformio```
+2. ```echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc```
+3. ```source ~/.bashrc```
+4. ```sudo usermod -aG dialout $USER```
+5. ```pio run```
+6. ```pio run --target upload```
 
 ## Authors
 
