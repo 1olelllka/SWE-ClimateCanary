@@ -533,8 +533,10 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             markLine:  L && metric === 'Air Quality' ? mkLimitLines([
                 { yAxis: L.co2Max, name: `CO₂ ${L.co2Max}` },
             ], COLORS.airQuality) : undefined,
-
-
+            markArea: L ? mkViolationArea(
+                violationRanges(displayData, d => d.airQuality, null, L.co2Max ?? null),
+                COLORS.temperature,
+            ) : undefined,
         },
     ].filter(Boolean);
 
