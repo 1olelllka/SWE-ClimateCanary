@@ -542,6 +542,18 @@ class WebManager:
             else:
                 logger.warning(f"[WebManager] /api/warnings response had no 'id' field: {data}")
 
+        except aiohttp.ClientResponseError as e:
+            if 400 <= e.status < 500:
+                logger.warning(
+                    f"[WebManager] Webapp permanently rejected warning for {sensor_name}/{limit_key} "
+                    f"(HTTP {e.status}) - dropping."
+                )
+            else:
+                logger.warning(
+                    f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s..."
+                )
+                await asyncio.sleep(5)
+                await self.web_violation_queue.put(event)
         except Exception as e:
             logger.warning(
                 f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s..."
@@ -583,6 +595,18 @@ class WebManager:
             else:
                 logger.warning(f"[WebManager] No active BLE manager for '{sensor_name}' - RESOLVED message not sent.")
 
+        except aiohttp.ClientResponseError as e:
+            if 400 <= e.status < 500:
+                logger.warning(
+                    f"[WebManager] Webapp permanently rejected resolve for {warning_id} "
+                    f"(HTTP {e.status}) - dropping."
+                )
+            else:
+                logger.warning(
+                    f"[WebManager] Failed to resolve warning {warning_id}: {e}. Requeueing in 5s..."
+                )
+                await asyncio.sleep(5)
+                await self.web_violation_queue.put(event)
         except Exception as e:
             logger.warning(
                 f"[WebManager] Failed to resolve warning {warning_id}: {e}. Requeueing in 5s..."
