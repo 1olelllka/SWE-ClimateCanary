@@ -408,23 +408,40 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
         getValue: (d: DataPoint) => number,
         min: number | null,
         max: number | null,
-    ): Array<[{ xAxis: string }, { xAxis: string }]> {
+    ): Array<[{ xAxis: number }, { xAxis: number }]> {
         if (!pts.length || (min == null && max == null)) return [];
-        const out: Array<[{ xAxis: string }, { xAxis: string }]> = [];
-        let start: string | null = null;
-        for (const pt of pts) {
-            // A gap in the sensor data must close any open violation range — we
-            // cannot declare a violation where there are no readings at all.
+        const out: Array<[{ xAxis: number }, { xAxis: number }]> = [];
+        // Use numeric category indices instead of string labels so that:
+        //   - [{xAxis:N},{xAxis:N}] renders as exactly one column (not a full-width band)
+        //   - index 0 reliably starts at the very left edge of the chart
+        let startIdx:    number | null = null;
+        let lastViolIdx: number | null = null;
+        for (let i = 0; i < pts.length; i++) {
+            const pt = pts[i];
             if (pt.noData) {
-                if (start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+                // Gap in sensor data — close any open violation range here so the
+                // red zone never bleeds into the grey no-data zone.
+                if (startIdx !== null && lastViolIdx !== null) {
+                    out.push([{ xAxis: startIdx }, { xAxis: lastViolIdx }]);
+                    startIdx = null;
+                    lastViolIdx = null;
+                }
                 continue;
             }
             const v   = getValue(pt);
             const bad = (min != null && v < min) || (max != null && v > max);
-            if (bad && start == null)  { start = pt.label; }
-            else if (!bad && start != null) { out.push([{ xAxis: start }, { xAxis: pt.label }]); start = null; }
+            if (bad) {
+                if (startIdx === null) startIdx = i;
+                lastViolIdx = i;
+            } else if (startIdx !== null && lastViolIdx !== null) {
+                out.push([{ xAxis: startIdx }, { xAxis: lastViolIdx }]);
+                startIdx = null;
+                lastViolIdx = null;
+            }
         }
-        if (start != null) out.push([{ xAxis: start }, { xAxis: pts[pts.length - 1].label }]);
+        if (startIdx !== null && lastViolIdx !== null) {
+            out.push([{ xAxis: startIdx }, { xAxis: lastViolIdx }]);
+        }
         return out;
     }
 
@@ -442,7 +459,7 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
     }
 
     function mkViolationArea(
-        ranges: Array<[{ xAxis: string }, { xAxis: string }]>,
+        ranges: Array<[{ xAxis: number }, { xAxis: number }]>,
         color:  string,
     ) {
         if (!ranges.length) return undefined;
@@ -516,10 +533,8 @@ export const ClimateHistoryChart: React.FC<Props> = ({ roomId, hideDayView = fal
             markLine:  L && metric === 'Air Quality' ? mkLimitLines([
                 { yAxis: L.co2Max, name: `CO₂ ${L.co2Max}` },
             ], COLORS.airQuality) : undefined,
-            markArea: L ? mkViolationArea(
-                violationRanges(displayData, d => d.airQuality, null, L.co2Max ?? null),
-                COLORS.temperature,
-            ) : undefined,
+
+
         },
     ].filter(Boolean);
 
