@@ -8,6 +8,7 @@ import at.qe.skeleton.exceptions.ValidationException;
 import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.services.EmailService;
 import at.qe.skeleton.services.impl.AbsenceServiceImpl;
 import at.qe.skeleton.tests.TestDataUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,8 @@ class AbsenceServiceUnitTests {
     @Mock private ApplicationEventPublisher eventPublisher;
     @Mock private NotificationClient notificationClient;
     @Mock private UserClockStatusRepository clockStatusRepository;
+    @Mock private UserSettingsRepository userSettingsRepository;
+    @Mock private EmailService emailService;
     @InjectMocks private AbsenceServiceImpl absenceService;
 
     private Userx user;

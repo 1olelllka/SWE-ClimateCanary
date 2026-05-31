@@ -3926,6 +3926,15 @@
           },
           "twelveHourFormat": {
             "type": "boolean"
+          },
+          "notificationEmail": {
+            "type": "string"
+          },
+          "emailWarnings": {
+            "type": "boolean"
+          },
+          "emailAbsences": {
+            "type": "boolean"
           }
         }
       },
@@ -3947,6 +3956,15 @@
             ]
           },
           "twelveHourFormat": {
+            "type": "boolean"
+          },
+          "notificationEmail": {
+            "type": "string"
+          },
+          "emailWarnings": {
+            "type": "boolean"
+          },
+          "emailAbsences": {
             "type": "boolean"
           }
         }

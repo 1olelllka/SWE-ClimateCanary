@@ -11,6 +11,7 @@ import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.services.EmailService;
 import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.impl.WarningServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,9 @@ class WarningServiceUnitTests {
     @Mock BuildingRepository       buildingRepository;
     @Mock TipRepository            tipRepository;
     @Mock LiveDataService          liveDataService;
+    @Mock UserxRepository          userxRepository;
+    @Mock UserSettingsRepository   userSettingsRepository;
+    @Mock EmailService             emailService;
 
     @Spy WarningMapper       warningMapper       = new WarningMapper();
     @Spy WarningCreateMapper warningCreateMapper = new WarningCreateMapper();

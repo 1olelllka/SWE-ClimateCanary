@@ -8,6 +8,7 @@ import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.services.EmailService;
 import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,9 @@ public class WarningServiceImpl implements WarningService {
     private final WarningCreateMapper warningCreateMapper;
     private final TipRepository tipRepository;
     private final LiveDataService liveDataService;
+    private final UserxRepository userxRepository;
+    private final UserSettingsRepository userSettingsRepository;
+    private final EmailService emailService;
 
     // get warnings for a specific room
     @Override
@@ -173,8 +177,27 @@ public class WarningServiceImpl implements WarningService {
         warning.setRoomMonitoring(room);
         WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.pushActiveWarning(room.getRoomId(), res);
-        liveDataService.pushActiveWarningDepartment(roomRepository.findById(res.roomId()).get().getDepartment().getId(), res);
+
+        Room roomEntity = roomRepository.findById(res.roomId()).get();
+        UUID deptId = roomEntity.getDepartment().getId();
+        liveDataService.pushActiveWarningDepartment(deptId, res);
+
+        notifyDepartmentByEmail(deptId, res, roomEntity.getRoomNumber());
+
         return res;
+    }
+
+    private void notifyDepartmentByEmail(UUID deptId, WarningDTO warning, String roomNumber) {
+        userxRepository.findAllByDepartment(deptId).forEach(user ->
+            userSettingsRepository.findById(user.getId()).ifPresent(settings -> {
+                if (settings.isEmailWarnings()
+                        && settings.getNotificationEmail() != null
+                        && !settings.getNotificationEmail().isBlank()) {
+                    String name = user.getFirstName() != null ? user.getFirstName() : user.getUsername();
+                    emailService.sendWarningEmail(settings.getNotificationEmail(), name, warning, roomNumber);
+                }
+            })
+        );
     }
 
     // for Pi to update severity while warning is still active                   //

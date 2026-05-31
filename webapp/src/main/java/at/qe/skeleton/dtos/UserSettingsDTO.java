@@ -9,6 +9,9 @@ public record UserSettingsDTO(
         boolean darkMode,
         boolean fahrenheit,
         DateFormat format,
-        boolean twelveHourFormat
+        boolean twelveHourFormat,
+        String notificationEmail,
+        boolean emailWarnings,
+        boolean emailAbsences
 ) {
 }
