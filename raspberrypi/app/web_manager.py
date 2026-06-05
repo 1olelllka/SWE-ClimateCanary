@@ -505,6 +505,21 @@ class WebManager:
             finally:
                 self.web_violation_queue.task_done()
 
+    async def _send_offline_warning_to_arduino(self, event: dict):
+        sensor_name    = event["sensor_name"]
+        violation_type = str(event["measurement_type"]).upper()
+        violation_status = str(event["status"]).upper()
+
+        ble = self.ble_managers.get(sensor_name)
+        if not ble:
+            logger.warning(f"[WebManager] No BLE manager for '{sensor_name}' - offline fallback tip not sent.")
+            return
+
+        tip = "No tip available - webapp offline."
+        ble_msg = await self._build_ble_warn_message(ble.name, violation_type, violation_status, tip)
+        await ble.ble_inbox.put(ble_msg)
+        logger.info(f"[Pi -> Arduino] Offline fallback warning sent to '{ble.name}'.")
+
     async def _handle_violation_warning(self, session, event: dict):
         api_url = f"{self.server_url}/api/warnings"
         sensor_name = event["sensor_name"]
@@ -552,12 +567,18 @@ class WebManager:
                 logger.warning(
                     f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s..."
                 )
+                if not event.get("fallback_sent"):
+                    await self._send_offline_warning_to_arduino(event)
+                    event["fallback_sent"] = True
                 await asyncio.sleep(5)
                 await self.web_violation_queue.put(event)
         except Exception as e:
             logger.warning(
                 f"[WebManager] Failed to post warning for {sensor_name}/{limit_key}: {e}. Requeueing in 5s..."
             )
+            if not event.get("fallback_sent"):
+                await self._send_offline_warning_to_arduino(event)
+                event["fallback_sent"] = True
             await asyncio.sleep(5)
             await self.web_violation_queue.put(event)
 
