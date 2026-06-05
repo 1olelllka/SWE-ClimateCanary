@@ -18,13 +18,14 @@ rsync -a --no-owner --no-group --delete \
   --rsync-path="sudo rsync" \
   --exclude="tests/" \
   --exclude="pytest.ini" \
-  --exclude="requirements-dev.txt" \
+  --exclude="requirements.txt" \
   --exclude="app/__pycache__/" \
   --exclude="coverage.xml" \
   --exclude="deploy.sh" \
+  --exclude=".ssh" \
   ${LOCAL_DIR} ${PI_USER}@${PI_HOST}:${PI_PATH}
 
-ssh ${PI_USER}@${PI_HOST} << "EOF"
+ssh ${PI_USER}@${PI_HOST} << EOF
 sudo chown -R ${PI_USER}:${PI_USER} ${PI_PATH}
 cd ${PI_PATH}
 docker compose down
@@ -33,7 +34,7 @@ EOF
 if [ "$START_AFTER_DEPLOY" = true ]; then
     echo "Starting docker services..."
 
-    ssh ${PI_USER}@${PI_HOST} << "EOF"
+    ssh ${PI_USER}@${PI_HOST} << EOF
 cd ${PI_PATH}
 docker compose down
 docker compose up -d --build
