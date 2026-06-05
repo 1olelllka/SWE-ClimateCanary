@@ -24,12 +24,24 @@ logger = logging.getLogger(__name__)
 
 
 async def main(db_path: str):
+    """Boot sequence for the IoT gateway.
+
+    Steps:
+    1. Connect to SQLite and ensure all tables exist.
+    2. Poll until ./configure has seeded the initial config (configure_done flag).
+    3. Load credentials and authenticate with the webapp (retries indefinitely).
+    4. On first boot, start the local HTTP server and wait for the webapp to push
+       an initial /api/config before proceeding - this seeds room_id, limits, and sensors.
+    5. Spawn one BLEManager + one DataProcessor task per sensor.
+    6. Run all tasks concurrently; clean up on exit.
+    """
     logger.info("Starting IoT Gateway")
 
     db = DatabaseManager(db_path)
     await db.connect()
     await db.init_db()
 
+    # Wait for the ./configure bootstrap script to seed the DB before proceeding.
     configure_done = await db.get_config('configure_done')
     if configure_done != '1':
         logger.warning(f"[Main] configure_done flag not set, watiting for ./configure script to set initial config.")
@@ -48,8 +60,9 @@ async def main(db_path: str):
         await db.close()
         sys.exit(1)
 
-    auth = AuthManager( server_url=server_url, username=username, password=password)
-    
+    auth = AuthManager(server_url=server_url, username=username, password=password)
+
+    # Retry login indefinitely - the webapp may not be reachable immediately on boot.
     while True:
         try:
             await auth.login()
@@ -61,6 +74,7 @@ async def main(db_path: str):
     initial_config_done = await db.get_config('initial_config_done')
     first_boot = initial_config_done != '1'
 
+    # config_ready_event gates the rest of boot on first boot until /api/config arrives.
     config_ready_event = asyncio.Event()
 
     if not first_boot:
@@ -69,8 +83,8 @@ async def main(db_path: str):
     else:
         logger.info(f"[Main] First boot - will wait for initial /api/config from webapp.")
 
-    web_out_queue = asyncio.Queue()
-    web_violation_queue = asyncio.Queue()
+    web_out_queue = asyncio.Queue()        # DataProcessor -> measurement upload worker
+    web_violation_queue = asyncio.Queue()  # DataProcessor -> violation upload worker
 
     web_manager = WebManager(
         db,
@@ -107,6 +121,7 @@ async def main(db_path: str):
         asyncio.create_task(web_manager.run_outgoing_status_worker(), name="WebOutgoingStatus"),
     ]
 
+    # Per-sensor queues: 'proc' carries raw Arduino data; 'inbox' carries Pi->Arduino commands.
     queues: dict[str, dict[str, asyncio.Queue]] = {
         sensor['name']: {
             'proc': asyncio.Queue(),
@@ -115,6 +130,7 @@ async def main(db_path: str):
         for sensor in sensors
     }
 
+    # Shared lock so only one BLE scan runs at a time (Bleak doesn't support concurrent scans).
     scan_lock = asyncio.Lock()
 
     ble_managers: dict[str, BLEManager] = {
@@ -130,7 +146,6 @@ async def main(db_path: str):
     }
 
     web_manager.ble_managers = ble_managers
-
     web_manager.processor = processor
     web_manager.queues = queues
     web_manager.scan_lock = scan_lock
@@ -139,7 +154,7 @@ async def main(db_path: str):
         sensor_name = sensor['name']
         write_uuid = sensor['write_uuid']
         ble_manager = ble_managers[sensor_name]
-    
+
         ble_task = asyncio.create_task(
             ble_manager.run(),
             name=f"BLE:{sensor_name}",
@@ -168,7 +183,7 @@ async def main(db_path: str):
 
 
 if __name__ == "__main__":
-    
+
     db_path = "/home/pi/data/production.sqlite"
     log_file = "/home/pi/logs/raspberrypi.log"
 
