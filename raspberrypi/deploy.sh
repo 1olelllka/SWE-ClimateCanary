@@ -14,7 +14,7 @@ fi
 
 echo "Syncing files to pi..."
 
-rsync -a --delete \
+rsync -a --no-owner --no-group --delete \
   --rsync-path="sudo rsync" \
   --exclude="tests/" \
   --exclude="pytest.ini" \
@@ -25,7 +25,8 @@ rsync -a --delete \
   ${LOCAL_DIR} ${PI_USER}@${PI_HOST}:${PI_PATH}
 
 ssh ${PI_USER}@${PI_HOST} << "EOF"
-cd /home/pi
+sudo chown -R ${PI_USER}:${PI_USER} ${PI_PATH}
+cd ${PI_PATH}
 docker compose down
 EOF
 
@@ -33,7 +34,7 @@ if [ "$START_AFTER_DEPLOY" = true ]; then
     echo "Starting docker services..."
 
     ssh ${PI_USER}@${PI_HOST} << "EOF"
-cd /home/pi
+cd ${PI_PATH}
 docker compose down
 docker compose up -d --build
 ./configure
