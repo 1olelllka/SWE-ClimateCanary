@@ -19,6 +19,8 @@ import {
 } from '../generated-skeleton-api';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
 
@@ -87,6 +89,7 @@ const DeviceConfigurationPage: React.FC = () => {
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
+    const stompClient = useRef<Client | null>(null);
 
     const fetchData = () => {
         setLoading(true);
@@ -102,6 +105,60 @@ const DeviceConfigurationPage: React.FC = () => {
             toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to load devices', life: 3000 });
         }).finally(() => setLoading(false));
     };
+
+    useEffect(() => {
+        if ((!sensors || sensors.length == 0) && (!raspberries || raspberries.length == 0)) return;
+
+        stompClient.current = new Client({
+        webSocketFactory: () =>
+            new SockJS("http://localhost:8080/active-events"),
+        reconnectDelay: 5000,
+        connectHeaders: {
+            Authorization: `Bearer ${localStorage.getItem("bearerToken")}`,
+        },
+        onConnect: () => {
+            console.log("Listening to active devices events");
+            sensors.forEach(sensor => {
+                stompClient.current?.subscribe(
+                `/topic/sensor-status/${sensor.readId}`,
+                (message) => {
+                    const status = JSON.parse(message.body);
+                    setSensors((prev) =>
+                        prev.map((s) =>
+                            s.readId === sensor.readId
+                            ? { ...s, status: status }
+                            : s
+                        )
+                    );
+                });
+            })
+            raspberries.forEach(raspberry => {
+                stompClient.current?.subscribe(
+                    `/topic/raspberry-status/${raspberry.id}`,
+                    (message) => {
+                        const status = JSON.parse(message.body);
+                        setRaspberries((prev) => 
+                            prev.map(r => 
+                                r.id == raspberry.id
+                                ? { ...r, status: status}
+                                : r
+                            )
+                        )
+                    }
+                )
+            })
+        },
+        onStompError: (frame) => {
+            console.error("STOMP error:", frame);
+        },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+        stompClient.current?.deactivate();
+        };
+    }, [sensors, raspberries]);
 
     useEffect(() => { fetchData(); }, []);
 

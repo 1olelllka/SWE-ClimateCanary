@@ -2,11 +2,13 @@ package at.qe.skeleton.services;
 
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.WarningDTO;
+import at.qe.skeleton.model.DeviceStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Log
 public class LiveDataService {
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -65,6 +68,25 @@ public class LiveDataService {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         try {
             messagingTemplate.convertAndSend("/topic/climate-data/"+roomId.toString(), mapper.writeValueAsString(stats));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void pushConnectionStatusArduino(UUID sensorStation, DeviceStatus status) {
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        try {
+            messagingTemplate.convertAndSend("/topic/sensor-status/"+sensorStation.toString(), mapper.writeValueAsString("%s".formatted(status.name())));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void pushConnectionStatusRaspberry(UUID raspberry, DeviceStatus status) {
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        log.info(raspberry.toString());
+        try {
+            messagingTemplate.convertAndSend("/topic/raspberry-status/"+raspberry.toString(), mapper.writeValueAsString("%s".formatted(status.name())));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

@@ -9,6 +9,7 @@ import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.SensorStationRepository;
+import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.impl.SensorStationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,7 @@ class SensorStationServiceUnitTests {
     @Mock private SensorStationRepository sensorRepository;
     @Mock private NotificationClient notificationClient;
     @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private LiveDataService liveDataService;
 
     @InjectMocks
     private SensorStationServiceImpl sensorService;
@@ -135,7 +137,7 @@ class SensorStationServiceUnitTests {
     // --- updateExistingSensor ---
 
     @Test
-    void testThatUpdateExistingSensorUpdatesScalarFieldsWithoutNotifying() {
+    void testThatUpdateExistingSensorUpdatesScalarFieldsWithoutNotifyingAndSendsToWebsocketStatus() {
         when(sensorRepository.findById(stationId)).thenReturn(Optional.of(sampleStation));
         when(sensorRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
@@ -147,6 +149,7 @@ class SensorStationServiceUnitTests {
 
         assertEquals(DeviceStatus.ONLINE, result.getStatus());
         verify(eventPublisher, never()).publishEvent(any());
+        verify(liveDataService, times(1)).pushConnectionStatusArduino(stationId, DeviceStatus.ONLINE);
     }
 
     @Test
@@ -166,6 +169,7 @@ class SensorStationServiceUnitTests {
 
         // one SENSOR_ADD to the new room's Pi; old room has no Pi so no SENSOR_DELETE
         verify(eventPublisher, times(1)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test
@@ -192,6 +196,7 @@ class SensorStationServiceUnitTests {
 
         // SENSOR_ADD to new Pi + SENSOR_DELETE to old Pi
         verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test
@@ -205,6 +210,7 @@ class SensorStationServiceUnitTests {
         sensorService.updateExistingSensor(stationId, patch);
 
         verify(eventPublisher, never()).publishEvent(any());
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test
@@ -222,6 +228,7 @@ class SensorStationServiceUnitTests {
 
         // SENSOR_ADD + SENSOR_DELETE for name change
         verify(eventPublisher, times(2)).publishEvent(any(NotifyRaspberryCommand.class));
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test
@@ -237,6 +244,7 @@ class SensorStationServiceUnitTests {
         sensorService.updateExistingSensor(stationId, patch);
 
         verify(eventPublisher, never()).publishEvent(any());
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test
@@ -249,6 +257,7 @@ class SensorStationServiceUnitTests {
 
         assertThrows(ConflictException.class, () -> sensorService.updateExistingSensor(stationId, patch));
         verify(sensorRepository, never()).save(any());
+        verify(liveDataService, never()).pushConnectionStatusArduino(any(UUID.class), any(DeviceStatus.class));
     }
 
     @Test

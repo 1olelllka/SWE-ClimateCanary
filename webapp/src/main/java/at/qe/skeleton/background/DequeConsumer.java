@@ -5,6 +5,7 @@ import at.qe.skeleton.commands.CommandDeque;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
+import at.qe.skeleton.services.LiveDataService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +25,13 @@ public class DequeConsumer {
     private Thread consumerThread;
 
     private final RaspberryPiRepository raspberryPiRepository;
+    private final LiveDataService liveDataService;
 
     @Autowired
-    public DequeConsumer(RaspberryPiRepository raspberryPiRepository) {
+    public DequeConsumer(RaspberryPiRepository raspberryPiRepository,
+                         LiveDataService liveDataService) {
         this.raspberryPiRepository = raspberryPiRepository;
+        this.liveDataService = liveDataService;
     }
 
     @PostConstruct
@@ -73,6 +77,7 @@ public class DequeConsumer {
             } else {
                 if (pi.getStatus() == DeviceStatus.OFFLINE) {
                     pi.setStatus(DeviceStatus.ONLINE);
+                    liveDataService.pushConnectionStatusRaspberry(pi.getId(), DeviceStatus.ONLINE);
                     raspberryPiRepository.save(pi);
                 }
                 log.info("Successfully processed the Raspberry Pi command...");
@@ -101,6 +106,7 @@ public class DequeConsumer {
                     pi.getIp(), pi.getPort());
             if (pi.getStatus() == DeviceStatus.ONLINE) {
                 pi.setStatus(DeviceStatus.OFFLINE);
+                liveDataService.pushConnectionStatusRaspberry(pi.getId(), DeviceStatus.OFFLINE);
                 raspberryPiRepository.save(pi);
             }
             command.resetAttempts();

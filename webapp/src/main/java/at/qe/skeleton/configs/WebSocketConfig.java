@@ -49,6 +49,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         messages
                 .simpTypeMatchers(SimpMessageType.CONNECT)
                 .authenticated()
+                .simpSubscribeDestMatchers("/topic/sensor-status/*", "/topic/raspberry-status/*")
+                .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
                 .simpSubscribeDestMatchers("/topic/resolve-warnings-department/*",
                         "topic/active-warnings-department")
                 .hasAuthority(Permission.CAN_VIEW_VIOLATIONS_PER_DEPARTMENT.name())
