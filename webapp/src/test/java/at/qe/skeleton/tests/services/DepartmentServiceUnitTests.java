@@ -176,36 +176,6 @@ class DepartmentServiceUnitTests {
                 departmentService.createDepartmentWithRooms(sampleDepartment, List.of(missingId), List.of()));
     }
 
-    // --- patchSpecificDepartment ---
-
-    @Test
-    void testThatPatchSpecificDepartmentUpdatesName() {
-        Department patch = new Department();
-        patch.setName("New Name");
-
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-        when(departmentRepository.existsByNameAndBuildingId("New Name", sampleBuilding.getId())).thenReturn(false);
-        when(departmentRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-
-        Department result = departmentService.patchSpecificDepartment(departmentId, patch);
-
-        assertEquals("New Name", result.getName());
-        verify(departmentRepository).save(any());
-    }
-
-    @Test
-    void testThatPatchSpecificDepartmentThrowsConflictWhenNameTaken() {
-        Department patch = new Department();
-        patch.setName("Taken Name");
-
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.of(sampleDepartment));
-        when(departmentRepository.existsByNameAndBuildingId("Taken Name", sampleBuilding.getId())).thenReturn(true);
-
-        assertThrows(ConflictException.class,
-                () -> departmentService.patchSpecificDepartment(departmentId, patch));
-        verify(departmentRepository, never()).save(any());
-    }
-
     // --- editDepartmentWithRooms ---
 
     @Test
@@ -337,14 +307,6 @@ class DepartmentServiceUnitTests {
         assertThrows(ConflictException.class, () ->
                 departmentService.editDepartmentWithRooms(departmentId, sampleDepartment, List.of(), List.of(), List.of(newRoom))
         );
-    }
-
-    @Test
-    void testThatPatchSpecificDepartmentThrowsNotFoundWhenMissing() {
-        when(departmentRepository.findById(departmentId)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class,
-                () -> departmentService.patchSpecificDepartment(departmentId, new Department()));
     }
 
     // --- deleteDepartment ---

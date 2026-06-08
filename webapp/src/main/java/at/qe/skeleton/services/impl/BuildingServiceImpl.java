@@ -7,6 +7,7 @@ import at.qe.skeleton.model.Department;
 import at.qe.skeleton.repositories.BuildingRepository;
 import at.qe.skeleton.services.BuildingService;
 import at.qe.skeleton.services.DepartmentService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class BuildingServiceImpl implements BuildingService {
 
     private final BuildingRepository buildingRepository;
@@ -46,6 +48,7 @@ public class BuildingServiceImpl implements BuildingService {
         if (building.getAddress() != null && !building.getAddress().isBlank() && buildingRepository.existsByAddress(building.getAddress())) {
             throw new ConflictException("Building with this address already exists");
         }
+        log.info("Created building {}", building.getName());
         return buildingRepository.save(building);
 
     }
@@ -60,6 +63,7 @@ public class BuildingServiceImpl implements BuildingService {
                 if (!name.equals(building.getName()) && buildingRepository.existsByName(name)) throw new ConflictException("Building with such name already exists");
                 building.setName(name);
             });
+            log.info("Updated building {}", building.getName());
             return buildingRepository.save(building);
         }).orElseThrow(() -> new NotFoundException("Building with id " + id + " was not found."));
     }
@@ -74,6 +78,7 @@ public class BuildingServiceImpl implements BuildingService {
                     .toList();
             departmentIds.forEach(departmentService::deleteDepartment);
         }
+        log.info("Building {} - {} deleted", id, building != null ? building.getName() : "{UNDEFINED}");
         buildingRepository.deleteById(id);
     }
 }

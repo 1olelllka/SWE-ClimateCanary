@@ -11,6 +11,7 @@ import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Slf4j
 public class WarningServiceImpl implements WarningService {
 
     private final WarningRepository warningsRepository;
@@ -129,6 +131,7 @@ public class WarningServiceImpl implements WarningService {
                         "RoomMonitoring not found: " + dto.roomId()));
 
         Warnings warning = warningCreateMapper.mapFrom(dto);
+        log.info("Received warning from Raspberry Pi – {}", warning.getMessage());
         switch (warning.getMeasurementType()) {
             case TEMPERATURE -> {
                 Tip tip;
@@ -170,6 +173,11 @@ public class WarningServiceImpl implements WarningService {
                 }
             }
         }
+        if (warning.getTip() != null) {
+            log.info("Added tip for the warning: {}", warning.getTip().getMsg());
+        } else {
+            log.info("No tip added for the warning: {} {}", warning.getStatus().name(), warning.getMeasurementType().name());
+        }
         warning.setRoomMonitoring(room);
         WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.pushActiveWarning(room.getRoomId(), res);
@@ -192,6 +200,7 @@ public class WarningServiceImpl implements WarningService {
     @Transactional
     public WarningDTO resolveWarning(UUID warningId) {
         Warnings warning = findActiveWarningById(warningId);
+        log.info("Received resolve active warnings for a room from Raspberry Pi");
         warning.setResolvedAt(LocalDateTime.now());
         AtomicInteger counter = new AtomicInteger(1);
         if (warning.getRoomMonitoring() == null) throw new ValidationException("Warning does not have assigned room. Please contact system administrator.");
@@ -203,6 +212,7 @@ public class WarningServiceImpl implements WarningService {
                         counter.addAndGet(1);
                     }
                 });
+        log.info("Resolved {} warnings", counter.get());
         WarningDTO dto = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.resolveActiveWarning(dto.roomId(), dto);
         Room room = roomRepository.findById(dto.roomId()).orElse(null);

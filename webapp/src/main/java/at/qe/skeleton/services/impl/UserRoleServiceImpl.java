@@ -4,6 +4,7 @@ import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.services.UserRoleService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class UserRoleServiceImpl implements UserRoleService {
 
     private RoleRepository roleRepository;
@@ -31,6 +33,7 @@ public class UserRoleServiceImpl implements UserRoleService {
         return roleRepository.findById(id).map(role -> {
             Optional.ofNullable(dto.getName()).ifPresent(role::setName);
             Optional.ofNullable(dto.getPermissions()).ifPresent(role::setPermissions);
+            log.info("Updated role {}", role.getName());
             return roleRepository.save(role);
         }).orElseThrow(() -> new NotFoundException("Permission with id " + id + " does not exist."));
     }

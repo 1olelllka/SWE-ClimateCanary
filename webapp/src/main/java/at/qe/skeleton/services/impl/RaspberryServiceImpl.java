@@ -153,6 +153,11 @@ public class RaspberryServiceImpl implements RaspberryService {
                         .map(sensor -> new ReducedSensorDTO(sensor.getName(), sensor.getReadId(), sensor.getWriteId()))
                         .collect(Collectors.toSet())
                 : Set.of();
+        if (sensors.isEmpty()) {
+            log.info("There are no sensors connected to RaspberryPi {}", pi.getName());
+        } else {
+            log.info("Found {} sensors connected to RaspberryPi {}", sensors.size(), pi.getName());
+        }
         RoomOccupancy occupancy = getOccupancyFromRedis(id);
         if (pi.getRoomMonitoring() != null) {
             UUID roomId = pi.getRoomMonitoring().getRoomId();
@@ -168,6 +173,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                     new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), !isSharedRoom && occupancy.getPeopleCnt() < 5)
                     : null);
         } else {
+            log.info("No room is connected to Raspberry Pi {}", pi.getName());
             return new PiConfigDTO(null, id, pi.getFrequency(), null, null, null);
         }
     }
