@@ -4,6 +4,7 @@ import { Column } from 'primereact/column';
 import { defaultTableProps } from '../config/tableConfig';
 import { useNavigate } from 'react-router-dom';
 import { DepartmentWithStats } from '../views/SeniorManagerDashboard';
+import { useTemperature } from '../hooks/useTemperature';
 
 interface Props {
     departments: DepartmentWithStats[];
@@ -29,12 +30,13 @@ function computeStatus(dept: DepartmentWithStats): 'red' | 'yellow' | 'green' | 
 
 export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading }) => {
     const navigate = useNavigate();
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
 
     const tableData: TableRow[] = departments.map(d => ({
         id:         d.id,
         department: d.name,
         co2:      d.stats?.avgAirQuality  != null ? `${d.stats.avgAirQuality.toFixed(0)} ppm`  : 'N/A',
-        temp:     d.stats?.avgTemperature != null ? `${d.stats.avgTemperature.toFixed(1)} °C`  : 'N/A',
+        temp:     d.stats?.avgTemperature != null ? `${convertTemp(d.stats.avgTemperature).toFixed(1)} ${tempUnit}` : 'N/A',
         humidity: d.stats?.avgHumidity    != null ? `${d.stats.avgHumidity.toFixed(1)} %`      : 'N/A',
         status:   computeStatus(d),
     }));
@@ -60,11 +62,11 @@ export const DepartmentAveragesTable: React.FC<Props> = ({ departments, loading 
                 className="row-clickable"
                 rows={10}
             >
-                <Column field="department" header="Department" sortable />
-                <Column field="co2"        header="CO₂"        sortable />
-                <Column field="temp"       header="Temp"       sortable />
-                <Column field="humidity"   header="Humidity"   sortable />
-                <Column header="Status"    body={statusTemplate} />
+                <Column field="department" header="Department" sortable style={{ width: '32%' }} />
+                <Column field="co2"        header="CO₂"        sortable style={{ width: '18%' }} />
+                <Column field="temp"       header="Temp"       sortable style={{ width: '18%' }} />
+                <Column field="humidity"   header="Humidity"   sortable style={{ width: '19%' }} />
+                <Column header="Status"    body={statusTemplate} style={{ width: '13%', textAlign: 'center' }} />
             </DataTable>
         </div>
     );

@@ -19,14 +19,18 @@ const ConfirmDeleteDialog: React.FC<ConfirmDeleteDialogProps> = ({
 }) => (
     <Dialog
         header={
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <i className="pi pi-exclamation-triangle" style={{ color: '#ef4444', fontSize: '1.1rem' }} />
+            <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                <i
+                    className="pi pi-exclamation-triangle"
+                    style={{color: '#ef4444', fontSize: '1.1rem'}}
+                />
+                {' '}
                 Confirm Delete
             </span>
         }
         visible={visible}
         className="admin-form-dialog"
-        style={{ width: '400px' }}
+        style={{width: '400px'}}
         onHide={onHide}
         footer={
             <div className="admin-dialog-footer">

@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
 import { Cards } from '../components/Cards';
 import '../styles/EmployeeDashboard.css';
-import { FooterComponent } from "../components/FooterComponent";
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
 import { ClimateHistoryChart } from '../components/ClimateHistoryChart';
 import { Toast } from 'primereact/toast';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 interface ClimateData {
     timestamp: string;
@@ -216,25 +217,28 @@ export const EmployeeDashboard: React.FC = () => {
 
 
     const isClimateStale = climate !== null
-        && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
+        && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
     const currentClimate = isClimateStale ? null : climate;
+
+    const { convert: convertTemp, convertDelta, unit: tempUnit } = useTemperature();
+    const { formatTime } = useTimeFormat();
 
     const fmt = (v: number | undefined, decimals = 1): string =>
         v !== undefined ? v.toFixed(decimals) : (loading ? '…' : 'N/A');
+    const fmtTemp = (v: number | undefined, decimals = 1): string =>
+        v !== undefined ? convertTemp(v).toFixed(decimals) : (loading ? '…' : 'N/A');
 
-    const updatedAt = currentClimate
-        ? new Date(currentClimate.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : '--:--';
+    const updatedAt = currentClimate ? formatTime(currentClimate.timestamp) : '--:--';
 
     // Sparkline: display only the last 10 minutes; trend uses full historyPoints to find 10-min-ago reference
     const tenMinAgo = Date.now() - 10 * 60 * 1000;
     const last10min = historyPoints.filter(p => new Date(p.timestamp).getTime() >= tenMinAgo);
-    const tempSparkline = last10min.map(p => p.temperature);
+    const tempSparkline = last10min.map(p => convertTemp(p.temperature));
     const humSparkline  = last10min.map(p => p.humidity);
     const aqSparkline   = last10min.map(p => p.airQuality);
 
     // Trend text: current value vs 10 min ago
-    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${v.toFixed(1)}°`,    0.2);
+    const tempTrend = calcTrend(currentClimate?.temperature, historyPoints, 'temperature', v => `${convertDelta(v).toFixed(1)}${tempUnit}`, 0.2);
     const humTrend  = calcTrend(currentClimate?.humidity,    historyPoints, 'humidity',    v => `${v.toFixed(1)}%`,    1.0);
     const aqTrend   = calcTrend(currentClimate?.airQuality,  historyPoints, 'airQuality',  v => `${Math.round(v)} ppm`, 10);
 
@@ -268,8 +272,8 @@ export const EmployeeDashboard: React.FC = () => {
                         <div className="card-grid">
                             <Cards
                                 title="Temperature"
-                                value={fmt(currentClimate?.temperature)}
-                                unit="°C"
+                                value={fmtTemp(currentClimate?.temperature)}
+                                unit={tempUnit}
                                 color="#e05252"
                                 dataPoints={tempSparkline}
                                 trendIcon={tempTrend.icon}
@@ -305,8 +309,6 @@ export const EmployeeDashboard: React.FC = () => {
                     </>
                 )}
             </div>
-
-            <FooterComponent />
         </div>
     );
 };

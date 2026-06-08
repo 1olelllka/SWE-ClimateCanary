@@ -83,6 +83,7 @@ const DeviceConfigurationPage: React.FC = () => {
     // Sensor dialog
     const [showSensorDialog, setShowSensorDialog] = useState(false);
     const [editingSensorId, setEditingSensorId] = useState<string | null>(null);
+    const [editingSensorWriteId, setEditingSensorWriteId] = useState<string | null>(null);
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
@@ -227,12 +228,14 @@ const DeviceConfigurationPage: React.FC = () => {
 
     const openSensorDialog = () => {
         setEditingSensorId(null);
+        setEditingSensorWriteId(null);
         setSensorName(''); setSensorRoomId('');
         setShowSensorDialog(true);
     };
 
     const openEditSensorDialog = (row: SensorStationDTO) => {
         setEditingSensorId(row.readId ?? null);
+        setEditingSensorWriteId(row.writeId ?? null);
         setSensorName(row.name ?? '');
         setSensorRoomId(row.roomId ?? '');
         setShowSensorDialog(true);
@@ -350,6 +353,16 @@ const DeviceConfigurationPage: React.FC = () => {
             .catch(() => {
                 toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to send reconnection request.', life: 3000 });
             });
+    };
+
+    const handleRemoveSensorFromPi = (row: SensorStationDTO) => {
+        setConfirmDelete({
+            message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
+            onConfirm: () => {
+                setConfirmDelete(null);
+                handleDisconnectSensor(row.readId!);
+            },
+        });
     };
 
 const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
@@ -508,15 +521,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={(row: SensorStationDTO) => (
                                     <div className="admin-table-actions">
                                         <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryConnection(row.readId!)} />
-                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => {
-                                            setConfirmDelete({
-                                                message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi? This action cannot be undone.`,
-                                                onConfirm: () => {
-                                                    setConfirmDelete(null);
-                                                    handleDisconnectSensor(row.readId!);
-                                                },
-                                            });
-                                        }} />
+                                        <Button icon="pi pi-trash" rounded text severity="danger" title="Remove from this Raspberry Pi" onClick={() => handleRemoveSensorFromPi(row)} />
                                     </div>
                                 )} />
                             </DataTable>
@@ -557,6 +562,19 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
                         <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter />
                     </div>
+
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </Dialog>
         </div>

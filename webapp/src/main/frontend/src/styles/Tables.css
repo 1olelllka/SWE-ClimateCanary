@@ -643,7 +643,8 @@ html[data-theme='dark'] .admin-add-button:hover {
     }
 
     .cards-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
     }
 
     .flex-header {
@@ -678,10 +679,7 @@ html[data-theme='dark'] .admin-add-button:hover {
     }
 
     .p-datatable .p-datatable-wrapper {
-        overflow-x: hidden !important;
-        padding-left: 0.25rem;
-        padding-right: 0.25rem;
-        box-sizing: border-box;
+        overflow-x: hidden;
     }
 
     .p-datatable table {
@@ -691,16 +689,16 @@ html[data-theme='dark'] .admin-add-button:hover {
 
     .p-datatable .p-datatable-thead > tr > th,
     .p-datatable .p-datatable-tbody > tr > td {
-        padding-left: 0.18rem !important;
-        padding-right: 0.18rem !important;
-        font-size: 0.72rem !important;
-        line-height: 1.2 !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        font-size: 0.73rem !important;
+        line-height: 1.25 !important;
         white-space: normal !important;
-        word-break: normal !important;
+        word-break: break-word !important;
     }
 
     .p-datatable .p-datatable-thead > tr > th {
-        font-size: 0.6rem !important;
+        font-size: 0.62rem !important;
         letter-spacing: 0.25px !important;
         white-space: nowrap !important;
     }
@@ -709,51 +707,6 @@ html[data-theme='dark'] .admin-add-button:hover {
         display: none !important;
     }
 
-    .p-datatable .p-sortable-column {
-        padding-right: 0.18rem !important;
-    }
-
-    /* ROOM column */
-    .p-datatable .p-datatable-thead > tr > th:first-child,
-    .p-datatable .p-datatable-tbody > tr > td:first-child {
-        width: 3.8rem !important;
-        min-width: 3.8rem !important;
-        max-width: 3.8rem !important;
-    }
-
-    /* TYPE column */
-    .p-datatable .p-datatable-thead > tr > th:nth-child(2),
-    .p-datatable .p-datatable-tbody > tr > td:nth-child(2) {
-        width: 4.05rem !important;
-        min-width: 4.05rem !important;
-        max-width: 4.05rem !important;
-    }
-
-    /* CO2 column */
-    .p-datatable .p-datatable-thead > tr > th:nth-child(3),
-    .p-datatable .p-datatable-tbody > tr > td:nth-child(3) {
-        width: 3.5rem !important;
-        min-width: 3.5rem !important;
-        max-width: 3.5rem !important;
-    }
-
-    /* TEMP column */
-    .p-datatable .p-datatable-thead > tr > th:nth-child(4),
-    .p-datatable .p-datatable-tbody > tr > td:nth-child(4) {
-        width: 3.7rem !important;
-        min-width: 3.7rem !important;
-        max-width: 3.7rem !important;
-    }
-
-    /* HUMIDITY column */
-    .p-datatable .p-datatable-thead > tr > th:nth-child(5),
-    .p-datatable .p-datatable-tbody > tr > td:nth-child(5) {
-        width: 4.2rem !important;
-        min-width: 4.2rem !important;
-        max-width: 4.2rem !important;
-    }
-
-    /* STATUS/action column */
     .p-datatable .p-button-icon {
         font-size: 0.78rem !important;
     }
@@ -1344,20 +1297,20 @@ html[data-theme='dark'] .user-list-compact-table .p-datatable-tbody > tr:hover >
     }
 
     .p-datatable .admin-actions-column-wide {
-        width: 5.9rem !important;
-        min-width: 5.9rem !important;
-        max-width: 5.9rem !important;
+        width: 7.2rem !important;
+        min-width: 7.2rem !important;
+        max-width: 7.2rem !important;
     }
 
     .admin-table-actions {
-        gap: 0.25rem;
+        gap: 0.15rem;
         justify-content: flex-end;
     }
 
     .admin-table-actions .p-button {
-        width: 1.8rem !important;
-        height: 1.8rem !important;
-        min-width: 1.8rem !important;
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+        min-width: 1.6rem !important;
     }
 
     .admin-table-actions .p-button-icon {
@@ -1809,10 +1762,10 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
 .admin-form-dialog .p-multiselect {
     height: 2.4rem !important;
     width: 100% !important;
-    border-radius: 999px !important;
-    background-color: #111827 !important;
-    border-color: var(--app-border, #334155) !important;
-    color: #f8fafc !important;
+    border-radius: 8px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
     display: flex !important;
     align-items: center !important;
 }
@@ -1825,7 +1778,7 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
     padding-bottom: 0 !important;
     padding-left: 1rem !important;
     font-size: 0.82rem !important;
-    color: #f8fafc !important;
+    color: #6b7280 !important;
 }
 
 .admin-form-dialog .p-multiselect-label.p-placeholder {
@@ -1834,7 +1787,7 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
 
 .admin-form-dialog .p-multiselect-trigger {
     width: 2.4rem !important;
-    color: #f8fafc !important;
+    color: #6b7280 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1981,4 +1934,41 @@ html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
     .admin-dialog-table .p-datatable-table {
         min-width: 560px !important;
     }
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-multiselect {
+    background-color: #111827 !important;
+    border-color: var(--app-border) !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-label,
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
+    color: #f8fafc !important;
+}
+
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: max-content !important;
+    min-width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+    width: auto !important;
+}
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    white-space: nowrap;
 }

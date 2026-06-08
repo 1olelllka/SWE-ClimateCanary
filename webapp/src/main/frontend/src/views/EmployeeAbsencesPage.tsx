@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 import { UserxControllerApi, UserxDTO } from '../generated-skeleton-api';
 import { Toast } from 'primereact/toast';
+import { Dropdown } from 'primereact/dropdown';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { CreateAbsenceForm } from '../components/CreateAbsenceForm';
@@ -88,6 +90,7 @@ const KpiCard = ({ title, value, max, displayValue, barColor = '#22c55e' }: KpiC
 
 export const EmployeeAbsencesPage: React.FC = () => {
     const toast = useRef<Toast>(null);
+    const { formatDate } = useTimeFormat();
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const [showRequestForm, setShowRequestForm] = useState(false);
     const [selectedAbsence, setSelectedAbsence] = useState<AbsenceListDTO | null>(null);
@@ -119,21 +122,6 @@ export const EmployeeAbsencesPage: React.FC = () => {
     }, [fetchAbsences]);
 
     // ── KPI computations ──────────────────────────────────────────────────────
-
-    const currentYear = new Date().getFullYear();
-
-    // const usedVacationDays = useMemo(() =>
-    //     absences
-    //         .filter(a =>
-    //             a.status === 'APPROVED' &&
-    //             a.typeOfAbsence === 'VACATION' &&
-    //             new Date(a.startDate).getFullYear() === currentYear,
-    //         )
-    //         .reduce((sum, a) => sum + calculateAbsenceDays(a.startDate, a.endDate), 0),
-    //     [absences, currentYear],
-    // );
-
-    // const vacationRemaining = Math.max(0, TOTAL_VACATION_DAYS - usedVacationDays);
 
     const oldestPendingMinutes = useMemo(() => {
         const pending = absences
@@ -186,7 +174,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                         max={10}
                     />
                     <KpiCard
-                        title="How Long Manager Ignores Me"
+                        title="Manager Ignores Me"
                         value={Math.min(oldestPendingMinutes, MAX_IGNORE_MINUTES)}
                         max={MAX_IGNORE_MINUTES}
                         displayValue={formatIgnoreTime(oldestPendingMinutes)}
@@ -195,17 +183,19 @@ export const EmployeeAbsencesPage: React.FC = () => {
                 </div>
 
                 <div className="employee-absences-controls">
-                    <select
-                        className="absence-status-filter"
+                    <Dropdown
                         value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                    >
-                        <option value="">All statuses</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="APPROVED">Approved</option>
-                        <option value="REJECTED">Rejected</option>
-                        <option value="CANCELLED">Cancelled</option>
-                    </select>
+                        options={[
+                            { label: 'All statuses', value: '' },
+                            { label: 'Pending', value: 'PENDING' },
+                            { label: 'Approved', value: 'APPROVED' },
+                            { label: 'Rejected', value: 'REJECTED' },
+                            { label: 'Cancelled', value: 'CANCELLED' },
+                        ]}
+                        onChange={e => setStatusFilter(e.value)}
+                        placeholder="All statuses"
+                        className="absence-status-filter"
+                    />
                     <button
                         type="button"
                         className="absence-request-button"
@@ -272,7 +262,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
                                     displayedAbsences.map(abs => (
                                         <tr key={abs.id}>
                                             <td>{formatEnum(abs.typeOfAbsence)}</td>
-                                            <td>{formatDateRange(abs.startDate, abs.endDate)}</td>
+                                            <td>{formatDate(abs.startDate) === formatDate(abs.endDate) ? formatDate(abs.startDate) : `${formatDate(abs.startDate)} – ${formatDate(abs.endDate)}`}</td>
                                             <td>{calculateAbsenceHours(abs.startDate, abs.endDate)} h</td>
                                             <td><StatusBadge status={abs.status} /></td>
                                             <td>

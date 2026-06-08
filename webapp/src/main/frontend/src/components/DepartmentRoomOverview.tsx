@@ -6,6 +6,7 @@ import {
     RoomDTO
 } from '../views/EmployeeDepartmentPage';
 import '../styles/DepartmentRoomOverview.css';
+import { useTemperature } from '../hooks/useTemperature';
 
 interface DepartmentRoomOverviewProps {
     rooms: RoomDTO[];
@@ -22,27 +23,13 @@ function warningColor(status?: string): string | undefined {
     return undefined;
 }
 
-const formatTemperature = (value?: number) => {
-    if (value === undefined || value === null) {
-        return '-';
-    }
-
-    return `${value.toFixed(1).replace('.', ',')} °C`;
-};
-
 const formatHumidity = (value?: number) => {
-    if (value === undefined || value === null) {
-        return '-';
-    }
-
+    if (value === undefined || value === null) return '-';
     return `${Math.round(value)} %`;
 };
 
 const formatAirQuality = (value?: number) => {
-    if (value === undefined || value === null) {
-        return '-';
-    }
-
+    if (value === undefined || value === null) return '-';
     return `${Math.round(value)} ppm`;
 };
 
@@ -54,6 +41,13 @@ export const DepartmentRoomOverview: React.FC<DepartmentRoomOverviewProps> = ({
                                                                                   warnings,
                                                                                   onToggleRoom
                                                                               }) => {
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
+
+    const formatTemperature = (value?: number) => {
+        if (value === undefined || value === null) return '-';
+        return `${convertTemp(value).toFixed(1).replace('.', ',')} ${tempUnit}`;
+    };
+
     const tempWarning = warnings.find(w => w.measurementType === 'TEMPERATURE');
     const humWarning  = warnings.find(w => w.measurementType === 'HUMIDITY');
     const aqWarning   = warnings.find(w => w.measurementType === 'CO2');

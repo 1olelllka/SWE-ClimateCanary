@@ -2,13 +2,19 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-import { AbsenceControllerApi, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { AbsenceControllerApi, AbsenceDTO, AbsencePatchDTOStatusEnum, AggregatedDataPointDTO, ClimateStatsControllerApi, DepartmentControllerApi, RoomControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import { Toast } from 'primereact/toast';
+import '../styles/CreateAbsenceForm.css';
+import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { RoomListTable, RoomData } from '../components/RoomListTable';
 import { ThresholdViolationData } from '../components/ThresholdViolationsTable';
-import {PendingRequestsTable, PendingRequestData} from '../components/PendingRequestsTable';
+import { PendingRequestsTable, PendingRequestData } from '../components/PendingRequestsTable';
 import { RoomViolationsBarChart } from '../components/RoomViolationsBarChart';
 import { UserxDTO } from '../generated-skeleton-api';
 interface RoomDTO {
@@ -188,7 +194,9 @@ const getRoomStatus = (
 const mapToRoomData = (
     room: RoomDTO,
     climate: ClimateData | null,
-    warnings: ActiveWarning[]
+    warnings: ActiveWarning[],
+    tempConvert: (c: number) => number,
+    tempUnit: string,
 ): RoomData => {
     return {
         id: getRoomDisplayId(room),
@@ -199,7 +207,7 @@ const mapToRoomData = (
             ? `${formatNumber(climate.airQuality, 0)} ppm`
             : 'n/a',
         temp: climate?.temperature !== null && climate?.temperature !== undefined
-            ? `${formatNumber(climate.temperature, 1)} °C`
+            ? `${formatNumber(tempConvert(climate.temperature), 1)} ${tempUnit}`
             : 'n/a',
         humidity: climate?.humidity !== null && climate?.humidity !== undefined
             ? `${formatNumber(climate.humidity, 0)} %`
@@ -208,8 +216,8 @@ const mapToRoomData = (
     } as RoomData;
 };
 
-const getMeasurementUnit = (measurementType?: string): string => {
-    if (measurementType === 'TEMPERATURE') return '°C';
+const getMeasurementUnit = (measurementType?: string, tempUnit = '°C'): string => {
+    if (measurementType === 'TEMPERATURE') return tempUnit;
     if (measurementType === 'HUMIDITY') return '%';
     if (measurementType === 'AIR') return 'ppm';
     return '';
@@ -222,26 +230,37 @@ const formatSensorName = (measurementType?: string): string => {
     return measurementType ?? 'Unknown';
 };
 
-const formatDatetime = (dateString?: string): string => {
+const _ph = (n: number) => String(n).padStart(2, '0');
+const formatDatetime = (
+    dateString?: string,
+    fmtTimeFn: (d: Date) => string = d => `${_ph(d.getHours())}:${_ph(d.getMinutes())}`,
+    fmtDateFn: (d: Date) => string = d => `${_ph(d.getDate())}.${_ph(d.getMonth() + 1)}.${d.getFullYear()}`,
+): string => {
     if (!dateString) return 'n/a';
     const d = new Date(dateString);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${fmtDateFn(d)} ${fmtTimeFn(d)}`;
 };
 
 const formatViolationNumber = (
     value: number | null | undefined,
-    measurementType?: string
+    measurementType?: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
 ): string => {
     if (value === null || value === undefined || Number.isNaN(value)) return 'n/a';
-    const unit = getMeasurementUnit(measurementType);
-    if (measurementType === 'AIR') return `${value.toFixed(0)} ${unit}`.trim();
-    return `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+    const unit = getMeasurementUnit(measurementType, tempUnit);
+    const displayValue = measurementType === 'TEMPERATURE' ? tempConvert(value) : value;
+    if (measurementType === 'AIR') return `${displayValue.toFixed(0)} ${unit}`.trim();
+    return `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
 const mapWarningToThresholdViolation = (
     warning: WarningDTO,
     roomLabel: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+    fmtTimeFn?: (d: Date) => string,
+    fmtDateFn?: (d: Date) => string,
 ): ThresholdViolationData => {
     const isMin = warning.triggeredValue < warning.activeLimitAtTime;
     return {
@@ -250,24 +269,21 @@ const mapWarningToThresholdViolation = (
         active:       warning.active,
         sensor:       formatSensorName(warning.measurementType),
         room:         roomLabel,
-        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType)}`,
-        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType),
-        datetime:     formatDatetime(warning.createdAt),
+        limit:        `${isMin ? 'Min' : 'Max'}: ${formatViolationNumber(warning.activeLimitAtTime, warning.measurementType, tempConvert, tempUnit)}`,
+        measuredValue: formatViolationNumber(warning.triggeredValue, warning.measurementType, tempConvert, tempUnit),
+        datetime:     formatDatetime(warning.createdAt, fmtTimeFn, fmtDateFn),
+        sortKey:      warning.createdAt,
     };
 };
 
 const formatAbsenceDateRange = (
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    fmtDateFn?: (d: Date) => string,
 ): string => {
-    if (!startDate || !endDate) {
-        return 'n/a';
-    }
-
-    const start = new Date(startDate).toLocaleDateString('de-DE');
-    const end = new Date(endDate).toLocaleDateString('de-DE');
-
-    return `${start} - ${end}`;
+    if (!startDate || !endDate) return 'n/a';
+    const fmt = fmtDateFn ?? ((d: Date) => d.toLocaleDateString('de-DE'));
+    return `${fmt(new Date(startDate))} - ${fmt(new Date(endDate))}`;
 };
 
 const formatAbsenceReason = (reason?: string): string => {
@@ -282,14 +298,15 @@ const formatAbsenceReason = (reason?: string): string => {
 };
 
 const mapAbsenceToPendingRequest = (
-    absence: AbsenceListDTO
+    absence: AbsenceListDTO,
+    fmtDateFn?: (d: Date) => string,
 ): PendingRequestData => {
     return {
         id: absence.id,
         first: absence.firstName,
         last: absence.lastName,
         room: absence.roomNumber || 'n/a',
-        date: formatAbsenceDateRange(absence.startDate, absence.endDate),
+        date: formatAbsenceDateRange(absence.startDate, absence.endDate, fmtDateFn),
         reason: formatAbsenceReason(absence.typeOfAbsence)
     };
 };
@@ -297,7 +314,12 @@ const mapAbsenceToPendingRequest = (
 
 export const DepartmentHeadDashboard: React.FC = () => {
     const navigate = useNavigate();
+    const toastRef = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { formatTime, formatDate, formatDatetime: formatDatetimeHook } = useTimeFormat();
+    const fmtTimeFn = useCallback((d: Date) => formatTime(d), [formatTime]);
+    const fmtDateFn = useCallback((d: Date) => formatDate(d), [formatDate]);
 
     const [rooms, setRooms] = useState<RoomData[]>([]);
     const [roomBackendIds, setRoomBackendIds] = useState<string[]>([]);
@@ -312,6 +334,13 @@ export const DepartmentHeadDashboard: React.FC = () => {
     const [violationsLoading, setViolationsLoading] = useState(false);
     const [pendingRequestsLoading, setPendingRequestsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // --- Absence request dialog ---
+    const [viewDialogVisible, setViewDialogVisible] = useState(false);
+    const [viewingRequest, setViewingRequest] = useState<PendingRequestData | null>(null);
+    const [viewingAbsenceDetail, setViewingAbsenceDetail] = useState<AbsenceDTO | null>(null);
+    const [absenceDetailLoading, setAbsenceDetailLoading] = useState(false);
+    const [absenceActionLoading, setAbsenceActionLoading] = useState(false);
 
     const fetchRoomWithLiveData = useCallback((room: RoomDTO): Promise<RoomData> => {
         return Promise.all([
@@ -328,10 +357,10 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 .catch(() => [])
         ]).then(([climate, warnings]) => {
             const isStale = climate !== null
-                && (Date.now() - new Date(climate.timestamp).getTime()) > 5 * 60 * 1000;
-            return mapToRoomData(room, isStale ? null : climate, warnings);
+                && (Date.now() - new Date(climate.timestamp).getTime()) > 30 * 1000;
+            return mapToRoomData(room, isStale ? null : climate, warnings, convertTemp, tempUnit);
         });
-    }, []);
+    }, [convertTemp, tempUnit]);
 
     const fetchThresholdViolations = useCallback((roomData: RoomData[]) => {
         setViolationsLoading(true);
@@ -358,7 +387,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             : [];
 
                         return warnings.map(warning =>
-                            mapWarningToThresholdViolation(warning, room.id)
+                            mapWarningToThresholdViolation(warning, room.id, convertTemp, tempUnit, fmtTimeFn, fmtDateFn)
                         );
                     })
                     .catch(error => {
@@ -374,23 +403,15 @@ export const DepartmentHeadDashboard: React.FC = () => {
         )
             .then(results => {
                 const flattened = results.flat();
-
-                flattened.sort((a, b) => {
-                    const parse = (s: string) => {
-                        const [d, t = '00:00'] = s.split(' ');
-                        const [dd, mm, yyyy] = d.split('.');
-                        const [hh, min] = t.split(':');
-                        return new Date(+yyyy, +mm - 1, +dd, +hh, +min).getTime();
-                    };
-                    return parse(b.datetime) - parse(a.datetime);
-                });
-
+                flattened.sort((a, b) =>
+                    new Date(b.sortKey ?? 0).getTime() - new Date(a.sortKey ?? 0).getTime()
+                );
                 setThresholdViolations(flattened);
             })
             .finally(() => {
                 setViolationsLoading(false);
             });
-    }, []);
+    }, [convertTemp, tempUnit, fmtTimeFn, fmtDateFn]);
 
     const fetchPendingRequests = useCallback(() => {
         setPendingRequestsLoading(true);
@@ -401,7 +422,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                 const pending = absences
                     .filter(absence => absence.status === 'PENDING')
-                    .map(mapAbsenceToPendingRequest);
+                    .map(absence => mapAbsenceToPendingRequest(absence, fmtDateFn));
 
                 setPendingRequests(pending);
             })
@@ -417,7 +438,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
             .finally(() => {
                 setPendingRequestsLoading(false);
             });
-    }, []);
+    }, [fmtDateFn]);
 
     const fetchDeptAggregation = useCallback((deptId: string) => {
         new ClimateStatsControllerApi()
@@ -507,7 +528,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                             if (r.backendId !== backendId) return r;
                             return {
                                 ...r,
-                                temp:     data.temperature != null ? `${formatNumber(data.temperature, 1)} °C` : r.temp,
+                                temp:     data.temperature != null ? `${formatNumber(convertTemp(data.temperature), 1)} ${tempUnit}` : r.temp,
                                 humidity: data.humidity    != null ? `${formatNumber(data.humidity, 0)} %`     : r.humidity,
                                 co2:      data.airQuality  != null ? `${formatNumber(data.airQuality, 0)} ppm` : r.co2,
                             };
@@ -523,12 +544,54 @@ export const DepartmentHeadDashboard: React.FC = () => {
         return () => { stompClient.current?.deactivate(); };
     }, [roomBackendIds]);
 
+    const handleViewRequest = useCallback((id: string) => {
+        const request = pendingRequests.find(r => r.id === id) ?? null;
+        setViewingRequest(request);
+        setViewingAbsenceDetail(null);
+        setViewDialogVisible(true);
+        setAbsenceDetailLoading(true);
+        new AbsenceControllerApi().getSpecificAbsence({ absenceId: id })
+            .then(res => setViewingAbsenceDetail(res.data))
+            .catch(() => setViewingAbsenceDetail(null))
+            .finally(() => setAbsenceDetailLoading(false));
+    }, [pendingRequests]);
+
+    const handleAbsenceAction = useCallback(async (status: 'APPROVED' | 'REJECTED') => {
+        if (!viewingRequest) return;
+        setAbsenceActionLoading(true);
+        try {
+            await new AbsenceControllerApi().updateStatusOfAbsence({
+                absenceId: viewingRequest.id,
+                absencePatchDTO: { status: status as AbsencePatchDTOStatusEnum },
+            });
+            toastRef.current?.show({
+                severity: status === 'APPROVED' ? 'success' : 'warn',
+                summary: status === 'APPROVED' ? 'Approved' : 'Rejected',
+                detail: `Request for ${viewingRequest.first} ${viewingRequest.last} has been ${status.toLowerCase()}.`,
+                life: 3000,
+            });
+            setViewDialogVisible(false);
+            fetchPendingRequests();
+        } catch {
+            toastRef.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: `Failed to ${status === 'APPROVED' ? 'approve' : 'reject'} the request.`,
+                life: 3000,
+            });
+        } finally {
+            setAbsenceActionLoading(false);
+        }
+    }, [viewingRequest, fetchPendingRequests]);
+
     const problemRoomsCount = useMemo(() => {
         return rooms.filter(room => room.status === 'red' || room.status === 'yellow').length;
     }, [rooms]);
 
+
     return (
         <div className="dashboard-layout">
+            <Toast ref={toastRef} />
             <PageHeader
                 title={'Department Overview'}
                 subtitle={departmentName ?? undefined}
@@ -549,7 +612,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
 
                     <div className="kpi-card">
                         <h4>Average Temperature</h4>
-                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${deptAggregation.avgTemperature.toFixed(1).replace('.', ',')} °C` : 'n/a'}</h2>
+                        <h2>{loading ? '…' : deptAggregation?.avgTemperature != null ? `${convertTemp(deptAggregation.avgTemperature).toFixed(1).replace('.', ',')} ${tempUnit}` : 'n/a'}</h2>
                     </div>
 
                     <div className="kpi-card">
@@ -596,6 +659,7 @@ export const DepartmentHeadDashboard: React.FC = () => {
                 <PendingRequestsTable
                     requests={pendingRequests}
                     loading={pendingRequestsLoading}
+                    onView={handleViewRequest}
                 />
 
                 <RoomViolationsBarChart
@@ -603,6 +667,92 @@ export const DepartmentHeadDashboard: React.FC = () => {
                     loading={violationsLoading}
                 />
             </div>
+            {/* ── Absence Request Dialog ── */}
+            <Dialog
+                header="Absence Request"
+                visible={viewDialogVisible}
+                className="admin-form-dialog"
+                style={{ width: '480px' }}
+                onHide={() => setViewDialogVisible(false)}
+                draggable={false}
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem' }}>
+                        <Button
+                            label="Reject"
+                            icon="pi pi-times"
+                            severity="danger"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('REJECTED')}
+                        />
+                        <Button
+                            label="Approve"
+                            icon="pi pi-check"
+                            severity="success"
+                            loading={absenceActionLoading}
+                            onClick={() => handleAbsenceAction('APPROVED')}
+                        />
+                    </div>
+                }
+            >
+                {absenceDetailLoading ? (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748b' }}>Loading…</div>
+                ) : viewingRequest && (
+                    <div className="admin-dialog-body">
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">First Name</span>
+                                <input className="absence-form-input" value={viewingRequest.first} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Last Name</span>
+                                <input className="absence-form-input" value={viewingRequest.last} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Room</span>
+                                <input className="absence-form-input" value={viewingRequest.room} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Reason</span>
+                                <input className="absence-form-input" value={viewingRequest.reason} readOnly />
+                            </div>
+                        </div>
+
+                        <div className="absence-form-date-row">
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Start Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[0] ?? ''} readOnly />
+                            </div>
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">End Date</span>
+                                <input className="absence-form-input" value={viewingRequest.date.split(' - ')[1] ?? ''} readOnly />
+                            </div>
+                        </div>
+
+                        {viewingAbsenceDetail?.createdAt && (
+                            <div className="absence-form-field">
+                                <span className="absence-form-label">Submitted On</span>
+                                <input className="absence-form-input" value={formatDatetimeHook(viewingAbsenceDetail.createdAt)} readOnly />
+                            </div>
+                        )}
+
+                        <div className="absence-form-field">
+                            <span className="absence-form-label">Message</span>
+                            <textarea
+                                className="absence-form-textarea"
+                                value={viewingAbsenceDetail?.comment ?? ''}
+                                rows={3}
+                                readOnly
+                                placeholder="No message provided"
+                            />
+                        </div>
+
+                    </div>
+                )}
+            </Dialog>
         </div>
     );
 };

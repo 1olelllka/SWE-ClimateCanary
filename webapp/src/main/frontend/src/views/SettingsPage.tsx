@@ -1,55 +1,118 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Dropdown } from 'primereact/dropdown';
+import { Toast } from 'primereact/toast';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
 import { ROUTES } from '../utilities/routes.paths';
+import { useUserPreferences } from '../Contexts/UserPreferencesContext';
+import { useTheme } from '../Contexts/ThemeContext';
+import { UserSettingsPatchDTOFormatEnum } from '../generated-skeleton-api';
 import '../styles/SettingsPage.css';
 import '../styles/Tables.css';
+
+// ── mapping helpers ──────────────────────────────────────────────────────────
+
+const TEMP_OPTS = ['°C', '°F'];
+const TIME_OPTS = ['24-hour (14:30)', '12-hour (2:30 PM)'];
+const DATE_OPTS = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'];
+
+const tempFromBackend  = (v?: boolean) => v ? '°F' : '°C';
+const tempToBackend    = (v: string)   => v === '°F';
+
+const timeFromBackend  = (v?: boolean) => v ? '12-hour (2:30 PM)' : '24-hour (14:30)';
+const timeToBackend    = (v: string)   => v === '12-hour (2:30 PM)';
+
+const dateFromBackend  = (v?: string): string => {
+    if (v === 'MM_DD_YYYY') return 'MM/DD/YYYY';
+    if (v === 'YYYY_MM_DD') return 'YYYY-MM-DD';
+    return 'DD/MM/YYYY';
+};
+const dateToBackend = (v: string): UserSettingsPatchDTOFormatEnum => {
+    if (v === 'MM/DD/YYYY') return UserSettingsPatchDTOFormatEnum.MM_DD_YYYY;
+    if (v === 'YYYY-MM-DD') return UserSettingsPatchDTOFormatEnum.YYYY_MM_DD;
+    return UserSettingsPatchDTOFormatEnum.DD_MM_YYYY;
+};
+
+// ── component ────────────────────────────────────────────────────────────────
 
 export const SettingsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
     const navigate = useNavigate();
+    const toastRef = useRef<Toast>(null);
 
-    const [email, setEmail] = useState('');
+    const { prefs, savePrefs } = useUserPreferences();
+    const { isDarkMode } = useTheme();
 
-    const [language, setLanguage] = useState('English');
+    const [email,           setEmail]           = useState('');
     const [temperatureUnit, setTemperatureUnit] = useState('°C');
-    const [timeFormat, setTimeFormat] = useState('24-hour (14:30)');
-    const [dayFormat, setDayFormat] = useState('DD/MM/YYYY');
+    const [timeFormat,      setTimeFormat]      = useState('24-hour (14:30)');
+    const [dayFormat,       setDayFormat]       = useState('DD/MM/YYYY');
+    const [saving,          setSaving]          = useState(false);
 
     const [notifications, setNotifications] = useState({
-        warnings: false,
-        tips: false,
-        absences: false,
+        warnings:     false,
+        tips:         false,
+        absences:     false,
         problemRooms: false,
     });
+
+    // Populate local state once settings are loaded from backend
+    useEffect(() => {
+        if (!prefs) return;
+        setTemperatureUnit(tempFromBackend(prefs.fahrenheit));
+        setTimeFormat(timeFromBackend(prefs.twelveHourFormat));
+        setDayFormat(dateFromBackend(prefs.format));
+    }, [prefs]);
 
     const toggleNotification = (key: keyof typeof notifications) => {
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
-    const handleSave = () => {
-        alert('Settings saved. Backend integration will be added later.');
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await savePrefs({
+                darkMode:         isDarkMode,
+                fahrenheit:       tempToBackend(temperatureUnit),
+                twelveHourFormat: timeToBackend(timeFormat),
+                format:           dateToBackend(dayFormat),
+            });
+            toastRef.current?.show({
+                severity: 'success',
+                summary:  'Saved',
+                detail:   'Your preferences have been saved.',
+                life:     3000,
+            });
+        } catch {
+            toastRef.current?.show({
+                severity: 'error',
+                summary:  'Error',
+                detail:   'Could not save preferences. Please try again.',
+                life:     3000,
+            });
+        } finally {
+            setSaving(false);
+        }
     };
 
     const PREFS = [
-        { label: 'Language',         value: language,         set: setLanguage,         opts: ['English', 'Deutsch'] },
-        { label: 'Temperature Unit', value: temperatureUnit,  set: setTemperatureUnit,  opts: ['°C', '°F'] },
-        { label: 'Time Format',      value: timeFormat,       set: setTimeFormat,       opts: ['24-hour (14:30)', '12-hour (2:30 PM)'] },
-        { label: 'Date Format',      value: dayFormat,        set: setDayFormat,        opts: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] },
-    ] as const;
+        { label: 'Temperature Unit', value: temperatureUnit, set: setTemperatureUnit, opts: TEMP_OPTS },
+        { label: 'Time Format',      value: timeFormat,      set: setTimeFormat,      opts: TIME_OPTS },
+        { label: 'Date Format',      value: dayFormat,       set: setDayFormat,       opts: DATE_OPTS },
+    ];
 
     const NOTIFS: { key: keyof typeof notifications; label: string }[] = [
-        { key: 'warnings',     label: 'Warnings' },
-        { key: 'tips',         label: 'Tips' },
-        { key: 'absences',     label: 'Absences' },
-        { key: 'problemRooms', label: 'Problem rooms' },
+        { key: 'warnings',     label: 'Warnings'      },
+        { key: 'tips',         label: 'Tips'           },
+        { key: 'absences',     label: 'Absences'       },
+        { key: 'problemRooms', label: 'Problem rooms'  },
     ];
 
     return (
         <div className="dashboard-layout">
+            <Toast ref={toastRef} />
             <PageHeader title="Settings" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
@@ -87,7 +150,7 @@ export const SettingsPage: React.FC = () => {
                                 <span className="settings-pref-label">{label}</span>
                                 <Dropdown
                                     value={value}
-                                    options={opts as unknown as string[]}
+                                    options={opts}
                                     onChange={e => set(e.value)}
                                     className="settings-dropdown"
                                 />
@@ -114,8 +177,8 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <div className="settings-action-row">
-                    <button className="settings-save-btn" onClick={handleSave}>
-                        Save changes
+                    <button className="settings-save-btn" onClick={handleSave} disabled={saving}>
+                        {saving ? 'Saving…' : 'Save changes'}
                     </button>
                     <button className="settings-cancel-btn" onClick={() => navigate(ROUTES.HOME)}>
                         Cancel

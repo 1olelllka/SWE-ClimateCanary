@@ -7,6 +7,16 @@ import { Toast } from 'primereact/toast';
 import '../styles/TimeFilter.css';
 import '../styles/ClimateHistoryChart.css';
 
+const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 899);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 899);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+    return isMobile;
+};
+
 type TimeFilter = 'Week' | 'Month' | 'Custom';
 type Selection  = 'all' | 'company' | string;
 
@@ -54,6 +64,7 @@ function dateRange(filter: TimeFilter, custom: Date[] | null): { startDate: stri
 
 export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
     const toastRef = useRef<Toast>(null);
+    const isMobile = useIsMobile();
 
     const [selection,   setSelection]   = useState<Selection>('all');
     const [timeFilter,  setTimeFilter]  = useState<TimeFilter>('Week');
@@ -202,23 +213,35 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
         tooltip: {
             trigger:     'axis' as const,
             axisPointer: { type: 'cross' as const },
+            confine:     true,
+            textStyle:   { fontSize: isMobile ? 11 : 12 },
             formatter:   (params: any[]) =>
                 params.map(p =>
                     `${p.marker}${p.seriesName}: ${p.value != null ? Number(p.value).toFixed(2) : '—'}`
                 ).join('<br/>'),
         },
         legend: {
-            bottom:    0,
-            data:      legendNames,
-            textStyle: { fontSize: 11 },
             type:      'scroll' as const,
+            orient:    'horizontal' as const,
+            bottom:    0,
+            height:    42,
+            data:      legendNames,
+            textStyle: { fontSize: isMobile ? 10 : 11 },
+            formatter: isMobile
+                ? (name: string) => name.length > 14 ? name.slice(0, 13) + '…' : name
+                : undefined,
         },
-        grid: { left: 52, right: 24, top: 16, bottom: 60 },
+        grid: {
+            left:   isMobile ? 32 : 36,
+            right:  isMobile ? 8  : 12,
+            top:    isMobile ? 8  : 12,
+            bottom: isMobile ? 72 : 80,
+        },
         xAxis: {
             type:        'category' as const,
             boundaryGap: false,
             data:        allDates,
-            axisLabel:   { rotate: 20, fontSize: 11 },
+            axisLabel:   { rotate: isMobile ? 30 : 20, fontSize: isMobile ? 9 : 11 },
             axisLine:    { lineStyle: { color: '#e2e8f0' } },
         },
         yAxis: {
@@ -226,7 +249,7 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
             min:       0,
             max:       100,
             splitLine: { lineStyle: { type: 'dashed' as const, color: '#f1f5f9' } },
-            axisLabel: { fontSize: 11 },
+            axisLabel: { fontSize: isMobile ? 9 : 11 },
         },
         series,
     };
@@ -234,45 +257,43 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
     const noData = !loading && allDates.length === 0;
 
     return (
-        <div className="table-container card chart-card">
+        <div className="table-container">
             <Toast ref={toastRef} />
             <div className="flex-header">
                 <h3>Climate Trend Indicator</h3>
-                <div className="time-filters">
-                    {(['Week', 'Month'] as TimeFilter[]).map(f => (
-                        <button
-                            key={f}
-                            className={`time-filter-btn${timeFilter === f ? ' active' : ''}`}
-                            onClick={() => { setTimeFilter(f); setCustomRange(null); }}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                    <DashboardCalendar
-                        dateRange={customRange}
-                        setDateRange={handleDateRangeChange}
-                        isActive={timeFilter === 'Custom'}
-                        onActivate={() => setTimeFilter('Custom')}
-                    />
+                <div className="company-trend-controls">
+                    <div className="time-filters">
+                        {(['Week', 'Month'] as TimeFilter[]).map(f => (
+                            <button
+                                key={f}
+                                className={`time-filter-btn${timeFilter === f ? ' active' : ''}`}
+                                onClick={() => { setTimeFilter(f); setCustomRange(null); }}
+                            >
+                                {f}
+                            </button>
+                        ))}
+                        <DashboardCalendar
+                            dateRange={customRange}
+                            setDateRange={handleDateRangeChange}
+                            isActive={timeFilter === 'Custom'}
+                            onActivate={() => setTimeFilter('Custom')}
+                        />
+                    </div>
+                    <select
+                        className="trend-dept-select"
+                        value={selection}
+                        onChange={e => setSelection(e.target.value)}
+                    >
+                        <option value="all">All departments</option>
+                        <option value="company">Company average</option>
+                        {departments.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
-            <div style={{ padding: '1rem 1.5rem 0.5rem' }}>
-                <select
-                    className="metric-select"
-                    value={selection}
-                    onChange={e => setSelection(e.target.value)}
-                    style={{ minWidth: '180px' }}
-                >
-                    <option value="all">All</option>
-                    <option value="company">Company</option>
-                    {departments.map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                </select>
-            </div>
-
-            <div style={{ padding: '0.5rem 1.5rem 1.5rem' }}>
+            <div className="company-trend-chart-area">
                 {loading ? (
                     <div className="chart-loading">Loading…</div>
                 ) : error ? (
@@ -280,7 +301,9 @@ export const CompanyTrendChart: React.FC<Props> = ({ departments }) => {
                 ) : noData ? (
                     <div className="chart-loading">No trend data available for this period.</div>
                 ) : (
-                    <ReactECharts option={option} style={{ height: '340px' }} notMerge />
+                    <div className="company-trend-echarts-wrapper">
+                        <ReactECharts option={option} style={{ height: '100%', width: '100%' }} notMerge />
+                    </div>
                 )}
             </div>
         </div>

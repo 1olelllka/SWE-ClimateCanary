@@ -15,7 +15,7 @@ globalAxios.interceptors.request.use(request => {
     }
     return request;
 }, error => {
-    return Promise.reject(error);
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
 });
 
 

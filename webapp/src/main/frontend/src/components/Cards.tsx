@@ -38,7 +38,7 @@ export const Cards: React.FC<KpiCardProps> = ({
         <div className={`card-wrapper${violated ? ' card-violated' : ''}`}>
             <div className="card-header" style={{ color }}>
                 {violated && <span className="card-alert-dot" />}
-                <span>{title}</span>
+                <span className="card-title">{title}</span>
                 {statusCfg && (
                     <span className="card-alert-badge">{statusCfg.label}</span>
                 )}

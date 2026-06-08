@@ -63,10 +63,10 @@ const statusBadge = (status?: string) => {
     return (
         <span style={{
             background: online ? '#4caf50' : '#9e9e9e',
-            color: 'white', padding: '2px 10px', borderRadius: '12px',
-            fontSize: '0.8rem', fontWeight: 500,
+            color: 'white', padding: '1px 7px', borderRadius: '12px',
+            fontSize: '0.72rem', fontWeight: 600,
         }}>
-            {status ?? 'N/A'}
+            {online ? 'Online' : status ? 'Offline' : 'N/A'}
         </span>
     );
 };
@@ -115,6 +115,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({ title, search, onSearch, sear
 const SysAdminDashboard: React.FC = () => {
     const toast = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
 
     // --- Data ---
     const [raspberries, setRaspberries] = useState<RaspberryDTOReal[]>([]);
@@ -142,6 +143,7 @@ const SysAdminDashboard: React.FC = () => {
     // --- Sensor dialog ---
     const [showSensorDialog, setShowSensorDialog] = useState(false);
     const [editingSensorId, setEditingSensorId] = useState<string | null>(null);
+    const [editingSensorWriteId, setEditingSensorWriteId] = useState<string | null>(null);
     const [sensorLoading, setSensorLoading] = useState(false);
     const [sensorName, setSensorName] = useState('');
     const [sensorRoomId, setSensorRoomId] = useState('');
@@ -209,6 +211,12 @@ const SysAdminDashboard: React.FC = () => {
     const fetchDepartments = () =>
         new DepartmentControllerApi().getPageOfDepartments({ pageable: PAGEABLE })
             .then(res => setDepartments(res.data.content ?? [])).catch(() => {});
+
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 700);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
 
     useEffect(() => {
         fetchRaspberries();
@@ -401,12 +409,14 @@ const SysAdminDashboard: React.FC = () => {
     // --- Sensor handlers ---
     const openAddSensorDialog = () => {
         setEditingSensorId(null);
+        setEditingSensorWriteId(null);
         setSensorName(''); setSensorRoomId('');
         setShowSensorDialog(true);
     };
 
     const openEditSensorDialog = (row: SensorStationDTO) => {
         setEditingSensorId(row.readId ?? null);
+        setEditingSensorWriteId(row.writeId ?? null);
         setSensorName(row.name ?? '');
         setSensorRoomId(row.roomId ?? '');
         setShowSensorDialog(true);
@@ -1190,6 +1200,18 @@ const SysAdminDashboard: React.FC = () => {
                         <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
                         <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter/>
                     </div>
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }}/>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }}/>
+                            </div>
+                        </>
+                    )}
                 </div>
             </Dialog>
         </div>

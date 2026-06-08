@@ -191,13 +191,6 @@ export const TipManagementForm: React.FC = () => {
                     ))}
                 </div>
 
-                <button
-                    type="button"
-                    className={`tip-sort-btn${sortDir !== 'none' ? ' active' : ''}`}
-                    onClick={cycleSortDir}
-                >
-                    Message{sortIcon}
-                </button>
             </div>
 
             <div className="tip-mgmt-table-wrapper">
@@ -274,8 +267,9 @@ export const TipManagementForm: React.FC = () => {
                 resizable={false}
             >
                 <div className="tip-edit-body">
-                    <label className="tip-edit-label">Tip message</label>
+                    <label className="tip-edit-label" htmlFor="tipMessage">Tip message</label>
                     <InputText
+                        id="tipMessage"
                         value={editMessage}
                         onChange={e => setEditMessage(e.target.value.slice(0, 50))}
                         maxLength={50}

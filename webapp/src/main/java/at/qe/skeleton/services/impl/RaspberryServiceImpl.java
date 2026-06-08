@@ -12,9 +12,11 @@ import at.qe.skeleton.mappers.LimitMapper;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.RoomOccupancy;
+import at.qe.skeleton.model.RoomType;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
 import at.qe.skeleton.repositories.RoomMonitoringRepository;
 import at.qe.skeleton.repositories.RoomOccupancyRepository;
+import at.qe.skeleton.repositories.RoomRepository;
 import at.qe.skeleton.services.RaspberryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +44,7 @@ public class RaspberryServiceImpl implements RaspberryService {
     private final ApplicationEventPublisher eventPublisher;
     private final LimitMapper limitMapper;
     private final RoomOccupancyRepository occupancyRepository;
+    private final RoomRepository roomRepository;
 
     @Override
     public Page<RaspberryPi> getAllRaspberries(Pageable pageable) {
@@ -152,13 +155,17 @@ public class RaspberryServiceImpl implements RaspberryService {
                 : Set.of();
         RoomOccupancy occupancy = getOccupancyFromRedis(id);
         if (pi.getRoomMonitoring() != null) {
-            return new PiConfigDTO(pi.getRoomMonitoring().getRoomId(),
+            UUID roomId = pi.getRoomMonitoring().getRoomId();
+            boolean isSharedRoom = roomRepository.findById(roomId)
+                    .map(room -> room.getRoomType() == RoomType.SHARED)
+                    .orElse(false);
+            return new PiConfigDTO(roomId,
                     id,
                     pi.getFrequency(),
                     limitMapper.mapTo(pi.getRoomMonitoring()),
                     sensors,
                     occupancy != null ?
-                    new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), occupancy.getPeopleCnt() < 5)
+                    new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), !isSharedRoom && occupancy.getPeopleCnt() < 5)
                     : null);
         } else {
             return new PiConfigDTO(null, id, pi.getFrequency(), null, null, null);

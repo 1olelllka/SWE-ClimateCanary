@@ -14,22 +14,9 @@
     gap: 0.75rem;
 }
 
-.metric-select {
-    appearance: none;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.4rem 2rem 0.4rem 0.75rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #475569;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E") no-repeat right 0.6rem center;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s;
-}
-
-.metric-select:focus {
-    border-color: #94a3b8;
+/* ECharts canvas wrapper — height controlled here so media queries can override */
+.chart-echarts-wrapper {
+    height: 300px;
 }
 
 .chart-loading {
@@ -39,4 +26,154 @@
     justify-content: center;
     color: #94a3b8;
     font-size: 0.875rem;
+}
+
+:root {
+    --chart-text-color: #475569;
+}
+
+html[data-theme='dark'] {
+    --chart-text-color: #f8fafc;
+}
+
+.metric-select.p-dropdown {
+    min-width: 8rem;
+    height: 2.25rem;
+    border-radius: 8px !important;
+    background: var(--card-bg, #ffffff) !important;
+    border: 1px solid var(--card-border, #e2e8f0) !important;
+}
+
+.metric-select.p-dropdown .p-dropdown-label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.75rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary, #475569) !important;
+}
+
+.metric-select.p-dropdown .p-dropdown-trigger {
+    width: 2rem !important;
+    color: var(--text-secondary, #64748b) !important;
+}
+
+.metric-select.p-dropdown.p-focus {
+    border-color: #94a3b8 !important;
+}
+
+.metric-select-panel .p-dropdown-item {
+    font-size: 0.8rem !important;
+}
+
+/* ── Company Trend Chart ─────────────────────────────────────────────────── */
+
+/* Controls row: time-filter pill + selector, grouped right of the title */
+.company-trend-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+}
+
+.trend-dept-select {
+    min-width: 160px;
+    height: 2.1rem;
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: 8px;
+    background: var(--card-bg, #ffffff);
+    color: var(--text-primary, #1a3a4a);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0 0.6rem;
+    cursor: pointer;
+}
+
+.trend-dept-select:focus {
+    outline: none;
+    border-color: #94a3b8;
+}
+
+html[data-theme='dark'] .trend-dept-select {
+    background: #111827;
+    color: #f8fafc;
+    border-color: #334155;
+}
+
+.company-trend-chart-area {
+    padding: 0.5rem 1rem 1rem;
+}
+
+.company-trend-echarts-wrapper {
+    height: 340px;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+    .chart-card {
+        padding: 0.85rem 0.85rem 1rem;
+    }
+
+    /*
+     * Single-row header: time filters on the left, metric selector on the right.
+     * flex-wrap: nowrap is critical — without it the metric-select wraps to a
+     * second line the moment available width is even 1 px too narrow.
+     */
+    .chart-header {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Time-filter pill grows to fill the remaining space, shrinks as needed */
+    .chart-header .time-filters {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /*
+     * Metric select: fixed to its natural content width, never grows or shrinks.
+     * 6 rem is enough for the widest label ("Temperature") at 0.75 rem font.
+     */
+    .chart-header .metric-select.p-dropdown {
+        flex: 0 0 auto;
+        min-width: 6rem !important;
+        height: 2rem !important;
+    }
+
+    /* Compact filter buttons so all four fit inside the pill on 390 px screens */
+    .chart-header .time-filter-btn {
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.72rem !important;
+    }
+
+    .chart-echarts-wrapper {
+        height: 290px;
+    }
+
+    .chart-loading {
+        height: 290px;
+    }
+
+    /* Company trend chart */
+    .company-trend-controls {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .trend-dept-select {
+        min-width: 120px;
+        height: 2rem;
+        font-size: 0.75rem;
+    }
+
+    .company-trend-chart-area {
+        padding: 0.5rem 0.75rem 0.75rem;
+    }
+
+    .company-trend-echarts-wrapper {
+        height: 280px;
+    }
 }

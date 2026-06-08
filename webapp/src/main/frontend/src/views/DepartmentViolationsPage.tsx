@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DepartmentControllerApi, UserxControllerApi, WarningControllerApi } from '../generated-skeleton-api';
+import { useTemperature } from '../hooks/useTemperature';
+import { useTimeFormat } from '../hooks/useTimeFormat';
 import { UserxDTO } from '../generated-skeleton-api';
 import { ThresholdViolationsTable, ThresholdViolationData } from '../components/ThresholdViolationsTable';
 import { PageHeader } from '../components/PageHeader';
@@ -33,22 +35,32 @@ const extractArrayResponse = <T,>(data: unknown): T[] => {
     return [];
 };
 
-const getMeasurementUnit = (t?: string) => t === 'TEMPERATURE' ? '°C' : t === 'HUMIDITY' ? '%' : t === 'AIR' ? 'ppm' : '';
+const getMeasurementUnit = (t?: string, tempUnit = '°C') => t === 'TEMPERATURE' ? tempUnit : t === 'HUMIDITY' ? '%' : t === 'AIR' ? 'ppm' : '';
 
 const formatSensorName = (t?: string) =>
     t === 'TEMPERATURE' ? 'Temperature' : t === 'HUMIDITY' ? 'Humidity' : t === 'AIR' ? 'CO₂' : (t ?? 'Unknown');
 
-const formatNumber = (value: number | null | undefined, t?: string): string => {
+const formatNumber = (
+    value: number | null | undefined,
+    t?: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+): string => {
     if (value == null || Number.isNaN(value)) return 'n/a';
-    const unit = getMeasurementUnit(t);
-    return t === 'AIR' ? `${value.toFixed(0)} ${unit}`.trim() : `${value.toFixed(1).replace('.', ',')} ${unit}`.trim();
+    const unit = getMeasurementUnit(t, tempUnit);
+    const displayValue = t === 'TEMPERATURE' ? tempConvert(value) : value;
+    return t === 'AIR' ? `${displayValue.toFixed(0)} ${unit}`.trim() : `${displayValue.toFixed(1).replace('.', ',')} ${unit}`.trim();
 };
 
-const formatDatetime = (iso?: string): string => {
+const _p2 = (n: number) => String(n).padStart(2, '0');
+const formatDatetime = (
+    iso?: string,
+    fmtTimeFn: (d: Date) => string = d => `${_p2(d.getHours())}:${_p2(d.getMinutes())}`,
+    fmtDateFn: (d: Date) => string = d => `${_p2(d.getDate())}.${_p2(d.getMonth() + 1)}.${d.getFullYear()}`,
+): string => {
     if (!iso) return 'n/a';
     const d = new Date(iso);
-    const p = (n: number) => String(n).padStart(2, '0');
-    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${fmtDateFn(d)} ${fmtTimeFn(d)}`;
 };
 
 const parseDT = (dt: string): Date => {
@@ -58,19 +70,31 @@ const parseDT = (dt: string): Date => {
     return new Date(+yyyy, +mm - 1, +dd, +hh, +min);
 };
 
-const mapWarning = (w: WarningDTO, roomLabel: string): ThresholdViolationData => ({
+const mapWarning = (
+    w: WarningDTO,
+    roomLabel: string,
+    tempConvert: (c: number) => number = v => v,
+    tempUnit = '°C',
+    fmtTimeFn?: (d: Date) => string,
+    fmtDateFn?: (d: Date) => string,
+): ThresholdViolationData => ({
     id:           w.id,
     status:       w.status,
     active:       w.active,
     sensor:       formatSensorName(w.measurementType),
     room:         roomLabel,
-    limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType)}`,
-    measuredValue: formatNumber(w.triggeredValue, w.measurementType),
-    datetime:     formatDatetime(w.createdAt),
+    limit:        `${w.triggeredValue < w.activeLimitAtTime ? 'Min' : 'Max'}: ${formatNumber(w.activeLimitAtTime, w.measurementType, tempConvert, tempUnit)}`,
+    measuredValue: formatNumber(w.triggeredValue, w.measurementType, tempConvert, tempUnit),
+    datetime:     formatDatetime(w.createdAt, fmtTimeFn, fmtDateFn),
+    sortKey:      w.createdAt,
 });
 
 export const DepartmentViolationsPage: React.FC = () => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const { convert: convertTemp, unit: tempUnit } = useTemperature();
+    const { formatTime, formatDate } = useTimeFormat();
+    const fmtTimeFn = useCallback((d: Date) => formatTime(d), [formatTime]);
+    const fmtDateFn = useCallback((d: Date) => formatDate(d), [formatDate]);
     const [violations, setViolations] = useState<ThresholdViolationData[]>([]);
     const [loading, setLoading]       = useState(true);
     const [error, setError]           = useState<string | null>(null);
@@ -84,6 +108,7 @@ export const DepartmentViolationsPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const today = new Date().toISOString().slice(0, 10);
+        // convertTemp / tempUnit captured below — dep array keeps them fresh
 
         new UserxControllerApi().getAuthenticatedUser()
             .then(res => {
@@ -105,28 +130,30 @@ export const DepartmentViolationsPage: React.FC = () => {
                         .then(r => {
                             const warnings = Array.isArray(r.data) ? r.data as WarningDTO[] : [];
                             const label = room.roomNumber || room.name || room.id;
-                            return warnings.map(w => mapWarning(w, label));
+                            return warnings.map(w => mapWarning(w, label, convertTemp, tempUnit, fmtTimeFn, fmtDateFn));
                         })
                         .catch(() => [])
                     )
                 ).then(results => results.flat());
             })
             .then(flat => {
-                flat.sort((a, b) => parseDT(b.datetime).getTime() - parseDT(a.datetime).getTime());
+                flat.sort((a, b) =>
+                    new Date(b.sortKey ?? 0).getTime() - new Date(a.sortKey ?? 0).getTime()
+                );
                 setViolations(flat);
             })
             .catch(() => setError('Could not load threshold violations.'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [convertTemp, tempUnit, fmtTimeFn, fmtDateFn]);
 
     useEffect(() => { fetchViolations(); }, [fetchViolations]);
 
     const roomOptions = useMemo(() =>
-        [...new Set(violations.map(v => v.room))].sort().map(r => ({ label: r, value: r })),
+        [...new Set(violations.map(v => v.room))].sort((a, b) => a.localeCompare(b)).map(r => ({ label: r, value: r })),
     [violations]);
 
     const sensorOptions = useMemo(() =>
-        [...new Set(violations.map(v => v.sensor))].sort().map(s => ({ label: s, value: s })),
+        [...new Set(violations.map(v => v.sensor))].sort((a, b) => a.localeCompare(b)).map(s => ({ label: s, value: s })),
     [violations]);
 
     const filtered = useMemo(() => {
@@ -139,7 +166,8 @@ export const DepartmentViolationsPage: React.FC = () => {
             if (selectedRoom   && v.room   !== selectedRoom)   return false;
             if (selectedSensor && v.sensor !== selectedSensor) return false;
             if (start && end) {
-                const vt = parseDT(v.datetime).getTime();
+                // Use sortKey (ISO string) for reliable parsing regardless of display date format
+                const vt = new Date(v.sortKey ?? 0).getTime();
                 if (vt < start.getTime() || vt > end.getTime()) return false;
             }
             return true;
@@ -199,7 +227,7 @@ export const DepartmentViolationsPage: React.FC = () => {
                         showButtonBar
                         dateFormat="dd.mm.yy"
                         placeholder="Date range"
-                        style={{ minWidth: '13rem' }}
+                        style={{ minWidth: '18rem' }}
                         panelClassName="compact-datepicker"
                     />
                 </div>

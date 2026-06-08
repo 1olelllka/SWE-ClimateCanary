@@ -89,9 +89,9 @@ public class AggregatedStatsSeederService {
     }
 
     private double dailyAvgCO2(LocalDate date) {
-        double base  = date.getDayOfWeek().getValue() >= 6 ? 12.0 : 28.0;
-        double noise = deterministicNoise(date, 2) * 8.0;
-        return clamp(base + noise, 2.0, 90.0);
+        double base  = date.getDayOfWeek().getValue() >= 6 ? 35.0 : 45.0;
+        double noise = deterministicNoise(date, 2) * 15.0;
+        return clamp(base + noise, 20.0, 69.0);
     }
 
     // Deterministic value in [-0.5, 0.5] derived from the date so values are stable across restarts

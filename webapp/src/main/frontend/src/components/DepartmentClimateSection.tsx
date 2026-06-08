@@ -1,4 +1,5 @@
 import React from 'react';
+import { Dropdown } from 'primereact/dropdown';
 import { ClimateHistoryChart } from './ClimateHistoryChart';
 import { getRoomDisplayName, RoomDTO } from '../views/EmployeeDepartmentPage';
 import '../styles/DepartmentClimateSection.css';
@@ -10,31 +11,32 @@ interface DepartmentClimateSectionProps {
 }
 
 export const DepartmentClimateSection: React.FC<DepartmentClimateSectionProps> = ({
-    rooms,
-    selectedRoomId,
-    onSelectRoom,
-}) => {
+                                                                                      rooms,
+                                                                                      selectedRoomId,
+                                                                                      onSelectRoom,
+                                                                                  }) => {
     if (rooms.length === 0 || !selectedRoomId) {
         return null;
     }
+
+    const roomOptions = rooms.map(room => ({
+        label: getRoomDisplayName(room),
+        value: room.id,
+    }));
 
     return (
         <section className="department-chart-section">
             <div className="department-chart-room-selector">
                 <label htmlFor="department-selected-room">Room</label>
 
-                <select
-                    id="department-selected-room"
-                    className="department-chart-room-select"
+                <Dropdown
+                    inputId="department-selected-room"
                     value={selectedRoomId}
-                    onChange={event => onSelectRoom(event.target.value)}
-                >
-                    {rooms.map(room => (
-                        <option key={room.id} value={room.id}>
-                            {getRoomDisplayName(room)}
-                        </option>
-                    ))}
-                </select>
+                    options={roomOptions}
+                    onChange={event => onSelectRoom(event.value)}
+                    className="department-chart-room-dropdown"
+                    panelClassName="department-chart-room-dropdown-panel"
+                />
             </div>
 
             <ClimateHistoryChart roomId={selectedRoomId} />

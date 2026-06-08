@@ -50,16 +50,12 @@ async def main(db_path: str):
 
     auth = AuthManager( server_url=server_url, username=username, password=password)
     
-    for attempt in range(1, 6):
+    while True:
         try:
             await auth.login()
             break
         except Exception as e:
-            logger.warning(f"[Auth] Login attempt {attempt}/5 failed: {e}")
-            if attempt == 5:
-                logger.error("[Auth] All 5 login attempts failed. Cannot start without authentication.")
-                await db.close()
-                sys.exit(1)
+            logger.warning(f"[Auth] Login attempt failed: {e}. Retrying...")
             await asyncio.sleep(5)
 
     initial_config_done = await db.get_config('initial_config_done')
@@ -150,15 +146,17 @@ async def main(db_path: str):
         )
         web_manager._ble_tasks[sensor_name] = ble_task
         tasks.append(ble_task)
-    
-        tasks.append(asyncio.create_task(
+
+        proc_task = asyncio.create_task(
             processor.run(
                 sensor_name,
                 queues[sensor_name]['proc'],
                 write_uuid
             ),
             name=f"Proc:{sensor_name}",
-        ))
+        )
+        web_manager._proc_tasks[sensor_name] = proc_task
+        tasks.append(proc_task)
 
     try:
         await asyncio.gather(*tasks)

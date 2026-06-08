@@ -98,7 +98,7 @@
 }
 
 .absence-status-filter {
-    padding: 0.5rem 2.25rem 0.5rem 0.875rem;
+    padding: 0.5rem 0.2rem 0.5rem 0.2rem;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 8px;
@@ -109,11 +109,6 @@
     outline: none;
     transition: border-color 0.15s;
     min-width: 150px;
-    appearance: none;
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
 }
 
 .absence-status-filter:focus {
@@ -287,7 +282,21 @@
     }
 
     .employee-absences-kpi-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.65rem;
+    }
+
+    .absence-kpi-card {
+        padding: 0.75rem 0.875rem;
+    }
+
+    .absence-kpi-title {
+        font-size: 0.62rem;
+        min-height: auto;
+    }
+
+    .absence-kpi-value {
+        font-size: 1.35rem;
     }
 
     .employee-absences-controls {
@@ -334,11 +343,9 @@ html[data-theme='dark'] .employee-absences-page .absence-kpi-bar-track {
 /* Controls */
 html[data-theme='dark'] .employee-absences-page .absence-status-filter {
     background-color: var(--app-surface-2) !important;
+    background-image: none !important;
     color: var(--app-text) !important;
     border: 1px solid var(--app-border) !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 0.75rem center !important;
 }
 
 html[data-theme='dark'] .employee-absences-page .absence-status-filter:focus {
@@ -412,4 +419,71 @@ html[data-theme='dark'] .employee-absences-page .absence-detail-trigger {
     background-color: transparent !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
+}
+
+/* Status badge dark mode */
+html[data-theme='dark'] .absence-status-badge.approved {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #86efac !important;
+}
+
+html[data-theme='dark'] .absence-status-badge.pending {
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #fcd34d !important;
+}
+
+html[data-theme='dark'] .absence-status-badge.rejected {
+    background: rgba(220, 38, 38, 0.15) !important;
+    color: #fca5a5 !important;
+}
+
+html[data-theme='dark'] .absence-status-badge.cancelled {
+    background: rgba(100, 116, 139, 0.15) !important;
+    color: #94a3b8 !important;
+}
+
+html[data-theme='dark'] .absence-status-badge.other {
+    background: rgba(100, 116, 139, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+.absence-status-filter {
+    height: 2.25rem;
+    border-radius: 999px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1a3a4a !important;
+    min-width: 150px;
+}
+
+.absence-status-filter .p-dropdown-label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 0 0.9rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: #1a3a4a !important;
+}
+
+.absence-status-filter .p-dropdown-trigger {
+    width: 2.2rem !important;
+    color: #64748b !important;
+}
+
+.p-dropdown-panel .p-dropdown-item {
+    font-size: 0.82rem !important;
+}
+
+html[data-theme='dark'] .absence-status-filter {
+    background: #111827 !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .absence-status-filter .p-dropdown-label {
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .absence-status-filter .p-dropdown-trigger {
+    color: #cbd5e1 !important;
 }
