@@ -28,4 +28,10 @@ public class UserSettings {
     @Builder.Default
     private boolean twelveHourFormat = false;
 
+    private String notificationEmail;
+    @Builder.Default
+    private boolean emailWarnings = false;
+    @Builder.Default
+    private boolean emailAbsences = false;
+
 }

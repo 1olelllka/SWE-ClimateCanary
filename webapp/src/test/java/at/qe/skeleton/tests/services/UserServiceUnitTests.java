@@ -178,7 +178,7 @@ class UserServiceUnitTests {
     void testThatPatchUserSettingsReturnsSettings() {
         when(settingsRepository.findById(userId)).thenReturn(Optional.of(UserSettings.builder().userId(userId).build()));
         when(settingsRepository.save(any(UserSettings.class))).thenAnswer(a -> a.getArgument(0));
-        UserSettings userSettings = userService.updateUserSettings(userId, new UserSettingsPatchDTO(true, false, null, false));
+        UserSettings userSettings = userService.updateUserSettings(userId, new UserSettingsPatchDTO(true, false, null, false, null, null, null));
         assertNotNull(userSettings);
         assertEquals(userId, userSettings.getUserId());
         assertTrue(userSettings.isDarkMode());

@@ -169,9 +169,8 @@ public class UserxController {
     @GetMapping("/settings")
     public ResponseEntity<UserSettingsDTO> getUserSettings() {
         Userx user = authenticatedUserService.getAuthenticatedUser();
-        UserSettings settings = userService.getUserSettings(user.getId());
-        return new ResponseEntity<>(new UserSettingsDTO(settings.getUserId(), settings.isDarkMode(), settings.isFahrenheit(), settings.getFormat(), settings.isTwelveHourFormat()),
-                HttpStatus.OK);
+        UserSettings s = userService.getUserSettings(user.getId());
+        return new ResponseEntity<>(toDTO(s), HttpStatus.OK);
     }
 
     @Operation(summary = "Patch settings of a user.")
@@ -184,8 +183,14 @@ public class UserxController {
     @PatchMapping("/settings")
     public ResponseEntity<UserSettingsDTO> updateUserSettings(@RequestBody UserSettingsPatchDTO dto) {
         Userx user = authenticatedUserService.getAuthenticatedUser();
-        UserSettings settings = userService.updateUserSettings(user.getId(), dto);
-        return new ResponseEntity<>(new UserSettingsDTO(settings.getUserId(), settings.isDarkMode(), settings.isFahrenheit(), settings.getFormat(), settings.isTwelveHourFormat()),
-                HttpStatus.OK);
+        UserSettings s = userService.updateUserSettings(user.getId(), dto);
+        return new ResponseEntity<>(toDTO(s), HttpStatus.OK);
+    }
+
+    private UserSettingsDTO toDTO(UserSettings s) {
+        return new UserSettingsDTO(
+                s.getUserId(), s.isDarkMode(), s.isFahrenheit(), s.getFormat(), s.isTwelveHourFormat(),
+                s.getNotificationEmail(), s.isEmailWarnings(), s.isEmailAbsences()
+        );
     }
 }

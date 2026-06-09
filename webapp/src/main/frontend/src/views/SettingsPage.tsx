@@ -53,9 +53,7 @@ export const SettingsPage: React.FC = () => {
 
     const [notifications, setNotifications] = useState({
         warnings:     false,
-        tips:         false,
         absences:     false,
-        problemRooms: false,
     });
 
     // Populate local state once settings are loaded from backend
@@ -64,20 +62,47 @@ export const SettingsPage: React.FC = () => {
         setTemperatureUnit(tempFromBackend(prefs.fahrenheit));
         setTimeFormat(timeFromBackend(prefs.twelveHourFormat));
         setDayFormat(dateFromBackend(prefs.format));
+        setEmail(prefs.notificationEmail ?? '');
+        setNotifications({
+            warnings: prefs.emailWarnings ?? false,
+            absences: prefs.emailAbsences ?? false,
+        });
     }, [prefs]);
 
+    const warnNoEmail = () => {
+        toastRef.current?.show({
+            severity: 'warn',
+            summary:  'No email address',
+            detail:   'Add your email address first to enable notifications.',
+            life:     4000,
+        });
+    };
+
     const toggleNotification = (key: keyof typeof notifications) => {
+        const turningOn = !notifications[key];
+        if (turningOn && !email.trim()) {
+            warnNoEmail();
+            return;
+        }
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
     const handleSave = async () => {
+        const anyNotifOn = notifications.warnings || notifications.absences;
+        if (anyNotifOn && !email.trim()) {
+            warnNoEmail();
+            return;
+        }
         setSaving(true);
         try {
             await savePrefs({
-                darkMode:         isDarkMode,
-                fahrenheit:       tempToBackend(temperatureUnit),
-                twelveHourFormat: timeToBackend(timeFormat),
-                format:           dateToBackend(dayFormat),
+                darkMode:          isDarkMode,
+                fahrenheit:        tempToBackend(temperatureUnit),
+                twelveHourFormat:  timeToBackend(timeFormat),
+                format:            dateToBackend(dayFormat),
+                notificationEmail: email.trim() || undefined,
+                emailWarnings:     notifications.warnings,
+                emailAbsences:     notifications.absences,
             });
             toastRef.current?.show({
                 severity: 'success',
@@ -104,10 +129,8 @@ export const SettingsPage: React.FC = () => {
     ];
 
     const NOTIFS: { key: keyof typeof notifications; label: string }[] = [
-        { key: 'warnings',     label: 'Warnings'      },
-        { key: 'tips',         label: 'Tips'           },
-        { key: 'absences',     label: 'Absences'       },
-        { key: 'problemRooms', label: 'Problem rooms'  },
+        { key: 'warnings', label: 'Warnings' },
+        { key: 'absences', label: 'Absences' },
     ];
 
     return (
