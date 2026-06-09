@@ -1,35 +1,41 @@
 import aiosqlite
-import json 
+import json
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
-def get_current_time():
+def get_current_time() -> str:
+    """Return the current Vienna-timezone time as an ISO 8601 string."""
     return datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
 class DatabaseManager:
+    """Async SQLite abstraction for config, measurements, limits, and violations."""
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.db = None  # Persistent connection instance
 
     async def connect(self):
+        """Open a persistent aiosqlite connection with WAL mode and full sync."""
         if self.db is None:
             self.db = await aiosqlite.connect(self.db_path)
-            self.db.row_factory = aiosqlite.Row 
+            self.db.row_factory = aiosqlite.Row
             await self.db.execute("PRAGMA journal_mode=WAL;")
             await self.db.execute("PRAGMA synchronous=FULL;")
             await self.db.execute("PRAGMA foreign_keys=ON;")
             logger.info(f"[DB] Connected to database at {self.db_path}")
 
     async def close(self):
+        """Close the database connection."""
         if self.db:
             await self.db.close()
             self.db = None
             logger.info("[DB] Connection closed.")
 
     async def init_db(self):
+        """Create all tables if they do not already exist."""
         if not self.db:
             raise RuntimeError("Database not connected. Call connect() first.")
 
@@ -80,11 +86,13 @@ class DatabaseManager:
 # Config
 
     async def get_config(self, key: str) -> str | None:
+        """Return a single config value, or None if the key does not exist."""
         async with self.db.execute("SELECT value FROM config WHERE key = ?", (key,)) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
 
     async def set_config(self, key: str, value: str | None):
+        """Upsert a config key-value pair."""
         await self.db.execute(
                 """
                 INSERT INTO config (key, value, updated_at)
@@ -99,21 +107,25 @@ class DatabaseManager:
         logger.debug(f"[Config] {key} = {value}")
 
     async def get_all_config(self) -> dict:
+        """Return the entire config table as a key-value dict."""
         async with self.db.execute("SELECT key, value FROM config") as cursor:
             rows = await cursor.fetchall()
             return {row["key"]: row["value"] for row in rows}
 
     async def get_sensors(self) -> list[dict]:
+        """Return the sensor list stored as JSON in the config table."""
         raw = await self.get_config('sensors')
         if not raw:
             return []
         return json.loads(raw)
 
     async def set_sensors(self, sensors: list[dict]):
+        """Overwrite the entire sensor list in the config table."""
         await self.set_config('sensors', json.dumps(sensors))
         logger.info(f"[DB] Sensors updated: {[s['name'] for s in sensors]}")
 
     async def add_sensors(self, new_sensors: list[dict]):
+        """Append sensors that are not already present (deduplicates by name)."""
         current = await self.get_sensors()
         existing_names = {s['name'] for s in current}
         to_add = [s for s in new_sensors if s['name'] not in existing_names]
@@ -124,6 +136,7 @@ class DatabaseManager:
             logger.info("[DB] No new sensors to add (all already present).")
 
     async def delete_sensors_by_ids(self, sensor_ids: list[str]):
+        """Remove sensors whose char_uuid or write_uuid matches any entry in sensor_ids."""
         current = await self.get_sensors()
         id_set = {str(sid) for sid in sensor_ids}
         remaining = [
@@ -136,12 +149,14 @@ class DatabaseManager:
         logger.info(f"[DB] Deleted {removed} sensor(s) by id. Remaining: {[s['name'] for s in remaining]}")
 
     async def delete_all_sensors(self):
+        """Remove all sensors from the config table."""
         await self.set_sensors([])
         logger.info("[DB] All sensors flushed from database.")
 
 # Measurements
 
     async def insert_measurement(self, sensor_name: str, temp: float, moisture: float, co2: float, timestamp: str):
+        """Append a single sensor reading to the measurements table."""
         await self.db.execute(
             "INSERT INTO measurements (sensor_name, timestamp, temperature, moisture, co2) VALUES (?, ?, ?, ?, ?)",
             (sensor_name, timestamp, temp, moisture, co2)
@@ -152,6 +167,7 @@ class DatabaseManager:
 # Limits
 
     async def set_limit(self, key: str, value: float | None):
+        """Upsert a system limit (e.g. max_temp, min_moisture)."""
         await self.db.execute(
                 """
                 INSERT INTO system_limits (key, value, updated_at)
@@ -166,11 +182,13 @@ class DatabaseManager:
         logger.info(f"[DB] Limit updated: {key} = {value}")
 
     async def get_limit(self, key: str) -> float | None:
+        """Return a single limit value, or None if not set."""
         async with self.db.execute("SELECT value FROM system_limits WHERE key = ?", (key,)) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
 
     async def get_all_limits(self) -> dict:
+        """Return all system limits as a key-value dict."""
         async with self.db.execute("SELECT key, value FROM system_limits") as cursor:
             rows = await cursor.fetchall()
             return {row["key"]: row["value"] for row in rows}
@@ -178,11 +196,12 @@ class DatabaseManager:
 # Violations
 
     async def register_violation(self, sensor_name: str, sensor_type: str, threshold: float, actual: float):
+        """Insert a new active violation only if none already exists for this sensor/type pair."""
         async with self.db.execute("""
                                    INSERT INTO limit_violations (sensor_name, type, threshold_value, actual_value, started_at)
                                    SELECT ?, ?, ?, ?, ?
                                    WHERE NOT EXISTS (
-                                       SELECT 1 FROM limit_violations 
+                                       SELECT 1 FROM limit_violations
                                        WHERE sensor_name = ? AND type = ? AND is_active = 1
                                        )
                                    """, (sensor_name, sensor_type, threshold, actual, get_current_time(), sensor_name, sensor_type)
@@ -195,6 +214,7 @@ class DatabaseManager:
                 logger.warning(f"[DB] Violation: {sensor_name}/{sensor_type} = {actual} (limit: {threshold})")
 
     async def resolve_violation(self, sensor_name: str, sensor_type: str):
+        """Mark the active violation for this sensor/type as resolved."""
         await self.db.execute(
                 "UPDATE limit_violations SET is_active=0, resolved_at=? WHERE sensor_name=? AND type=? AND is_active=1",
                 (get_current_time(), sensor_name, sensor_type)
@@ -203,6 +223,7 @@ class DatabaseManager:
         logger.info(f"[DB] Violation resolved: {sensor_name}/{sensor_type}")
 
     async def save_warning_id(self, sensor_name: str, sensor_type: str, warning_id: str):
+        """Link the webapp-assigned warning ID to the active violation row."""
         await self.db.execute(
             "UPDATE limit_violations SET warning_id=? WHERE sensor_name=? AND type=? AND is_active=1",
             (warning_id, sensor_name, sensor_type)
@@ -211,6 +232,7 @@ class DatabaseManager:
         logger.debug(f"[DB] warning_id={warning_id} saved for {sensor_name}/{sensor_type}")
 
     async def get_warning_id(self, sensor_name: str, sensor_type: str) -> str | None:
+        """Return the most recent warning ID for this sensor/type, or None."""
         async with self.db.execute(
             """
             SELECT warning_id FROM limit_violations
@@ -223,6 +245,7 @@ class DatabaseManager:
             return row[0] if row else None
 
     async def get_active_violations(self, sensor_name: str) -> list:
+        """Return all currently active violation rows for a sensor."""
         async with self.db.execute("SELECT * FROM limit_violations WHERE sensor_name=? AND is_active=1", (sensor_name,)) as cursor:
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
@@ -230,6 +253,7 @@ class DatabaseManager:
 # Logging
 
     async def log_event(self, category: str, message: str, level: str = "INFO"):
+        """Forward a structured event to the Python logger (no DB persistence)."""
         if level == "ERROR":
             logger.error(f"[{category}] {message}")
         elif level in ("WARN", "WARNING"):
