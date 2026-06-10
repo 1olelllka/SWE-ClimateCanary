@@ -6,6 +6,9 @@ public record UserSettingsPatchDTO (
     Boolean darkMode,
     Boolean fahrenheit,
     DateFormat format,
-    Boolean twelveHourFormat
+    Boolean twelveHourFormat,
+    String notificationEmail,
+    Boolean emailWarnings,
+    Boolean emailAbsences
 ){
 }

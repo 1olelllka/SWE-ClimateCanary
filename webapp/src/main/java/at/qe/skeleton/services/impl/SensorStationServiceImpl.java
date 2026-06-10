@@ -11,6 +11,7 @@ import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.model.RoomMonitoring;
 import at.qe.skeleton.model.SensorStation;
 import at.qe.skeleton.repositories.SensorStationRepository;
+import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.SensorStationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class SensorStationServiceImpl implements SensorStationService {
     private final SensorStationRepository sensorRepository;
     private final NotificationClient notificationClient;
     private final ApplicationEventPublisher eventPublisher;
+    private final LiveDataService liveDataService;
 
     @Override
     public Page<SensorStation> getAllSensorStations(Pageable pageable) {
@@ -68,6 +70,7 @@ public class SensorStationServiceImpl implements SensorStationService {
         return sensorRepository.findById(id).map(sensor -> {
             AtomicBoolean notifyRasp = new AtomicBoolean(false);
             AtomicBoolean nameChanged = new AtomicBoolean(false);
+            AtomicBoolean connectionStatusChanged = new AtomicBoolean(false);
             RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             if (sensorStation.getRoomMonitoring() != null && (sensor.getRoomMonitoring() == null || !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId()))) {
                     sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
@@ -89,6 +92,7 @@ public class SensorStationServiceImpl implements SensorStationService {
                 } else {
                     log.info("Pre-saved online status of sensor station - {}", sensor.getName());
                 }
+                connectionStatusChanged.set(true);
                 sensor.setStatus(status);
             });
             Optional.ofNullable(sensorStation.getLastHeartBeat()).ifPresent(beat -> {
@@ -139,6 +143,9 @@ public class SensorStationServiceImpl implements SensorStationService {
                                     prevMonitoring.getRaspberryPi(),
                                     notificationClient));
                 }
+            }
+            if (connectionStatusChanged.get()) {
+                liveDataService.pushConnectionStatusArduino(sensor.getReadId(), sensor.getStatus());
             }
             log.info("Sensor '{}' is updated in the system.", sensor.getName());
             return saved;

@@ -10,8 +10,6 @@ import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.config.annotation.web.socket.AbstractSecurityWebSocketMessageBrokerConfigurer;
-import org.springframework.security.config.annotation.web.socket.EnableWebSocketSecurity;
 import org.springframework.security.messaging.access.intercept.MessageMatcherDelegatingAuthorizationManager;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -51,6 +49,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         messages
                 .simpTypeMatchers(SimpMessageType.CONNECT)
                 .authenticated()
+                .simpSubscribeDestMatchers("/topic/sensor-status/*", "/topic/raspberry-status/*")
+                .hasAuthority(Permission.CAN_MANAGE_DEVICES.name())
                 .simpSubscribeDestMatchers("/topic/resolve-warnings-department/*",
                         "topic/active-warnings-department")
                 .hasAuthority(Permission.CAN_VIEW_VIOLATIONS_PER_DEPARTMENT.name())

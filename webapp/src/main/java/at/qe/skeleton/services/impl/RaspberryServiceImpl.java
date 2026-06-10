@@ -1,7 +1,10 @@
 package at.qe.skeleton.services.impl;
 
 import at.qe.skeleton.commands.NotifyRaspberryCommand;
-import at.qe.skeleton.dtos.*;
+import at.qe.skeleton.dtos.ConfigRequestDTO;
+import at.qe.skeleton.dtos.OccupancyDTO;
+import at.qe.skeleton.dtos.PiConfigDTO;
+import at.qe.skeleton.dtos.ReducedSensorDTO;
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.feign.NotificationClient;
@@ -150,6 +153,11 @@ public class RaspberryServiceImpl implements RaspberryService {
                         .map(sensor -> new ReducedSensorDTO(sensor.getName(), sensor.getReadId(), sensor.getWriteId()))
                         .collect(Collectors.toSet())
                 : Set.of();
+        if (sensors.isEmpty()) {
+            log.info("There are no sensors connected to RaspberryPi {}", pi.getName());
+        } else {
+            log.info("Found {} sensors connected to RaspberryPi {}", sensors.size(), pi.getName());
+        }
         RoomOccupancy occupancy = getOccupancyFromRedis(id);
         if (pi.getRoomMonitoring() != null) {
             UUID roomId = pi.getRoomMonitoring().getRoomId();
@@ -165,6 +173,7 @@ public class RaspberryServiceImpl implements RaspberryService {
                     new OccupancyDTO(occupancy.getPeopleCnt(), occupancy.getRoomId(), !isSharedRoom && occupancy.getPeopleCnt() < 5)
                     : null);
         } else {
+            log.info("No room is connected to Raspberry Pi {}", pi.getName());
             return new PiConfigDTO(null, id, pi.getFrequency(), null, null, null);
         }
     }

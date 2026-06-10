@@ -8,6 +8,7 @@ import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AuthenticatedUserService;
 import at.qe.skeleton.services.DepartmentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final AggregatedDepartmentStatsRepository departmentStatsRepository;
@@ -48,6 +50,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         if (departmentRepository.existsByNameAndBuildingId(department.getName(), department.getBuilding().getId())) {
             throw new ConflictException("Department with this name already exists");
         }
+        log.info("Created new department {}", department.getName());
         return departmentRepository.save(department);
     }
 
@@ -74,7 +77,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             newRoom = roomService.createRoom(newRoom);
             created.addNewRoom(newRoom);
         }
-
+        log.info("Created new department {} with {} rooms", department.getName(), department.getRooms().size());
         return created;
     }
 
@@ -142,21 +145,9 @@ public class DepartmentServiceImpl implements DepartmentService {
                     .toList();
             roomIds.forEach(roomService::deleteRoom);
         }
+        log.info("Deleted department {} - {}", id, department != null ? department.getName() : "{UNKNOWN}");
         if (department != null) departmentRepository.delete(department);
         trendRepository.deleteAllByDepartmentId(id);
         departmentStatsRepository.deleteAllByDepartmentId(id);
-    }
-
-    @Override
-    public Department patchSpecificDepartment(UUID id, Department department) {
-        return departmentRepository.findById(id).map(dep -> {
-            Optional.ofNullable(department.getName()).ifPresent(name -> {
-                if (!name.equals(dep.getName()) && departmentRepository.existsByNameAndBuildingId(name, dep.getBuilding().getId()))
-                    throw new ConflictException("Department with the same name exists");
-                dep.setName(name);
-            });
-            Optional.ofNullable(department.getBuilding()).ifPresent(dep::setBuilding);
-            return departmentRepository.save(dep);
-        }).orElseThrow(() -> new NotFoundException("Department with id %s was not found".formatted(department.getId())));
     }
 }

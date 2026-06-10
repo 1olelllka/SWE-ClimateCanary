@@ -6,6 +6,7 @@ import at.qe.skeleton.commands.NotifyRaspberryCommand;
 import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.RaspberryPi;
 import at.qe.skeleton.repositories.RaspberryPiRepository;
+import at.qe.skeleton.services.LiveDataService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,8 @@ class DequeConsumerUnitTests {
 
     @Mock
     RaspberryPiRepository piRepository;
+    @Mock
+    LiveDataService liveDataService;
     @Mock
     private NotifyRaspberryCommand notifyCommand;
     @InjectMocks
@@ -61,6 +64,7 @@ class DequeConsumerUnitTests {
             verify(piRepository).save(pi);
             assertEquals(DeviceStatus.OFFLINE, pi.getStatus());
             deque.verify(() -> CommandDeque.addFirst(any()), never());
+            verify(liveDataService, times(1)).pushConnectionStatusRaspberry(pi.getId(), DeviceStatus.OFFLINE);
         }
     }
 
@@ -78,6 +82,7 @@ class DequeConsumerUnitTests {
             dequeConsumer.handleFailure(notifyCommand, pi);
 
             verify(notifyCommand).resetAttempts();
+            verify(liveDataService, never()).pushConnectionStatusArduino(any(), any());
         }
     }
 
@@ -95,6 +100,7 @@ class DequeConsumerUnitTests {
             dequeConsumer.handleFailure(notifyCommand, pi);
 
             verify(piRepository, never()).save(any());
+            verify(liveDataService, never()).pushConnectionStatusRaspberry(any(), any());
         }
     }
 }

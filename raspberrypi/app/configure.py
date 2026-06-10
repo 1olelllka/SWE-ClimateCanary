@@ -7,6 +7,13 @@
 # ]
 # ///
 
+"""One-time bootstrap script that seeds the SQLite DB from conf.yaml.
+
+Run this once on the Pi before starting the main gateway. It writes
+server_url, local_listen_port, auth credentials, and the configure_done
+flag that main.py polls on startup.
+"""
+
 import asyncio
 import os
 import sys
@@ -19,9 +26,11 @@ CONF_PATH = os.path.join(os.path.dirname(__file__), "conf.yaml")
 DB_PATH = "/home/pi/data/production.sqlite"
 
 def now() -> str:
+    """Return current Vienna-timezone time as ISO 8601."""
     return datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
 
 async def set_config(db: aiosqlite.Connection, key: str, value: str) -> None:
+    """Upsert a single key-value pair into the config table."""
     await db.execute(
         """
         INSERT INTO config (key, value, updated_at) VALUES (?, ?, ?)
@@ -31,6 +40,7 @@ async def set_config(db: aiosqlite.Connection, key: str, value: str) -> None:
     )
 
 async def main() -> None:
+    """Read conf.yaml and write all bootstrap config entries to the DB."""
     if not os.path.exists(CONF_PATH):
         print(f"[configure] ERROR: {CONF_PATH} not found.", file=sys.stderr)
         sys.exit(1)

@@ -13,6 +13,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.RoomService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final AggregatedStatsRepository aggregatedStatsRepository;
@@ -53,6 +55,7 @@ public class RoomServiceImpl implements RoomService {
                 .tempLimit(TemperatureLimit.builder().build())
                 .polLimit(PollutionLimit.builder().build())
                 .build();
+        log.info("New room created {}", room.getRoomNumber());
         monitoringRepository.save(monitoring);
         return r;
     }
@@ -117,6 +120,7 @@ public class RoomServiceImpl implements RoomService {
                         r.getRaspberryPi(), notificationClient
                 ));
             }
+            log.info("Limits for the room {} updated successfully", room.getRoomId());
             return r;
         })
                 .orElseThrow(() -> new NotFoundException("Room with id " + roomId + " was not found."));
@@ -148,6 +152,7 @@ public class RoomServiceImpl implements RoomService {
                             notificationClient)
             );
         }
+        log.info("Deleted room {} - {}", id, room != null ? room.getRoomNumber() : "{UNKNOWN}");
         monitoringRepository.deleteById(id);
         aggregatedStatsRepository.deleteAllByRoomId(id);
     }

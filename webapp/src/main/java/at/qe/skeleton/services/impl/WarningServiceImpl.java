@@ -8,9 +8,11 @@ import at.qe.skeleton.mappers.WarningCreateMapper;
 import at.qe.skeleton.mappers.WarningMapper;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
+import at.qe.skeleton.services.EmailService;
 import at.qe.skeleton.services.LiveDataService;
 import at.qe.skeleton.services.WarningService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Slf4j
 public class WarningServiceImpl implements WarningService {
 
     private final WarningRepository warningsRepository;
@@ -36,6 +39,9 @@ public class WarningServiceImpl implements WarningService {
     private final WarningCreateMapper warningCreateMapper;
     private final TipRepository tipRepository;
     private final LiveDataService liveDataService;
+    private final UserxRepository userxRepository;
+    private final UserSettingsRepository userSettingsRepository;
+    private final EmailService emailService;
 
     // get warnings for a specific room
     @Override
@@ -129,6 +135,7 @@ public class WarningServiceImpl implements WarningService {
                         "RoomMonitoring not found: " + dto.roomId()));
 
         Warnings warning = warningCreateMapper.mapFrom(dto);
+        log.info("Received warning from Raspberry Pi – {}", warning.getMessage());
         switch (warning.getMeasurementType()) {
             case TEMPERATURE -> {
                 Tip tip;
@@ -170,11 +177,35 @@ public class WarningServiceImpl implements WarningService {
                 }
             }
         }
+        if (warning.getTip() != null) {
+            log.info("Added tip for the warning: {}", warning.getTip().getMsg());
+        } else {
+            log.info("No tip added for the warning: {} {}", warning.getStatus().name(), warning.getMeasurementType().name());
+        }
         warning.setRoomMonitoring(room);
         WarningDTO res = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.pushActiveWarning(room.getRoomId(), res);
-        liveDataService.pushActiveWarningDepartment(roomRepository.findById(res.roomId()).get().getDepartment().getId(), res);
+
+        Room roomEntity = roomRepository.findById(res.roomId()).get();
+        UUID deptId = roomEntity.getDepartment().getId();
+        liveDataService.pushActiveWarningDepartment(deptId, res);
+
+        notifyDepartmentByEmail(deptId, res, roomEntity.getRoomNumber());
+
         return res;
+    }
+
+    private void notifyDepartmentByEmail(UUID deptId, WarningDTO warning, String roomNumber) {
+        userxRepository.findAllByDepartment(deptId).forEach(user ->
+            userSettingsRepository.findById(user.getId()).ifPresent(settings -> {
+                if (settings.isEmailWarnings()
+                        && settings.getNotificationEmail() != null
+                        && !settings.getNotificationEmail().isBlank()) {
+                    String name = user.getFirstName() != null ? user.getFirstName() : user.getUsername();
+                    emailService.sendWarningEmail(settings.getNotificationEmail(), name, warning, roomNumber);
+                }
+            })
+        );
     }
 
     // for Pi to update severity while warning is still active                   //
@@ -192,6 +223,7 @@ public class WarningServiceImpl implements WarningService {
     @Transactional
     public WarningDTO resolveWarning(UUID warningId) {
         Warnings warning = findActiveWarningById(warningId);
+        log.info("Received resolve active warnings for a room from Raspberry Pi");
         warning.setResolvedAt(LocalDateTime.now());
         AtomicInteger counter = new AtomicInteger(1);
         if (warning.getRoomMonitoring() == null) throw new ValidationException("Warning does not have assigned room. Please contact system administrator.");
@@ -203,6 +235,7 @@ public class WarningServiceImpl implements WarningService {
                         counter.addAndGet(1);
                     }
                 });
+        log.info("Resolved {} warnings", counter.get());
         WarningDTO dto = warningMapper.mapTo(warningsRepository.save(warning));
         liveDataService.resolveActiveWarning(dto.roomId(), dto);
         Room room = roomRepository.findById(dto.roomId()).orElse(null);

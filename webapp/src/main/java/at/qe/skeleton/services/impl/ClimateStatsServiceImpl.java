@@ -61,14 +61,20 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 return climateStatsRepository
                         .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                         .map(climateMapper::mapTo)
-                        .orElseThrow(() -> new NotFoundException(
-                                "No climate data found for room: %s".formatted(roomId.toString())));
+                        .orElseThrow(() -> {
+                            log.info("No climate data found for room: {}", roomId);
+                            return new NotFoundException(
+                                    "No climate data found for room: %s".formatted(roomId.toString()));
+                        });
             else if (authenticated.getMyRoom() != null && authenticated.getMyRoom().getDepartment().getId().equals(room.getDepartment().getId()) && room.getRoomType() == RoomType.SHARED) {
                 return climateStatsRepository
                         .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                         .map(climateMapper::mapTo)
-                        .orElseThrow(() -> new NotFoundException(
-                                "No climate data found for room: %s".formatted(roomId.toString())));
+                        .orElseThrow(() -> {
+                            log.info("No climate data found for room: {}", roomId);
+                            return new NotFoundException(
+                                    "No climate data found for room: %s".formatted(roomId.toString()));
+                        });
             }
             throw new ForbiddenException("You are not allowed to see other's rooms.");
         }
@@ -77,8 +83,11 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 return climateStatsRepository
                         .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                         .map(climateMapper::mapTo)
-                        .orElseThrow(() -> new NotFoundException(
-                                "No climate data found for room: " + roomId));
+                        .orElseThrow(() -> {
+                            log.info("No climate data found for room: {}", roomId);
+                            return new NotFoundException(
+                                    "No climate data found for room: " + roomId);
+                        });
             }
             throw new ForbiddenException("You are not allowed to see other's rooms.");
         }
@@ -86,8 +95,11 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             return climateStatsRepository
                     .findTopByRoomMonitoring_RoomIdOrderByDateDesc(roomId)
                     .map(climateMapper::mapTo)
-                    .orElseThrow(() -> new NotFoundException(
-                            "No climate data found for room: " + roomId));
+                    .orElseThrow(() -> {
+                        log.info("No climate data found for room: {}", roomId);
+                        return new NotFoundException(
+                                "No climate data found for room: " + roomId);
+                    });
         }
         throw new ForbiddenException("You are not allowed to see other's rooms.");
     }
@@ -109,7 +121,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
                 case CO2         -> poll = r.value();
             }
         }
-        log.info("Received: Temperature – {}, Humidity – {}, CO2 – {}", temp, hum, poll);
+        log.info("Received from RaspberryPi: Temperature – {}, Humidity – {}, CO2 – {}", temp, hum, poll);
         ClimateStats res = climateStatsRepository.save(ClimateStats.builder()
                 .roomMonitoring(room)
                 .date(batch.timestamp())
@@ -186,7 +198,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             if (!data.isEmpty()) {
                 return data.stream().map(aggregatedMapper::mapTo).toList();
             }
-            log.info("Aggregated Data was not found.");
+            log.info("Daily aggregated data was not found.");
             return groupRawByDay(roomId, from, to);
         } else {
             data = aggregatedStatsRepository
@@ -194,7 +206,7 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
             if (!data.isEmpty()) {
                 return data.stream().map(aggregatedMapper::mapTo).toList();
             }
-            log.info("Aggregated Data was not found.");
+            log.info("Weekly aggregated Data was not found.");
             return groupRawByWeek(roomId, from, to);
         }
     }
@@ -225,29 +237,37 @@ public class ClimateStatsServiceImpl implements ClimateStatsService {
         if (!aggregated.isEmpty()) {
             return aggregated.stream().map(aggregatedMapper::mapTo).toList();
         }
-        log.info("Aggregated Data not found.");
 
         // this is just a fallback for now — should be removed once background job is running
         if (hourly) {
+            log.info("Hourly aggregated data not found.");
             return groupRawByHour(roomId, from, to);
         }
         else if (weekly) {
+            log.info("Weekly aggregated data not found.");
             return groupRawByWeek(roomId, from, to);
         } else
+            log.info("Daily aggregated data not found.");
             return groupRawByDay(roomId, from, to);
     }
 
     @Override
     public LimitDTO getLimits(UUID roomId) {
         RoomMonitoring room = roomMonitoringRepository.findById(roomId)
-                .orElseThrow(() -> new NotFoundException("Room monitoring not found: " + roomId));
+                .orElseThrow(() -> {
+                    log.info("Room with id {} not found", roomId);
+                    return new NotFoundException("Room monitoring not found: " + roomId);
+                });
         return limitMapper.mapTo(room);
     }
 
     @Override
     public AggregatedDataPointDTO getDepartmentAggregatedData(UUID departmentId) {
         AggregatedDepartmentStats stats = departmentStatsRepository.findFirstByDepartmentIdOrderByDateDesc(departmentId)
-                .orElseThrow(() -> new NotFoundException("There's no data for department %s".formatted(departmentId.toString())));
+                .orElseThrow(() -> {
+                    log.info("There's no data for department with id {}", departmentId);
+                    return new NotFoundException("There's no data for department %s".formatted(departmentId.toString()));
+                });
         return new AggregatedDataPointDTO(stats.getDate(), stats.getAvgTemp(), stats.getAvgHumidity(), stats.getAvgCO2());
     }
 

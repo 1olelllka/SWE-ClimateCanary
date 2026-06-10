@@ -1,10 +1,7 @@
 package at.qe.skeleton.background;
 
-import at.qe.skeleton.model.UserRole;
 import at.qe.skeleton.model.Userx;
-import at.qe.skeleton.repositories.RoleRepository;
 import at.qe.skeleton.repositories.UserxRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

@@ -89,6 +89,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             Optional.ofNullable(dto.fahrenheit()).ifPresent(settings::setFahrenheit);
             Optional.ofNullable(dto.twelveHourFormat()).ifPresent(settings::setTwelveHourFormat);
             Optional.ofNullable(dto.format()).ifPresent(settings::setFormat);
+            Optional.ofNullable(dto.notificationEmail()).ifPresent(settings::setNotificationEmail);
+            Optional.ofNullable(dto.emailWarnings()).ifPresent(settings::setEmailWarnings);
+            Optional.ofNullable(dto.emailAbsences()).ifPresent(settings::setEmailAbsences);
             return userSettingsRepository.save(settings);
         }).orElseThrow(() -> new NotFoundException("Settings for this user were not found."));
     }

@@ -4,7 +4,6 @@ import at.qe.skeleton.model.Userx;
 import at.qe.skeleton.repositories.UserxRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.messaging.Message;

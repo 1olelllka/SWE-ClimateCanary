@@ -33,6 +33,8 @@ import RoomFormDialog, { RoomFormState, emptyRoomForm } from '../components/Room
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 interface RaspberryRoomRef { roomId?: string; roomName?: string; }
 type RaspberryDTOReal = Omit<RaspberryDTO, 'roomId' | 'roomNumber'> & { room?: RaspberryRoomRef };
@@ -196,6 +198,8 @@ const SysAdminDashboard: React.FC = () => {
     const [roomTypeFilter, setRoomTypeFilter] = useState<string | null>(null);
     const [departmentBuildingFilter, setDepartmentBuildingFilter] = useState<string | null>(null);
 
+    const stompClient = useRef<Client | null>(null);
+
     const fetchRaspberries = () =>
         new RaspberryControllerApi().getAllRaspberries({ pageable: PAGEABLE })
             .then(res => setRaspberries(res.data.content ?? [])).catch(() => {});
@@ -211,6 +215,61 @@ const SysAdminDashboard: React.FC = () => {
     const fetchDepartments = () =>
         new DepartmentControllerApi().getPageOfDepartments({ pageable: PAGEABLE })
             .then(res => setDepartments(res.data.content ?? [])).catch(() => {});
+
+    useEffect(() => {
+        if ((!sensors || sensors.length == 0) && (!raspberries || raspberries.length == 0)) return;
+
+        stompClient.current = new Client({
+        webSocketFactory: () =>
+            new SockJS("http://localhost:8080/active-events"),
+        reconnectDelay: 5000,
+        connectHeaders: {
+            Authorization: `Bearer ${localStorage.getItem("bearerToken")}`,
+        },
+        onConnect: () => {
+            console.log("Listening to active devices events");
+            sensors.forEach(sensor => {
+                stompClient.current?.subscribe(
+                `/topic/sensor-status/${sensor.readId}`,
+                (message) => {
+                    const status = JSON.parse(message.body);
+                    setSensors((prev) =>
+                        prev.map((s) =>
+                            s.readId === sensor.readId
+                            ? { ...s, status: status }
+                            : s
+                        )
+                    );
+                });
+            })
+            raspberries.forEach(raspberry => {
+                stompClient.current?.subscribe(
+                    `/topic/raspberry-status/${raspberry.id}`,
+                    (message) => {
+                        const status = JSON.parse(message.body);
+                        setRaspberries((prev) => 
+                            prev.map(r => 
+                                r.id == raspberry.id
+                                ? { ...r, status: status}
+                                : r
+                            )
+                        )
+                    }
+                )
+            })
+        },
+        onStompError: (frame) => {
+            console.error("STOMP error:", frame);
+        },
+        });
+
+        stompClient.current.activate();
+
+        return () => {
+        stompClient.current?.deactivate();
+        };
+    }, [sensors, raspberries]);
+
 
     useEffect(() => {
         const handler = () => setIsMobile(window.innerWidth <= 700);

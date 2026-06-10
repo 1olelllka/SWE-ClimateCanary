@@ -7,6 +7,7 @@ import at.qe.skeleton.repositories.TipRepository;
 import at.qe.skeleton.repositories.WarningRepository;
 import at.qe.skeleton.services.TipService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TipServiceImpl implements TipService {
 
     private final TipRepository tipRepository;
@@ -37,6 +39,7 @@ public class TipServiceImpl implements TipService {
     public Tip updateExistingTip(UUID id, String newMsg) {
         return tipRepository.findById(id).map(tip -> {
             tip.setMsg(newMsg);
+            log.info("Successfully updated message for tip - {}, {}, {}", tip.getViolatedSensor().name(), tip.getViolationType().name(), tip.getViolationStatus().name());
             return tipRepository.save(tip);
         })
         .orElseThrow(() -> new NotFoundException("Tip with id " + id + " was not found."));
@@ -50,6 +53,7 @@ public class TipServiceImpl implements TipService {
                 warning.setTip(null);
                 warningRepository.save(warning);
             });
+            log.info("Deleted tip - {} {} {}", optionalTip.get().getViolatedSensor().name(), optionalTip.get().getViolationType().name(), optionalTip.get().getViolationStatus().name());
             tipRepository.deleteById(id);
         }
     }

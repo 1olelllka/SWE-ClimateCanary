@@ -2,6 +2,7 @@ package at.qe.skeleton.tests.services;
 
 import at.qe.skeleton.dtos.ClimateDataPointDTO;
 import at.qe.skeleton.dtos.WarningDTO;
+import at.qe.skeleton.model.DeviceStatus;
 import at.qe.skeleton.model.MeasurementType;
 import at.qe.skeleton.model.WarningStatus;
 import at.qe.skeleton.services.LiveDataService;
@@ -223,6 +224,34 @@ class LiveDataServiceUnitTests {
             assertThat(capture().payload())
                     .contains("2024-06-15T12:00:00")
                     .doesNotContain("[2024,6");
+        }
+    }
+
+    @Nested
+    @DisplayName("pushConnectionStatusArduino")
+    class PushConnectionStatusArduino {
+        @Test
+        @DisplayName("sends to correct arduino")
+        void sendsToCorrectTopic() {
+            UUID arduino = UUID.randomUUID();
+            liveDataService.pushConnectionStatusArduino(arduino, DeviceStatus.ONLINE);
+
+            assertThat(capture().destination())
+                    .isEqualTo("/topic/sensor-status/" + arduino);
+        }
+    }
+
+    @Nested
+    @DisplayName("pushConnectionStatusRaspberry")
+    class PushConnectionStatusRaspberry {
+        @Test
+        @DisplayName("sends to correct raspberry")
+        void sendsToCorrectTopic() {
+            UUID raspberry = UUID.randomUUID();
+            liveDataService.pushConnectionStatusRaspberry(raspberry, DeviceStatus.ONLINE);
+
+            assertThat(capture().destination())
+                    .isEqualTo("/topic/raspberry-status/" + raspberry);
         }
     }
 }

@@ -19,7 +19,5 @@ public interface DepartmentService {
 
     void deleteDepartment(UUID id);
 
-    Department patchSpecificDepartment(UUID id, Department department);
-
     Department getDepartmentById(UUID id);
 }

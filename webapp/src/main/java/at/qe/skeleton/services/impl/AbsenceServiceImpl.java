@@ -10,6 +10,7 @@ import at.qe.skeleton.feign.NotificationClient;
 import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.*;
 import at.qe.skeleton.services.AbsenceService;
+import at.qe.skeleton.services.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,8 @@ public class AbsenceServiceImpl implements AbsenceService {
     private final ApplicationEventPublisher eventPublisher;
     private final NotificationClient notificationClient;
     private final UserClockStatusRepository clockStatusRepository;
+    private final UserSettingsRepository userSettingsRepository;
+    private final EmailService emailService;
 
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
@@ -119,7 +122,18 @@ public class AbsenceServiceImpl implements AbsenceService {
             user.setNumberOfAbsences((int) (user.getNumberOfAbsences() + ChronoUnit.DAYS.between(absence.getStartDate().toLocalDate(), absence.getEndDate().toLocalDate())));
             userxRepository.save(user);
         }
-        return absenceRepository.save(absence);
+        Absence saved = absenceRepository.save(absence);
+
+        userSettingsRepository.findById(user.getId()).ifPresent(settings -> {
+            if (settings.isEmailAbsences()
+                    && settings.getNotificationEmail() != null
+                    && !settings.getNotificationEmail().isBlank()) {
+                String name = user.getFirstName() != null ? user.getFirstName() : user.getUsername();
+                emailService.sendAbsenceStatusEmail(settings.getNotificationEmail(), name, saved);
+            }
+        });
+
+        return saved;
     }
 
     @Override

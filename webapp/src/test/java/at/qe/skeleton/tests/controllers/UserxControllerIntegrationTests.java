@@ -200,7 +200,8 @@ class UserxControllerIntegrationTests {
     void testThatPatchUserSettingsReturnsHttp200Ok() throws Exception {
         Userx user = userService.createNewUser(userxCreateMapper.mapFrom(TestDataUtil.createUserxCreateDTO(Set.of(userRoleService.getListOfPermissions().getFirst().getId()))));
         TestingAuthenticationToken token = new TestingAuthenticationToken(user.getUsername(), user, "ROLE_EMPLOYEE");
-        UserSettingsPatchDTO dto = new UserSettingsPatchDTO(true, null, null, true);
+        UserSettingsPatchDTO dto =
+                new UserSettingsPatchDTO(true, null, null, true, null, null, null);
         mockMvc.perform(MockMvcRequestBuilders.patch("/api/users/settings")
                         .with(SecurityMockMvcRequestPostProcessors.authentication(token))
                         .contentType(MediaType.APPLICATION_JSON)
