@@ -4,6 +4,7 @@ import at.qe.skeleton.model.*;
 import at.qe.skeleton.repositories.AggregatedStatsRepository;
 import at.qe.skeleton.repositories.BuildingTrendRepository;
 import at.qe.skeleton.repositories.DepartmentRepository;
+import at.qe.skeleton.repositories.FormulaWeightsRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class TrendJob {
     private final BuildingTrendRepository trendRepository;
     private final AggregatedStatsRepository aggregatedStatsRepository;
     private final DepartmentRepository departmentRepository;
+    private final FormulaWeightsRepository weightsRepository;
 
     @Value("${app.aggregation.run-on-startup:true}")
     private boolean runOnStartup;
@@ -80,8 +82,14 @@ public class TrendJob {
         double normalizedTemp = (temperature - 18.0) / (26.0 - 18.0);
         double normalizedHumidity = (humidity - 30.0) / (70.0 - 30.0);
         double normalizedCo2 = (co2 - 400.0) / (2000.0 - 400.0);
-
-        double raw = 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        List<FormulaWeights> weights = weightsRepository.findAll();
+        double raw;
+        log.info(weights.toString());
+        if (weights.isEmpty())
+            raw = 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
+        else{
+            raw = weights.getFirst().getTempWeight() * normalizedTemp + weights.getFirst().getHumWeight() * normalizedHumidity + weights.getFirst().getCo2Weight() * normalizedCo2;
+        }
         return Math.max(0.0, Math.min(100.0, (1.0 - raw) * 100.0));
     }
 
