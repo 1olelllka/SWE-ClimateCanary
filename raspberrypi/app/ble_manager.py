@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 
 class BLEManager:
+    """Manages the BLE connection lifecycle for a single Arduino sensor node."""
+
     def __init__(self, db, sensor: dict, processing_queue, ble_inbox, status_queue, scan_lock: asyncio.Lock):
         self.db = db
         self.sensor = sensor
@@ -16,31 +18,40 @@ class BLEManager:
         self.status_queue = status_queue          # Pi -> WebManager (ONLINE/OFFLINE events)
 
         self.client = None
-        self.disconnect_event = asyncio.Event()
-        self.reconnect_event = asyncio.Event()
-        self.removal_event = asyncio.Event()
+        self.disconnect_event = asyncio.Event()   # set by disconnected_callback or send error
+        self.reconnect_event = asyncio.Event()    # set externally to retry after all attempts fail
+        self.removal_event = asyncio.Event()      # set by WebManager when sensor is deleted
         self._loop = asyncio.get_running_loop()
-        self.scan_lock = scan_lock
+        self.scan_lock = scan_lock                # shared lock so only one BLE scan runs at a time
 
     @property
     def name(self) -> str:
+        """Sensor display name, used as the BLE advertisement filter."""
         return self.sensor['name']
 
     @property
     def read_uuid(self) -> str:
+        """GATT characteristic UUID used for incoming notifications from the Arduino."""
         return self.sensor['char_uuid']
 
     def disconnected_callback(self, client):
+        """Called by Bleak on unexpected BLE disconnect; wakes the run() wait loop."""
         logger.warning("[BLE] Arduino disconnected!")
         self.disconnect_event.set()
 
     def notification_handler(self, sender, data):
-        message = data.decode('utf-8').strip()
+        """Receive a BLE notification from the Arduino and hand it to the processing queue.
 
-        # thread-safe, works regardless of which thread Bleak calls this from
+        Uses call_soon_threadsafe because Bleak may invoke this from a different thread.
+        """
+        message = data.decode('utf-8').strip()
         self._loop.call_soon_threadsafe(self.processing_queue.put_nowait, message)
 
     async def _sender_task(self, write_uuid: str):
+        """Drain ble_inbox and write each command to the Arduino over GATT.
+
+        Exits when the client disconnects or a write fails.
+        """
         logger.info("[BLE] Sender task started. Ready to transmit commands.")
 
         while self.client and self.client.is_connected:
@@ -61,9 +72,14 @@ class BLEManager:
                 break
 
     async def run(self):
+        """Main BLE loop: scan, connect, sync time/frequency, then wait for disconnect or removal.
+
+        Retries up to 5 times before parking on reconnect_event. Loops forever until the
+        removal_event is set, at which point the coroutine returns cleanly.
+        """
         logger.info("[BLE] Starting manager...")
 
-        is_reported_offline = False 
+        is_reported_offline = False
 
         while True:
             try:
@@ -73,15 +89,15 @@ class BLEManager:
                 if not sensor_cfg:
                     logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                     return
-                
+
                 self.sensor = sensor_cfg
 
                 target_name = sensor_cfg['name']
                 char_uuid = sensor_cfg['char_uuid']
                 write_uuid = sensor_cfg['write_uuid']
 
-                connected = False 
-                for attempt in range (1,6):
+                connected = False
+                for attempt in range(1, 6):
 
                     sensors = await self.db.get_sensors()
                     sensor_cfg = next((s for s in sensors if s['name'] == self.name), None)
@@ -89,8 +105,8 @@ class BLEManager:
                         logger.warning(f"[BLE:{self.name}] Sensor removed from config. Stopping.")
                         return
 
-                    self.sensor = sensor_cfg 
-                    
+                    self.sensor = sensor_cfg
+
                     logger.info(f"[BLE] Looking for '{target_name}'...")
                     self.disconnect_event.clear()
 
@@ -130,22 +146,20 @@ class BLEManager:
                             })
                             is_reported_offline = False
 
-
                             # Send current timestamp and initial frequency to Arduino immediately after connection
-
                             unix_ts = datetime.now(tz=ZoneInfo("Europe/Vienna")).isoformat()
-                            await client.write_gatt_char( write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False)
+                            await client.write_gatt_char(write_uuid, f"TIME:{unix_ts}".encode('utf-8'), response=False)
                             logger.info(f"[BLE:{self.name}] Time sync sent.")
 
                             freq = await self.db.get_config('frequency')
                             if freq is not None:
-                                await client.write_gatt_char( write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
+                                await client.write_gatt_char(write_uuid, f"FREQUENCY:{freq}".encode('utf-8'), response=False)
                                 logger.info(f"[BLE:{self.name}] Frequency sync sent.")
                             else:
                                 logger.warning(f"[BLE:{self.name}] Frequency is null - skipping frequency sync.")
 
                             sender_task = asyncio.create_task(self._sender_task(write_uuid))
-                            connected = True 
+                            connected = True
                             _, pending = await asyncio.wait(
                                 [
                                     asyncio.create_task(self.disconnect_event.wait()),
@@ -155,10 +169,10 @@ class BLEManager:
                             )
                             for task in pending:
                                 task.cancel()
-    
+
                             sender_task.cancel()
                             self.client = None
-    
+
                             if self.removal_event.is_set():
                                 logger.warning(f"[BLE:{self.name}] Sensor deleted from config. Disconnecting.")
                                 await self.db.log_event("BLE", f"{target_name} removed - disconnecting.", "INFO")
@@ -169,8 +183,8 @@ class BLEManager:
                                 })
                                 is_reported_offline = True
                                 self.removal_event.clear()
-                                connected = False 
-                            
+                                connected = False
+
                             break
 
                     except BleakError as e:

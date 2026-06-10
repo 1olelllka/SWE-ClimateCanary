@@ -6,9 +6,10 @@ from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
-VIOLATION_THRESHOLD = 4
+VIOLATION_THRESHOLD = 4  # consecutive bad/good readings required to trigger or resolve a violation
 
 SENSOR_CHECKS = [
+    # (json_field, db_limit_key, direction, webapp_measurement_type)
     ("temperature", "max_temp",     "max", "TEMPERATURE"),
     ("temperature", "min_temp",     "min", "TEMPERATURE"),
     ("humidity",    "max_moisture", "max", "HUMIDITY"),
@@ -17,12 +18,18 @@ SENSOR_CHECKS = [
 ]
 
 def _warning_status(actual: float, limit: float, direction: str) -> str:
+    """Classify a violation as GREEN / YELLOW / RED based on how far the value exceeds the limit.
+
+    For 'max' limits: >25% over → RED, >10% → YELLOW, otherwise GREEN.
+    For 'min' limits: <75% of limit → RED, <90% → YELLOW, otherwise GREEN.
+    """
     if direction == "max":
         return "RED" if actual > limit * 1.25 else "YELLOW" if actual > limit * 1.10 else "GREEN"
     else:
         return "RED" if actual < limit * 0.75 else "YELLOW" if actual < limit * 0.90 else "GREEN"
 
 def _violation_message(sensor_key: str, direction: str, actual: float, limit: float, status: str) -> str:
+    """Build a human-readable violation description for the webapp payload."""
     direction_word = "above" if direction == "max" else "below"
     return (
         f"{sensor_key.capitalize()} {direction_word} limit: "
@@ -30,11 +37,12 @@ def _violation_message(sensor_key: str, direction: str, actual: float, limit: fl
     )
 
 class DataProcessor:
+    """Parses raw Arduino readings, stores them locally, and detects limit violations."""
 
     def __init__(self, db, web_out_queue, web_violation_queue):
         self.db = db
-        self.web_out_queue = web_out_queue
-        self.web_violation_queue = web_violation_queue
+        self.web_out_queue = web_out_queue           # -> WebManager measurement worker
+        self.web_violation_queue = web_violation_queue  # -> WebManager violation worker
 
         self._bad_streak:  dict[str, dict[str, int]] = {}
         self._good_streak: dict[str, dict[str, int]] = {}
@@ -42,6 +50,7 @@ class DataProcessor:
         self._active_warning: dict[str, dict[str, str | None]] = {}
 
     def _init_sensor_state(self, sensor_name: str):
+        """Lazily initialise streak and warning-state dicts for a sensor on first use."""
         if sensor_name not in self._bad_streak:
             limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
             self._bad_streak[sensor_name]  = {k: 0 for k in limit_keys}
@@ -49,12 +58,19 @@ class DataProcessor:
             self._active_warning[sensor_name] = {k: None for k in limit_keys}
 
     def reset_sensor_state(self, sensor_name: str):
+        """Reset all violation streaks for a sensor (called on sensor re-add or room change)."""
         limit_keys = {limit_key for _, limit_key, _, _ in SENSOR_CHECKS}
         self._bad_streak[sensor_name]     = {k: 0    for k in limit_keys}
         self._good_streak[sensor_name]    = {k: 0    for k in limit_keys}
         self._active_warning[sensor_name] = {k: None for k in limit_keys}
 
     async def run(self, sensor_name: str, processing_queue: asyncio.Queue, sensorWriteId):
+        """Main processing loop for one sensor.
+
+        Reads raw JSON from processing_queue, validates config, computes the accurate
+        timestamp, checks violations, stores the measurement in the DB, and forwards
+        the payload to web_out_queue. Discards readings silently while privacy_mode is active.
+        """
         logger.info(f"[Processor:{sensor_name}] Worker started.")
         self._init_sensor_state(sensor_name)
 
@@ -88,6 +104,8 @@ class DataProcessor:
                     raw_data = raw_data.decode('utf-8')
                 data = json.loads(raw_data)
 
+                # Reconstruct the precise sample timestamp from the Arduino's millis offset.
+                # Falls back to current time when the Arduino sends no clock fields.
                 time_base = data.get('time_base')
                 offset_ms = data.get('millis_offset')
 
@@ -100,6 +118,7 @@ class DataProcessor:
 
                 if privacy:
                     logger.warning(f"[Processor:{sensor_name}] Privacy Mode active. Discarding.")
+                    # Still check violations so alerts fire even without storing the raw value.
                     await self._check_violations(sensor_name, data, limits, room_id, timestamp, sensorWriteId)
                     continue
 
@@ -145,6 +164,12 @@ class DataProcessor:
         timestamp: str,
         sensorWriteId,
     ):
+        """Streak-based violation detector for all SENSOR_CHECKS on a single reading.
+
+        A violation is reported only after VIOLATION_THRESHOLD consecutive bad readings,
+        and only when the status level changes (GREEN → YELLOW → RED), suppressing duplicates.
+        Resolution is reported after VIOLATION_THRESHOLD consecutive clean readings.
+        """
         any_newly_resolved = False
 
         for sensor_key, limit_key, direction, measurement_type in SENSOR_CHECKS:
