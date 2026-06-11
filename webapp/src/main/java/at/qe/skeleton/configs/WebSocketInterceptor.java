@@ -43,7 +43,7 @@ public class WebSocketInterceptor implements ChannelInterceptor {
                     .flatMap(tokenProvider::validateTokenAndGetJws)
                     .ifPresent(jws -> {
                         String username = jws.getPayload().getSubject();
-                        Userx userDetails = userxRepository.findByUsernameWithRoles(username).orElseThrow(() -> new RuntimeException("idk"));
+                        Userx userDetails = userxRepository.findByUsernameWithRoles(username).orElseThrow(() -> new RuntimeException("User with such name was not found."));
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(
                                         userDetails,
