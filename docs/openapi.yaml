@@ -1,18 +1,23 @@
 openapi: 3.0.0
 info:
-  title: ClimateCanary API
-  version: 1.0.0
-  description: API for out climate monitoring project with RBAC
+  title: SWE Skeleton API
+  description: This is the API documentation for the SWE Skeleton project.
+  contact:
+    name: SWE Skeleton Team
+  version: "0.1"
+servers:
+- url: http://localhost:8080
+  description: Development
 tags:
-  - name: Absences
-    description: User absences management
-  - name: Building Trend
-    description: Calculating building trend
+- name: Absences
+  description: User absences management
+- name: Building Trend
+  description: Calculating building trend
 paths:
   /api/warnings:
     post:
       tags:
-        - Warnings
+      - Warnings
       summary: "Create new warning. One of Permissions Required: CAN_SEND_WARNINGS"
       operationId: createWarning
       requestBody:
@@ -49,15 +54,15 @@ paths:
   /api/users:
     get:
       tags:
-        - User management
+      - User management
       summary: "Get Page of Users. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: getPageOfUsers
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of users.
@@ -73,7 +78,7 @@ paths:
                 $ref: "#/components/schemas/PageUserxDTO"
     post:
       tags:
-        - User management
+      - User management
       summary: "Create new User. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: createNewUser
       requestBody:
@@ -110,7 +115,7 @@ paths:
   /api/tips:
     get:
       tags:
-        - Tip Management
+      - Tip Management
       summary: "Get all tips. One of Permissions Required: CAN_MANAGE_TIPS"
       operationId: getAllTips
       responses:
@@ -126,7 +131,7 @@ paths:
           description: Unauthorized.
     post:
       tags:
-        - Tip Management
+      - Tip Management
       summary: "Create new tip. One of Permissions Required: CAN_MANAGE_TIPS"
       operationId: createNewTip
       requestBody:
@@ -159,15 +164,15 @@ paths:
   /api/sensor-stations:
     get:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Get page of sensors. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: getAllSensorStations
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of sensors.
@@ -183,7 +188,7 @@ paths:
                 $ref: "#/components/schemas/PageSensorStationDTO"
     post:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Create new sensor station. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: createNewSensorStation
       requestBody:
@@ -220,16 +225,16 @@ paths:
   /api/sensor-stations/{sensor_id}/retry-connection:
     post:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Send retry command to raspberry. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: retrySensorStation
       parameters:
-        - name: sensor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Sent request.
@@ -244,15 +249,15 @@ paths:
   /api/rooms:
     get:
       tags:
-        - Room management
+      - Room management
       summary: "Get page of rooms. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: getPageOfRooms
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of rooms.
@@ -264,7 +269,7 @@ paths:
           description: Unauthorized.
     post:
       tags:
-        - Room management
+      - Room management
       summary: "Create new room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: createNewRoom
       requestBody:
@@ -303,15 +308,15 @@ paths:
   /api/raspberry-pis:
     get:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Get page of Raspberries. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: getAllRaspberries
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of raspberries.
@@ -327,7 +332,7 @@ paths:
                 $ref: "#/components/schemas/PageRaspberryDTO"
     post:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Create new Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: createNewRaspberry
       requestBody:
@@ -364,22 +369,22 @@ paths:
   /api/raspberry-pis/{raspberry_id}/rooms/{room_id}:
     post:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Add room to Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: addTheRoomToRaspberry
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Successfully added new Room.
@@ -407,22 +412,22 @@ paths:
                 $ref: "#/components/schemas/RaspberryDTO"
     delete:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Remove Room from Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: removeTheRoomFromRaspberry
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Successfully removed Room.
@@ -445,16 +450,16 @@ paths:
   /api/raspberry-pis/{raspberry_id}/retry-connection:
     post:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Send retry command to raspberry. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: retryDevicesConnection
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Sent request.
@@ -469,7 +474,7 @@ paths:
   /api/measurements:
     post:
       tags:
-        - Climate Endpoints
+      - Climate Endpoints
       summary: "Post measurement. One of Permissions Required: CAN_SEND_MEASUREMENTS"
       operationId: postMeasurements
       requestBody:
@@ -498,7 +503,7 @@ paths:
   /api/login:
     post:
       tags:
-        - Auth
+      - Auth
       summary: Log in
       operationId: authenticateUser
       requestBody:
@@ -525,15 +530,16 @@ paths:
   /api/departments:
     get:
       tags:
-        - Department Management
-      summary: "Get page of departments. One of Permissions Required: CAN_VIEW_ALL_BUILDINGS, CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_COMPANY_AGGR"
+      - Department Management
+      summary: "Get page of departments. One of Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_COMPANY_AGGR"
       operationId: getPageOfDepartments
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of departments.
@@ -545,7 +551,7 @@ paths:
           description: Unauthorized.
     post:
       tags:
-        - Department Management
+      - Department Management
       summary: "Create new department. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: createNewDepartment
       requestBody:
@@ -578,15 +584,16 @@ paths:
   /api/buildings:
     get:
       tags:
-        - Building Management
-      summary: "Get page of buildings. Permissions Required: CAN_VIEW_ALL_BUILDINGS, CAN_MANAGE_BUILDING_STRUCTURE"
+      - Building Management
+      summary: "Get page of buildings. Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: getPageOfBuildings
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of buildings.
@@ -598,7 +605,7 @@ paths:
           description: Unauthorized.
     post:
       tags:
-        - Building Management
+      - Building Management
       summary: "Create new building. Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: createNewBuilding
       requestBody:
@@ -631,18 +638,20 @@ paths:
   /api/absences:
     get:
       tags:
-        - Absences
-      summary: "Get all absences. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE, CAN_VIEW_ABSENCE_VIEW"
+      - Absences
+      summary: "Get all absences. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE,\
+        \ CAN_VIEW_ABSENCE_VIEW"
       operationId: getAllAbsences
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
-          description: List of Absences. For department management it'll return a list of all employees of department. For employee only his own.
+          description: List of Absences. For department management it'll return a
+            list of all employees of department. For employee only his own.
           content:
             '*/*':
               schema:
@@ -651,7 +660,7 @@ paths:
           description: Unauthorized.
     post:
       tags:
-        - Absences
+      - Absences
       summary: "Create new absence. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE"
       operationId: createNewAbsence
       requestBody:
@@ -688,7 +697,7 @@ paths:
   /api/absences/clock-in:
     post:
       tags:
-        - Absences
+      - Absences
       summary: Clock-in
       operationId: clockInForSpecificRoom
       responses:
@@ -708,19 +717,61 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
           description: Unauthorized.
+  /api/weights:
+    get:
+      tags:
+      - Formula Weights Configuration
+      summary: Get current formula weights. CAN_MANAGE_WEIGHT_FORMULA permission required
+      operationId: getCurrentFormulaWeights
+      responses:
+        "200":
+          description: Current formula.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FormulaWeightDTO"
+        "403":
+          description: Unauthorized.
+    patch:
+      tags:
+      - Formula Weights Configuration
+      summary: Update current formula weights. CAN_MANAGE_WEIGHT_FORMULA permission
+        required
+      operationId: patchCurrentFormulaWeights
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FormulaWeightCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: Updated formula.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FormulaWeightDTO"
+        "400":
+          description: Validation error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Unauthorized.
   /api/warnings/{warning_id}/resolve:
     patch:
       tags:
-        - Warnings
+      - Warnings
       summary: "Resolve existing warnings. One of Permissions Required: CAN_SEND_WARNINGS"
       operationId: resolveWarning
       parameters:
-        - name: warning_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: warning_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Resolved warning.
@@ -743,16 +794,16 @@ paths:
   /api/users/{user_id}:
     get:
       tags:
-        - User management
+      - User management
       summary: "Get specific user. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: getSpecificUser
       parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: User.
@@ -774,16 +825,16 @@ paths:
                 $ref: "#/components/schemas/UserxDTO"
     delete:
       tags:
-        - User management
+      - User management
       summary: "Patch specific User. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: deleteSpecificUser
       parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: User deleted.
@@ -791,16 +842,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - User management
+      - User management
       summary: "Patch specific User. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: patchSpecificUser
       parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -841,7 +892,7 @@ paths:
   /api/users/settings:
     get:
       tags:
-        - User management
+      - User management
       summary: Get settings of a user.
       operationId: getUserSettings
       responses:
@@ -861,7 +912,7 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - User management
+      - User management
       summary: Patch settings of a user.
       operationId: updateUserSettings
       requestBody:
@@ -888,16 +939,16 @@ paths:
   /api/tips/{tip_id}:
     delete:
       tags:
-        - Tip Management
+      - Tip Management
       summary: "Delete specific tip. One of Permissions Required: CAN_MANAGE_TIPS"
       operationId: deleteSpecificTip
       parameters:
-        - name: tip_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: tip_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted.
@@ -905,16 +956,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Tip Management
+      - Tip Management
       summary: "Update specific tip. One of Permissions Required: CAN_MANAGE_TIPS"
       operationId: patchMessageForTip
       parameters:
-        - name: tip_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: tip_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -945,16 +996,16 @@ paths:
   /api/sensor-stations/{sensor_id}:
     get:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Get specific sensor. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: getSpecificSensorById
       parameters:
-        - name: sensor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Specific sensor station.
@@ -976,16 +1027,16 @@ paths:
                 $ref: "#/components/schemas/SensorStationDTO"
     delete:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Delete sensor. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: removeSpecificSensor
       parameters:
-        - name: sensor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted sensor station.
@@ -999,16 +1050,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Patch sensor station. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: patchExistingSensorStation
       parameters:
-        - name: sensor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1049,16 +1100,16 @@ paths:
   /api/rooms/{room_id}:
     delete:
       tags:
-        - Room management
+      - Room management
       summary: "Delete specific room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: deleteSpecificRoom
       parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted room.
@@ -1066,16 +1117,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Room management
+      - Room management
       summary: "Update specific room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: patchSpecificRoom
       parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1112,16 +1163,18 @@ paths:
   /api/rooms/{room_id}/limits:
     get:
       tags:
-        - Limits management
-      summary: "Get Limits for a room. One of Permissions Required: CAN_VIEW_ALL_ROOMS, CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      - Limits management
+      summary: "Get Limits for a room. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_SHARED_CLIMATE,\
+        \ CAN_VIEW_OWN_DEPARTMENT_MEASURES"
       operationId: getAllLimitsForTheRoom
       parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Updated room.
@@ -1139,16 +1192,17 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Limits management
-      summary: "Update limit for a room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE, CAN_VIEW_ALL_ROOMS"
+      - Limits management
+      summary: "Update limit for a room. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE,\
+        \ CAN_VIEW_ALL_ROOMS"
       operationId: updateLimitsForTheRoom
       parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1179,16 +1233,16 @@ paths:
   /api/roles/{role_id}:
     patch:
       tags:
-        - User roles management
+      - User roles management
       summary: "Update specific permission. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: updatePermission
       parameters:
-        - name: role_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: role_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1219,16 +1273,16 @@ paths:
   /api/raspberry-pis/{raspberry_id}:
     get:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Get specific Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: getSpecificRaspberry
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Specific Raspberry.
@@ -1250,16 +1304,16 @@ paths:
                 $ref: "#/components/schemas/RaspberryDTO"
     delete:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Delete Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: deleteSpecificRaspberry
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted Raspberry Pi.
@@ -1267,16 +1321,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Patch Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: patchSpecificRaspberry
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1317,16 +1371,17 @@ paths:
   /api/departments/{department_id}:
     get:
       tags:
-        - Department Management
-      summary: "Get specific department. One of Permissions Required: CAN_VIEW_OWN_DEPARTMENT_MEASURES, CAN_VIEW_OWN_SHARED_CLIMATE"
+      - Department Management
+      summary: "Get specific department. One of Permissions Required: CAN_VIEW_OWN_DEPARTMENT_MEASURES,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE"
       operationId: getSpecificDepartment
       parameters:
-        - name: department_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Updated absence.
@@ -1348,16 +1403,17 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
     delete:
       tags:
-        - Department Management
-      summary: "Delete specific department. Deletes corresponding rooms too. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      - Department Management
+      summary: "Delete specific department. Deletes corresponding rooms too. One of\
+        \ Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: deleteSpecificDepartment
       parameters:
-        - name: department_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted Department.
@@ -1365,16 +1421,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Department Management
+      - Department Management
       summary: "Update specific department. One of Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: patchSpecificDepartment
       parameters:
-        - name: department_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1411,16 +1467,17 @@ paths:
   /api/buildings/{building_id}:
     get:
       tags:
-        - Building Management
-      summary: "Get specific building. Permissions Required: CAN_VIEW_ALL_BUILDINGS, CAN_MANAGE_BUILDING_STRUCTURE"
+      - Building Management
+      summary: "Get specific building. Permissions Required: CAN_VIEW_ALL_BUILDINGS,\
+        \ CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: getSpecificBuilding
       parameters:
-        - name: building_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Specific building.
@@ -1438,16 +1495,17 @@ paths:
           description: Unauthorized.
     delete:
       tags:
-        - Building Management
-      summary: "Delete specific building. Deletes departments and rooms too. Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
+      - Building Management
+      summary: "Delete specific building. Deletes departments and rooms too. Permissions\
+        \ Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: deleteSpecificBuilding
       parameters:
-        - name: building_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Deleted.
@@ -1455,16 +1513,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Building Management
+      - Building Management
       summary: "Update specific building. Permissions Required: CAN_MANAGE_BUILDING_STRUCTURE"
       operationId: patchSpecificBuilding
       parameters:
-        - name: building_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1501,16 +1559,16 @@ paths:
   /api/absences/{absence_id}:
     get:
       tags:
-        - Absences
+      - Absences
       summary: "Get specific absence. One of Permissions Required: CAN_MANAGE_ABSENCES"
       operationId: getSpecificAbsence
       parameters:
-        - name: absence_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Found absence.
@@ -1528,16 +1586,16 @@ paths:
           description: Unauthorized.
     patch:
       tags:
-        - Absences
+      - Absences
       summary: "Update status of an absence. One of Permissions Required: CAN_MANAGE_ABSENCES"
       operationId: updateStatusOfAbsence
       parameters:
-        - name: absence_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       requestBody:
         content:
           application/json:
@@ -1568,16 +1626,16 @@ paths:
   /api/absences/{absence_id}/cancel:
     patch:
       tags:
-        - Absences
+      - Absences
       summary: "Cancel absence. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE"
       operationId: cancelAbsence
       parameters:
-        - name: absence_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: absence_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Updated cancelled absence.
@@ -1602,33 +1660,34 @@ paths:
   /api/warnings/rooms/{room_id}:
     get:
       tags:
-        - Warnings
-      summary: "Get warnings for a room. One of Permissions Required: CAN_VIEW_OWN_OFFICE_WARNINGS, CAN_VIEW_OWN_DEPARTMENT_WARNINGS, CAN_VIEW_ALL_ROOMS"
+      - Warnings
+      summary: "Get warnings for a room. One of Permissions Required: CAN_VIEW_OWN_OFFICE_WARNINGS,\
+        \ CAN_VIEW_OWN_DEPARTMENT_WARNINGS, CAN_VIEW_ALL_ROOMS"
       operationId: getWarningsForRoom
       parameters:
-        - name: room_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: activeOnly
-          in: query
-          required: true
-          schema:
-            type: boolean
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
+      - name: room_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: activeOnly
+        in: query
+        required: true
+        schema:
+          type: boolean
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: List of warnings.
@@ -1661,33 +1720,34 @@ paths:
   /api/warnings/departments/{department_id}/summary:
     get:
       tags:
-        - Warnings
-      summary: "Get warnings summary for department. One of Permissions Required: CAN_VIEW_VIOLATIONS_PER_DEPARTMENT, CAN_VIEW_OWN_DEPARTMENT_WARNINGS"
+      - Warnings
+      summary: "Get warnings summary for department. One of Permissions Required:\
+        \ CAN_VIEW_VIOLATIONS_PER_DEPARTMENT, CAN_VIEW_OWN_DEPARTMENT_WARNINGS"
       operationId: getWarningsSummaryForDepartment
       parameters:
-        - name: department_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: onlyActive
-          in: query
-          required: true
-          schema:
-            type: boolean
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: onlyActive
+        in: query
+        required: true
+        schema:
+          type: boolean
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: List of warnings.
@@ -1712,16 +1772,16 @@ paths:
   /api/warnings/buildings/{building_id}/active:
     get:
       tags:
-        - Warnings
+      - Warnings
       summary: "Get active warnings for building. One of Permissions Required: CAN_VIEW_ALL_ROOMS"
       operationId: getActiveViolationsForBuilding
       parameters:
-        - name: building_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: building_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "201":
           description: Active warnings for building.
@@ -1740,7 +1800,7 @@ paths:
   /api/users/me:
     get:
       tags:
-        - User management
+      - User management
       summary: Get authenticated User.
       operationId: getAuthenticatedUser
       responses:
@@ -1759,15 +1819,15 @@ paths:
   /api/users/me/absences:
     get:
       tags:
-        - User management
+      - User management
       summary: "Get page of Absences. One of Permissions Required: CAN_MANAGE_OWN_ABSENCES"
       operationId: getPageOfAbsencesOfAuthenticatedUser
       parameters:
-        - name: pageable
-          in: query
-          required: true
-          schema:
-            $ref: "#/components/schemas/Pageable"
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: "#/components/schemas/Pageable"
       responses:
         "200":
           description: Page of absences.
@@ -1784,38 +1844,39 @@ paths:
   /api/rooms/{id}/overtime:
     get:
       tags:
-        - Climate Endpoints
-      summary: "Get climate overtime. One of Permissions Required: CAN_VIEW_ALL_ROOMS, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      - Climate Endpoints
+      summary: "Get climate overtime. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
       operationId: getOvertime
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: startTime
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: endTime
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: startTime
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: endTime
+        in: query
+        required: false
+        schema:
+          type: string
       responses:
         "200":
           description: Overtime of a room.
@@ -1848,16 +1909,17 @@ paths:
   /api/rooms/{id}/current-climate:
     get:
       tags:
-        - Climate Endpoints
-      summary: "Get current climate. One of Permissions Required: CAN_VIEW_ALL_ROOMS, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      - Climate Endpoints
+      summary: "Get current climate. One of Permissions Required: CAN_VIEW_ALL_ROOMS,\
+        \ CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
       operationId: getCurrentClimate
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Current climate of a room.
@@ -1882,40 +1944,42 @@ paths:
   /api/rooms/{id}/climate-history:
     get:
       tags:
-        - Climate Endpoints
-      summary: "Get climate history (full & reduced). One of Permissions Required: CAN_VIEW_ALL_ROOMS, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE, CAN_VIEW_OWN_DEPARTMENT_MEASURES"
+      - Climate Endpoints
+      summary: "Get climate history (full & reduced). One of Permissions Required:\
+        \ CAN_VIEW_ALL_ROOMS, CAN_VIEW_OWN_SHARED_CLIMATE, CAN_VIEW_OWN_OFFICE_CLIMATE,\
+        \ CAN_VIEW_OWN_DEPARTMENT_MEASURES"
       operationId: getClimateHistory
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: granularity
-          in: query
-          required: false
-          schema:
-            type: string
-            default: DAY
-        - name: isGeneralArea
-          in: query
-          required: false
-          schema:
-            type: boolean
-            default: false
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: granularity
+        in: query
+        required: false
+        schema:
+          type: string
+          default: DAY
+      - name: isGeneralArea
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
       responses:
         "200":
           description: Climate History.
@@ -1948,7 +2012,7 @@ paths:
   /api/roles:
     get:
       tags:
-        - User roles management
+      - User roles management
       summary: "Get all permissions. One of Permissions Required: CAN_MANAGE_USERS"
       operationId: getAllPermissions
       responses:
@@ -1965,16 +2029,17 @@ paths:
   /api/raspberry-pis/{raspberry_id}/sync/occupancy:
     get:
       tags:
-        - Raspberry Pi Management
-      summary: "Synchronize occupancy for Raspberry Pi. One of Permissions Required: CAN_MANAGE_DEVICES"
+      - Raspberry Pi Management
+      summary: "Synchronize occupancy for Raspberry Pi. One of Permissions Required:\
+        \ CAN_MANAGE_DEVICES"
       operationId: syncOccupancy
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Specific Raspberry.
@@ -1997,16 +2062,16 @@ paths:
   /api/raspberry-pis/{raspberry_id}/config:
     get:
       tags:
-        - Raspberry Pi Management
+      - Raspberry Pi Management
       summary: "Get relevant Raspberry Pi Config. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: getRaspberryPiConfig
       parameters:
-        - name: raspberry_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: raspberry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "204":
           description: Config.
@@ -2029,16 +2094,16 @@ paths:
   /api/departments/{id}/last-aggregation:
     get:
       tags:
-        - Climate Endpoints
+      - Climate Endpoints
       summary: "Get Department's last aggregation. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
       operationId: getAggregatedDataForDepartment
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Last aggregated data for department.
@@ -2057,28 +2122,28 @@ paths:
   /api/departments/{id}/climate-aggregation:
     get:
       tags:
-        - Climate Endpoints
+      - Climate Endpoints
       summary: "Get Department's aggregations. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
       operationId: getAggregatedDataInPeriodOfTime
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: All of aggregated data for department.
@@ -2105,28 +2170,28 @@ paths:
   /api/building-trend/departments/{department_id}:
     get:
       tags:
-        - Building Trend
+      - Building Trend
       summary: "Trend per department. One of Permissions Required: CAN_VIEW_COMPANY_AGGR"
       operationId: getTrendsForSpecificDepartment
       parameters:
-        - name: department_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: startDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
+      - name: department_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
       responses:
         "200":
           description: List of trends of department
@@ -2147,8 +2212,9 @@ paths:
   /api/absences/managers:
     get:
       tags:
-        - Absences
-      summary: "Get all managers available for absence application. One of Permissions Required: CAN_MANAGE_OWN_ABSENCE"
+      - Absences
+      summary: "Get all managers available for absence application. One of Permissions\
+        \ Required: CAN_MANAGE_OWN_ABSENCE"
       operationId: getAvailableManagersForAbsence
       responses:
         "200":
@@ -2164,7 +2230,7 @@ paths:
   /api/absences/clock-status:
     get:
       tags:
-        - Absences
+      - Absences
       summary: Get clock status of authenticated user
       operationId: getClockStatus
       responses:
@@ -2179,16 +2245,16 @@ paths:
   /api/sensor-stations/{sensor_id}/room:
     delete:
       tags:
-        - Sensor Station Management
+      - Sensor Station Management
       summary: "Disconnect sensor from a room. One of Permissions Required: CAN_MANAGE_DEVICES"
       operationId: disconnectSensorFromRoom
       parameters:
-        - name: sensor_id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      - name: sensor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       responses:
         "200":
           description: Specific sensor station.
@@ -2211,7 +2277,7 @@ paths:
   /api/absences/clock-out:
     delete:
       tags:
-        - Absences
+      - Absences
       summary: Clock-out
       operationId: clockOutForSpecificRoom
       responses:
@@ -2242,15 +2308,15 @@ components:
         measurementType:
           type: string
           enum:
-            - TEMPERATURE
-            - HUMIDITY
-            - CO2
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
         status:
           type: string
           enum:
-            - GREEN
-            - YELLOW
-            - RED
+          - GREEN
+          - YELLOW
+          - RED
         triggeredValue:
           type: number
           format: double
@@ -2264,13 +2330,13 @@ components:
           type: string
           format: uuid
       required:
-        - activeLimitAtTime
-        - measurementType
-        - message
-        - roomId
-        - sensorWriteId
-        - status
-        - triggeredValue
+      - activeLimitAtTime
+      - measurementType
+      - message
+      - roomId
+      - sensorWriteId
+      - status
+      - triggeredValue
     ProblemDetail:
       type: object
       properties:
@@ -2305,15 +2371,15 @@ components:
         measurementType:
           type: string
           enum:
-            - TEMPERATURE
-            - HUMIDITY
-            - CO2
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
         status:
           type: string
           enum:
-            - GREEN
-            - YELLOW
-            - RED
+          - GREEN
+          - YELLOW
+          - RED
         message:
           type: string
         triggeredValue:
@@ -2357,9 +2423,9 @@ components:
           type: string
           format: uuid
       required:
-        - password
-        - roles
-        - username
+      - password
+      - roles
+      - username
     UserRoleDTO:
       type: object
       properties:
@@ -2373,28 +2439,29 @@ components:
           items:
             type: string
             enum:
-              - CAN_VIEW_OWN_OFFICE_CLIMATE
-              - CAN_VIEW_OWN_SHARED_CLIMATE
-              - CAN_VIEW_OWN_OFFICE_WARNINGS
-              - CAN_MANAGE_OWN_ABSENCE
-              - CAN_VIEW_OWN_DEPARTMENT_MEASURES
-              - CAN_VIEW_OWN_DEPARTMENT_WARNINGS
-              - CAN_VIEW_ABSENCE_VIEW
-              - CAN_MANAGE_ABSENCES
-              - CAN_VIEW_COMPANY_AGGR
-              - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
-              - CAN_CHANGE_LIMITS
-              - CAN_MANAGE_TIPS
-              - CAN_VIEW_ALL_ROOMS
-              - CAN_VIEW_ALL_BUILDINGS
-              - CAN_MANAGE_USERS
-              - CAN_MANAGE_BUILDING_STRUCTURE
-              - CAN_MANAGE_DEVICES
-              - CAN_GET_RASPBERRY_CONFIG
-              - CAN_VIEW_OCCUPANCY
-              - CAN_SEND_WARNINGS
-              - CAN_SEND_MEASUREMENTS
-              - CAN_LIMITED_MANAGE_DEVICES
+            - CAN_VIEW_OWN_OFFICE_CLIMATE
+            - CAN_VIEW_OWN_SHARED_CLIMATE
+            - CAN_VIEW_OWN_OFFICE_WARNINGS
+            - CAN_MANAGE_OWN_ABSENCE
+            - CAN_VIEW_OWN_DEPARTMENT_MEASURES
+            - CAN_VIEW_OWN_DEPARTMENT_WARNINGS
+            - CAN_VIEW_ABSENCE_VIEW
+            - CAN_MANAGE_ABSENCES
+            - CAN_VIEW_COMPANY_AGGR
+            - CAN_VIEW_VIOLATIONS_PER_DEPARTMENT
+            - CAN_CHANGE_LIMITS
+            - CAN_MANAGE_TIPS
+            - CAN_VIEW_ALL_ROOMS
+            - CAN_VIEW_ALL_BUILDINGS
+            - CAN_MANAGE_USERS
+            - CAN_MANAGE_BUILDING_STRUCTURE
+            - CAN_MANAGE_DEVICES
+            - CAN_GET_RASPBERRY_CONFIG
+            - CAN_VIEW_OCCUPANCY
+            - CAN_SEND_WARNINGS
+            - CAN_SEND_MEASUREMENTS
+            - CAN_LIMITED_MANAGE_DEVICES
+            - CAN_MANAGE_WEIGHT_FORMULA
           uniqueItems: true
     UserRoom:
       type: object
@@ -2410,8 +2477,8 @@ components:
         roomType:
           type: string
           enum:
-            - OFFICE
-            - SHARED
+          - OFFICE
+          - SHARED
         roomNumber:
           type: string
     UserxDTO:
@@ -2450,28 +2517,28 @@ components:
         violationType:
           type: string
           enum:
-            - OVER
-            - UNDER
+          - OVER
+          - UNDER
         violatedSensor:
           type: string
           enum:
-            - TEMPERATURE
-            - AIR
-            - HUMIDITY
+          - TEMPERATURE
+          - AIR
+          - HUMIDITY
         violationStatus:
           type: string
           enum:
-            - GREEN
-            - YELLOW
-            - RED
+          - GREEN
+          - YELLOW
+          - RED
         message:
           type: string
           minLength: 1
       required:
-        - message
-        - violatedSensor
-        - violationStatus
-        - violationType
+      - message
+      - violatedSensor
+      - violationStatus
+      - violationType
     TipDTO:
       type: object
       properties:
@@ -2481,20 +2548,20 @@ components:
         violationStatus:
           type: string
           enum:
-            - GREEN
-            - YELLOW
-            - RED
+          - GREEN
+          - YELLOW
+          - RED
         violationType:
           type: string
           enum:
-            - OVER
-            - UNDER
+          - OVER
+          - UNDER
         violatedSensor:
           type: string
           enum:
-            - TEMPERATURE
-            - AIR
-            - HUMIDITY
+          - TEMPERATURE
+          - AIR
+          - HUMIDITY
         message:
           type: string
     SensorStationCreateDTO:
@@ -2507,8 +2574,8 @@ components:
           type: string
           format: uuid
       required:
-        - name
-        - roomId
+      - name
+      - roomId
     SensorStationDTO:
       type: object
       properties:
@@ -2523,8 +2590,8 @@ components:
         status:
           type: string
           enum:
-            - ONLINE
-            - OFFLINE
+          - ONLINE
+          - OFFLINE
         roomId:
           type: string
           format: uuid
@@ -2540,8 +2607,8 @@ components:
         roomType:
           type: string
           enum:
-            - OFFICE
-            - SHARED
+          - OFFICE
+          - SHARED
         isActive:
           type: boolean
         defaultPeopleCount:
@@ -2552,10 +2619,10 @@ components:
           type: string
           minLength: 1
       required:
-        - defaultPeopleCount
-        - departmentID
-        - name
-        - roomType
+      - defaultPeopleCount
+      - departmentID
+      - name
+      - roomType
     RoomDTO:
       type: object
       properties:
@@ -2572,8 +2639,8 @@ components:
         roomType:
           type: string
           enum:
-            - OFFICE
-            - SHARED
+          - OFFICE
+          - SHARED
         defaultPeopleCount:
           type: integer
           format: int32
@@ -2620,11 +2687,11 @@ components:
           type: integer
           format: int32
       required:
-        - frequency
-        - ipAddress
-        - name
-        - port
-        - roomId
+      - frequency
+      - ipAddress
+      - name
+      - port
+      - roomId
     RaspberryDTO:
       type: object
       properties:
@@ -2644,8 +2711,8 @@ components:
         status:
           type: string
           enum:
-            - ONLINE
-            - OFFLINE
+          - ONLINE
+          - OFFLINE
         room:
           $ref: "#/components/schemas/RoomRaspberry"
     RoomRaspberry:
@@ -2671,25 +2738,25 @@ components:
             $ref: "#/components/schemas/ReadingDTO"
           minItems: 1
       required:
-        - readings
-        - roomId
-        - timestamp
+      - readings
+      - roomId
+      - timestamp
     ReadingDTO:
       type: object
       properties:
         type:
           type: string
           enum:
-            - TEMPERATURE
-            - HUMIDITY
-            - CO2
+          - TEMPERATURE
+          - HUMIDITY
+          - CO2
           minLength: 1
         value:
           type: number
           format: double
       required:
-        - type
-        - value
+      - type
+      - value
     LoginRequestDTO:
       type: object
       properties:
@@ -2700,8 +2767,8 @@ components:
           type: string
           minLength: 1
       required:
-        - password
-        - username
+      - password
+      - username
     LoginResponseDTO:
       type: object
       properties:
@@ -2726,8 +2793,8 @@ components:
           items:
             $ref: "#/components/schemas/NewRoomInDepartmentDTO"
       required:
-        - buildingID
-        - name
+      - buildingID
+      - name
     NewRoomInDepartmentDTO:
       type: object
       properties:
@@ -2737,16 +2804,16 @@ components:
         roomType:
           type: string
           enum:
-            - OFFICE
-            - SHARED
+          - OFFICE
+          - SHARED
         defaultPeopleCount:
           type: integer
           format: int32
           minimum: 1
       required:
-        - defaultPeopleCount
-        - name
-        - roomType
+      - defaultPeopleCount
+      - name
+      - roomType
     DepartmentDTO:
       type: object
       properties:
@@ -2772,7 +2839,7 @@ components:
         address:
           type: string
       required:
-        - name
+      - name
     BuildingDTO:
       type: object
       properties:
@@ -2810,20 +2877,20 @@ components:
         reason:
           type: string
           enum:
-            - VACATION
-            - ILLNESS
-            - OTHER
+          - VACATION
+          - ILLNESS
+          - OTHER
         comment:
           type: string
         assignedTo:
           type: string
           format: uuid
       required:
-        - assignedTo
-        - endDate
-        - reason
-        - startDate
-        - userId
+      - assignedTo
+      - endDate
+      - reason
+      - startDate
+      - userId
     AbsenceDTO:
       type: object
       properties:
@@ -2833,16 +2900,16 @@ components:
         typeOfAbsense:
           type: string
           enum:
-            - VACATION
-            - ILLNESS
-            - OTHER
+          - VACATION
+          - ILLNESS
+          - OTHER
         status:
           type: string
           enum:
-            - PENDING
-            - APPROVED
-            - REJECTED
-            - CANCELLED
+          - PENDING
+          - APPROVED
+          - REJECTED
+          - CANCELLED
         startDate:
           type: string
           format: date-time
@@ -2857,6 +2924,37 @@ components:
           format: uuid
         comment:
           type: string
+    FormulaWeightCreateDTO:
+      type: object
+      properties:
+        tempWeight:
+          type: number
+          format: double
+        co2Weight:
+          type: number
+          format: double
+        humWeight:
+          type: number
+          format: double
+      required:
+      - co2Weight
+      - humWeight
+      - tempWeight
+    FormulaWeightDTO:
+      type: object
+      properties:
+        tempWeight:
+          type: number
+          format: double
+        co2Weight:
+          type: number
+          format: double
+        humWeight:
+          type: number
+          format: double
+        modifiedAt:
+          type: string
+          format: date-time
     UserxPatchDTO:
       type: object
       properties:
@@ -2887,10 +2985,16 @@ components:
         format:
           type: string
           enum:
-            - YYYY_MM_DD
-            - DD_MM_YYYY
-            - MM_DD_YYYY
+          - YYYY_MM_DD
+          - DD_MM_YYYY
+          - MM_DD_YYYY
         twelveHourFormat:
+          type: boolean
+        notificationEmail:
+          type: string
+        emailWarnings:
+          type: boolean
+        emailAbsences:
           type: boolean
     UserSettingsDTO:
       type: object
@@ -2905,10 +3009,16 @@ components:
         format:
           type: string
           enum:
-            - YYYY_MM_DD
-            - DD_MM_YYYY
-            - MM_DD_YYYY
+          - YYYY_MM_DD
+          - DD_MM_YYYY
+          - MM_DD_YYYY
         twelveHourFormat:
+          type: boolean
+        notificationEmail:
+          type: string
+        emailWarnings:
+          type: boolean
+        emailAbsences:
           type: boolean
     TipPatchDTO:
       type: object
@@ -2917,7 +3027,7 @@ components:
           type: string
           minLength: 1
       required:
-        - message
+      - message
     SensorStationPatchDTO:
       type: object
       properties:
@@ -2930,8 +3040,8 @@ components:
         status:
           type: string
           enum:
-            - ONLINE
-            - OFFLINE
+          - ONLINE
+          - OFFLINE
         roomId:
           type: string
           format: uuid
@@ -2944,8 +3054,8 @@ components:
         roomType:
           type: string
           enum:
-            - OFFICE
-            - SHARED
+          - OFFICE
+          - SHARED
         isActive:
           type: boolean
         defaultPeopleCount:
@@ -3014,6 +3124,7 @@ components:
               - CAN_SEND_WARNINGS
               - CAN_SEND_MEASUREMENTS
               - CAN_LIMITED_MANAGE_DEVICES
+              - CAN_MANAGE_WEIGHT_FORMULA
           uniqueItems: true
     RaspberryPatchDTO:
       type: object
@@ -3068,7 +3179,7 @@ components:
             - REJECTED
             - CANCELLED
       required:
-        - status
+      - status
     ActiveViolationBuildingStats:
       type: object
       properties:
@@ -3099,17 +3210,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3120,16 +3220,28 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
       type: object
       properties:
+        offset:
+          type: integer
+          format: int64
         pageNumber:
           type: integer
           format: int32
-        unpaged:
-          type: boolean
         sort:
           $ref: "#/components/schemas/SortObject"
         pageSize:
@@ -3137,17 +3249,16 @@ components:
           format: int32
         paged:
           type: boolean
-        offset:
-          type: integer
-          format: int64
+        unpaged:
+          type: boolean
     SortObject:
       type: object
       properties:
-        unsorted:
+        empty:
           type: boolean
         sorted:
           type: boolean
-        empty:
+        unsorted:
           type: boolean
     AbsenceListDTO:
       type: object
@@ -3201,17 +3312,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3222,6 +3322,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageSensorStationDTO:
@@ -3233,17 +3344,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3254,6 +3354,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageRoomDTO:
@@ -3265,17 +3376,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3286,6 +3386,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     ClimateDataPointDTO:
@@ -3327,17 +3438,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3348,6 +3448,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     OccupancyDTO:
@@ -3414,17 +3525,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3435,6 +3535,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     BuildingListDTO:
@@ -3456,17 +3567,6 @@ components:
         totalElements:
           type: integer
           format: int64
-        sort:
-          $ref: "#/components/schemas/SortObject"
-        pageable:
-          $ref: "#/components/schemas/PageableObject"
-        first:
-          type: boolean
-        last:
-          type: boolean
-        numberOfElements:
-          type: integer
-          format: int32
         size:
           type: integer
           format: int32
@@ -3477,6 +3577,17 @@ components:
         number:
           type: integer
           format: int32
+        first:
+          type: boolean
+        last:
+          type: boolean
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          $ref: "#/components/schemas/SortObject"
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
         empty:
           type: boolean
     BuildingTrendDTO:
