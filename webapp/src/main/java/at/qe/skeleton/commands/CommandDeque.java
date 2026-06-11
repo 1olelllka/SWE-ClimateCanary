@@ -24,8 +24,4 @@ public class CommandDeque {
     public static Command getFirst() throws InterruptedException {
         return commands.pollFirst(1, TimeUnit.SECONDS);
     }
-
-    public static boolean isEmpty() {
-        return commands.isEmpty();
-    }
 }
