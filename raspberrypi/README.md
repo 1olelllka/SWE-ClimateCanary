@@ -1,6 +1,6 @@
 # RaspberryPi Config
 
-- Credentials for the pi:
+- Credentials for the pi (G1T4):
     * username: 'pi' 
     * password: 'password'
 - Auth credentials for the webapp:
