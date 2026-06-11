@@ -155,6 +155,8 @@ public class WebSecurityConfig {
 
                                         .requestMatchers("/api/tips","/api/tips/**")
                                         .hasAuthority(Permission.CAN_MANAGE_TIPS.name())
+                                        .requestMatchers("/api/weights")
+                                        .hasAuthority(Permission.CAN_MANAGE_WEIGHT_FORMULA.name())
 
                                         .requestMatchers("/api/**").authenticated()
 
