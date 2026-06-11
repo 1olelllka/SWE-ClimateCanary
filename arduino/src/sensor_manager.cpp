@@ -1,4 +1,6 @@
 #include "sensor_manager.h"
+#define HEATING_TIME_MS 150
+#define HEATING_TEMP_C 320
 
 bool SensorManager::begin() {
   if (!bme.begin()) {
@@ -16,7 +18,7 @@ bool SensorManager::begin() {
   heating temp for measurement 320° C,
   heating time: 150ms 
   */
-  bme.setGasHeater(320, 150);
+  bme.setGasHeater(HEATING_TEMP_C, HEATING_TIME_MS);
 
   reading.valid = false;
   return true;
