@@ -21,7 +21,7 @@ public class FormulaWeightServiceImpl implements FormulaWeightService {
     public FormulaWeightDTO getFormulaWeight() {
         List<FormulaWeights> weights = repository.findAll();
         if (weights.isEmpty()) {
-            FormulaWeights newWeight = repository.save(FormulaWeights.builder().modifiedAt(LocalDateTime.now()).build());
+            FormulaWeights newWeight = repository.save(FormulaWeights.builder().tempWeight(0.4).humWeight(0.3).co2Weight(0.3).modifiedAt(LocalDateTime.now()).build());
             return new FormulaWeightDTO(newWeight.getTempWeight(), newWeight.getCo2Weight(), newWeight.getHumWeight(), newWeight.getModifiedAt());
         } else {
             FormulaWeights weight = weights.getFirst();

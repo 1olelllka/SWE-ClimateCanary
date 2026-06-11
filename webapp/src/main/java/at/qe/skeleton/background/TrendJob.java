@@ -84,7 +84,6 @@ public class TrendJob {
         double normalizedCo2 = (co2 - 400.0) / (2000.0 - 400.0);
         List<FormulaWeights> weights = weightsRepository.findAll();
         double raw;
-        log.info(weights.toString());
         if (weights.isEmpty())
             raw = 0.4 * normalizedTemp + 0.3 * normalizedHumidity + 0.3 * normalizedCo2;
         else{
