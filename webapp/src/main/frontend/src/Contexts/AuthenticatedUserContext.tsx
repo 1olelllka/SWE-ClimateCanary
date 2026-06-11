@@ -21,8 +21,12 @@ import {AuthApi} from "../utilities/authApi";
  * The UserContextType defines the shape of the context object, which is used to provide
  * the current user state to the components in the component tree.
  */
+
+type CustomJwtPayload = JwtPayload & { roles: string[], permissions?: string[], name: string, username: string }
+type AuthenticatedUserDTO = UserxDTO & { permissions: Set<string>; };
+
 interface UserContextType {
-    currentUser: UserxDTO | null;
+    currentUser: AuthenticatedUserDTO | null;
     login: (loginRequestDTO: LoginRequestDTO) => Promise<void>;
     logout: () => void;
     error: Error | null;
@@ -31,13 +35,12 @@ interface UserContextType {
     isSeniorManager: boolean;
     isBuildingManager: boolean;
     isDepartmentManager: boolean;
+    hasPermission: (permission: string) => boolean;
     userIsAuthenticated: () => Promise<boolean>;
 }
 
 // Create a new context object
 export const UserContext = createContext<UserContextType | null>(null);
-
-type CustomJwtPayload = JwtPayload & { roles: string[], name: string, username: string }
 
 /**
  * The UserProvider component is a wrapper component that provides the current user state
@@ -98,7 +101,7 @@ export function UserProvider({children}: { readonly children: React.ReactNode })
     /**
      * Get the current user by decoding the bearer token stored in the local storage.
      */
-    const currentUser = useMemo<UserxDTO | null>(() => {
+    const currentUser = useMemo<AuthenticatedUserDTO | null>(() => {
         if (!token) {
             return null;
         }
@@ -116,6 +119,7 @@ export function UserProvider({children}: { readonly children: React.ReactNode })
                 phone: "",
                 enabled: true,
                 roles: new Set(roles),
+                permissions: new Set(decoded.permissions ?? []),
             };
         } catch {
             // invalid token -> treat as logged out
@@ -152,6 +156,10 @@ export function UserProvider({children}: { readonly children: React.ReactNode })
     const isSeniorManager = rolesArray.some(r => r.includes("HIGHER_MANAGER"));
     const isDepartmentManager = rolesArray.some(r => r.includes("DEPARTMENT_MANAGER"));
 
+    const hasPermission = useCallback((permission: string): boolean => {
+        return currentUser?.permissions.has(permission) ?? false;
+    }, [currentUser]);
+
     const contextValue = useMemo(() => ({
         currentUser,
         login,
@@ -162,8 +170,9 @@ export function UserProvider({children}: { readonly children: React.ReactNode })
         isSeniorManager,
         isDepartmentManager,
         isBuildingManager,
+        hasPermission,
         userIsAuthenticated,
-    }), [currentUser, login, logout, error, isAdmin, isEmployee, isSeniorManager, isDepartmentManager, isBuildingManager, userIsAuthenticated]);
+    }), [currentUser, login, logout, error, isAdmin, isEmployee, isSeniorManager, isDepartmentManager, isBuildingManager, hasPermission, userIsAuthenticated]);
 
     return (
         <UserContext.Provider value={contextValue}>
