@@ -26,6 +26,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link AbsenceService} handling absence lifecycle management,
+ * clock-in/clock-out operations, and related room occupancy tracking.
+ *
+ * <p>Absence rules enforced here:
+ * <ul>
+ *   <li>The assigned manager must hold the {@code CAN_MANAGE_ABSENCES} authority.</li>
+ *   <li>Employee and manager must belong to the same department.</li>
+ *   <li>Vacation absences are deducted from the user's allowance on creation and
+ *       refunded on rejection or cancellation.</li>
+ * </ul>
+ */
 @Service
 @RequiredArgsConstructor
 public class AbsenceServiceImpl implements AbsenceService {
@@ -41,11 +53,33 @@ public class AbsenceServiceImpl implements AbsenceService {
     private final UserSettingsRepository userSettingsRepository;
     private final EmailService emailService;
 
+    /**
+     * Returns a paginated list of all absences for the given user.
+     *
+     * @param id       the user's UUID
+     * @param pageable pagination parameters
+     * @return page of absences belonging to the user
+     */
     @Override
     public Page<Absence> getAllAbsencesById(UUID id, Pageable pageable) {
         return absenceRepository.findAllByUserId(id, pageable);
     }
 
+    /**
+     * Creates and persists a new absence request for a user.
+     * Validates that the assigned manager exists, has the required authority,
+     * belongs to the same department as the user, and — for vacation absences —
+     * that the user has sufficient remaining allowance. Deducts vacation days
+     * from the user's balance on success.
+     *
+     * @param absence the absence to create (status will be set to {@link AbsenceStatus#PENDING})
+     * @return the saved {@link Absence}
+     * @throws NotFoundException   if the manager or user cannot be found
+     * @throws ForbiddenException  if the manager lacks the required authority or belongs
+     *                             to a different department
+     * @throws ValidationException if the user has insufficient vacation days, or if
+     *                             the user or manager has no assigned room/department
+     */
     @Override
     @Transactional
     public Absence createNewAbsenceForUser(Absence absence) {
@@ -90,6 +124,16 @@ public class AbsenceServiceImpl implements AbsenceService {
         return absenceRepository.save(absence);
     }
 
+    /**
+     * Returns the absence with the given ID, verifying it was assigned to the
+     * provided manager.
+     *
+     * @param id      the absence UUID
+     * @param manager the manager requesting the absence
+     * @return the matching {@link Absence}
+     * @throws NotFoundException  if no absence with that ID exists
+     * @throws ForbiddenException if the absence was not assigned to the given manager
+     */
     @Override
     public Absence getAbsenceById(UUID id, Userx manager) {
         Absence absence = absenceRepository.findById(id).orElseThrow(() -> new NotFoundException("Absence with id " + id + " was not found."));
@@ -99,6 +143,19 @@ public class AbsenceServiceImpl implements AbsenceService {
         throw new ForbiddenException("This absence was not assigned to you.");
     }
 
+    /**
+     * Updates the status of an existing absence. If the new status is
+     * {@link AbsenceStatus#REJECTED} and the absence type is vacation, the deducted
+     * days are refunded to the user's balance. Sends an email notification if the
+     * user has enabled absence email alerts in their settings.
+     *
+     * @param id     the absence UUID
+     * @param status the new status to apply
+     * @return the updated {@link Absence}
+     * @throws NotFoundException  if the absence or the assigned manager cannot be found
+     * @throws ForbiddenException if the manager lacks the required authority or belongs
+     *                            to a different department than the user
+     */
     @Override
     @Transactional
     public Absence updateAbsenceStatus(UUID id, AbsenceStatus status) {
@@ -136,6 +193,18 @@ public class AbsenceServiceImpl implements AbsenceService {
         return saved;
     }
 
+    /**
+     * Cancels a pending absence on behalf of the owning user. Only the user who owns
+     * the absence may cancel it, and only while it is in {@link AbsenceStatus#PENDING}
+     * state. Refunds vacation days if applicable.
+     *
+     * @param absenceId the absence UUID
+     * @param user      the user requesting cancellation
+     * @return the cancelled {@link Absence}
+     * @throws NotFoundException   if the absence does not exist
+     * @throws ForbiddenException  if the requesting user does not own the absence
+     * @throws ValidationException if the absence is not in {@code PENDING} state
+     */
     @Override
     @Transactional
     public Absence cancelAbsence(UUID absenceId, Userx user) {
@@ -154,11 +223,27 @@ public class AbsenceServiceImpl implements AbsenceService {
         return absenceRepository.save(absence);
     }
 
+    /**
+     * Returns a paginated list of absences assigned to the given manager.
+     *
+     * @param user     the manager
+     * @param pageable pagination parameters
+     * @return page of absences assigned to the manager
+     */
     @Override
     public Page<Absence> getAllAbsencesByDepartment(Userx user, Pageable pageable) {
         return absenceRepository.findByAssignedTo(user.getId(), pageable);
     }
 
+    /**
+     * Records a clock-in event for the user. If the user has an assigned room,
+     * increments the room's occupancy counter and notifies the room's Raspberry Pi
+     * (if present) via an {@link at.qe.skeleton.commands.NotifyRaspberryCommand} event.
+     *
+     * @param user the user clocking in
+     * @throws ConflictException if the user is already clocked in
+     * @throws NotFoundException if the user's assigned room does not exist
+     */
     @Override
     @Transactional
     public void clockIn(Userx user) {
@@ -183,6 +268,15 @@ public class AbsenceServiceImpl implements AbsenceService {
         clockStatusRepository.save(status);
     }
 
+    /**
+     * Records a clock-out event for the user. If the user has an assigned room,
+     * decrements the room's occupancy counter (floor at zero) and notifies the
+     * room's Raspberry Pi (if present).
+     *
+     * @param user the user clocking out
+     * @throws ConflictException if the user has never clocked in or is already clocked out
+     * @throws NotFoundException if the user's assigned room does not exist
+     */
     @Override
     @Transactional
     public void clockOut(Userx user) {
@@ -209,6 +303,13 @@ public class AbsenceServiceImpl implements AbsenceService {
         clockStatusRepository.save(status);
     }
 
+    /**
+     * Returns whether the given user is currently clocked in.
+     *
+     * @param user the user to check
+     * @return {@code true} if clocked in, {@code false} otherwise (including if no
+     *         clock record exists)
+     */
     @Override
     public boolean isClockedIn(Userx user) {
         return clockStatusRepository.findById(user.getId().toString())
@@ -216,6 +317,13 @@ public class AbsenceServiceImpl implements AbsenceService {
                 .orElse(false);
     }
 
+    /**
+     * Returns all managers in the same department as the given user who hold the
+     * {@code CAN_MANAGE_ABSENCES} authority.
+     *
+     * @param user the employee whose department is used to filter managers
+     * @return list of eligible managers
+     */
     @Override
     @Transactional
     public List<Userx> getAllAvailableManagersForUser(Userx user) {

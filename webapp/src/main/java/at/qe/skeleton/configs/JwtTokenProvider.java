@@ -1,10 +1,5 @@
 /**
  * Spring configuration for web security.
- * <p>
- * This class is part of the skeleton project provided for students of the
- * course "Software Engineering" offered by Innsbruck University.
- * This class uses code from
- * https://github.com/ivangfr/springboot-react-jwt-token/blob/38aa68e8e94927fe6f072169372fdc7fb8067bc6/order-api/src/main/java/com/ivanfranchin/orderapi/security/TokenProvider.java
  */
 
 package at.qe.skeleton.configs;

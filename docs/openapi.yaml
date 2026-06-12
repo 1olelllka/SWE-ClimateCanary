@@ -1,13 +1,13 @@
 openapi: 3.0.0
 info:
-  title: SWE Skeleton API
-  description: This is the API documentation for the SWE Skeleton project.
+  title: Climate Canary API
+  description: This is the API documentation for the Climate Canary project.
   contact:
-    name: SWE Skeleton Team
-  version: "0.1"
+    name: G1T4 Team
+  version: "1.0.0"
 servers:
 - url: http://localhost:8080
-  description: Development
+  description: Production
 tags:
 - name: Absences
   description: User absences management

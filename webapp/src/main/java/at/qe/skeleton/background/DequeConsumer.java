@@ -15,10 +15,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+/**
+ * Background component that continuously drains {@link CommandDeque} and forwards
+ * each {@link Command} to the target Raspberry Pi. Failed commands are retried up to
+ * {@link #MAX_ATTEMPTS} times before the device is marked {@link DeviceStatus#OFFLINE}.
+ * The consumer runs on a dedicated daemon thread started at application startup.
+ */
 @Component
 @Slf4j
 public class DequeConsumer {
 
+    /** Maximum number of delivery attempts before a Raspberry Pi is marked offline. */
     public static final int MAX_ATTEMPTS = 5;
 
     private volatile boolean running = true;
@@ -34,6 +41,9 @@ public class DequeConsumer {
         this.liveDataService = liveDataService;
     }
 
+    /**
+     * Starts the daemon consumer thread after the bean has been constructed.
+     */
     @PostConstruct
     void init() {
         consumerThread = new Thread(this::consume);
@@ -42,12 +52,21 @@ public class DequeConsumer {
         consumerThread.start();
     }
 
+    /**
+     * Signals the consumer loop to stop and interrupts the consumer thread gracefully
+     * before the bean is destroyed.
+     */
     @PreDestroy
     void shutdown() {
         running = false;
         consumerThread.interrupt();
     }
 
+    /**
+     * Main loop: blocks on {@link CommandDeque#getFirst()} and delegates each
+     * dequeued command to {@link #processCommand(Command)}. Exits on thread
+     * interruption or when {@link #running} is set to {@code false}.
+     */
     public void consume() {
         while (running) {
             try {
@@ -65,6 +84,14 @@ public class DequeConsumer {
         }
     }
 
+    /**
+     * Executes a single command against its target Raspberry Pi. On success, marks the
+     * device {@link DeviceStatus#ONLINE} if it was previously offline. On failure,
+     * delegates to {@link #handleFailure(Command, RaspberryPi)}.
+     *
+     * @param command the command to execute
+     * @throws IllegalStateException if the target Raspberry Pi is not found in the database
+     */
     void processCommand(Command command) {
         UUID piId = command.getRaspberryId();
         RaspberryPi pi = raspberryPiRepository.findById(piId)
@@ -88,6 +115,15 @@ public class DequeConsumer {
         }
     }
 
+    /**
+     * Handles a failed command delivery. If the attempt count is below
+     * {@link #MAX_ATTEMPTS}, the command is re-queued at the front of the deque after
+     * a short delay. Once all attempts are exhausted the device is marked
+     * {@link DeviceStatus#OFFLINE} and the attempt counter is reset.
+     *
+     * @param command the command that failed
+     * @param pi      the Raspberry Pi that could not be reached
+     */
     public void handleFailure(Command command, RaspberryPi pi) {
         int current = command.getAttempts();
         log.warn("Failed attempt {} for Pi [{}:{}]", current, pi.getIp(), pi.getPort());

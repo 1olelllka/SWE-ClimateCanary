@@ -26,6 +26,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Implementation of {@link SensorStationService} managing the lifecycle of
+ * {@link SensorStation} entities. Every structural change (add, rename, room
+ * reassignment, disconnect, delete) is propagated to the affected Raspberry Pi(s)
+ * via {@link NotifyRaspberryCommand} events. Connection-status changes are pushed
+ * to WebSocket subscribers through {@link LiveDataService}.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,11 +43,26 @@ public class SensorStationServiceImpl implements SensorStationService {
     private final ApplicationEventPublisher eventPublisher;
     private final LiveDataService liveDataService;
 
+    /**
+     * Returns a paginated list of all sensor stations.
+     *
+     * @param pageable pagination parameters
+     * @return page of {@link SensorStation} entities
+     */
     @Override
     public Page<SensorStation> getAllSensorStations(Pageable pageable) {
         return sensorRepository.findAll(pageable);
     }
 
+    /**
+     * Registers a new sensor station. If the station is already assigned to a room
+     * with a Raspberry Pi, the Pi is notified of the new sensor via a
+     * {@link UpdateType#SENSOR_ADD} command.
+     *
+     * @param sensorStation the sensor station to create
+     * @return the saved {@link SensorStation}
+     * @throws ConflictException if a sensor station with the same name already exists
+     */
     @Override
     @Transactional
     public SensorStation createNewSensorStation(SensorStation sensorStation) {
@@ -64,6 +86,26 @@ public class SensorStationServiceImpl implements SensorStationService {
         return station;
     }
 
+    /**
+     * Applies a partial update to an existing sensor station. The following side
+     * effects apply based on what changed:
+     * <ul>
+     *   <li><b>Room reassigned</b>: the new room's Pi receives a {@link UpdateType#SENSOR_ADD}
+     *       command; the old room's Pi (if any) receives a {@link UpdateType#SENSOR_DELETE}
+     *       command.</li>
+     *   <li><b>Name changed (no room change)</b>: the room's Pi receives both a
+     *       {@link UpdateType#SENSOR_ADD} and a {@link UpdateType#SENSOR_DELETE} command
+     *       to force a BLE re-scan.</li>
+     *   <li><b>Connection status changed</b>: the new status is pushed to WebSocket
+     *       subscribers via {@link LiveDataService#pushConnectionStatusArduino}.</li>
+     * </ul>
+     *
+     * @param id            the UUID of the sensor station to update
+     * @param sensorStation a partial {@link SensorStation} carrying the fields to update
+     * @return the updated {@link SensorStation}
+     * @throws NotFoundException if no sensor station with that ID exists
+     * @throws ConflictException if the new name is already taken by another station
+     */
     @Override
     @Transactional
     public SensorStation updateExistingSensor(UUID id, SensorStation sensorStation) {
@@ -73,9 +115,9 @@ public class SensorStationServiceImpl implements SensorStationService {
             AtomicBoolean connectionStatusChanged = new AtomicBoolean(false);
             RoomMonitoring prevMonitoring = sensor.getRoomMonitoring();
             if (sensorStation.getRoomMonitoring() != null && (sensor.getRoomMonitoring() == null || !sensorStation.getRoomMonitoring().getRoomId().equals(sensor.getRoomMonitoring().getRoomId()))) {
-                    sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
-                    log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
-                    notifyRasp.set(true);
+                sensor.setRoomMonitoring(sensorStation.getRoomMonitoring());
+                log.info("Pre-saved new room of sensor station: {} -> {}", sensorStation.getRoomMonitoring().getRoomNumber(), sensor.getRoomMonitoring().getRoomNumber());
+                notifyRasp.set(true);
             }
             Optional.ofNullable(sensorStation.getName()).ifPresent(name -> {
                 if (!name.equals(sensor.getName())) {
@@ -152,11 +194,27 @@ public class SensorStationServiceImpl implements SensorStationService {
         }).orElseThrow(() -> new NotFoundException("Sensor station with id " + id + " was not found."));
     }
 
+    /**
+     * Returns the sensor station with the given ID.
+     *
+     * @param id the sensor station UUID
+     * @return the matching {@link SensorStation}
+     * @throws NotFoundException if no sensor station with that ID exists
+     */
     @Override
     public SensorStation getSpecificSensor(UUID id) {
         return sensorRepository.findById(id).orElseThrow(() -> new NotFoundException("Sensor with id " + id + " was not found."));
     }
 
+    /**
+     * Disconnects the sensor station from its current room. If the room had a
+     * Raspberry Pi assigned, it is notified via a {@link UpdateType#SENSOR_DELETE}
+     * command.
+     *
+     * @param id the UUID of the sensor station to disconnect
+     * @return the updated {@link SensorStation} with no room assignment
+     * @throws NotFoundException if no sensor station with that ID exists
+     */
     @Override
     @Transactional
     public SensorStation disconnectFromRoom(UUID id) {
@@ -180,6 +238,14 @@ public class SensorStationServiceImpl implements SensorStationService {
         return saved;
     }
 
+    /**
+     * Deletes the sensor station with the given ID. If the station was assigned to a
+     * room with a Raspberry Pi, the Pi is notified via a {@link UpdateType#SENSOR_DELETE}
+     * command before the record is removed.
+     *
+     * @param id the UUID of the sensor station to delete
+     * @throws NotFoundException if no sensor station with that ID exists
+     */
     @Override
     @Transactional
     public void deleteById(UUID id) {
@@ -201,6 +267,14 @@ public class SensorStationServiceImpl implements SensorStationService {
         }
     }
 
+    /**
+     * Publishes a {@link NotifyRaspberryCommand} to retry the BLE connection between
+     * the sensor station's Raspberry Pi and the station. Does nothing if the station
+     * has no assigned room or the room has no Raspberry Pi.
+     *
+     * @param id the UUID of the sensor station
+     * @throws NotFoundException if no sensor station with that ID exists
+     */
     @Override
     public void retryConnection(UUID id) {
         SensorStation station = sensorRepository.findById(id)

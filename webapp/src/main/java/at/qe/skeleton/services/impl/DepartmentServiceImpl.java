@@ -1,6 +1,5 @@
 package at.qe.skeleton.services.impl;
 
-
 import at.qe.skeleton.exceptions.ConflictException;
 import at.qe.skeleton.exceptions.NotFoundException;
 import at.qe.skeleton.model.*;
@@ -16,13 +15,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Implementation of {@link DepartmentService} providing CRUD operations for
+ * {@link Department} entities. Room visibility is restricted based on the
+ * authenticated user's permissions: users without
+ * {@code CAN_VIEW_OWN_DEPARTMENT_MEASURES} see only {@link RoomType#SHARED} rooms
+ * when fetching a single department. Deletion cascades through all rooms via
+ * {@link RoomServiceImpl#deleteRoom}, then cleans up trend and aggregated stats records.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DepartmentServiceImpl implements DepartmentService {
+
     private final DepartmentRepository departmentRepository;
     private final AggregatedDepartmentStatsRepository departmentStatsRepository;
     private final RoomRepository roomRepository;
@@ -32,10 +39,25 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final RoomServiceImpl roomService;
     private final AuthenticatedUserService authenticatedUserService;
 
+    /**
+     * Returns a paginated list of all departments.
+     *
+     * @param pageable pagination parameters
+     * @return page of {@link Department} entities
+     */
     public Page<Department> getPageOfDepartments(Pageable pageable) {
         return departmentRepository.findAll(pageable);
     }
 
+    /**
+     * Returns the department with the given ID. If the authenticated user does not
+     * hold the {@code CAN_VIEW_OWN_DEPARTMENT_MEASURES} permission, the room list is
+     * filtered to include only {@link RoomType#SHARED} rooms.
+     *
+     * @param id the department UUID
+     * @return the matching {@link Department}, with rooms filtered by access level
+     * @throws NotFoundException if no department with that ID exists
+     */
     public Department getDepartmentById(UUID id) {
         Userx authenticated = authenticatedUserService.getAuthenticatedUser();
         Department department = departmentRepository.findById(id)
@@ -46,6 +68,14 @@ public class DepartmentServiceImpl implements DepartmentService {
         return department;
     }
 
+    /**
+     * Creates and persists a new department (no rooms). The name must be unique within
+     * the department's building.
+     *
+     * @param department the department to create
+     * @return the saved {@link Department}
+     * @throws ConflictException if a department with the same name already exists in that building
+     */
     public Department createDepartment(Department department) {
         if (departmentRepository.existsByNameAndBuildingId(department.getName(), department.getBuilding().getId())) {
             throw new ConflictException("Department with this name already exists");
@@ -54,6 +84,19 @@ public class DepartmentServiceImpl implements DepartmentService {
         return departmentRepository.save(department);
     }
 
+    /**
+     * Creates a new department and populates it with a mix of existing rooms
+     * (reassigned by UUID) and newly created rooms. Room number uniqueness within the
+     * department is validated for both sets.
+     *
+     * @param department      the department to create
+     * @param existingRoomIds UUIDs of pre-existing rooms to reassign to this department
+     * @param newRooms        new {@link Room} instances to create and assign
+     * @return the saved {@link Department} with all rooms attached
+     * @throws ConflictException if the department name is taken in the building, or if
+     *                           any room number already exists in the new department
+     * @throws NotFoundException if any of the existing room IDs cannot be found
+     */
     @Transactional
     public Department createDepartmentWithRooms(Department department, List<UUID> existingRoomIds, List<Room> newRooms) {
         if (departmentRepository.existsByNameAndBuildingId(department.getName(), department.getBuilding().getId())) {
@@ -81,6 +124,22 @@ public class DepartmentServiceImpl implements DepartmentService {
         return created;
     }
 
+    /**
+     * Edits a department's name, building, and room composition in a single transaction.
+     * Rooms in {@code roomIdsToDelete} are fully removed (their Raspberry Pi references
+     * are cleared first). Rooms in {@code existingRoomIdsToAssign} are re-parented to
+     * this department. Rooms in {@code newRooms} are created with default monitoring limits.
+     *
+     * @param deptId                  the UUID of the department to edit
+     * @param updatedDept             the new name and optional building reference
+     * @param roomIdsToDelete         UUIDs of rooms to delete from the system
+     * @param existingRoomIdsToAssign UUIDs of pre-existing rooms to move into this department
+     * @param newRooms                new {@link Room} instances to create and assign
+     * @return the updated {@link Department}
+     * @throws NotFoundException if the department or any referenced room cannot be found
+     * @throws ConflictException if the new department name is already taken, or if any
+     *                           room number conflicts within the department
+     */
     @Transactional
     public Department editDepartmentWithRooms(UUID deptId, Department updatedDept,
                                               List<UUID> roomIdsToDelete,
@@ -135,6 +194,13 @@ public class DepartmentServiceImpl implements DepartmentService {
         return dept;
     }
 
+    /**
+     * Deletes the department with the given ID along with all its rooms (via
+     * {@link RoomServiceImpl#deleteRoom}), trend records, and aggregated department
+     * stats. If no department with that ID exists, only the stats cleanup is performed.
+     *
+     * @param id the UUID of the department to delete
+     */
     @Transactional
     public void deleteDepartment(UUID id) {
         Department department = departmentRepository.findById(id).orElse(null);

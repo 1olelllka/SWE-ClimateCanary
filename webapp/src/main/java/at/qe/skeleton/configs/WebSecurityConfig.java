@@ -159,8 +159,6 @@ public class WebSecurityConfig {
                                         .hasAuthority(Permission.CAN_MANAGE_WEIGHT_FORMULA.name())
 
                                         .requestMatchers("/api/**").authenticated()
-
-                                        // MUSS GANZ AM ENDE BLEIBEN
                                         .anyRequest().authenticated()
                                 )
 
