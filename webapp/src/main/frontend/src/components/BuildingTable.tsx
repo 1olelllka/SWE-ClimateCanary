@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { BuildingListDTO } from '../generated-skeleton-api';
+import AdminTableShell from './AdminTableShell';
 
 interface Props {
     readonly buildings: BuildingListDTO[];
@@ -28,25 +28,20 @@ const BuildingTable: React.FC<Props> = ({ buildings, loading, onAdd, onEdit, onD
     );
 
     return (
-        <div className="table-container">
-            <div className="flex-header">
-                <h3>Building List</h3>
-                <Button label="Add Building" icon="pi pi-plus" className="admin-add-button" onClick={onAdd} />
-            </div>
-
-            <div className="table-filter-row table-filter-row-single">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name" />
-                </span>
-            </div>
-
-            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll">
+        <AdminTableShell
+            title="Building List"
+            addLabel="Add Building"
+            onAdd={onAdd}
+            searchValue={search}
+            searchPlaceholder="Search by name"
+            onSearchChange={setSearch}
+        >
+            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll" className="admin-table table-scroll">
                 <Column field="name" header="Name" sortable />
                 <Column field="address" header="Address" sortable />
                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={actionsTemplate} exportable={false} />
             </DataTable>
-        </div>
+        </AdminTableShell>
     );
 };
 

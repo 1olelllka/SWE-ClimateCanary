@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
 import { RoomDTO } from '../generated-skeleton-api';
+import AdminTableShell from './AdminTableShell';
 
 interface Props {
     readonly rooms: RoomDTO[];
@@ -28,27 +28,15 @@ const RoomTable: React.FC<Props> = ({ rooms, loading, onAdd, onEdit, onDelete })
     );
 
     return (
-        <div className="table-container">
-            <div className="flex-header">
-                <h3>Room List</h3>
-                <Button label="Add Room" icon="pi pi-plus" className="admin-add-button" onClick={onAdd} />
-            </div>
-
-            <div className="table-filter-row table-filter-row-single">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name" />
-                </span>
-            </div>
-
-            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll" className="admin-rooms-table">
+        <AdminTableShell title="Room List" addLabel="Add Room" onAdd={onAdd} searchValue={search} searchPlaceholder="Search by name" onSearchChange={setSearch}>
+            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll" className="admin-table admin-rooms-table table-scroll">
                 <Column field="name" header="Name" sortable />
                 <Column field="departmentName" header="Department" sortable />
                 <Column field="roomType" header="Type" />
                 <Column field="defaultPeopleCount" header="Capacity" sortable />
                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={actionsTemplate} exportable={false} />
             </DataTable>
-        </div>
+        </AdminTableShell>
     );
 };
 

@@ -185,6 +185,10 @@
     .department-absences-kpi-grid {
         grid-template-columns: 1fr;
     }
+
+    .absence-table {
+        min-width: 42rem;
+    }
 }
 
 /* Dark mode for DepartmentAbsencesPage */

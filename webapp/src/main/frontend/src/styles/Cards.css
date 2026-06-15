@@ -1,20 +1,26 @@
 .card-wrapper {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: var(--radius-md, 12px);
+    padding: 1.1rem;
+    box-shadow: var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.02));
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.card-wrapper:hover {
+    border-color: rgba(15, 159, 154, 0.36);
+    box-shadow: 0 14px 30px rgba(16, 42, 55, 0.1);
+    transform: translateY(-1px);
 }
 
 .card-wrapper.card-violated {
     border-color: #e05252;
-    box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.13), 0 2px 4px rgba(0,0,0,0.04);
+    box-shadow: 0 0 0 3px rgba(224, 82, 82, 0.12), var(--shadow-sm, 0 2px 4px rgba(0,0,0,0.04));
 }
 
 .card-header {
     font-size: 0.7rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
@@ -45,7 +51,7 @@
     color: #e05252;
     background: rgba(224, 82, 82, 0.1);
     border: 1px solid rgba(224, 82, 82, 0.3);
-    border-radius: 4px;
+    border-radius: 999px;
     padding: 1px 5px;
 }
 
@@ -81,8 +87,9 @@
 }
 
 .card-value {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: 0;
 }
 
 .card-unit {
@@ -109,7 +116,7 @@
 /* ── Mobile compact ───────────────────────────────────────────────────────── */
 @media (max-width: 899px) {
     .card-wrapper {
-        padding: 0.55rem 0.6rem;
+        padding: 0.75rem;
     }
 
     .sparkline-wrapper {

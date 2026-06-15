@@ -1,21 +1,30 @@
 :root {
-    --app-bg: #f8fafc;
+    --app-bg: #f5f7fb;
     --app-surface: #ffffff;
-    --app-surface-2: #f1f5f9;
-    --app-text: #173f4f;
-    --app-text-muted: #64748b;
-    --app-border: #e2e8f0;
-    --app-primary: #06b6d4;
+    --app-surface-2: #f8fafc;
+    --app-text: #102a37;
+    --app-text-muted: #667789;
+    --app-border: #dfe7ef;
+    --app-primary: #0f9f9a;
 }
 
 html[data-theme='dark'] {
-    --app-bg: #0f172a;
-    --app-surface: #111827;
-    --app-surface-2: #1f2937;
+    --app-bg: #0b1218;
+    --app-surface: #101a22;
+    --app-surface-2: #14212b;
     --app-text: #f8fafc;
-    --app-text-muted: #cbd5e1;
-    --app-border: #334155;
-    --app-primary: #22d3ee;
+    --app-text-muted: #aab8c5;
+    --app-border: #263547;
+    --app-primary: #2dd4bf;
+    --nav-bg: #071017;
+    --page-bg: var(--app-bg);
+    --card-bg: var(--app-surface);
+    --card-border: var(--app-border);
+    --text-primary: var(--app-text);
+    --text-secondary: var(--app-text-muted);
+    --accent: #2dd4bf;
+    --accent-strong: #14b8a6;
+    --accent-soft: rgba(45, 212, 191, 0.12);
 }
 
 html[data-theme='dark'],
@@ -92,7 +101,7 @@ html[data-theme='dark'] .page-header,
 html[data-theme='dark'] .header,
 html[data-theme='dark'] .topbar,
 html[data-theme='dark'] .toolbar {
-    background-color: #020617 !important;
+    background-color: var(--nav-bg, #071017) !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
 }
@@ -106,7 +115,7 @@ html[data-theme='dark'] .p-datatable-table {
 }
 
 html[data-theme='dark'] .p-datatable .p-datatable-thead > tr > th {
-    background-color: #111827 !important;
+    background-color: #101a22 !important;
     color: var(--app-text) !important;
     border-color: var(--app-border) !important;
 }
@@ -123,11 +132,11 @@ html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr > td {
 }
 
 html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr:nth-child(even) > td {
-    background-color: #111827 !important;
+    background-color: #101a22 !important;
 }
 
 html[data-theme='dark'] .p-datatable .p-datatable-tbody > tr:hover > td {
-    background-color: #334155 !important;
+    background-color: rgba(45, 212, 191, 0.12) !important;
 }
 
 /* PrimeReact paginator */

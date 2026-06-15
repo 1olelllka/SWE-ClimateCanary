@@ -5,78 +5,84 @@
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background-color: var(--page-bg, #f0f4f8);
-    font-family: Arial, sans-serif;
+    background-color: var(--page-bg, #f5f7fb);
+    padding: 1rem;
+    overflow-x: hidden;
 }
 
 .login-mockup-card {
-    background-color: transparent;
-    width: 100%;
-    max-width: 400px;
-    padding: 40px 30px;
-    border-radius: 0;
-    box-shadow: none;
+    background-color: var(--card-bg, #ffffff);
+    width: min(100%, 430px);
+    max-width: 430px;
+    padding: 2rem;
+    border: 1px solid var(--card-border, #dfe7ef);
+    border-radius: var(--radius-lg, 16px);
+    box-shadow: var(--shadow-md, 0 12px 28px rgba(16, 42, 55, 0.11));
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden;
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 2rem;
 }
 
 .brand-logo {
-    width: 150px;
+    width: 132px;
     height: auto;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
 }
 
 .brand-title {
-    font-size: 34px;
+    font-size: 2rem;
     font-weight: normal;
     font-family: 'Protest Riot', sans-serif;
     color: var(--text-primary, #1a3a4a);
-    margin: 10px 0;
+    margin: 0.5rem 0;
     line-height: 1.2;
 }
 
 .brand-subtitle {
-    font-size: 13px;
+    font-size: 0.9rem;
     color: var(--text-secondary, #64748b);
     margin: 0;
+    line-height: 1.45;
 }
 
 /* --- Formular & Inputs --- */
 .form-section {
     width: 100%;
+    min-width: 0;
 }
 
 .login-heading {
-    font-size: 20px;
-    font-weight: normal;
+    font-size: 1.05rem;
+    font-weight: 800;
     color: var(--text-primary, #1a3a4a);
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
     text-align: left;
 }
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 0.85rem;
 }
 
 .input-group {
     width: 100%;
     position: relative;
+    min-width: 0;
 }
 
  .mockup-input {
      width: 100%;
-     padding: 12px 15px;
-     border-radius: 8px;
+     padding: 0.85rem 0.95rem;
+     border-radius: var(--radius-sm, 8px);
      border: 1px solid var(--card-border, #e8eef4);
-     font-size: 14px;
+     font-size: 0.92rem;
      box-sizing: border-box;
  }
 
@@ -86,10 +92,10 @@
 
  .p-password.password-input input {
      width: 100%;
-     padding: 12px 15px;
-     border-radius: 8px;
+     padding: 0.85rem 0.95rem;
+     border-radius: var(--radius-sm, 8px);
      border: 1px solid var(--card-border, #e8eef4);
-     font-size: 14px;
+     font-size: 0.92rem;
      box-sizing: border-box;
  }
 
@@ -117,19 +123,19 @@
 }
 
 .mockup-button {
-    background-color: var(--nav-bg, #1a3a4a) !important;
+    background-color: var(--accent-strong, #087c78) !important;
     border: none !important;
-    border-radius: 6px !important;
-    padding: 12px !important;
+    border-radius: 999px !important;
+    padding: 0.85rem 1rem !important;
     font-weight: bold !important;
-    font-size: 16px !important;
-    margin-top: 15px;
+    font-size: 0.96rem !important;
+    margin-top: 0.65rem;
     width: 100%;
     justify-content: center;
 }
 
 .mockup-button:hover {
-    background-color: #0f2535 !important;
+    background-color: #066965 !important;
 }
 
 .error-message {
@@ -145,9 +151,10 @@ html[data-theme='dark'] .login-page-wrapper {
 }
 
 html[data-theme='dark'] .login-mockup-card {
-    background-color: transparent !important;
+    background-color: var(--app-surface, #111827) !important;
     color: var(--app-text, #f8fafc);
-    box-shadow: none !important;
+    border-color: var(--app-border, #263547);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28) !important;
 }
 
 html[data-theme='dark'] .brand-title {
@@ -189,4 +196,37 @@ html[data-theme='dark'] .mockup-button:hover {
 
 html[data-theme='dark'] .error-message {
     color: #f87171;
+}
+
+@media (max-width: 480px) {
+    .login-page-wrapper {
+        padding: 0.75rem;
+    }
+
+    .login-mockup-card {
+        padding: 1.5rem;
+        width: 100%;
+    }
+
+    .brand-logo {
+        width: 112px;
+    }
+
+    .brand-title {
+        font-size: 1.55rem;
+    }
+
+    .brand-subtitle {
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .login-mockup-card {
+        padding: 1.25rem;
+    }
+
+    .brand-title {
+        font-size: 1.4rem;
+    }
 }

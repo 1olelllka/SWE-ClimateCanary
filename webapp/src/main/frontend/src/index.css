@@ -1,13 +1,29 @@
 :root {
-    --nav-bg: #1a3a4a;
-    --page-bg: #f0f4f8;
+    --nav-bg: #123241;
+    --page-bg: #f5f7fb;
     --card-bg: #ffffff;
-    --card-border: #e8eef4;
-    --muted-blue: #7fb3c8;
-    --red: #e05252;
+    --card-border: #dfe7ef;
+    --muted-blue: #6ea9bd;
+    --red: #dc3f4b;
 
-    --text-primary: #1a3a4a;
-    --text-secondary: #64748b;
+    --text-primary: #102a37;
+    --text-secondary: #667789;
+    --accent: #0f9f9a;
+    --accent-strong: #087c78;
+    --accent-soft: #d9f4f1;
+    --warning: #d97706;
+    --success: #168a52;
+    --surface-raised: #ffffff;
+    --shadow-sm: 0 1px 2px rgba(16, 42, 55, 0.06), 0 1px 3px rgba(16, 42, 55, 0.08);
+    --shadow-md: 0 12px 28px rgba(16, 42, 55, 0.11);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --focus-ring: 0 0 0 3px rgba(15, 159, 154, 0.18);
+}
+
+html {
+    background: var(--page-bg);
 }
 
 body {
@@ -17,9 +33,76 @@ body {
     sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--page-bg);
+    color: var(--text-primary);
 }
 
 code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+a {
+    color: var(--accent-strong);
+}
+
+.p-button {
+    border-radius: 999px !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined) {
+    background: var(--accent-strong) !important;
+    border-color: var(--accent-strong) !important;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):hover {
+    background: #066965 !important;
+    border-color: #066965 !important;
+}
+
+.p-button.p-button-outlined {
+    border-color: var(--card-border) !important;
+    color: var(--text-primary) !important;
+}
+
+.p-button.p-button-text {
+    color: var(--text-primary) !important;
+}
+
+.p-inputtext,
+.p-dropdown,
+.p-multiselect,
+.p-inputnumber-input,
+.p-password-input,
+textarea {
+    border-radius: var(--radius-sm) !important;
+    border-color: var(--card-border) !important;
+    box-shadow: none !important;
+}
+
+.p-inputtext:enabled:focus,
+.p-dropdown:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus,
+.p-inputnumber-input:enabled:focus,
+.p-password-input:enabled:focus,
+textarea:focus {
+    border-color: var(--accent) !important;
+    box-shadow: var(--focus-ring) !important;
+}
+
+::selection {
+    background: rgba(15, 159, 154, 0.2);
 }

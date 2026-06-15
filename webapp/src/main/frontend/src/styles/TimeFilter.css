@@ -6,6 +6,7 @@
     border-radius: 8px;
     align-items: center;
     border: 1px solid #e2e8f0;
+    max-width: 100%;
 }
 
 .time-filter-btn {
@@ -19,7 +20,10 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .time-filter-btn.active {
@@ -173,6 +177,7 @@ html[data-theme='dark'] .p-datepicker table td > span.p-highlight {
 
 .dashboard-calendar-mobile {
     position: relative;
+    min-width: 0;
 }
 
 .dashboard-calendar-mobile-panel {
@@ -222,7 +227,39 @@ html[data-theme='dark'] .dashboard-calendar-mobile-panel {
 
 /* Mobile calendar overlay */
 
+@media (max-width: 899px) {
+    .time-filters {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.25rem;
+        width: 100%;
+        max-width: 22rem;
+    }
+
+    .time-filter-btn {
+        width: 100%;
+        min-width: 0;
+        padding: 0.4rem 0.35rem;
+        font-size: 0.75rem;
+        line-height: 1;
+    }
+
+    .dashboard-calendar-mobile {
+        width: 100%;
+    }
+
+    .dashboard-calendar-mobile .time-filter-btn {
+        aspect-ratio: auto;
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
 @media (max-width: 768px) {
+    .time-filters {
+        max-width: none;
+    }
+
     .compact-calendar-overlay {
         max-width: calc(100vw - 2rem) !important;
         width: calc(100vw - 2rem) !important;

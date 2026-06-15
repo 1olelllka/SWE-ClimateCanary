@@ -1,0 +1,600 @@
+/* ── Admin form dialogs ── */
+
+.admin-form-dialog {
+    max-width: 95vw;
+}
+
+.admin-form-dialog .p-dialog-header {
+    padding: 1.25rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+    border-bottom: 1px solid var(--card-border, #e8eef4) !important;
+}
+
+.admin-form-dialog .p-dialog-title {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary, #1a3a4a) !important;
+}
+
+.admin-form-dialog .p-dialog-content {
+    padding: 1.25rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+}
+
+.admin-form-dialog .p-dialog-footer {
+    padding: 1rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+    border-top: 1px solid var(--card-border, #e8eef4) !important;
+}
+
+.admin-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.admin-form-dialog label {
+    color: var(--text-primary, #1a3a4a);
+}
+
+.admin-form-dialog .p-inputtext,
+.admin-form-dialog .p-inputnumber-input,
+.admin-form-dialog .p-dropdown {
+    height: 2.4rem !important;
+    border-radius: 8px !important;
+    font-size: 0.82rem !important;
+}
+
+.admin-form-dialog .p-dropdown {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.admin-form-dialog .p-dropdown-label {
+    display: flex !important;
+    align-items: center !important;
+    font-size: 0.82rem !important;
+}
+
+@media (max-width: 700px) {
+    .admin-form-dialog {
+        width: calc(100vw - 2rem) !important;
+    }
+
+    .admin-form-dialog .p-dialog-header,
+    .admin-form-dialog .p-dialog-content,
+    .admin-form-dialog .p-dialog-footer {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .admin-dialog-footer {
+        gap: 0.5rem;
+    }
+
+    /* ── Admin dialog footer buttons ── */
+
+    .admin-dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .admin-dialog-footer .p-button {
+        height: 2.25rem !important;
+        min-width: 6.5rem !important;
+        padding: 0 1rem !important;
+        border-radius: 999px !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-dialog-footer .p-button-icon {
+        font-size: 0.85rem !important;
+    }
+
+    .admin-dialog-footer .p-button-label {
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* Cancel button */
+    .admin-dialog-footer .p-button.p-button-outlined {
+        background: transparent !important;
+        border-color: #94a3b8 !important;
+        color: #94a3b8 !important;
+    }
+
+    /* Save/Create button */
+    .admin-dialog-footer .p-button:not(.p-button-outlined) {
+        background: var(--nav-bg, #1a3a4a) !important;
+        border-color: var(--nav-bg, #1a3a4a) !important;
+        color: #ffffff !important;
+    }
+
+    /* Mobile */
+    @media (max-width: 700px) {
+        .admin-dialog-footer {
+            justify-content: flex-end;
+            gap: 0.6rem;
+        }
+
+        .admin-dialog-footer .p-button {
+            flex: 0 0 auto !important;
+            height: 2.15rem !important;
+            min-width: 6rem !important;
+            padding: 0 0.9rem !important;
+            font-size: 0.78rem !important;
+        }
+
+        .admin-dialog-footer .p-button-icon {
+            font-size: 0.8rem !important;
+        }
+
+        .admin-dialog-footer .p-button-label {
+            font-size: 0.78rem !important;
+        }
+    }
+}
+
+/* ── Dark mode admin form dialogs ── */
+
+html[data-theme='dark'] .admin-form-dialog .p-dialog-header,
+html[data-theme='dark'] .admin-form-dialog .p-dialog-content,
+html[data-theme='dark'] .admin-form-dialog .p-dialog-footer {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-dialog-title,
+html[data-theme='dark'] .admin-form-dialog label {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-inputtext,
+html[data-theme='dark'] .admin-form-dialog .p-inputnumber-input,
+html[data-theme='dark'] .admin-form-dialog .p-dropdown {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-dropdown-label,
+html[data-theme='dark'] .admin-form-dialog .p-dropdown-trigger {
+    color: #f8fafc !important;
+}
+
+/* ── Admin form dialog unified fields ── */
+
+.admin-form-dialog {
+    max-width: 95vw;
+}
+
+.admin-form-dialog .p-dialog-header {
+    padding: 1.25rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+    border-bottom: 1px solid var(--card-border, #e8eef4) !important;
+}
+
+.admin-form-dialog .p-dialog-title {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary, #1a3a4a) !important;
+}
+
+.admin-form-dialog .p-dialog-content {
+    padding: 1.25rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+}
+
+.admin-form-dialog .p-dialog-footer {
+    padding: 1rem 1.5rem !important;
+    background-color: var(--card-bg, #ffffff) !important;
+    border-top: 1px solid var(--card-border, #e8eef4) !important;
+}
+
+.admin-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.admin-form-dialog label {
+    color: var(--text-primary, #1a3a4a);
+}
+
+.admin-form-dialog .p-inputtext,
+.admin-form-dialog .p-inputnumber-input,
+.admin-form-dialog .p-dropdown,
+.admin-form-dialog .p-multiselect,
+.admin-form-dialog .p-password,
+.admin-form-dialog .p-password-input {
+    width: 100% !important;
+    height: 2.4rem !important;
+    border-radius: 8px !important;
+    font-size: 0.82rem !important;
+    box-sizing: border-box !important;
+}
+
+.admin-form-dialog .p-password {
+    display: block !important;
+}
+
+.admin-form-dialog .p-password-input {
+    width: 100% !important;
+}
+
+.admin-form-dialog .p-dropdown,
+.admin-form-dialog .p-multiselect {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.admin-form-dialog .p-dropdown-label,
+.admin-form-dialog .p-multiselect-label {
+    display: flex !important;
+    align-items: center !important;
+    font-size: 0.82rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.admin-form-dialog .p-dropdown-trigger,
+.admin-form-dialog .p-multiselect-trigger {
+    width: 2.4rem !important;
+}
+
+.admin-form-dialog .p-inputtext::placeholder,
+.admin-form-dialog .p-password-input::placeholder {
+    font-size: 0.82rem !important;
+}
+
+/* Dialog footer buttons */
+
+.admin-dialog-footer .p-button {
+    height: 2.25rem !important;
+    min-width: 6.5rem !important;
+    padding: 0 1rem !important;
+    border-radius: 999px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    box-shadow: none !important;
+}
+
+.admin-dialog-footer .p-button-icon {
+    font-size: 0.85rem !important;
+}
+
+.admin-dialog-footer .p-button-label {
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+}
+
+.admin-dialog-footer .p-button.p-button-outlined {
+    background: transparent !important;
+    border-color: #94a3b8 !important;
+    color: #94a3b8 !important;
+}
+
+.admin-dialog-footer .p-button:not(.p-button-outlined) {
+    background: var(--nav-bg, #1a3a4a) !important;
+    border-color: var(--nav-bg, #1a3a4a) !important;
+    color: #ffffff !important;
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+    .admin-form-dialog {
+        width: calc(100vw - 2rem) !important;
+    }
+
+    .admin-form-dialog .p-dialog-header,
+    .admin-form-dialog .p-dialog-content,
+    .admin-form-dialog .p-dialog-footer {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .admin-form-dialog .p-inputtext,
+    .admin-form-dialog .p-inputnumber-input,
+    .admin-form-dialog .p-dropdown,
+    .admin-form-dialog .p-multiselect,
+    .admin-form-dialog .p-password,
+    .admin-form-dialog .p-password-input {
+        height: 2.25rem !important;
+        font-size: 0.78rem !important;
+    }
+
+    .admin-form-dialog .p-dropdown-label,
+    .admin-form-dialog .p-multiselect-label,
+    .admin-form-dialog .p-inputtext::placeholder,
+    .admin-form-dialog .p-password-input::placeholder {
+        font-size: 0.78rem !important;
+    }
+
+    .admin-dialog-footer {
+        justify-content: flex-end;
+        gap: 0.6rem;
+    }
+
+    .admin-dialog-footer .p-button {
+        flex: 0 0 auto !important;
+        height: 2.15rem !important;
+        min-width: 6rem !important;
+        padding: 0 0.9rem !important;
+        font-size: 0.78rem !important;
+    }
+
+    .admin-dialog-footer .p-button-icon {
+        font-size: 0.8rem !important;
+    }
+
+    .admin-dialog-footer .p-button-label {
+        font-size: 0.78rem !important;
+    }
+}
+
+/* Dark mode */
+
+html[data-theme='dark'] .admin-form-dialog .p-dialog-header,
+html[data-theme='dark'] .admin-form-dialog .p-dialog-content,
+html[data-theme='dark'] .admin-form-dialog .p-dialog-footer {
+    background-color: var(--app-surface-2) !important;
+    border-color: var(--app-border) !important;
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-dialog-title,
+html[data-theme='dark'] .admin-form-dialog label {
+    color: var(--app-text) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-inputtext,
+html[data-theme='dark'] .admin-form-dialog .p-inputnumber-input,
+html[data-theme='dark'] .admin-form-dialog .p-dropdown,
+html[data-theme='dark'] .admin-form-dialog .p-multiselect,
+html[data-theme='dark'] .admin-form-dialog .p-password-input {
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-color: var(--app-border) !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-dropdown-label,
+html[data-theme='dark'] .admin-form-dialog .p-dropdown-trigger,
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-label,
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
+    color: #f8fafc !important;
+}
+
+/* ── Make MultiSelect look like Dropdown in admin dialogs ── */
+
+.admin-form-dialog .p-multiselect {
+    height: 2.4rem !important;
+    width: 100% !important;
+    border-radius: 8px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #1f2937 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.admin-form-dialog .p-multiselect-label {
+    display: flex !important;
+    align-items: center !important;
+    height: 100% !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-left: 1rem !important;
+    font-size: 0.82rem !important;
+    color: #6b7280 !important;
+}
+
+.admin-form-dialog .p-multiselect-label.p-placeholder {
+    color: #94a3b8 !important;
+}
+
+.admin-form-dialog .p-multiselect-trigger {
+    width: 2.4rem !important;
+    color: #6b7280 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.admin-form-dialog .p-multiselect-token {
+    background-color: #1e4d6b !important;
+    color: #ffffff !important;
+    border-radius: 999px !important;
+    font-size: 0.72rem !important;
+    padding: 0.15rem 0.45rem !important;
+}
+
+@media (max-width: 700px) {
+    .admin-form-dialog .p-multiselect {
+        height: 2.25rem !important;
+    }
+
+    .admin-form-dialog .p-multiselect-label {
+        font-size: 0.78rem !important;
+        padding-left: 1rem !important;
+    }
+
+    .admin-form-dialog .p-multiselect-trigger {
+        width: 2.25rem !important;
+    }
+
+    .admin-form-dialog .p-multiselect-token {
+        font-size: 0.68rem !important;
+    }
+}
+
+/* ── PrimeReact Dropdown + MultiSelect panels same typography ── */
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item,
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+    font-size: 0.82rem !important;
+    line-height: 1.25 !important;
+    padding: 0.65rem 1rem !important;
+}
+
+.p-multiselect-panel .p-multiselect-items .p-multiselect-item .p-checkbox {
+    transform: scale(0.8);
+    transform-origin: center;
+    margin-right: 0.55rem !important;
+}
+
+.p-multiselect-panel .p-multiselect-header {
+    padding: 0.65rem 1rem !important;
+}
+
+.p-multiselect-panel .p-multiselect-header .p-checkbox {
+    transform: scale(0.8);
+    transform-origin: center;
+}
+
+.p-multiselect-panel .p-multiselect-close {
+    width: 1.8rem !important;
+    height: 1.8rem !important;
+}
+
+.p-multiselect-panel .p-multiselect-close-icon {
+    font-size: 0.85rem !important;
+}
+
+@media (max-width: 700px) {
+    .p-dropdown-panel .p-dropdown-items .p-dropdown-item,
+    .p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+        font-size: 0.78rem !important;
+        line-height: 1.2 !important;
+        padding: 0.6rem 0.85rem !important;
+    }
+
+    .p-multiselect-panel .p-multiselect-items .p-multiselect-item .p-checkbox,
+    .p-multiselect-panel .p-multiselect-header .p-checkbox {
+        transform: scale(0.72);
+    }
+
+    .p-multiselect-panel .p-multiselect-header {
+        padding: 0.6rem 0.85rem !important;
+    }
+}
+
+.table-filter-row-single {
+    grid-template-columns: minmax(220px, 320px);
+}
+
+@media (max-width: 700px) {
+    .table-filter-row-single {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ── Admin dialog section internals ── */
+
+.admin-dialog-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.admin-dialog-table .p-datatable-thead > tr > th {
+    font-size: 0.65rem !important;
+    padding: 0.55rem 0.7rem !important;
+}
+
+.admin-dialog-table .p-datatable-tbody > tr > td {
+    font-size: 0.78rem !important;
+    padding: 0.6rem 0.7rem !important;
+}
+
+.admin-dialog-table .p-button {
+    width: 1.8rem !important;
+    height: 1.8rem !important;
+    min-width: 1.8rem !important;
+    padding: 0 !important;
+}
+
+.admin-dialog-table .p-button-icon {
+    font-size: 0.78rem !important;
+}
+
+.admin-form-dialog-wide {
+    max-width: 95vw;
+}
+
+@media (max-width: 700px) {
+    .admin-dialog-section-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .admin-form-dialog-wide {
+        width: calc(100vw - 2rem) !important;
+    }
+
+    .admin-dialog-table .p-datatable-wrapper {
+        overflow-x: auto !important;
+    }
+
+    .admin-dialog-table .p-datatable-table {
+        min-width: 560px !important;
+    }
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-multiselect {
+    background-color: #111827 !important;
+    border-color: var(--app-border) !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-label,
+html[data-theme='dark'] .admin-form-dialog .p-multiselect-trigger {
+    color: #f8fafc !important;
+}
+
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: max-content !important;
+    min-width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.4rem !important;
+    padding-right: 0.4rem !important;
+    width: auto !important;
+}
+
+.user-list-compact-table .p-datatable-table {
+    table-layout: auto !important;
+    width: 100% !important;
+}
+
+.user-list-compact-table .p-datatable-thead > tr > th,
+.user-list-compact-table .p-datatable-tbody > tr > td {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    white-space: nowrap;
+}

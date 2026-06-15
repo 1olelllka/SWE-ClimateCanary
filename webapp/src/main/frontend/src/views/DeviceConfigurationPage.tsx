@@ -21,6 +21,7 @@ import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
 import '../styles/Tables.css';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import AdminTableShell from '../components/AdminTableShell';
 
 const PAGEABLE = { page: 0, size: 100, sort: [] };
 
@@ -437,7 +438,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
     return (
         <div className="dashboard-layout">
             <Toast ref={toast} />
-            <PageHeader title="Device Configuration" onMenuClick={() => setSidebarVisible(true)} />
+            <PageHeader title="Device Configuration 1" onMenuClick={() => setSidebarVisible(true)} />
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)} />
 
             <div className="dashboard-content">
@@ -450,21 +451,8 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
 
                 {/* ── Raspberry Pi table ── */}
                 {activeTab === 'raspberry' && (
-                    <div className="table-container">
-                        <div className="flex-header">
-                            <h3>Raspberry Pi List</h3>
-                            <Button label="Add Raspberry Pi" icon="pi pi-plus" className="admin-add-button" onClick={openPiDialog} />
-                        </div>
-
-                        <div className="table-filter-row">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText value={roomSearch} onChange={e => setRoomSearch(e.target.value)} placeholder="Search by room" />
-                </span>
-                            <Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />
-                        </div>
-
-                        <DataTable value={filteredRaspberries} loading={loading} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll">
+                    <AdminTableShell title="Raspberry Pi List" addLabel="Add Raspberry Pi" onAdd={openPiDialog} searchValue={roomSearch} searchPlaceholder="Search by room" onSearchChange={setRoomSearch} filters={<Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />}>
+                        <DataTable value={filteredRaspberries} loading={loading} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll" className="admin-table wide-table table-scroll">
                             <Column field="name" header="Name" sortable />
                             <Column header="Room" body={(row: RaspberryDTOReal) => row.room?.roomName ?? <span style={{ color: '#9e9e9e' }}>N/A</span>} />
                             <Column header="Sensors" body={(row: RaspberryDTOReal) => {
@@ -480,26 +468,13 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 </div>
                             )} />
                         </DataTable>
-                    </div>
+                    </AdminTableShell>
                 )}
 
                 {/* ── Sensor Station table ── */}
                 {activeTab === 'sensor' && (
-                    <div className="table-container">
-                        <div className="flex-header">
-                            <h3>Sensor Station List</h3>
-                            <Button label="Add Sensor Station" icon="pi pi-plus" className="admin-add-button" onClick={openSensorDialog} />
-                        </div>
-
-                        <div className="table-filter-row">
-                <span className="p-input-icon-left">
-                    <i className="pi pi-search" />
-                    <InputText value={roomSearch} onChange={e => setRoomSearch(e.target.value)} placeholder="Search by room" />
-                </span>
-                            <Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />
-                        </div>
-
-                        <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
+                    <AdminTableShell title="Sensor Station List" addLabel="Add Sensor Station" onAdd={openSensorDialog} searchValue={roomSearch} searchPlaceholder="Search by room" onSearchChange={setRoomSearch} filters={<Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />}>
+                        <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll" className="admin-table wide-table table-scroll">
                             <Column field="name" header="Name" sortable />
                             <Column header="Room" body={(row: SensorStationDTO) => getRoomName(row.roomId)} />
                             <Column header="Assigned Pi" body={(row: SensorStationDTO) => {
@@ -515,18 +490,12 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                                 </div>
                             )} />
                         </DataTable>
-                    </div>
+                    </AdminTableShell>
                 )}
             </div>
 
             {/* ── Add / Edit Raspberry Pi Dialog ── */}
-            {/* ── Add / Edit Raspberry Pi Dialog ── */}
-            <Dialog
-                header={editingPiId ? 'Edit Raspberry Pi' : 'Add Raspberry Pi'}
-                visible={showPiDialog}
-                className="admin-form-dialog"
-                style={{ width: '480px' }}
-                onHide={() => setShowPiDialog(false)}
+            <Dialog header={editingPiId ? 'Edit Raspberry Pi' : 'Add Raspberry Pi'} visible={showPiDialog} className="admin-form-dialog" style={{ width: '480px' }} onHide={() => setShowPiDialog(false)}
                 footer={
                     <div className="admin-dialog-footer">
                         <Button label="Cancel" severity="secondary" outlined onClick={() => setShowPiDialog(false)} />
