@@ -8,6 +8,7 @@ import { ROUTES } from '../utilities/routes.paths';
 import ClockInOutButton from './ClockInOutButton';
 import { InputSwitch } from 'primereact/inputswitch';
 import { useTheme } from '../Contexts/ThemeContext';
+import { useUserPreferences } from '../Contexts/UserPreferencesContext';
 
 interface SidebarProps {
     readonly visible: boolean;
@@ -17,7 +18,9 @@ interface SidebarProps {
 const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isDarkMode, toggleTheme } = useTheme();
+    const { isDarkMode, setTheme } = useTheme();
+    const { savePrefs } = useUserPreferences();
+    const [themeSaving, setThemeSaving] = useState(false);
 
     const {
         currentUser,
@@ -131,6 +134,20 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
         onHide();
     };
 
+    const handleThemeToggle = async () => {
+        const nextDarkMode = !isDarkMode;
+        setTheme(nextDarkMode ? 'dark' : 'light');
+        setThemeSaving(true);
+
+        try {
+            await savePrefs({ darkMode: nextDarkMode });
+        } catch {
+            setTheme(isDarkMode ? 'dark' : 'light');
+        } finally {
+            setThemeSaving(false);
+        }
+    };
+
     return (
         <Sidebar visible={visible} onHide={onHide} className="custom-sidebar">
 
@@ -166,7 +183,8 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
 
                     <InputSwitch
                         checked={isDarkMode}
-                        onChange={() => toggleTheme()}
+                        onChange={handleThemeToggle}
+                        disabled={themeSaving}
                         aria-label="Toggle dark mode"
                     />
                 </div>
