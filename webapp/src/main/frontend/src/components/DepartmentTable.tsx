@@ -29,7 +29,7 @@ const DepartmentTable: React.FC<Props> = ({ departments, loading, onAdd, onEdit,
 
     return (
         <AdminTableShell title="Department List" addLabel="Add Department" onAdd={onAdd} searchValue={search} searchPlaceholder="Search by name" onSearchChange={setSearch}>
-            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No departments found." responsiveLayout="scroll" className="admin-table table-scroll">
+            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No departments found." className="admin-table table-scroll">
                 <Column field="name" header="Name" sortable />
                 <Column field="buildingName" header="Building" sortable />
                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={actionsTemplate} exportable={false} />

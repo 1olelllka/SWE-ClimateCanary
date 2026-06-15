@@ -193,18 +193,18 @@ const DeviceConfigurationPage: React.FC = () => {
         return sensors.filter(s => s.connectedToPiId === piId);
     };
 
-    const filteredRaspberries = raspberries.filter(pi => {
-        if (roomSearch && !(pi.room?.roomName ?? '').toLowerCase().includes(roomSearch.toLowerCase())) return false;
-        if (statusFilter && pi.status !== statusFilter) return false;
-        if (idFilter && !(pi.id ?? '').toLowerCase().includes(idFilter.toLowerCase())) return false;
-        return true;
-    });
+    const normalizedRoomSearch = roomSearch.toLowerCase();
+    const normalizedIdFilter = idFilter.toLowerCase();
+    const filteredRaspberries = raspberries.filter(pi =>
+        (!roomSearch || (pi.room?.roomName ?? '').toLowerCase().includes(normalizedRoomSearch)) &&
+        (!statusFilter || pi.status === statusFilter) &&
+        (!idFilter || (pi.id ?? '').toLowerCase().includes(normalizedIdFilter))
+    );
 
-    const filteredSensors = sensors.filter(s => {
-        if (roomSearch && !getRoomName(s.roomId).toLowerCase().includes(roomSearch.toLowerCase())) return false;
-        if (statusFilter && s.status !== statusFilter) return false;
-        return true;
-    });
+    const filteredSensors = sensors.filter(s =>
+        (!roomSearch || getRoomName(s.roomId).toLowerCase().includes(normalizedRoomSearch)) &&
+        (!statusFilter || s.status === statusFilter)
+    );
 
     const handleDeletePi = (id?: string) => {
         if (!id) return;
@@ -252,18 +252,6 @@ const DeviceConfigurationPage: React.FC = () => {
             },
         });
     };
-
-    const handleSettings = (label: string, id?: string) => {
-        // TODO: navigate to detail/edit page
-        toast.current?.show({ severity: 'info', summary: 'Settings', detail: `Open settings for ${label} (id: ${id})`, life: 3000 });
-    };
-
-    const actionsTemplate = (label: string, onDelete: (id?: string) => void, idField = 'id') => (row: Record<string, any>) => (
-        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end' }}>
-            <Button icon="pi pi-cog" rounded text severity="secondary" onClick={() => handleSettings(label, row[idField])} title={`${label} settings / details`} />
-            <Button icon="pi pi-trash" rounded text severity="danger" onClick={() => onDelete(row[idField])} title={`Delete ${label}`} />
-        </div>
-    );
 
     const openPiDialog = () => {
         setEditingPiId(null);
@@ -423,18 +411,6 @@ const DeviceConfigurationPage: React.FC = () => {
         });
     };
 
-const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title, tab }) => (
-        <div className="flex-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h3 style={{ margin: 0 }}>{title}</h3>
-            <Button
-                label={tab === 'raspberry' ? 'Add Raspberry Pi' : 'Add Sensor Station'}
-                icon="pi pi-plus"
-                size="small"
-                onClick={tab === 'raspberry' ? openPiDialog : openSensorDialog}
-            />
-        </div>
-    );
-
     return (
         <div className="dashboard-layout">
             <Toast ref={toast} />
@@ -452,7 +428,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                 {/* ── Raspberry Pi table ── */}
                 {activeTab === 'raspberry' && (
                     <AdminTableShell title="Raspberry Pi List" addLabel="Add Raspberry Pi" onAdd={openPiDialog} searchValue={roomSearch} searchPlaceholder="Search by room" onSearchChange={setRoomSearch} filters={<Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />}>
-                        <DataTable value={filteredRaspberries} loading={loading} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll" className="admin-table wide-table table-scroll">
+                        <DataTable value={filteredRaspberries} loading={loading} stripedRows emptyMessage="No Raspberry Pis found." className="admin-table wide-table table-scroll">
                             <Column field="name" header="Name" sortable />
                             <Column header="Room" body={(row: RaspberryDTOReal) => row.room?.roomName ?? <span style={{ color: '#9e9e9e' }}>N/A</span>} />
                             <Column header="Sensors" body={(row: RaspberryDTOReal) => {
@@ -474,7 +450,7 @@ const TableSectionHeader: React.FC<{ title: string; tab: ActiveTab }> = ({ title
                 {/* ── Sensor Station table ── */}
                 {activeTab === 'sensor' && (
                     <AdminTableShell title="Sensor Station List" addLabel="Add Sensor Station" onAdd={openSensorDialog} searchValue={roomSearch} searchPlaceholder="Search by room" onSearchChange={setRoomSearch} filters={<Dropdown value={statusFilter} options={statusOptions} onChange={e => setStatusFilter(e.value)} placeholder="Status Filter" showClear />}>
-                        <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll" className="admin-table wide-table table-scroll">
+                        <DataTable value={filteredSensors} loading={loading} stripedRows emptyMessage="No Sensor Stations found." className="admin-table wide-table table-scroll">
                             <Column field="name" header="Name" sortable />
                             <Column header="Room" body={(row: SensorStationDTO) => getRoomName(row.roomId)} />
                             <Column header="Assigned Pi" body={(row: SensorStationDTO) => {

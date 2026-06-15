@@ -53,17 +53,17 @@ const DeviceTables: React.FC<DeviceTablesProps> = ({
     onDeleteSensor,
     onRetrySensorConnection,
 }) => {
-    const filteredRaspberries = raspberries.filter(pi => {
-        if (raspberrySearch && !(pi.name ?? '').toLowerCase().includes(raspberrySearch.toLowerCase())) return false;
-        if (raspberryStatusFilter && pi.status !== raspberryStatusFilter) return false;
-        return true;
-    });
+    const normalizedRaspberrySearch = raspberrySearch.toLowerCase();
+    const normalizedSensorSearch = sensorSearch.toLowerCase();
+    const filteredRaspberries = raspberries.filter(pi =>
+        (!raspberrySearch || (pi.name ?? '').toLowerCase().includes(normalizedRaspberrySearch)) &&
+        (!raspberryStatusFilter || pi.status === raspberryStatusFilter)
+    );
 
-    const filteredSensors = sensors.filter(s => {
-        if (sensorSearch && !(s.name ?? '').toLowerCase().includes(sensorSearch.toLowerCase())) return false;
-        if (sensorStatusFilter && s.status !== sensorStatusFilter) return false;
-        return true;
-    });
+    const filteredSensors = sensors.filter(s =>
+        (!sensorSearch || (s.name ?? '').toLowerCase().includes(normalizedSensorSearch)) &&
+        (!sensorStatusFilter || s.status === sensorStatusFilter)
+    );
 
     return (
         <>
@@ -86,7 +86,7 @@ const DeviceTables: React.FC<DeviceTablesProps> = ({
                         />
                     }
                 />
-                <DataTable value={filteredRaspberries} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll">
+                <DataTable value={filteredRaspberries} stripedRows emptyMessage="No Raspberry Pis found.">
                     <Column field="name" header="Name" sortable/>
                     <Column header="Room" body={(row: RaspberryDTOReal) => row.room?.roomName ?? mutedValue()}/>
                     <Column header="Sensors" body={(row: RaspberryDTOReal) => {
@@ -129,7 +129,7 @@ const DeviceTables: React.FC<DeviceTablesProps> = ({
                         />
                     }
                 />
-                <DataTable value={filteredSensors} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
+                <DataTable value={filteredSensors} stripedRows emptyMessage="No Sensor Stations found.">
                     <Column field="name" header="Name" sortable/>
                     <Column header="Room" body={(row: SensorStationDTO) => {
                         const room = rooms.find(r => r.id === row.roomId);

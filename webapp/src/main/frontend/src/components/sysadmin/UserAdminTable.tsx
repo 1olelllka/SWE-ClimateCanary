@@ -33,13 +33,13 @@ const UserAdminTable: React.FC<UserAdminTableProps> = ({
     onEditUser,
     onDeleteUser,
 }) => {
-    const filteredUsers = users.filter(u => {
-        if (u.roles.some(r => r.name === 'RASPBERRY_PI')) return false;
-        if (search && !(u.lastName ?? '').toLowerCase().includes(search.toLowerCase())) return false;
-        if (roleFilter && !u.roles.some(r => r.name === roleFilter)) return false;
-        if (roomFilter && u.myRoom?.id !== roomFilter) return false;
-        return true;
-    });
+    const normalizedSearch = search.toLowerCase();
+    const filteredUsers = users.filter(u =>
+        !u.roles.some(r => r.name === 'RASPBERRY_PI') &&
+        (!search || (u.lastName ?? '').toLowerCase().includes(normalizedSearch)) &&
+        (!roleFilter || u.roles.some(r => r.name === roleFilter)) &&
+        (!roomFilter || u.myRoom?.id === roomFilter)
+    );
 
     return (
         <div className="table-container">

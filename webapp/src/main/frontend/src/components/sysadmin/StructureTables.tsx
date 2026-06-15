@@ -64,17 +64,17 @@ const StructureTables: React.FC<StructureTablesProps> = ({
         !buildingSearch || (b.name ?? '').toLowerCase().includes(buildingSearch.toLowerCase())
     );
 
-    const filteredDepartments = departments.filter(d => {
-        if (departmentSearch && !(d.name ?? '').toLowerCase().includes(departmentSearch.toLowerCase())) return false;
-        if (departmentBuildingFilter && d.buildingName !== departmentBuildingFilter) return false;
-        return true;
-    });
+    const normalizedDepartmentSearch = departmentSearch.toLowerCase();
+    const normalizedRoomSearch = roomSearch.toLowerCase();
+    const filteredDepartments = departments.filter(d =>
+        (!departmentSearch || (d.name ?? '').toLowerCase().includes(normalizedDepartmentSearch)) &&
+        (!departmentBuildingFilter || d.buildingName === departmentBuildingFilter)
+    );
 
-    const filteredRooms = rooms.filter(r => {
-        if (roomSearch && !(r.name ?? '').toLowerCase().includes(roomSearch.toLowerCase())) return false;
-        if (roomTypeFilter && r.roomType !== roomTypeFilter) return false;
-        return true;
-    });
+    const filteredRooms = rooms.filter(r =>
+        (!roomSearch || (r.name ?? '').toLowerCase().includes(normalizedRoomSearch)) &&
+        (!roomTypeFilter || r.roomType === roomTypeFilter)
+    );
 
     return (
         <>
@@ -97,7 +97,7 @@ const StructureTables: React.FC<StructureTablesProps> = ({
                         />
                     }
                 />
-                <DataTable value={filteredDepartments} stripedRows emptyMessage="No departments found." responsiveLayout="scroll">
+                <DataTable value={filteredDepartments} stripedRows emptyMessage="No departments found.">
                     <Column field="name" header="Name" sortable/>
                     <Column field="buildingName" header="Building" sortable/>
                     <Column
@@ -134,7 +134,7 @@ const StructureTables: React.FC<StructureTablesProps> = ({
                         />
                     }
                 />
-                <DataTable value={filteredRooms} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll" className="admin-rooms-table">
+                <DataTable value={filteredRooms} stripedRows emptyMessage="No rooms found." className="admin-rooms-table">
                     <Column field="name" header="Name" sortable/>
                     <Column field="departmentName" header="Department" sortable/>
                     <Column field="roomType" header="Type"/>
@@ -163,7 +163,7 @@ const StructureTables: React.FC<StructureTablesProps> = ({
                     onAdd={onAddBuilding}
                     addLabel="Add Building"
                 />
-                <DataTable value={filteredBuildings} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll">
+                <DataTable value={filteredBuildings} stripedRows emptyMessage="No buildings found.">
                     <Column field="name" header="Name" sortable/>
                     <Column field="address" header="Address"/>
                     <Column

@@ -36,7 +36,7 @@ const BuildingTable: React.FC<Props> = ({ buildings, loading, onAdd, onEdit, onD
             searchPlaceholder="Search by name"
             onSearchChange={setSearch}
         >
-            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll" className="admin-table table-scroll">
+            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No buildings found." className="admin-table table-scroll">
                 <Column field="name" header="Name" sortable />
                 <Column field="address" header="Address" sortable />
                 <Column header="" className="admin-actions-column" headerClassName="admin-actions-column" body={actionsTemplate} exportable={false} />

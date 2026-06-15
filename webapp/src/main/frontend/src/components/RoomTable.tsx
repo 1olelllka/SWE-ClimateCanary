@@ -29,7 +29,7 @@ const RoomTable: React.FC<Props> = ({ rooms, loading, onAdd, onEdit, onDelete })
 
     return (
         <AdminTableShell title="Room List" addLabel="Add Room" onAdd={onAdd} searchValue={search} searchPlaceholder="Search by name" onSearchChange={setSearch}>
-            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll" className="admin-table admin-rooms-table table-scroll">
+            <DataTable value={filtered} loading={loading} stripedRows emptyMessage="No rooms found." className="admin-table admin-rooms-table table-scroll">
                 <Column field="name" header="Name" sortable />
                 <Column field="departmentName" header="Department" sortable />
                 <Column field="roomType" header="Type" />
