@@ -122,9 +122,11 @@ export const EmployeeDashboard: React.FC = () => {
                 });
                 stompClient.current?.subscribe(`/topic/climate-data/${roomId}`, (message) => {
                     const data: ClimateData = JSON.parse(message.body);
-                    console.log("received climate-data");
                     setClimate(data);
-                    setHistoryPoints((prev) => [...prev, data]);
+                    setHistoryPoints((prev) => {
+                        const cutoff = Date.now() - 20 * 60 * 1000;
+                        return [...prev.filter(p => new Date(p.timestamp).getTime() >= cutoff), data];
+                    });
                 })
             },
             onStompError: (frame) => {
