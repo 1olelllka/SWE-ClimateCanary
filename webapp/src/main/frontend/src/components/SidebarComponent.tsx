@@ -14,6 +14,14 @@ interface SidebarProps {
     readonly onHide: () => void;
 }
 
+interface MenuItem {
+    label: string;
+    subtitle?: string;
+    icon: string;
+    route: string;
+    visible: boolean;
+}
+
 const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -42,24 +50,46 @@ const SidebarComponent: React.FC<SidebarProps> = ({ visible, onHide }) => {
         }).catch(() => {});
     }, [isDepartmentManager]);
 
-    // Exakte Bezeichnungen für die Startseite je nach Rolle
-    const getOverviewLabel = () => {
-        if (isSeniorManager) return 'Company Overview';
-        if (isDepartmentManager) return 'Department Overview';
-        if (isBuildingManager) return 'Building Overview';
-        if (isEmployee) return 'My Office';
-        return 'Overview'; // Für SysAdmin
-    };
-
-    // Konfiguration der Menüpunkte
-    const allMenuItems = [
+    // Ein Sidebar-Eintrag pro Dashboard, zu dem der Benutzer Zugriff hat. Da ein Benutzer
+    // mehrere Rollen gleichzeitig haben kann (z.B. Employee + SysAdmin), werden hier alle
+    // zutreffenden Dashboards aufgelistet statt nur das mit der höchsten Priorität.
+    const dashboardMenuItems: MenuItem[] = [
         {
-            label: getOverviewLabel(),
-            subtitle: isDepartmentManager ? (deptManagerDeptName ?? undefined) : undefined,
-            icon: 'pi-home',
-            route: '/',
-            visible: true // Jeder sieht eigene Startseite
+            label: 'Admin Overview',
+            icon: 'pi-shield',
+            route: ROUTES.SYSADMIN_DASHBOARD,
+            visible: isAdmin
         },
+        {
+            label: 'Company Overview',
+            icon: 'pi-home',
+            route: ROUTES.SENIOR_MANAGER_DASHBOARD,
+            visible: isSeniorManager
+        },
+        {
+            label: 'Department Overview',
+            subtitle: deptManagerDeptName ?? undefined,
+            icon: 'pi-home',
+            route: ROUTES.DEPARTMENT_MANAGER_DASHBOARD,
+            visible: isDepartmentManager
+        },
+        {
+            label: 'Building Overview',
+            icon: 'pi-home',
+            route: ROUTES.BUILDING_MANAGER_DASHBOARD,
+            visible: isBuildingManager
+        },
+        {
+            label: 'My Office',
+            icon: 'pi-home',
+            route: ROUTES.EMPLOYEE_DASHBOARD,
+            visible: isEmployee
+        },
+    ];
+
+    // Konfiguration der übrigen Menüpunkte
+    const allMenuItems: MenuItem[] = [
+        ...dashboardMenuItems,
         {
             label: 'My Department',
             icon: 'pi-sitemap',

@@ -21,7 +21,12 @@ import {
     MyRoomRoute,
     CompanyTrendsRoute,
     DepartmentViolationsRoute,
-    RoomDetailRoute
+    RoomDetailRoute,
+    SysAdminDashboardRoute,
+    SeniorManagerDashboardRoute,
+    DepartmentManagerDashboardRoute,
+    BuildingManagerDashboardRoute,
+    EmployeeDashboardRoute
 } from "./routes";
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
@@ -51,6 +56,7 @@ const App: React.FC = () => {
 
                             <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_OFFICE_CLIMATE" />}>
                                 <Route path={MyRoomRoute.url} Component={MyRoomRoute.component}/>
+                                <Route path={EmployeeDashboardRoute.url} Component={EmployeeDashboardRoute.component}/>
                             </Route>
 
                             {/* Department Head routes */}
@@ -63,6 +69,7 @@ const App: React.FC = () => {
                             </Route>
                             <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_DEPARTMENT_MEASURES" />}>
                                 <Route path={DepartmentDetailRoute.url} Component={DepartmentDetailRoute.component}/>
+                                <Route path={DepartmentManagerDashboardRoute.url} Component={DepartmentManagerDashboardRoute.component}/>
                             </Route>
 
 
@@ -74,11 +81,13 @@ const App: React.FC = () => {
 
                             <Route element={<PrivateRoute requiredPermission="CAN_MANAGE_TIPS" />}>
                                 <Route path={TipManagementRoute.url} Component={TipManagementRoute.component}/>
+                                <Route path={BuildingManagerDashboardRoute.url} Component={BuildingManagerDashboardRoute.component}/>
                             </Route>
 
                             {/* Senior Manager routes */}
                             <Route element={<PrivateRoute requiredPermission="CAN_VIEW_COMPANY_AGGR" />}>
                                 <Route path={CompanyTrendsRoute.url} Component={CompanyTrendsRoute.component}/>
+                                <Route path={SeniorManagerDashboardRoute.url} Component={SeniorManagerDashboardRoute.component}/>
                             </Route>
 
                             <Route element={<PrivateRoute requiredPermissions={[
@@ -92,6 +101,7 @@ const App: React.FC = () => {
                             <Route element={<PrivateRoute requiredPermission="CAN_MANAGE_USERS" />}>
                                 <Route path={ManageUsersRoute.url} Component={ManageUsersRoute.component}/>
                                 <Route path={UserConfigurationRoute.url} Component={UserConfigurationRoute.component}/>
+                                <Route path={SysAdminDashboardRoute.url} Component={SysAdminDashboardRoute.component}/>
                             </Route>
 
                             <Route element={<PrivateRoute requiredPermission="CAN_MANAGE_DEVICES" />}>

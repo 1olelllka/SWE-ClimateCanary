@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useUser } from "../Contexts/AuthenticatedUserContext";
-import EmployeeDashboard from "./EmployeeDashboard";
 import HomePage from "./HomePage";
 import SidebarComponent from '../components/SidebarComponent';
 import { PageHeader } from "../components/PageHeader";
-import {DepartmentHeadDashboard} from "./DepartmentHeadDashboard";
-import {BuildingManagerDashboard} from "./BuildingManagerDashboard";
-import {SeniorManagerDashboard} from "./SeniorManagerDashboard";
-import SysAdminDashboard from "./SysAdminDashboard";
+import { ROUTES } from "../utilities/routes.paths";
 
 const PlaceholderDashboard: React.FC<{ readonly title: string, readonly content: string }> = ({ title, content }) => {
     const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -31,6 +28,13 @@ const PlaceholderDashboard: React.FC<{ readonly title: string, readonly content:
     );
 };
 
+/**
+ * Every role now has its own dedicated dashboard URL (see routes.paths.ts / routes.js).
+ * A user can hold several roles at once, so instead of inline-rendering a single
+ * dashboard picked by priority, '/' just redirects to the highest-priority dashboard
+ * the user has access to. All of the user's other dashboards remain reachable directly
+ * via their own URLs, which are listed in the sidebar (see SidebarComponent).
+ */
 const RoleBasedHome: React.FC = () => {
     const {
         currentUser,
@@ -44,23 +48,23 @@ const RoleBasedHome: React.FC = () => {
     if (!currentUser) return <div style={{ padding: '50px' }}>Lädt Benutzerdaten...</div>;
 
     if (isAdmin) {
-        return <SysAdminDashboard />;
+        return <Navigate to={ROUTES.SYSADMIN_DASHBOARD} replace />;
     }
 
     if (isSeniorManager) {
-        return <SeniorManagerDashboard />;
+        return <Navigate to={ROUTES.SENIOR_MANAGER_DASHBOARD} replace />;
     }
 
     if (isDepartmentManager) {
-        return <DepartmentHeadDashboard />;
+        return <Navigate to={ROUTES.DEPARTMENT_MANAGER_DASHBOARD} replace />;
     }
 
     if (isBuildingManager) {
-        return <BuildingManagerDashboard />;
+        return <Navigate to={ROUTES.BUILDING_MANAGER_DASHBOARD} replace />;
     }
 
     if (isEmployee) {
-        return <EmployeeDashboard />;
+        return <Navigate to={ROUTES.EMPLOYEE_DASHBOARD} replace />;
     }
 
     // Fallback
