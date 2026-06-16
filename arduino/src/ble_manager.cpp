@@ -58,7 +58,6 @@ void BLEManager::poll() {
       faultManager.activeCodeText(),
       faultManager.activeText()
     );
-    //ledManager.update(LedManager::LedMode::White);
 
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
