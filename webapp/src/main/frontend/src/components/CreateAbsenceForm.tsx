@@ -14,7 +14,7 @@ interface ToastOptions {
 
 interface CreateAbsenceFormProps {
     currentUserId: string | null;
-    onSuccess: (createdAbsence?: any) => void;
+    onSuccess: () => void;
     onCancel: () => void;
     onToast?: (options: ToastOptions) => void;
 }
@@ -128,8 +128,8 @@ export const CreateAbsenceForm: React.FC<CreateAbsenceFormProps> = ({
                 assignedTo: managerId,
             },
         })
-            .then(res => {
-                onSuccess(res.data);
+            .then(() => {
+                onSuccess();
                 onToast?.({ severity: 'success', summary: 'Submitted', detail: 'Absence request sent successfully.', life: 3000 });
             })
             .catch(err => {

@@ -1,27 +1,25 @@
 .page-header {
     background-color: var(--nav-bg);
     color: #ffffff;
-    padding: 0.85rem 0;
+    padding: 1rem 0;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px rgba(16, 42, 55, 0.12);
+    gap: 1rem;
 }
 
 .page-header-top {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    min-height: 56px;
-    padding: 0 1.75rem;
+    min-height: 60px;
+    padding: 0 1.5rem;
 }
 
 .header-column-left {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 0.85rem;
+    gap: 1rem;
 }
 
 .header-column-center {
@@ -39,83 +37,60 @@
 }
 
 .page-title {
-    font-size: 1.18rem;
-    font-weight: 800;
+    font-size: 1.25rem;
+    font-weight: 700;
     white-space: nowrap;
-    letter-spacing: 0;
 }
 
 .page-subtitle {
-    font-size: 0.82rem;
-    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.85rem;
+    color: var(--muted-blue);
     white-space: nowrap;
 }
 
 .menu-icon-button {
-    width: 2.5rem;
-    height: 2.5rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
+    background: none;
+    border: none;
     padding: 0;
     cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s, border-color 0.15s, transform 0.15s;
-}
-
-.menu-icon-button:hover {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.22);
-    transform: translateY(-1px);
 }
 
 .menu-icon {
-    font-size: 1rem;
-    color: #ffffff;
+    font-size: 1.5rem;
+    color: var(--muted-blue);
 }
 
 .header-bottom {
     text-align: center;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.8rem;
+    color: var(--muted-blue);
 }
 
 /* Mobile */
 @media (max-width: 600px) {
     .page-header {
-        padding: 0.75rem 0;
-        padding-top: max(1rem, env(safe-area-inset-top));
+        padding: 0.85rem 0;
+        padding-top: max(3rem, env(safe-area-inset-top));
         gap: 0.75rem;
     }
 
     .page-header-top {
         grid-template-columns: 1fr auto 1fr;
-        min-height: 48px;
-        padding: 0 1rem;
+        min-height: 54px;
+        padding: 0 1.25rem;
     }
 
     .page-title {
-        font-size: 1rem;
-        max-width: 52vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 1.15rem;
     }
 
     .page-subtitle {
-        font-size: 0.76rem;
-        max-width: 52vw;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 0.8rem;
     }
 
     .header-bottom {
         font-size: 0.75rem;
-    }
-
-    .menu-icon-button {
-        width: 2.25rem;
-        height: 2.25rem;
     }
 }

@@ -303,10 +303,6 @@
         flex-direction: column;
         align-items: stretch;
     }
-
-    .employee-absences-table {
-        min-width: 36rem;
-    }
 }
 
 /* Dark mode for EmployeeAbsencesPage */
@@ -458,12 +454,6 @@ html[data-theme='dark'] .absence-status-badge.other {
     border: 1px solid #e2e8f0 !important;
     color: #1a3a4a !important;
     min-width: 150px;
-}
-
-html[data-theme='dark'] .absence-status-filter {
-    background: #111827 !important;
-    border-color: var(--app-border) !important;
-    color: #f8fafc !important;
 }
 
 .absence-status-filter .p-dropdown-label {

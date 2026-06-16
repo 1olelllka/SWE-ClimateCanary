@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import SidebarComponent from '../components/SidebarComponent';
+import UserListComponent from '../components/UserListComponent';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+import { Button } from 'primereact/button';
+import { InputText } from 'primereact/inputtext';
+import { InputNumber } from 'primereact/inputnumber';
+import { Dropdown } from 'primereact/dropdown';
+import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import {
     RaspberryControllerApi,
@@ -10,6 +18,7 @@ import {
     DepartmentControllerApi,
     UserRoleControllerApi,
     UserxControllerApi,
+    RaspberryDTO,
     SensorStationDTO,
     RoomDTO,
     BuildingListDTO,
@@ -23,21 +32,92 @@ import DepartmentFormDialog, { DepartmentFormState, emptyDepartmentForm } from '
 import RoomFormDialog, { RoomFormState, emptyRoomForm } from '../components/RoomFormDialog';
 import UserFormDialog, { UserFormState, emptyForm } from '../components/UserFormDialog';
 import ConfirmDeleteDialog from '../components/ConfirmDeleteDialog';
-import DeviceTables from '../components/sysadmin/DeviceTables';
-import RaspberryDialog from '../components/sysadmin/RaspberryDialog';
-import SensorStationDialog from '../components/sysadmin/SensorStationDialog';
-import StructureTables from '../components/sysadmin/StructureTables';
-import UserAdminTable from '../components/sysadmin/UserAdminTable';
-import { ConfirmDeleteState, FullUser, RaspberryDTOReal } from '../components/sysadmin/sysAdminTypes';
 import '../styles/Tables.css';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+interface RaspberryRoomRef { roomId?: string; roomName?: string; }
+type RaspberryDTOReal = Omit<RaspberryDTO, 'roomId' | 'roomNumber'> & { room?: RaspberryRoomRef };
+
+const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: '0.35rem',
+    fontWeight: 500,
+    fontSize: '0.9rem',
+};
+
+interface UserRoleSummary { id: string; name: string; }
+interface UserRoomSummary { id: string; departmentName: string; roomNumber: string; }
+interface FullUser {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    enabled: boolean;
+    roles: UserRoleSummary[];
+    myRoom: UserRoomSummary | null;
+}
+
 const PAGEABLE = { page: 0, size: 200, sort: [] };
+
+const statusBadge = (status?: string) => {
+    const online = status === 'ONLINE';
+    return (
+        <span style={{
+            background: online ? '#4caf50' : '#9e9e9e',
+            color: 'white', padding: '1px 7px', borderRadius: '12px',
+            fontSize: '0.72rem', fontWeight: 600,
+        }}>
+            {online ? 'Online' : status ? 'Offline' : 'N/A'}
+        </span>
+    );
+};
+
+const enabledBadge = (enabled?: boolean) => (
+    <span style={{
+        background: enabled ? '#4caf50' : '#9e9e9e',
+        color: 'white', padding: '2px 10px', borderRadius: '12px',
+        fontSize: '0.8rem', fontWeight: 500,
+    }}>
+        {enabled ? 'Active' : 'Inactive'}
+    </span>
+);
+
+interface TableHeaderProps {
+    readonly title: string;
+    readonly search: string;
+    readonly onSearch: (v: string) => void;
+    readonly searchPlaceholder: string;
+    readonly filterEl?: React.ReactNode;
+    readonly onAdd?: () => void;
+    readonly addLabel?: string;
+}
+
+const TableHeader: React.FC<TableHeaderProps> = ({ title, search, onSearch, searchPlaceholder, filterEl, onAdd, addLabel }) => (
+    <>
+        <div className="flex-header">
+            <h3 style={{ margin: 0 }}>{title}</h3>
+            {onAdd && <Button label={addLabel ?? `Add`} icon="pi pi-plus" className="admin-add-button" onClick={onAdd} />}
+        </div>
+        <div className="table-filter-row">
+            <span className="p-input-icon-left">
+                <i className="pi pi-search"/>
+                <InputText
+                    value={search}
+                    onChange={e => onSearch(e.target.value)}
+                    placeholder={searchPlaceholder}
+                    style={{ borderRadius: '20px', paddingLeft: '2.0rem' }}
+                />
+            </span>
+            {filterEl}
+        </div>
+    </>
+);
 
 const SysAdminDashboard: React.FC = () => {
     const toast = useRef<Toast>(null);
     const [sidebarVisible, setSidebarVisible] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 700);
 
     // --- Data ---
     const [raspberries, setRaspberries] = useState<RaspberryDTOReal[]>([]);
@@ -49,7 +129,7 @@ const SysAdminDashboard: React.FC = () => {
     const [roleDTOs, setRoleDTOs] = useState<UserRoleDTO[]>([]);
 
     // --- Confirm delete ---
-    const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
     // --- Pi dialog ---
     const [showPiDialog, setShowPiDialog] = useState(false);
@@ -190,6 +270,13 @@ const SysAdminDashboard: React.FC = () => {
         };
     }, [sensors, raspberries]);
 
+
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth <= 700);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+
     useEffect(() => {
         fetchRaspberries();
         refreshSensors();
@@ -203,7 +290,7 @@ const SysAdminDashboard: React.FC = () => {
         fetchDepartments();
     }, []);
 
-    // --- Shared table/dialog options ---
+    // --- Filtered data ---
     const getPiRoomId = (pi: RaspberryDTOReal): string =>
         pi.room?.roomId ?? (pi as any).roomId ?? '';
 
@@ -216,6 +303,42 @@ const SysAdminDashboard: React.FC = () => {
             .filter(r => !raspberries.filter(pi => pi.id !== editingPiId).some(pi => getPiRoomId(pi) === r.id))
             .map(r => ({ label: r.name ?? r.id ?? '', value: r.id ?? '' }))
         : [];
+
+    const filteredRaspberries = raspberries.filter(pi => {
+        if (raspberrySearch && !(pi.name ?? '').toLowerCase().includes(raspberrySearch.toLowerCase())) return false;
+        if (raspberryStatusFilter && pi.status !== raspberryStatusFilter) return false;
+        return true;
+    });
+
+    const filteredSensors = sensors.filter(s => {
+        if (sensorSearch && !(s.name ?? '').toLowerCase().includes(sensorSearch.toLowerCase())) return false;
+        if (sensorStatusFilter && s.status !== sensorStatusFilter) return false;
+        return true;
+    });
+
+    const filteredUsers = users.filter(u => {
+        if (u.roles.some(r => r.name === 'RASPBERRY_PI')) return false;
+        if (userSearch && !(u.lastName ?? '').toLowerCase().includes(userSearch.toLowerCase())) return false;
+        if (userRoleFilter && !u.roles.some(r => r.name === userRoleFilter)) return false;
+        if (userRoomFilter && u.myRoom?.id !== userRoomFilter) return false;
+        return true;
+    });
+
+    const filteredRooms = rooms.filter(r => {
+        if (roomSearch && !(r.name ?? '').toLowerCase().includes(roomSearch.toLowerCase())) return false;
+        if (roomTypeFilter && r.roomType !== roomTypeFilter) return false;
+        return true;
+    });
+
+    const filteredBuildings = buildings.filter(b =>
+        !buildingSearch || (b.name ?? '').toLowerCase().includes(buildingSearch.toLowerCase())
+    );
+
+    const filteredDepartments = departments.filter(d => {
+        if (departmentSearch && !(d.name ?? '').toLowerCase().includes(departmentSearch.toLowerCase())) return false;
+        if (departmentBuildingFilter && d.buildingName !== departmentBuildingFilter) return false;
+        return true;
+    });
 
     const buildingNameOptions = [...new Set(departments.map(d => d.buildingName).filter(Boolean))] as string[];
     const buildingOptions = buildings.map(b => ({ label: b.name ?? b.id ?? '', value: b.id ?? '' }));
@@ -737,70 +860,245 @@ const SysAdminDashboard: React.FC = () => {
             <SidebarComponent visible={sidebarVisible} onHide={() => setSidebarVisible(false)}/>
 
             <div className="dashboard-content">
-                <DeviceTables
-                    raspberries={raspberries}
-                    sensors={sensors}
-                    rooms={rooms}
-                    raspberrySearch={raspberrySearch}
-                    onRaspberrySearch={setRaspberrySearch}
-                    raspberryStatusFilter={raspberryStatusFilter}
-                    onRaspberryStatusFilter={setRaspberryStatusFilter}
-                    sensorSearch={sensorSearch}
-                    onSensorSearch={setSensorSearch}
-                    sensorStatusFilter={sensorStatusFilter}
-                    onSensorStatusFilter={setSensorStatusFilter}
-                    statusOptions={statusOptions}
-                    onAddPi={openAddPiDialog}
-                    onEditPi={openEditPiDialog}
-                    onDeletePi={handleDeletePi}
-                    onRetryPiConnection={handleRetryPiConnection}
-                    onAddSensor={openAddSensorDialog}
-                    onEditSensor={openEditSensorDialog}
-                    onDeleteSensor={handleDeleteSensor}
-                    onRetrySensorConnection={handleRetrySensorConnection}
-                />
 
-                <UserAdminTable
-                    users={users}
-                    search={userSearch}
-                    onSearch={setUserSearch}
-                    roleFilter={userRoleFilter}
-                    onRoleFilter={setUserRoleFilter}
-                    roomFilter={userRoomFilter}
-                    onRoomFilter={setUserRoomFilter}
-                    roleFilterOptions={roleFilterOptions}
-                    roomFilterOptions={roomFilterOptions}
-                    onAddUser={openAddUser}
-                    onEditUser={openEditUser}
-                    onDeleteUser={handleDeleteUser}
-                />
+                {/* ── Raspberry Pi List ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="Raspberry Pi List"
+                        search={raspberrySearch}
+                        onSearch={setRaspberrySearch}
+                        searchPlaceholder="Search by name"
+                        onAdd={openAddPiDialog}
+                        addLabel="Add Raspberry Pi"
+                        filterEl={
+                            <Dropdown
+                                value={raspberryStatusFilter}
+                                options={statusOptions}
+                                onChange={e => setRaspberryStatusFilter(e.value)}
+                                placeholder="Status Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                            />
+                        }
+                    />
+                    <DataTable value={filteredRaspberries} stripedRows emptyMessage="No Raspberry Pis found." responsiveLayout="scroll">
+                        <Column field="name" header="Name" sortable/>
+                        <Column header="Room" body={(row: RaspberryDTOReal) =>
+                            row.room?.roomName ?? <span style={{ color: '#9e9e9e' }}>N/A</span>}
+                        />
+                        <Column header="Sensors" body={(row: RaspberryDTOReal) => {
+                            const count = sensors.filter(s => s.connectedToPiId === row.id).length;
+                            return count > 0 ? <span>{count}</span> : <span style={{ color: '#9e9e9e' }}>None</span>;
+                        }}/>
+                        <Column header="Status" body={row => statusBadge(row.status)}/>
+                        <Column
+                            header=""
+                            className="admin-actions-column admin-actions-column-wide"
+                            headerClassName="admin-actions-column admin-actions-column-wide"
+                            exportable={false}
+                            body={(row: RaspberryDTOReal) => (
+                                <div className="admin-table-actions">
+                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetryPiConnection(row.id)}/>
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Raspberry Pi" onClick={() => openEditPiDialog(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Raspberry Pi" onClick={() => handleDeletePi(row.id)}/>
+                                </div>
+                            )}
+                        />
+                    </DataTable>
+                </div>
 
-                <StructureTables
-                    buildings={buildings}
-                    departments={departments}
-                    rooms={rooms}
-                    buildingSearch={buildingSearch}
-                    onBuildingSearch={setBuildingSearch}
-                    departmentSearch={departmentSearch}
-                    onDepartmentSearch={setDepartmentSearch}
-                    departmentBuildingFilter={departmentBuildingFilter}
-                    onDepartmentBuildingFilter={setDepartmentBuildingFilter}
-                    buildingNameOptions={buildingNameOptions}
-                    roomSearch={roomSearch}
-                    onRoomSearch={setRoomSearch}
-                    roomTypeFilter={roomTypeFilter}
-                    onRoomTypeFilter={setRoomTypeFilter}
-                    roomTypeOptions={roomTypeOptions}
-                    onAddBuilding={openAddBuilding}
-                    onEditBuilding={openEditBuilding}
-                    onDeleteBuilding={handleDeleteBuilding}
-                    onAddDepartment={openAddDepartment}
-                    onEditDepartment={openEditDepartment}
-                    onDeleteDepartment={handleDeleteDepartment}
-                    onAddRoom={openAddRoom}
-                    onEditRoom={openEditRoom}
-                    onDeleteRoom={handleDeleteRoom}
-                />
+                {/* ── Sensor Station List ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="Sensor Station List"
+                        search={sensorSearch}
+                        onSearch={setSensorSearch}
+                        searchPlaceholder="Search by name"
+                        onAdd={openAddSensorDialog}
+                        addLabel="Add Sensor Station"
+                        filterEl={
+                            <Dropdown
+                                value={sensorStatusFilter}
+                                options={statusOptions}
+                                onChange={e => setSensorStatusFilter(e.value)}
+                                placeholder="Status Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                            />
+                        }
+                    />
+                    <DataTable value={filteredSensors} stripedRows emptyMessage="No Sensor Stations found." responsiveLayout="scroll">
+                        <Column field="name" header="Name" sortable/>
+                        <Column header="Room" body={(row: SensorStationDTO) => {
+                            const room = rooms.find(r => r.id === row.roomId);
+                            return room ? (room.name ?? room.id) : <span style={{ color: '#9e9e9e' }}>N/A</span>;
+                        }}/>
+                        <Column header="Assigned Pi" body={(row: SensorStationDTO) => {
+                            const pi = raspberries.find(p => p.id === row.connectedToPiId);
+                            return pi ? (pi.name ?? pi.id) : <span style={{ color: '#9e9e9e' }}>None</span>;
+                        }}/>
+                        <Column header="Status" body={row => statusBadge(row.status)}/>
+                        <Column
+                            header=""
+                            className="admin-actions-column admin-actions-column-wide"
+                            headerClassName="admin-actions-column admin-actions-column-wide"
+                            exportable={false}
+                            body={(row: SensorStationDTO) => (
+                                <div className="admin-table-actions">
+                                    <Button icon="pi pi-refresh" rounded text severity="warning" title="Retry connection" onClick={() => handleRetrySensorConnection(row.readId!)}/>
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit Sensor Station" onClick={() => openEditSensorDialog(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete Sensor Station" onClick={() => handleDeleteSensor(row.readId)}/>
+                                </div>
+                            )}
+                        />
+                    </DataTable>
+                </div>
+
+                {/* ── User List ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="User List"
+                        search={userSearch}
+                        onSearch={setUserSearch}
+                        searchPlaceholder="Search by last name"
+                        onAdd={openAddUser}
+                        addLabel="Add User"
+                        filterEl={
+                            <>
+                                <Dropdown
+                                    value={userRoleFilter}
+                                    options={roleFilterOptions}
+                                    onChange={e => setUserRoleFilter(e.value)}
+                                    placeholder="Role Filter"
+                                    showClear
+                                    style={{ borderRadius: '20px', minWidth: '160px' }}
+                                />
+                                <Dropdown
+                                    value={userRoomFilter}
+                                    options={roomFilterOptions}
+                                    onChange={e => setUserRoomFilter(e.value)}
+                                    placeholder="Room Filter"
+                                    showClear
+                                    filter
+                                    style={{ borderRadius: '20px', minWidth: '180px' }}
+                                />
+                            </>
+                        }
+                    />
+                    <UserListComponent
+                        users={filteredUsers}
+                        loading={false}
+                        onEditUser={openEditUser}
+                        onDeleteUser={handleDeleteUser}
+                        showDelete
+                    />
+                </div>
+
+                {/* ── Departments ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="Departments"
+                        search={departmentSearch}
+                        onSearch={setDepartmentSearch}
+                        searchPlaceholder="Search by name"
+                        onAdd={openAddDepartment}
+                        addLabel="Add Department"
+                        filterEl={
+                            <Dropdown
+                                value={departmentBuildingFilter}
+                                options={buildingNameOptions}
+                                onChange={e => setDepartmentBuildingFilter(e.value)}
+                                placeholder="Building Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '180px' }}
+                            />
+                        }
+                    />
+                    <DataTable value={filteredDepartments} stripedRows emptyMessage="No departments found." responsiveLayout="scroll">
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="buildingName" header="Building" sortable/>
+                        <Column
+                            header=""
+                            className="admin-actions-column"
+                            headerClassName="admin-actions-column"
+                            exportable={false}
+                            body={(row: DepartmentListDTO) => (
+                                <div className="admin-table-actions">
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit department" onClick={() => openEditDepartment(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete department" onClick={() => handleDeleteDepartment(row.id)}/>
+                                </div>
+                            )}
+                        />
+                    </DataTable>
+                </div>
+
+                {/* ── Rooms ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="Rooms"
+                        search={roomSearch}
+                        onSearch={setRoomSearch}
+                        searchPlaceholder="Search by name"
+                        onAdd={openAddRoom}
+                        addLabel="Add Room"
+                        filterEl={
+                            <Dropdown
+                                value={roomTypeFilter}
+                                options={roomTypeOptions}
+                                onChange={e => setRoomTypeFilter(e.value)}
+                                placeholder="Type Filter"
+                                showClear
+                                style={{ borderRadius: '20px', minWidth: '160px' }}
+                            />
+                        }
+                    />
+                    <DataTable value={filteredRooms} stripedRows emptyMessage="No rooms found." responsiveLayout="scroll" className="admin-rooms-table">
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="departmentName" header="Department" sortable/>
+                        <Column field="roomType" header="Type"/>
+                        <Column field="defaultPeopleCount" header="Capacity" sortable/>
+                        <Column
+                            header=""
+                            className="admin-actions-column"
+                            headerClassName="admin-actions-column"
+                            exportable={false}
+                            body={(row: RoomDTO) => (
+                                <div className="admin-table-actions">
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit room" onClick={() => openEditRoom(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete room" onClick={() => handleDeleteRoom(row.id)}/>
+                                </div>
+                            )}
+                        />
+                    </DataTable>
+                </div>
+
+                {/* ── Buildings ── */}
+                <div className="table-container">
+                    <TableHeader
+                        title="Buildings"
+                        search={buildingSearch}
+                        onSearch={setBuildingSearch}
+                        searchPlaceholder="Search by name"
+                        onAdd={openAddBuilding}
+                        addLabel="Add Building"
+                    />
+                    <DataTable value={filteredBuildings} stripedRows emptyMessage="No buildings found." responsiveLayout="scroll">
+                        <Column field="name" header="Name" sortable/>
+                        <Column field="address" header="Address"/>
+                        <Column
+                            header=""
+                            className="admin-actions-column"
+                            headerClassName="admin-actions-column"
+                            exportable={false}
+                            body={(row: BuildingListDTO) => (
+                                <div className="admin-table-actions">
+                                    <Button icon="pi pi-cog" rounded text severity="secondary" title="Edit building" onClick={() => openEditBuilding(row)}/>
+                                    <Button icon="pi pi-trash" rounded text severity="danger" title="Delete building" onClick={() => handleDeleteBuilding(row.id)}/>
+                                </div>
+                            )}
+                        />
+                    </DataTable>
+                </div>
             </div>
 
             <ConfirmDeleteDialog
@@ -859,45 +1157,122 @@ const SysAdminDashboard: React.FC = () => {
                 onChange={patch => setUserForm(f => ({ ...f, ...patch }))}
             />
 
-            <RaspberryDialog
+            {/* ── Add / Edit Raspberry Pi Dialog ── */}
+            <Dialog
+                header={editingPiId ? 'Edit Raspberry Pi' : 'Add Raspberry Pi'}
                 visible={showPiDialog}
-                editingPiId={editingPiId}
-                piName={piName}
-                onPiNameChange={setPiName}
-                piRoomId={piRoomId}
-                onPiRoomIdChange={setPiRoomId}
-                piIpAddress={piIpAddress}
-                onPiIpAddressChange={setPiIpAddress}
-                piPort={piPort}
-                onPiPortChange={setPiPort}
-                piInterval={piInterval}
-                onPiIntervalChange={setPiInterval}
-                loading={piLoading}
-                availableRoomOptions={availableRoomOptions}
-                editAvailableRoomOptions={editAvailableRoomOptions}
-                connectedSensors={sensors.filter(s => s.connectedToPiId === editingPiId)}
-                onSave={handleSavePi}
+                style={{ width: '480px' }}
                 onHide={() => setShowPiDialog(false)}
-                onDisconnectSensor={sensorId => {
-                    setConfirmDelete(null);
-                    handleDisconnectSensor(sensorId);
-                }}
-                onConfirmDelete={setConfirmDelete}
-            />
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <Button label="Cancel" severity="secondary" outlined onClick={() => setShowPiDialog(false)}/>
+                        <Button label={editingPiId ? 'Save' : 'Create'} icon="pi pi-check" loading={piLoading} onClick={handleSavePi}/>
+                    </div>
+                }
+                draggable={false}
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                        <label htmlFor="pi-name" style={labelStyle}>Name *</label>
+                        <InputText id="pi-name" value={piName} onChange={e => setPiName(e.target.value)} placeholder="e.g. Pi-Lab-01" style={{ width: '100%' }}/>
+                    </div>
 
-            <SensorStationDialog
+                    <div>
+                        <label htmlFor="pi-room" style={labelStyle}>Room {!editingPiId && '*'}</label>
+                        <Dropdown
+                            inputId="pi-room"
+                            value={piRoomId}
+                            options={editingPiId ? editAvailableRoomOptions : availableRoomOptions}
+                            onChange={e => setPiRoomId(e.value)}
+                            placeholder="Select room"
+                            style={{ width: '100%' }}
+                            filter
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="pi-ip" style={labelStyle}>IP Address *</label>
+                        <InputText id="pi-ip" value={piIpAddress} onChange={e => setPiIpAddress(e.target.value)} placeholder="e.g. 192.168.1.10" style={{ width: '100%' }}/>
+                    </div>
+
+                    <div>
+                        <label htmlFor="pi-port" style={labelStyle}>Port *</label>
+                        <InputNumber inputId="pi-port" value={piPort} onValueChange={e => setPiPort(e.value ?? null)} placeholder="e.g. 1000–9999" style={{ width: '100%' }} min={1000} max={9999} useGrouping={false}/>
+                    </div>
+
+                    <div>
+                        <label htmlFor="pi-interval" style={labelStyle}>Pushing Data Interval (seconds) {!editingPiId && '*'}</label>
+                        <InputNumber inputId="pi-interval" value={piInterval} onValueChange={e => setPiInterval(e.value ?? null)} placeholder="e.g. 60" style={{ width: '100%' }} min={1}/>
+                    </div>
+
+                    {editingPiId && (
+                        <div>
+                            <label style={labelStyle}>Connected Sensor Stations</label>
+                            <DataTable value={sensors.filter(s => s.connectedToPiId === editingPiId)} size="small" emptyMessage="No sensor stations connected.">
+                                <Column field="name" header="Name"/>
+                                <Column field="writeId" header="Write ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}/>
+                                <Column field="readId" header="Read ID" style={{ maxWidth: '9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}/>
+                                <Column
+                                    header=""
+                                    className="admin-actions-column"
+                                    headerClassName="admin-actions-column"
+                                    body={(row: SensorStationDTO) => (
+                                        <div className="admin-table-actions">
+                                            <Button
+                                                icon="pi pi-trash"
+                                                rounded text severity="danger"
+                                                title="Remove from this Raspberry Pi"
+                                                onClick={() => setConfirmDelete({
+                                                    message: `Remove "${row.name ?? row.readId}" from this Raspberry Pi?`,
+                                                    onConfirm: () => { setConfirmDelete(null); handleDisconnectSensor(row.readId!); },
+                                                })}
+                                            />
+                                        </div>
+                                    )}
+                                />
+                            </DataTable>
+                        </div>
+                    )}
+                </div>
+            </Dialog>
+
+            {/* ── Add / Edit Sensor Station Dialog ── */}
+            <Dialog
+                header={editingSensorId ? 'Edit Sensor Station' : 'Add Sensor Station'}
                 visible={showSensorDialog}
-                editingSensorId={editingSensorId}
-                editingSensorWriteId={editingSensorWriteId}
-                sensorName={sensorName}
-                onSensorNameChange={setSensorName}
-                sensorRoomId={sensorRoomId}
-                onSensorRoomIdChange={setSensorRoomId}
-                roomOptions={roomOptions}
-                loading={sensorLoading}
-                onSave={handleSaveSensor}
+                style={{ width: '480px' }}
                 onHide={() => setShowSensorDialog(false)}
-            />
+                footer={
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                        <Button label="Cancel" severity="secondary" outlined onClick={() => setShowSensorDialog(false)}/>
+                        <Button label={editingSensorId ? 'Save' : 'Create'} icon="pi pi-check" loading={sensorLoading} onClick={handleSaveSensor}/>
+                    </div>
+                }
+                draggable={false}
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                        <label htmlFor="sensor-name" style={labelStyle}>Name *</label>
+                        <InputText id="sensor-name" value={sensorName} onChange={e => setSensorName(e.target.value)} placeholder="e.g. Station-A1" style={{ width: '100%' }}/>
+                    </div>
+                    <div>
+                        <label htmlFor="sensor-room" style={labelStyle}>Room *</label>
+                        <Dropdown inputId="sensor-room" value={sensorRoomId} options={roomOptions} onChange={e => setSensorRoomId(e.value)} placeholder="Select room" style={{ width: '100%' }} filter/>
+                    </div>
+                    {editingSensorId && (
+                        <>
+                            <div>
+                                <label style={labelStyle}>Read ID</label>
+                                <InputText value={String(editingSensorId)} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }}/>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Write ID</label>
+                                <InputText value={editingSensorWriteId ? String(editingSensorWriteId) : ''} readOnly style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem', background: '#f5f5f5', color: '#555' }}/>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Dialog>
         </div>
     );
 };

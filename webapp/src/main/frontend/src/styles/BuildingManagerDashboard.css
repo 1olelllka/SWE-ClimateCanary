@@ -8,7 +8,7 @@
 
 .bm-content {
     padding: 1.5rem;
-    max-width: 1040px;
+    max-width: 900px;
     width: 100%;
     margin: 0 auto;
     flex-grow: 1;
@@ -74,12 +74,12 @@
 .bm-kpi-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius-md, 12px);
+    border-radius: 12px;
     padding: 1rem 1.25rem;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .bm-kpi-title {
@@ -92,7 +92,7 @@
 
 .bm-kpi-value {
     font-size: 2rem;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--text-primary);
 }
 
@@ -111,20 +111,20 @@
 .bm-nav-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
-    border-radius: var(--radius-md, 12px);
+    border-radius: 12px;
     padding: 1.1rem 1.25rem;
     text-align: left;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
 .bm-nav-card:hover {
-    border-color: var(--accent, #0f9f9a);
-    box-shadow: 0 14px 30px rgba(16, 42, 55, 0.1);
+    border-color: var(--nav-bg, #1a3a4a);
+    box-shadow: 0 4px 12px rgba(26, 58, 74, 0.1);
     transform: translateY(-1px);
 }
 
@@ -142,7 +142,7 @@
 
 .bm-card-name {
     font-size: 0.95rem;
-    font-weight: 800;
+    font-weight: 700;
     color: var(--text-primary);
     line-height: 1.3;
 }
@@ -151,7 +151,7 @@
     flex-shrink: 0;
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 999px;
+    border-radius: 20px;
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
