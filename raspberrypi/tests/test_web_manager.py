@@ -910,6 +910,21 @@ class TestConfigTaskEdges:
         # Should NOT call set_config for initial_config_done if first_boot is False
         mock_db.set_config.assert_not_called()
 
+    async def test_config_change_removes_sensor_no_longer_in_config(self, web_manager, mock_db):
+        """Sensors absent from the re-seeded config have their removal_event set immediately."""
+        mock_db.get_config.return_value = None   # no room_id or frequency to broadcast
+        mock_db.get_sensors.return_value = []    # sensor no longer present
+
+        ble = MagicMock()
+        ble.removal_event = asyncio.Event()
+        ble.ble_inbox = asyncio.Queue()
+        web_manager.ble_managers = {"S1": ble}
+
+        with patch("app.web_manager.ConfigManager.fetch_and_seed", new=AsyncMock()):
+            await web_manager._task_config_change("pi-1")
+
+        assert ble.removal_event.is_set()
+
     async def test_config_fetch_exception_logging(self, web_manager, mock_db):
         # Trigger the 'except Exception as e' block in _task_config_change
         with patch("app.web_manager.ConfigManager.fetch_and_seed", side_effect=RuntimeError("API Down")):
