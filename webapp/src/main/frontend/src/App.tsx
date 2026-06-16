@@ -58,8 +58,10 @@ const App: React.FC = () => {
                                 <Route path={DepartmentAbsencesRoute.url} Component={DepartmentAbsencesRoute.component}/>
                             </Route>
 
-                            <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_DEPARTMENT_MEASURES" />}>
+                            <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_SHARED_CLIMATE" />}>
                                 <Route path={EmployeeDepartmentRoute.url} Component={EmployeeDepartmentRoute.component}/>
+                            </Route>
+                            <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_DEPARTMENT_MEASURES" />}>
                                 <Route path={DepartmentDetailRoute.url} Component={DepartmentDetailRoute.component}/>
                             </Route>
 
