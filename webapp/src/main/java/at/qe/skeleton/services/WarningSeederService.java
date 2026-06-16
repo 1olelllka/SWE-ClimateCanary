@@ -88,7 +88,7 @@ public class WarningSeederService {
         log.info("Seeded 3 temperature and 2 humidity active warnings for room {}.", room.getRoomNumber());
 
         seedDepartmentActiveWarnings(tempTip, humTip);
-        seedEng103ActiveWarning(tempTip);
+        //seedEng103ActiveWarning(tempTip); //uncomment when want to use active warning for room-103
     }
 
     // dept prefix → number of active violations, equally distributed across [1,10] (Engineering = 0)
