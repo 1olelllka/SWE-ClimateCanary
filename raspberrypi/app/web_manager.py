@@ -386,6 +386,9 @@ class WebManager:
                 if name in sensor_by_name:
                     ble.sensor = sensor_by_name[name]
                     logger.info(f"[WebManager] Config re-seed: refreshed sensor dict for '{name}'")
+                else:
+                    logger.warning(f"[WebManager] Config re-seed: '{name}' no longer in config. Triggering removal.")
+                    ble.removal_event.set()
 
             new_freq = await self.db.get_config('frequency')
             if new_freq is not None:
