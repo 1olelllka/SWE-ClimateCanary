@@ -2,13 +2,13 @@
 
 #include <Arduino.h>
 
-enum class FaultType {
-  None,
-  WebappOffline,
-  PiDisconnected,
-  SensorReadFailed,
-  BleInitFailed,
-  SensorInitFailed
+enum class FaultType :uint16_t {
+  None              = 0,
+  WebappOffline     = 101,
+  PiDisconnected    = 102,
+  BleInitFailed     = 103,
+  SensorInitFailed  = 301,
+  SensorReadFailed  = 302
 };
 
 class FaultManager {
@@ -20,6 +20,9 @@ public:
 
   FaultType activeFault() const;
   String activeText() const;
+
+  uint16_t code(FaultType fault) const;
+  String activeCodeText() const;
 
 private:
   bool webappOffline = false;

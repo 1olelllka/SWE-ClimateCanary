@@ -47,13 +47,26 @@ void setup() {
   if (!sensorManager.begin()) {
     fatalStartupFault = true;
     faultManager.set(FaultType::SensorInitFailed);  
-    displayManager.showSetupFault(faultManager.activeText());                                         
+
+    displayManager.showSetupFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
+
     Serial.println("BME688 init failed");
     return;
   }
 
   if (!bleManager.begin(&displayManager)) {
-    Serial.println("BLE init failed");  
+    fatalStartupFault = true;
+    faultManager.set(FaultType::BleInitFailed);
+
+    displayManager.showSetupFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
+
+    Serial.println("BLE init failed");
     return;
   }
 
