@@ -66,6 +66,8 @@ async def _drain_worker(coro, iterations=1):
         pass
 
 class TestSpawnSensorTasks:
+    """_spawn_sensor_tasks() creates BLEManager and DataProcessor tasks and registers them."""
+
     def _make_processor(self):
         proc = MagicMock()
         proc.run = MagicMock(return_value=asyncio.coroutine(lambda *a: None)())
@@ -159,6 +161,8 @@ class TestSpawnSensorTasks:
 
 
 class TestTaskSensorChangeAdd:
+    """_task_sensor_change() handles SENSOR_ADD, SENSOR_DELETE, and FLUSH events."""
+
     def _live_task(self):
         t = MagicMock(spec=asyncio.Task)
         t.done.return_value = False
@@ -214,6 +218,8 @@ class TestTaskSensorChangeAdd:
 
 
 class TestTaskLimitChange:
+    """_task_limit_change() delegates to ConfigManager and swallows/logs exceptions."""
+
     async def test_delegates_to_config_manager(self, web_manager):
         with patch("app.web_manager.ConfigManager.handle_limit_change",
                    new=AsyncMock()) as mock_handler:
@@ -229,6 +235,8 @@ class TestTaskLimitChange:
 
 
 class TestTaskOccupancyChange:
+    """_task_occupancy_change() delegates to ConfigManager and swallows/logs exceptions."""
+
     async def test_delegates_to_config_manager(self, web_manager):
         with patch("app.web_manager.ConfigManager.handle_occupancy_change",
                    new=AsyncMock()) as mock_handler:
@@ -243,6 +251,8 @@ class TestTaskOccupancyChange:
 
 
 class TestHandleTip:
+    """_handle_tip() routes violation tip messages to the appropriate BLE inbox."""
+
     def _make_ble(self, write_uuid):
         ble = MagicMock()
         ble.sensor = {"write_uuid": write_uuid}
@@ -321,6 +331,8 @@ class TestHandleTip:
 
 
 class TestHandleRetrySensorRespawn:
+    """handle_retry_sensor() respawns dead tasks or triggers reconnect for live ones."""
+
     async def test_dead_task_triggers_respawn(self, client, web_manager):
         ble = MagicMock()
         ble.read_uuid = "char-uuid-1"
@@ -385,6 +397,8 @@ class TestHandleRetrySensorRespawn:
 
 
 class TestRunOutgoingDataWorker:
+    """run_outgoing_data_worker() POSTs measurements, requeues on failure, and refreshes auth on 401."""
+
     def _mock_response(self, status=200):
         resp = AsyncMock()
         resp.status = status
@@ -452,6 +466,8 @@ class TestRunOutgoingDataWorker:
 
 
 class TestRunOutgoingViolationWorker:
+    """run_outgoing_violation_worker() dispatches violation events and requeues on failure."""
+
     async def _run_one(self, web_manager, event):
         await web_manager.web_violation_queue.put(event)
         task = asyncio.create_task(web_manager.run_outgoing_violation_worker())
@@ -506,6 +522,8 @@ class TestRunOutgoingViolationWorker:
 
 
 class TestHandleViolationWarning:
+    """_handle_violation_warning() POSTs a new warning and saves the server-assigned ID."""
+
     def _make_session(self, status=200, response_json=None):
         data = response_json or {"id": "warn-123", "tip": "Open window",
                                  "measurementType": "TEMPERATURE",
@@ -620,6 +638,8 @@ class TestHandleViolationWarning:
 
 
 class TestHandleViolationResolve:
+    """_handle_violation_resolve() PATCHes the warning to resolved and notifies the sensor via BLE."""
+
     def _make_session(self, status=200):
         resp = AsyncMock()
         resp.status = status
@@ -718,6 +738,8 @@ class TestHandleViolationResolve:
 
 
 class TestRunOutgoingStatusWorker:
+    """run_outgoing_status_worker() PATCHes sensor online/offline status to the server."""
+
     async def _run_one(self, web_manager, event):
         await web_manager.status_queue.put(event)
         task = asyncio.create_task(web_manager.run_outgoing_status_worker())
@@ -837,7 +859,7 @@ async def wait_for_queue_empty(queue, timeout=2):
     return False
 
 class TestEndpointValidations:
-    """Covers validation logic and error responses."""
+    """HTTP endpoints return 4xx on invalid, missing, or malformed request data."""
 
     async def test_sensors_delete_and_flush(self, client):
         # Coverage for S_DELETE and FLUSH branches
@@ -898,7 +920,7 @@ class TestEndpointValidations:
 
 
 class TestConfigTaskEdges:
-    """Covers the logic when first_boot is False and errors occur."""
+    """_task_config_change() handles non-first-boot, removed sensors, and fetch errors."""
 
     async def test_config_change_not_first_boot(self, web_manager, mock_db):
         web_manager._first_boot = False
@@ -934,7 +956,7 @@ class TestConfigTaskEdges:
         mock_db.log_event.assert_called_with("CONFIG", "Failed to handle config change: API Down", "ERROR")
 
 class TestLocalServerLoop:
-    """Covers the startup loop of the local webserver."""
+    """run_local_server() starts aiohttp, serves indefinitely, and cleans up on cancel."""
 
     async def test_run_local_server_cancel(self, web_manager):
         # Covers the startup lines and the infinite sleep loop

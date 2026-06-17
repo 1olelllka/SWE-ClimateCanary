@@ -14,6 +14,8 @@ def auth():
 
 
 class TestInit:
+    """AuthManager initialises with correct defaults."""
+
     def test_initial_token_is_none(self, auth):
         assert auth.token is None
 
@@ -24,6 +26,8 @@ class TestInit:
 
 
 class TestGetHeaders:
+    """get_headers() builds the Authorization header or raises when unauthenticated."""
+
     def test_returns_auth_header_when_token_set(self, auth):
         auth.token = "my-token"
         headers = auth.get_headers()
@@ -36,6 +40,8 @@ class TestGetHeaders:
 
 
 class TestLogin:
+    """login() POSTs credentials and stores the bearer token."""
+
     def _make_session(self, response_json=None, raise_for_status_effect=None):
         """Helper to build a fake aiohttp session."""
         mock_response = MagicMock()
@@ -86,6 +92,8 @@ class TestLogin:
 
 
 class TestRefreshIfNeeded:
+    """refresh_if_needed() always delegates to login()."""
+
     async def test_calls_login(self, auth):
         auth.login = AsyncMock()
         await auth.refresh_if_needed()

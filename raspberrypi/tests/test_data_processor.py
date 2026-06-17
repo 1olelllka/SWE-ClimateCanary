@@ -64,6 +64,8 @@ async def run_one(processor, raw, sensor=SENSOR, write_id=WRITE_ID):
 # pure helper function tests 
 
 class TestWarningStatus:
+    """_warning_status() classifies a reading as GREEN / YELLOW / RED relative to a limit."""
+
     def test_max_green(self):
         assert _warning_status(30.0, 30.0, "max") == "GREEN" # exactly at limit
 
@@ -84,6 +86,8 @@ class TestWarningStatus:
 
 
 class TestViolationMessage:
+    """_violation_message() constructs a human-readable violation string."""
+
     def test_max_direction(self):
         msg = _violation_message("temperature", "max", 35.0, 30.0, "YELLOW")
         assert "above" in msg
@@ -100,6 +104,8 @@ class TestViolationMessage:
 # DataProcessor._init_sensor_state 
 
 class TestInitSensorState:
+    """_init_sensor_state() sets up streak counters without resetting already-existing state."""
+
     def test_initialises_streaks_to_zero(self, processor):
         processor._init_sensor_state(SENSOR)
         for key in ("max_temp", "min_temp", "max_moisture", "min_moisture", "max_co2"):
@@ -116,6 +122,8 @@ class TestInitSensorState:
 # DataProcessor.run - message handling 
 
 class TestRunMessageHandling:
+    """run() parses incoming sensor JSON, stores measurements, and forwards readings."""
+
     async def test_normal_measurement_stored_and_forwarded(self, processor, mock_db, queues):
         await run_one(processor, GOOD_DATA)
 
@@ -189,6 +197,7 @@ class TestRunMessageHandling:
 # DataProcessor._check_violations - streak logic 
 
 class TestCheckViolations:
+    """_check_violations() manages bad/good streaks and fires violation/resolve events at threshold."""
 
     def _make_limits(self, **overrides):
         return {**GOOD_LIMITS, **overrides}

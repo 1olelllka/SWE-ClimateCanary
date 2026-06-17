@@ -17,6 +17,8 @@ async def db():
 # connect / init_db 
 
 class TestConnect:
+    """connect() and close() manage the SQLite connection lifecycle."""
+
     async def test_connect_sets_db(self, db):
         assert db.db is not None
 
@@ -42,6 +44,8 @@ class TestConnect:
 # config 
 
 class TestConfig:
+    """Config CRUD: set_config / get_config / get_all_config."""
+
     async def test_set_and_get_config(self, db):
         await db.set_config("foo", "bar")
         assert await db.get_config("foo") == "bar"
@@ -76,6 +80,8 @@ SENSOR_B = {"name": "S2", "char_uuid": "char-2", "write_uuid": "write-2"}
 
 
 class TestSensors:
+    """Sensor CRUD: set, add, delete, and flush sensor rows."""
+
     async def test_get_sensors_empty_by_default(self, db):
         assert await db.get_sensors() == []
 
@@ -133,6 +139,8 @@ class TestSensors:
 # measurements 
 
 class TestMeasurements:
+    """insert_measurement() persists time-series sensor readings."""
+
     async def test_insert_measurement_persists(self, db):
         await db.insert_measurement("S1", 22.0, 50.0, 600.0, "2026-01-01T10:00:00")
         async with db.db.execute("SELECT * FROM measurements") as cur:
@@ -162,6 +170,8 @@ class TestMeasurements:
 # limits 
 
 class TestLimits:
+    """Limit CRUD: set_limit / get_limit / get_all_limits."""
+
     async def test_set_and_get_limit(self, db):
         await db.set_limit("max_temp", 30.0)
         assert await db.get_limit("max_temp") == 30.0
@@ -192,6 +202,8 @@ class TestLimits:
 # violations 
 
 class TestViolations:
+    """Violation lifecycle: register, resolve, and query active violations per sensor."""
+
     async def test_register_violation_creates_active_entry(self, db):
         await db.register_violation("S1", "max_temp", 30.0, 35.0)
         active = await db.get_active_violations("S1")
@@ -254,6 +266,8 @@ class TestViolations:
 # warning_id 
 
 class TestWarningId:
+    """save_warning_id / get_warning_id track server-assigned warning IDs per violation."""
+
     async def test_save_and_get_warning_id(self, db):
         await db.register_violation("S1", "max_temp", 30.0, 35.0)
         await db.save_warning_id("S1", "max_temp", "warn-abc")
@@ -274,6 +288,8 @@ class TestWarningId:
 # log_event 
 
 class TestLogEvent:
+    """log_event() persists log entries at any severity level without raising."""
+
     async def test_info_level_does_not_raise(self, db):
         await db.log_event("TEST", "info message", "INFO")
 

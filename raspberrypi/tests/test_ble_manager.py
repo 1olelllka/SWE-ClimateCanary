@@ -20,6 +20,8 @@ def make_fake_client(is_connected=True):
 # sync / property tests (no event loop needed)
 
 class TestProperties:
+    """BLEManager exposes the sensor name and read UUID as read-only properties."""
+
     def test_name_returns_sensor_name(self, ble_manager):
         assert ble_manager.name == "G1T4:S3M2"
 
@@ -28,6 +30,8 @@ class TestProperties:
 
 
 class TestDisconnectedCallback:
+    """disconnected_callback() signals the disconnect event so run() can react."""
+
     def test_sets_disconnect_event(self, ble_manager):
         assert not ble_manager.disconnect_event.is_set()
         ble_manager.disconnected_callback(MagicMock())
@@ -35,6 +39,8 @@ class TestDisconnectedCallback:
 
 
 class TestNotificationHandler:
+    """notification_handler() strips whitespace and enqueues the decoded payload."""
+
     def test_decoded_message_put_on_queue(self, ble_manager, queues):
         raw = b"  hello world  "
         ble_manager.notification_handler(sender=None, data=raw)
@@ -52,6 +58,8 @@ class TestNotificationHandler:
 # async tests 
 
 class TestSenderTask:
+    """_sender_task() writes BLE commands and handles write failures and timeouts."""
+
     async def test_sends_command_to_arduino(self, ble_manager, queues):
         fake_client = make_fake_client()
         ble_manager.client = fake_client
@@ -104,6 +112,8 @@ class TestSenderTask:
 
 
 class TestRunLoop:
+    """run() manages the full BLE connection lifecycle: scanning, connecting, and error recovery."""
+
     async def test_exits_when_sensor_removed_from_db(self, ble_manager, mock_db):
         """If get_sensors() returns nothing, run() should return immediately."""
         mock_db.get_sensors.return_value = []
