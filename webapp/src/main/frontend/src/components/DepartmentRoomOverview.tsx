@@ -20,6 +20,7 @@ interface DepartmentRoomOverviewProps {
 function warningColor(status?: string): string | undefined {
     if (status === 'RED') return '#dc2626';
     if (status === 'YELLOW') return '#eab308';
+    if (status === 'GREEN') return '#16a34a';
     return undefined;
 }
 
