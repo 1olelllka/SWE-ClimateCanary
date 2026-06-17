@@ -18,6 +18,7 @@ import {
     DepartmentControllerApi,
     UserRoleControllerApi,
     UserxControllerApi,
+    FormulaWeightsConfigurationApi,
     RaspberryDTO,
     SensorStationDTO,
     RoomDTO,
@@ -27,6 +28,7 @@ import {
     RoomCreateDTORoomTypeEnum,
     RoomPatchDTORoomTypeEnum,
 } from '../generated-skeleton-api';
+import KlimaScoreWeights, { KlimaScoreWeightsState } from '../components/KlimaScoreWeights';
 import BuildingFormDialog, { BuildingFormState, emptyBuildingForm } from '../components/BuildingFormDialog';
 import DepartmentFormDialog, { DepartmentFormState, emptyDepartmentForm } from '../components/DepartmentFormDialog';
 import RoomFormDialog, { RoomFormState, emptyRoomForm } from '../components/RoomFormDialog';
@@ -127,6 +129,10 @@ const SysAdminDashboard: React.FC = () => {
     const [buildings, setBuildings] = useState<BuildingListDTO[]>([]);
     const [departments, setDepartments] = useState<DepartmentListDTO[]>([]);
     const [roleDTOs, setRoleDTOs] = useState<UserRoleDTO[]>([]);
+
+    // --- Klima score weights ---
+    const [weights, setWeights] = useState<KlimaScoreWeightsState | null>(null);
+    const [weightsSaving, setWeightsSaving] = useState(false);
 
     // --- Confirm delete ---
     const [confirmDelete, setConfirmDelete] = useState<{ message: string; onConfirm: () => void } | null>(null);
@@ -288,6 +294,17 @@ const SysAdminDashboard: React.FC = () => {
         new BuildingControllerApi().getPageOfBuildings({ pageable: PAGEABLE })
             .then(res => setBuildings(res.data.content ?? [])).catch(() => {});
         fetchDepartments();
+        new FormulaWeightsConfigurationApi().getCurrentFormulaWeights()
+            .then(res => {
+                const d = res.data;
+                if (d.tempWeight != null && d.humWeight != null && d.co2Weight != null) {
+                    setWeights({
+                        temperature: Math.round(d.tempWeight * 100),
+                        humidity:    Math.round(d.humWeight * 100),
+                        co2:         Math.round(d.co2Weight * 100),
+                    });
+                }
+            }).catch(() => {});
     }, []);
 
     // --- Filtered data ---
@@ -849,6 +866,33 @@ const SysAdminDashboard: React.FC = () => {
         });
     };
 
+    // --- Weights handler ---
+    const handleSaveWeights = async (w: KlimaScoreWeightsState) => {
+        setWeightsSaving(true);
+        try {
+            const res = await new FormulaWeightsConfigurationApi().patchCurrentFormulaWeights({
+                formulaWeightCreateDTO: {
+                    tempWeight: w.temperature / 100,
+                    humWeight:  w.humidity / 100,
+                    co2Weight:  w.co2 / 100,
+                },
+            });
+            const d = res.data;
+            if (d.tempWeight != null && d.humWeight != null && d.co2Weight != null) {
+                setWeights({
+                    temperature: Math.round(d.tempWeight * 100),
+                    humidity:    Math.round(d.humWeight * 100),
+                    co2:         Math.round(d.co2Weight * 100),
+                });
+            }
+            toast.current?.show({ severity: 'success', summary: 'Saved', detail: 'Klima score weights updated.', life: 3000 });
+        } catch {
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to save weights.', life: 3000 });
+        } finally {
+            setWeightsSaving(false);
+        }
+    };
+
     // --- Dropdown options ---
     const statusOptions = [{ label: 'Online', value: 'ONLINE' }, { label: 'Offline', value: 'OFFLINE' }];
     const roomTypeOptions = [{ label: 'Office', value: 'OFFICE' }, { label: 'Shared', value: 'SHARED' }];
@@ -1098,6 +1142,20 @@ const SysAdminDashboard: React.FC = () => {
                             )}
                         />
                     </DataTable>
+                </div>
+
+                {/* ── Klima Score Weights ── */}
+                <div className="table-container">
+                    <div className="flex-header">
+                        <h3 style={{ margin: 0 }}>Klima Score Weights</h3>
+                    </div>
+                    {weights && (
+                        <KlimaScoreWeights
+                            weights={weights}
+                            saving={weightsSaving}
+                            onSave={handleSaveWeights}
+                        />
+                    )}
                 </div>
             </div>
 
