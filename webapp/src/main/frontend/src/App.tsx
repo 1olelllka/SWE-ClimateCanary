@@ -68,8 +68,8 @@ const App: React.FC = () => {
                                 <Route path={EmployeeDepartmentRoute.url} Component={EmployeeDepartmentRoute.component}/>
                             </Route>
                             <Route element={<PrivateRoute requiredPermission="CAN_VIEW_OWN_DEPARTMENT_MEASURES" />}>
-                                <Route path={DepartmentDetailRoute.url} Component={DepartmentDetailRoute.component}/>
                                 <Route path={DepartmentManagerDashboardRoute.url} Component={DepartmentManagerDashboardRoute.component}/>
+                                <Route path={RoomDetailRoute.url} Component={RoomDetailRoute.component}/>
                             </Route>
 
 
@@ -88,6 +88,7 @@ const App: React.FC = () => {
                             <Route element={<PrivateRoute requiredPermission="CAN_VIEW_COMPANY_AGGR" />}>
                                 <Route path={CompanyTrendsRoute.url} Component={CompanyTrendsRoute.component}/>
                                 <Route path={SeniorManagerDashboardRoute.url} Component={SeniorManagerDashboardRoute.component}/>
+                                <Route path={DepartmentDetailRoute.url} Component={DepartmentDetailRoute.component}/>[]
                             </Route>
 
                             <Route element={<PrivateRoute requiredPermissions={[
