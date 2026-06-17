@@ -2,7 +2,7 @@ import './styles/App.css';
 import "primeicons/primeicons.css";
 import { ThemeProvider } from "./Contexts/ThemeContext";
 import React, { Suspense } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import {
     HomePageRoute,
     LoginsRoute,
@@ -31,6 +31,9 @@ import {
 import PrivateRoute from './components/PrivateRoute';
 import { UserProvider } from "./Contexts/AuthenticatedUserContext";
 import { UserPreferencesProvider } from "./Contexts/UserPreferencesContext";
+import NotFoundPage from './views/NotFoundPage';
+import ForbiddenPage from './views/ForbiddenPage';
+import { ROUTES } from './utilities/routes.paths';
 
 const App: React.FC = () => {
     return (
@@ -41,12 +44,14 @@ const App: React.FC = () => {
                     <BrowserRouter>
                         <Routes>
                             <Route path={LoginsRoute.url} Component={LoginsRoute.component}/>
+                            <Route path={ROUTES.NOT_FOUND} element={<NotFoundPage />} />
 
                             {/* Alle eingeloggten User */}
                             <Route element={<PrivateRoute/>}>
                                 <Route path={HomePageRoute.url} Component={HomePageRoute.component}/>
                                 <Route path={LogoutsRoute.url} Component={LogoutsRoute.component}/>
                                 <Route path={SettingsRoute.url} Component={SettingsRoute.component}/>
+                                <Route path={ROUTES.FORBIDDEN} element={<ForbiddenPage />} />
                             </Route>
 
                             {/* Employee routes */}
@@ -112,6 +117,8 @@ const App: React.FC = () => {
                             <Route element={<PrivateRoute requiredPermission="CAN_MANAGE_BUILDING_STRUCTURE" />}>
                                 <Route path={BuildingConfigurationRoute.url} Component={BuildingConfigurationRoute.component}/>
                             </Route>
+
+                            <Route path="*" element={<Navigate to={ROUTES.NOT_FOUND} replace />} />
                         </Routes>
                     </BrowserRouter>
                 </Suspense>

@@ -22,4 +22,6 @@ export const ROUTES = {
     COMPANY_TRENDS: '/senior/trends',
     DEPARTMENT_VIOLATIONS: '/department-violations',
     ROOM_DETAIL: '/department/room/:roomId',
+    NOT_FOUND: '/404',
+    FORBIDDEN: '/403',
 } as const;

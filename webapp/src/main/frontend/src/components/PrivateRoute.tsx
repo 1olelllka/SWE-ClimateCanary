@@ -63,7 +63,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ requiredPermission, require
     const permissionsToCheck = requiredPermissions ?? (requiredPermission ? [requiredPermission] : []);
 
     if (permissionsToCheck.length > 0 && !permissionsToCheck.some(hasPermission)) {
-        return <Navigate to={ROUTES.HOME} replace />;
+        return <Navigate to={ROUTES.FORBIDDEN} replace />;
     }
 
     return <Outlet />;
