@@ -1,8 +1,5 @@
 /**
  * Spring configuration for web security.
- * <p>
- * This class is part of the skeleton project provided for students of the
- * course "Software Engineering" offered by Innsbruck University.
  */
 
 package at.qe.skeleton.services;

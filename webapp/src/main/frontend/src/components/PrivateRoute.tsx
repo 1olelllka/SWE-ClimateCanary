@@ -9,10 +9,17 @@ import {ProgressSpinner} from 'primereact/progressspinner';
 import {useUser} from "../Contexts/AuthenticatedUserContext";
 import {ROUTES} from "../utilities/routes.paths";
 
+interface PrivateRouteProps {
+    readonly requiredPermission?: string;
+    readonly requiredPermissions?: string[];
+}
+
 /**
- * Private route component that checks if the user is authenticated. Used to protect routes.
+ * Private route component that checks if the user is authenticated and,
+ * if configured, whether the user has the required permission.
  */
-const PrivateRoute = () => {
+
+const PrivateRoute: React.FC<PrivateRouteProps> = ({ requiredPermission, requiredPermissions }) => {
 
     enum AuthStatus {
         AUTHENTICATED = 200,
@@ -20,10 +27,10 @@ const PrivateRoute = () => {
         UNKNOWN = 0
     }
 
-    const {userIsAuthenticated} = useUser();
+    const { userIsAuthenticated, hasPermission } = useUser();
     const location = useLocation();
 
-    const [authStatus, setAuthStatus] = useState(AuthStatus.UNKNOWN); // null -> Status unknonw, true/false for authentication
+    const [authStatus, setAuthStatus] = useState(AuthStatus.UNKNOWN); // authentication status is initially unknown
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -46,11 +53,20 @@ const PrivateRoute = () => {
 
     // loading spinner
     if (authStatus === AuthStatus.UNKNOWN) {
-        return <ProgressSpinner/>
+        return <ProgressSpinner />;
     }
 
-    return authStatus === AuthStatus.AUTHENTICATED ? <Outlet/> :
-        <Navigate to={ROUTES.LOGIN} replace state={{from: location}}/>; // return to location in case of
+    if (authStatus !== AuthStatus.AUTHENTICATED) {
+        return <Navigate to={ROUTES.LOGIN} replace state={{ from: location }} />;
+    }
+
+    const permissionsToCheck = requiredPermissions ?? (requiredPermission ? [requiredPermission] : []);
+
+    if (permissionsToCheck.length > 0 && !permissionsToCheck.some(hasPermission)) {
+        return <Navigate to={ROUTES.HOME} replace />;
+    }
+
+    return <Outlet />;
 };
 
 export default PrivateRoute;

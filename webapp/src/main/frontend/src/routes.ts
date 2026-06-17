@@ -22,6 +22,10 @@ import BuildingRoomAnalysisPage from "./views/BuildingRoomAnalysisPage";
 import TipManagement from "./views/TipManagement";
 import { CompanyTrendPage } from "./views/CompanyTrendPage";
 import DepartmentViolationsPage from "./views/DepartmentViolationsPage";
+import SysAdminDashboard from "./views/SysAdminDashboard";
+import { SeniorManagerDashboard } from "./views/SeniorManagerDashboard";
+import DepartmentHeadDashboard from "./views/DepartmentHeadDashboard";
+import BuildingManagerDashboard from "./views/BuildingManagerDashboard";
 
 export const HomePageRoute = {
     url: ROUTES.HOME,
@@ -108,5 +112,38 @@ export const RoomDetailRoute = {
     component: RoomDetailPage,
 }
 
+export const MyRoomRoute = {
+    url: ROUTES.MY_ROOM,
+    component: EmployeeDashboard,
+}
+
+// One dedicated, directly linkable URL per role dashboard. A user holding multiple
+// roles gets a route (and sidebar entry, see SidebarComponent) for every dashboard
+// their roles grant them, instead of only the highest-priority one.
+export const SysAdminDashboardRoute = {
+    url: ROUTES.SYSADMIN_DASHBOARD,
+    component: SysAdminDashboard,
+}
+
+export const SeniorManagerDashboardRoute = {
+    url: ROUTES.SENIOR_MANAGER_DASHBOARD,
+    component: SeniorManagerDashboard,
+}
+
+export const DepartmentManagerDashboardRoute = {
+    url: ROUTES.DEPARTMENT_MANAGER_DASHBOARD,
+    component: DepartmentHeadDashboard,
+}
+
+export const BuildingManagerDashboardRoute = {
+    url: ROUTES.BUILDING_MANAGER_DASHBOARD,
+    component: BuildingManagerDashboard,
+}
+
+export const EmployeeDashboardRoute = {
+    url: ROUTES.EMPLOYEE_DASHBOARD,
+    component: EmployeeDashboard,
+}
+
 // referenced but not yet routed — kept to avoid unused-import warnings
-const _unused = [HomePage, EmployeeDashboard];
+const _unused = [HomePage];

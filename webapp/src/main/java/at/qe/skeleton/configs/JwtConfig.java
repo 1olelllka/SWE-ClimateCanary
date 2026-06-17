@@ -11,8 +11,6 @@ public class JwtConfig {
     private String jwtSecret;
     @Value("${app.jwt.expirationMs}")
     private long jwtExpirationMs;
-    @Value("${app.jwt.login.url}")
-    private String loginUrl;
     @Value("${app.jwt.token.header}")
     private String tokenHeader;
     @Value("${app.jwt.token.prefix}")
@@ -38,14 +36,6 @@ public class JwtConfig {
 
     public void setJwtExpirationMs(long jwtExpirationMs) {
         this.jwtExpirationMs = jwtExpirationMs;
-    }
-
-    public String getLoginUrl() {
-        return loginUrl;
-    }
-
-    public void setLoginUrl(String loginUrl) {
-        this.loginUrl = loginUrl;
     }
 
     public String getTokenHeader() {

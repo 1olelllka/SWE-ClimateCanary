@@ -109,3 +109,12 @@ String FaultManager::activeText() const {
 
   return "";
 }
+
+
+uint16_t FaultManager::code(FaultType fault) const {
+  return static_cast<uint16_t>(fault);
+}
+
+String FaultManager::activeCodeText() const {
+  return String(code(activeFault()));
+}

@@ -101,6 +101,7 @@ void BLEMessageHandler::handleRxMessage(
     Serial.print("Time Format: ");
     Serial.println(manager->receivedTimestamp);
 
+    ledManager.update(LedManager::LedMode::White);
     manager->flushBufferedReadings();
   }
 
@@ -198,13 +199,19 @@ void BLEMessageHandler::handleRxMessage(
     Serial.println("Webapp offline");
     ledManager.update(LedManager::LedMode::Off);
     faultManager.set(FaultType::WebappOffline);
-    manager->displayManager->updateFault(faultManager.activeText());
+    manager->displayManager->updateFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
   }
 
   else if (received == "ERROR:WEBAPP_CLEAR") {
     ledManager.update(LedManager::LedMode::White);
     faultManager.clear(FaultType::WebappOffline);
-    manager->displayManager->updateFault(faultManager.activeText());
+    manager->displayManager->updateFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
   }
 
   else {

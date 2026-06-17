@@ -10,6 +10,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Scheduled job that increments the annual absence allowance for all employees
+ * and department managers. Runs once a year on January 1st at 01:00.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -17,6 +21,11 @@ public class AbsenceDaysUpdater {
 
     private final UserxRepository userxRepository;
 
+    /**
+     * Adds 25 absence days to every user with the role {@code EMPLOYEE} or
+     * {@code DEPARTMENT_MANAGER}. Scheduled to run once a year on January 1st
+     * ({@code 0 0 1 1 * *}) and executed asynchronously.
+     */
     @Async
     @Scheduled(cron = "0 0 1 1 * *")
     public void updateAllAbsencesNumbers() {

@@ -1,6 +1,6 @@
 """Tests for app/main.py
 
-Strategy: main() is a pure orchestration function — it wires collaborators
+Strategy: main() is a pure orchestration function - it wires collaborators
 together and reacts to their outputs.  We mock every external collaborator
 (DatabaseManager, AuthManager, WebManager, BLEManager, DataProcessor) with
 AsyncMock / MagicMock instances and assert that main() drives them correctly
@@ -53,7 +53,7 @@ def make_web_manager():
 
 
 def noop_task(name="noop"):
-    """An asyncio.Task that completes immediately — safe to gather."""
+    """An asyncio.Task that completes immediately - safe to gather."""
     async def _noop():
         pass
     return asyncio.create_task(_noop(), name=name)
@@ -106,6 +106,8 @@ class MainRunner:
 
 
 class TestDbInit:
+    """main() connects to the DB on startup and closes it on every exit path."""
+
     @pytest.mark.asyncio
     async def test_connects_and_inits_db(self):
         db = make_db()
@@ -132,6 +134,8 @@ class TestDbInit:
 
 
 class TestConfigureDoneWait:
+    """main() polls configure_done until it is '1' before proceeding."""
+
     @pytest.mark.asyncio
     async def test_waits_until_configure_done(self):
         """If configure_done starts as '0', main should poll until it's '1'."""
@@ -181,6 +185,8 @@ class TestConfigureDoneWait:
 
 
 class TestMissingCredentials:
+    """main() exits with code 1 when any required credential is absent from the DB."""
+
     @pytest.mark.asyncio
     async def test_exits_if_server_url_missing(self):
         db = make_db(server_url=None)
@@ -211,6 +217,8 @@ class TestMissingCredentials:
 
 
 class TestAuthLogin:
+    """main() calls auth.login() and retries on transient failures."""
+
     @pytest.mark.asyncio
     async def test_succeeds_on_first_attempt(self):
         db = make_db()
@@ -247,6 +255,8 @@ class TestAuthLogin:
 
 
 class TestBootMode:
+    """main() waits for a config_ready_event on first boot; skips waiting on subsequent starts."""
+
     @pytest.mark.asyncio
     async def test_first_boot_waits_for_config_event(self):
         """On first boot the server starts and main waits for config_ready_event."""
@@ -287,7 +297,7 @@ class TestBootMode:
             runner = MainRunner(db, web)
             await runner.run()
 
-        # Event is pre-set so wait() returns instantly — but it may still be called
+        # Event is pre-set so wait() returns instantly - but it may still be called
         # The important assertion is that main() did NOT hang.
         assert runner.exit_code is None
 
@@ -296,6 +306,8 @@ SENSOR_B = {"name": "sensorB", "write_uuid": "uuid-b", "address": "DD:EE:FF"}
 
 
 class TestSensorWiring:
+    """main() creates one BLEManager and one DataProcessor task per registered sensor."""
+
     @pytest.mark.asyncio
     async def test_no_sensors_does_not_raise(self):
         db = make_db(sensors=[])
@@ -374,6 +386,8 @@ class TestSensorWiring:
         assert captured_port.get("port") == 8080
 
 class TestCancelledError:
+    """main() closes the DB cleanly when cancelled via asyncio.CancelledError."""
+
     @pytest.mark.asyncio
     async def test_cancelled_error_closes_db(self):
         db = make_db()

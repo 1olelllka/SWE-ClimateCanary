@@ -12,6 +12,9 @@ import '../styles/EmployeeAbsencesPage.css';
 
 const TOTAL_VACATION_DAYS = 25;
 const MAX_IGNORE_MINUTES = 120;
+const ALL_STATUSES = 'ALL';
+
+type StatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 
 const formatEnum = (value?: string | null) => {
     if (!value) return '-';
@@ -98,7 +101,7 @@ export const EmployeeAbsencesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [sortAscending, setSortAscending] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL_STATUSES);
     const [user, setUser] = useState<UserxDTO>();
     const fetchAbsences = useCallback(() => {
         setLoading(true);
@@ -136,12 +139,12 @@ export const EmployeeAbsencesPage: React.FC = () => {
     // ── Table sort ────────────────────────────────────────────────────────────
 
     const displayedAbsences = useMemo(() =>
-        [...absences]
-            .filter(a => !statusFilter || a.status === statusFilter)
-            .sort((a, b) => {
-                const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-                return sortAscending ? diff : -diff;
-            }),
+            [...absences]
+                .filter(a => statusFilter === ALL_STATUSES || a.status === statusFilter)
+                .sort((a, b) => {
+                    const diff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+                    return sortAscending ? diff : -diff;
+                }),
         [absences, sortAscending, statusFilter],
     );
 
@@ -186,14 +189,13 @@ export const EmployeeAbsencesPage: React.FC = () => {
                     <Dropdown
                         value={statusFilter}
                         options={[
-                            { label: 'All statuses', value: '' },
+                            { label: 'All statuses', value: ALL_STATUSES },
                             { label: 'Pending', value: 'PENDING' },
                             { label: 'Approved', value: 'APPROVED' },
                             { label: 'Rejected', value: 'REJECTED' },
                             { label: 'Cancelled', value: 'CANCELLED' },
                         ]}
-                        onChange={e => setStatusFilter(e.value)}
-                        placeholder="All statuses"
+                        onChange={e => setStatusFilter((e.value ?? ALL_STATUSES) as StatusFilter)}
                         className="absence-status-filter"
                     />
                     <button

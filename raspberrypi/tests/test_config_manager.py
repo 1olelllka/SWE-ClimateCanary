@@ -54,6 +54,8 @@ def make_http_session(response_json, status=200, raise_for_status_effect=None):
 # ConfigManager._fetch
 
 class TestFetch:
+    """ConfigManager._fetch() GETs a URL and retries once after a 401."""
+
     async def test_returns_json_on_success(self, mock_auth):
         mock_session, _ = make_http_session({"key": "val"})
         with patch("app.config_manager.aiohttp.ClientSession", return_value=mock_session):
@@ -101,6 +103,8 @@ class TestFetch:
 # ConfigManager.fetch_and_seed
 
 class TestFetchAndSeed:
+    """fetch_and_seed() pulls remote config and writes it to the local DB."""
+
     async def test_seeds_all_fields_from_remote(self, mock_db, mock_auth):
         with patch.object(ConfigManager, "_fetch", new=AsyncMock(return_value=FULL_REMOTE)):
             await ConfigManager.fetch_and_seed("pi-id-1", "http://server", mock_db, mock_auth)
@@ -161,6 +165,8 @@ class TestFetchAndSeed:
 # ConfigManager.handle_limit_change
 
 class TestHandleLimitChange:
+    """handle_limit_change() updates only the limit keys that are present and non-null."""
+
     async def test_updates_all_present_limits(self, mock_db):
         payload = {"tempMax": 30, "tempMin": 18, "humMax": 70, "humMin": 30, "co2Max": 1000}
         await ConfigManager.handle_limit_change(mock_db, payload)
@@ -184,6 +190,8 @@ class TestHandleLimitChange:
 # ConfigManager.handle_occupancy_change
 
 class TestHandleOccupancyChange:
+    """handle_occupancy_change() updates occupancy count and privacy_mode from the payload."""
+
     async def test_updates_both_fields(self, mock_db):
         await ConfigManager.handle_occupancy_change(
             mock_db, {"effectiveOccupancy": 8, "privacyMode": True}
@@ -205,6 +213,8 @@ class TestHandleOccupancyChange:
 # ConfigManager.handle_sensor_add
 
 class TestHandleSensorAdd:
+    """handle_sensor_add() fetches each new sensor from the server and persists it."""
+
     async def test_adds_sensor_from_remote(self, mock_db, mock_auth):
         mock_db.get_config.return_value = "http://server"
         remote_sensor = {"name": "S3", "readId": "r3", "writeId": "w3"}
@@ -223,12 +233,16 @@ class TestHandleSensorAdd:
 # ConfigManager.handle_sensor_delete / flush
 
 class TestHandleSensorDelete:
+    """handle_sensor_delete() removes sensors by their UUID list."""
+
     async def test_deletes_by_ids(self, mock_db):
         await ConfigManager.handle_sensor_delete(mock_db, ["id-1", "id-2"])
         mock_db.delete_sensors_by_ids.assert_awaited_once_with(["id-1", "id-2"])
 
 
 class TestHandleSensorFlush:
+    """handle_sensor_flush() removes all sensors from the DB."""
+
     async def test_deletes_all_sensors(self, mock_db):
         await ConfigManager.handle_sensor_flush(mock_db)
         mock_db.delete_all_sensors.assert_awaited_once()
@@ -237,6 +251,8 @@ class TestHandleSensorFlush:
 # ConfigManager.handle_config_change
 
 class TestHandleConfigChange:
+    """handle_config_change() fetches updated room/frequency config and returns the new frequency."""
+
     async def test_updates_room_and_frequency(self, mock_db, mock_auth):
         mock_db.get_config.return_value = "http://server"
         remote = {"roomId": "room-99", "frequency": 30}

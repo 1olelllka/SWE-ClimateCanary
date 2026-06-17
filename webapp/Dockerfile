@@ -54,8 +54,10 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=backend-build /app/target/*.jar app.jar
 
+ARG LOG_DIR=/var/log/myapp
+ENV LOG_DIR=${LOG_DIR}
 RUN useradd -ms /bin/bash appuser
-RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+RUN mkdir -p ${LOG_DIR} && chown appuser:appuser ${LOG_DIR}
 
 # Limit memory for deployment server restriction reasons
 # TODO test if better option: -XX:MaxRAMPercentage=75

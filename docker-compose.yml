@@ -1,6 +1,9 @@
 services:
   app:
-    build: ./webapp
+    build:
+      context: ./webapp
+      args:
+        LOG_DIR: ${LOG_DIR:-/app/logs}
     image: skel-app
     container_name: "${TEAM_NAME:-local}-app"
     ports:
@@ -8,6 +11,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       APP_JWT_SECRET: "${APP_JWT_SECRET}"
+      TEAM_NAME: "${TEAM_NAME:-local}"
   redis:
     image: "redis:7.2.6"
     container_name: "${TEAM_NAME:-local}-redis"

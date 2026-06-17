@@ -12,6 +12,8 @@ import configure
 
 
 class TestNow:
+    """now() returns a timezone-aware ISO-8601 string in Vienna local time."""
+
     def test_returns_string(self):
         result = configure.now()
         assert isinstance(result, str)
@@ -32,6 +34,8 @@ class TestNow:
 
 
 class TestSetConfig:
+    """set_config() upserts a key/value pair in the config table with an updated_at timestamp."""
+
     @pytest.fixture()
     async def db(self):
         async with aiosqlite.connect(":memory:") as conn:
@@ -111,6 +115,8 @@ class TestSetConfig:
         assert dict(rows) == {"a": "1", "b": "2"}
 
 class TestMainMissingConf:
+    """main() exits with code 1 and prints an error when the YAML config file is absent."""
+
     @pytest.mark.asyncio
     async def test_exits_when_conf_missing(self, tmp_path, capsys):
         with patch.object(configure, "CONF_PATH", str(tmp_path / "nonexistent.yaml")):
@@ -135,6 +141,8 @@ VALID_CONF = {
 
 
 class TestMainHappyPath:
+    """main() reads the YAML config, seeds the DB, and prints a masked completion summary."""
+
     @pytest.fixture()
     def conf_file(self, tmp_path):
         import yaml

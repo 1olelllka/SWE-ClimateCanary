@@ -38,8 +38,8 @@ public:
   void nextPage();
   void previousPage();
 
-  void showSetupFault(const String& faultText);
-  void updateFault(const String& faultText);
+  void showSetupFault(const String& faultCode, const String& faultText);
+  void updateFault(const String& faultCode, const String& faultText);
 
   void setWarningData(
     const String& warnText,
@@ -56,6 +56,7 @@ private:
   String currentWarnText = "";
   String currentThreshold = "";
   String currentTip = "";
+  String currentFaultCode = "0";
   String currentFaultText = "";
 
   unsigned long lastScrollUpdate = 0;

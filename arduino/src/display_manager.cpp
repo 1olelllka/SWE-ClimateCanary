@@ -54,9 +54,9 @@ String DisplayManager::scrollText(const String& text) {
   return visible;
 }
 
-void DisplayManager::showSetupFault(const String& faultText) {
+void DisplayManager::showSetupFault(const String& faultCode, const String& faultText) {
   lcd.clear();
-  printLine(lcd, 0, "Setup Fault");
+  printLine(lcd, 0, "Setup Fault " + faultCode);
   printLine(lcd, 1, faultText);
 }
 
@@ -99,11 +99,12 @@ void DisplayManager::clearWarningData() {
   currentTip = "";
 }
 
-void DisplayManager::updateFault(const String& faultText) {
+void DisplayManager::updateFault(const String& faultCode, const String& faultText) {
+  currentFaultCode = faultCode;
   currentFaultText = faultText;
 
   if (currentMode == DisplayMode::Fault) {
-    printLine(lcd, 0, "Fault Mode");
+    printLine(lcd, 0, "Fault Mode " + currentFaultCode);
     printLine(lcd, 1, currentFaultText);
   }
 }
@@ -154,9 +155,9 @@ void DisplayManager::showReading(const SensorReading& reading) {
   }
 
   else if (currentMode == DisplayMode::Fault) {
-    printLine(lcd, 0, "Fault Mode");
+    printLine(lcd, 0, "Fault Mode " + currentFaultCode);
     printLine(lcd, 1, currentFaultText);
-  }
+  } 
 }
 
 void DisplayManager::nextMode() {

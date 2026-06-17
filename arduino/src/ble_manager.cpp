@@ -54,8 +54,10 @@ void BLEManager::poll() {
     Serial.println("Connected to: " + currentCentral.address() + " (Historical connections: " + String(piConnectionCount) + ")");
     
     faultManager.clear(FaultType::PiDisconnected);
-    displayManager->updateFault(faultManager.activeText());
-    ledManager.update(LedManager::LedMode::White);
+    displayManager->updateFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
 
     txCharacteristic.writeValue("TIME_REQUEST");
     Serial.println("Requested time from Pi");
@@ -65,7 +67,10 @@ void BLEManager::poll() {
     Serial.println("Disconnected from: " + currentCentral.address());
 
     faultManager.set(FaultType::PiDisconnected);
-    displayManager->updateFault(faultManager.activeText());
+    displayManager->updateFault(
+      faultManager.activeCodeText(),
+      faultManager.activeText()
+    );
     ledManager.update(LedManager::LedMode::Off);
 
     currentCentral = BLEDevice();

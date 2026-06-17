@@ -2411,6 +2411,78 @@
           }
         }
       }
+    },
+    "/api/weights": {
+      "get": {
+        "tags": [
+          "Formula Weights Configuration"
+        ],
+        "summary": "Get current formula weights. CAN_MANAGE_WEIGHT_FORMULA permission required",
+        "operationId": "getCurrentFormulaWeights",
+        "responses": {
+          "200": {
+            "description": "Current formula.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaWeightDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unauthorized."
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Formula Weights Configuration"
+        ],
+        "summary": "Update current formula weights. CAN_MANAGE_WEIGHT_FORMULA permission required",
+        "operationId": "patchCurrentFormulaWeights",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FormulaWeightCreateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Updated formula.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FormulaWeightDTO"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error. Sum of all weights must equal 1; all fields required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": { "type": "string" },
+                    "title": { "type": "string" },
+                    "status": { "type": "integer" },
+                    "detail": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unauthorized."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3968,6 +4040,49 @@
             "type": "boolean"
           }
         }
+      },
+      "FormulaWeightDTO": {
+        "type": "object",
+        "properties": {
+          "tempWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "co2Weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "humWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "modifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FormulaWeightCreateDTO": {
+        "type": "object",
+        "properties": {
+          "tempWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "co2Weight": {
+            "type": "number",
+            "format": "double"
+          },
+          "humWeight": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "required": [
+          "co2Weight",
+          "humWeight",
+          "tempWeight"
+        ]
       }
     }
   }

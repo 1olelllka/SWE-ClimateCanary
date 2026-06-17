@@ -26,7 +26,7 @@ public class RoleSeederService {
         String[] names = {"EMPLOYEE", "SYSADMIN", "HIGHER_MANAGER", "DEPARTMENT_MANAGER", "BUILDING_MANAGER", "RASPBERRY_PI"};
         Map<String, Set<Permission>> rolePermissions = Map.of(
                 "EMPLOYEE", Set.of(Permission.CAN_VIEW_OWN_OFFICE_CLIMATE, Permission.CAN_VIEW_OWN_SHARED_CLIMATE, Permission.CAN_MANAGE_OWN_ABSENCE, Permission.CAN_VIEW_OWN_OFFICE_WARNINGS),
-                "SYSADMIN", Set.of(Permission.CAN_MANAGE_USERS, Permission.CAN_MANAGE_BUILDING_STRUCTURE, Permission.CAN_MANAGE_DEVICES),
+                "SYSADMIN", Set.of(Permission.CAN_MANAGE_USERS, Permission.CAN_MANAGE_BUILDING_STRUCTURE, Permission.CAN_MANAGE_DEVICES, Permission.CAN_MANAGE_WEIGHT_FORMULA),
                 "HIGHER_MANAGER", Set.of(Permission.CAN_VIEW_COMPANY_AGGR, Permission.CAN_VIEW_VIOLATIONS_PER_DEPARTMENT),
                 "DEPARTMENT_MANAGER", Set.of(Permission.CAN_VIEW_OWN_DEPARTMENT_WARNINGS, Permission.CAN_VIEW_OWN_DEPARTMENT_MEASURES, Permission.CAN_VIEW_ABSENCE_VIEW, Permission.CAN_MANAGE_ABSENCES, Permission.CAN_MANAGE_OWN_ABSENCE, Permission.CAN_VIEW_OWN_OFFICE_CLIMATE, Permission.CAN_VIEW_OWN_SHARED_CLIMATE),
                 "BUILDING_MANAGER", Set.of(Permission.CAN_VIEW_ALL_ROOMS, Permission.CAN_CHANGE_LIMITS, Permission.CAN_MANAGE_TIPS, Permission.CAN_VIEW_ALL_BUILDINGS),

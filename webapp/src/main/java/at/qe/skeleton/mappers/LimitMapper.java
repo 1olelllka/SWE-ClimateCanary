@@ -21,7 +21,6 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
         TemperatureLimit tempLimit = entity.getTempLimit();
         HumidityLimit humLimit = entity.getHumLimit();
         PollutionLimit polLimit = entity.getPolLimit();
-
         return new LimitDTO(
                 entity.getRoomId(),
                 valueOrDefault(tempLimit != null ? tempLimit.getMinVal() : null, DEFAULT_TEMP_MIN),
@@ -50,6 +49,9 @@ public class LimitMapper implements DTOMapper<RoomMonitoring, LimitDTO> {
                 .build();
     }
 
+    /**
+    If limit is not defined – defaults to default values
+     */
     private float valueOrDefault(Float value, float defaultValue) {
         return value != null ? value : defaultValue;
     }

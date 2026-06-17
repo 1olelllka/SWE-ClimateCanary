@@ -24,6 +24,24 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Implementation of {@link WarningService} managing the full lifecycle of climate
+ * {@link Warnings}: creation (reported by a Raspberry Pi), status updates, resolution,
+ * and multi-scope queries.
+ *
+ * <p>Access-control tiers for warning queries:
+ * <ul>
+ *   <li>{@code CAN_VIEW_ALL_ROOMS} — building manager, unrestricted access.</li>
+ *   <li>{@code CAN_VIEW_OWN_DEPARTMENT_WARNINGS} — department head, restricted to
+ *       their own department.</li>
+ *   <li>{@code CAN_VIEW_OWN_OFFICE_WARNINGS} — employee, active warnings only for
+ *       their own room or shared rooms in their department.</li>
+ * </ul>
+ *
+ * <p>On warning creation, a matching {@link Tip} is looked up by sensor type and
+ * violation direction (OVER/UNDER) and attached if found. The warning is then pushed
+ * to WebSocket subscribers and, for users who opted in, sent as an email notification.
+ */
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -43,13 +61,27 @@ public class WarningServiceImpl implements WarningService {
     private final UserSettingsRepository userSettingsRepository;
     private final EmailService emailService;
 
-    // get warnings for a specific room
+    /**
+     * Returns the warnings for a specific room, filtered by the authenticated user's
+     * access level. Building managers can query any date range; department heads are
+     * restricted to their own department; employees see only active warnings for their
+     * own room or shared rooms in their department.
+     *
+     * @param user      the authenticated user making the request
+     * @param roomId    the UUID of the room to query
+     * @param active    if {@code true}, returns only unresolved warnings; otherwise
+     *                  returns all warnings in the given date range
+     * @param startDate start of the date range (inclusive, used when {@code active} is false)
+     * @param endDate   end of the date range (inclusive, used when {@code active} is false)
+     * @return list of {@link WarningDTO}s matching the query and access level
+     * @throws NotFoundException  if the room does not exist
+     * @throws ForbiddenException if the user is not permitted to view warnings for this room
+     */
     @Override
     public List<WarningDTO> getAllWarningsForRoom(Userx user, UUID roomId,
                                                   boolean active,
                                                   LocalDate startDate,
                                                   LocalDate endDate) {
-
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new NotFoundException("There's no room with id " + roomId + "."));
 
@@ -57,7 +89,6 @@ public class WarningServiceImpl implements WarningService {
         boolean isOfficeUser = hasAuthority(user, "CAN_VIEW_OWN_OFFICE_WARNINGS");
         boolean isBuildingManager = hasAuthority(user, "CAN_VIEW_ALL_ROOMS");
         if (user.getMyRoom() != null) {
-            // Building-level access (if building manager happens to have a room)
             if (isBuildingManager) {
                 if (active) {
                     return mapToDTOs(
@@ -73,7 +104,6 @@ public class WarningServiceImpl implements WarningService {
                     );
                 }
             }
-            // Department-level access
             if (isDeptUser) {
                 if (!room.getDepartment().getId().equals(user.getMyRoom().getDepartment().getId())) {
                     throw new ForbiddenException("You are not allowed to see others' departments warnings.");
@@ -126,7 +156,17 @@ public class WarningServiceImpl implements WarningService {
         throw new ForbiddenException("You are not allowed to see warnings of this room.");
     }
 
-    //  for Pi to report a new violation
+    /**
+     * Creates a new warning from a Raspberry Pi report. The appropriate {@link Tip} is
+     * looked up by measurement type and violation direction (OVER/UNDER) and attached
+     * if found. The saved warning is pushed to the room's WebSocket topic and the
+     * department's topic, and an email notification is sent to opted-in department
+     * members.
+     *
+     * @param dto the warning data reported by the Raspberry Pi
+     * @return the saved warning as a {@link WarningDTO}
+     * @throws NotFoundException if the room monitoring record cannot be found
+     */
     @Override
     @Transactional
     public WarningDTO createWarning(WarningCreateDTO dto) {
@@ -195,6 +235,14 @@ public class WarningServiceImpl implements WarningService {
         return res;
     }
 
+    /**
+     * Sends warning email notifications to all department members who have opted in
+     * via their {@link at.qe.skeleton.model.UserSettings}.
+     *
+     * @param deptId     the department UUID
+     * @param warning    the warning to include in the email
+     * @param roomNumber the room number where the warning was triggered
+     */
     private void notifyDepartmentByEmail(UUID deptId, WarningDTO warning, String roomNumber) {
         userxRepository.findAllByDepartment(deptId).forEach(user ->
             userSettingsRepository.findById(user.getId()).ifPresent(settings -> {
@@ -208,7 +256,16 @@ public class WarningServiceImpl implements WarningService {
         );
     }
 
-    // for Pi to update severity while warning is still active                   //
+    /**
+     * Updates the severity and current measured value of an active warning. Used by
+     * the Raspberry Pi when conditions worsen or improve while a warning is still open.
+     *
+     * @param warningId the UUID of the warning to update
+     * @param dto       the new status and triggered value
+     * @return the updated {@link WarningDTO}
+     * @throws NotFoundException  if the warning does not exist
+     * @throws ForbiddenException if the warning is already resolved
+     */
     @Override
     @Transactional
     public WarningDTO updateWarningStatus(UUID warningId, WarningUpdateStatusDTO dto) {
@@ -218,7 +275,17 @@ public class WarningServiceImpl implements WarningService {
         return warningMapper.mapTo(warningsRepository.save(warning));
     }
 
-    // for Pi to resolve warning
+    /**
+     * Resolves a warning and all other active warnings of the same measurement type
+     * in the same room. Pushes a resolve event to the room's and department's WebSocket
+     * topics for each resolved warning.
+     *
+     * @param warningId the UUID of the warning to resolve
+     * @return the resolved warning as a {@link WarningDTO}
+     * @throws NotFoundException   if the warning does not exist
+     * @throws ForbiddenException  if the warning is already resolved
+     * @throws ValidationException if the warning has no associated room monitoring record
+     */
     @Override
     @Transactional
     public WarningDTO resolveWarning(UUID warningId) {
@@ -248,7 +315,18 @@ public class WarningServiceImpl implements WarningService {
         return dto;
     }
 
-
+    /**
+     * Returns a summary-level violation log for all rooms in the given department.
+     * When {@code active} is {@code true}, returns only unresolved warnings regardless
+     * of date range. Otherwise, returns all warnings created within the given date range.
+     *
+     * @param id        the department UUID
+     * @param active    if {@code true}, returns only unresolved warnings
+     * @param startDate start of the date range (used when {@code active} is false)
+     * @param endDate   end of the date range (used when {@code active} is false)
+     * @return list of {@link SummaryWarningDTO}s
+     * @throws NotFoundException if the department does not exist
+     */
     @Override
     public List<SummaryWarningDTO> getViolationLogForDepartment(UUID id, boolean active, LocalDate startDate, LocalDate endDate) {
         Department department = departmentRepository.findById(id)
@@ -278,12 +356,25 @@ public class WarningServiceImpl implements WarningService {
                 )).toList();
     }
 
+    /**
+     * Returns a detailed warning log for all rooms in the given department. The
+     * authenticated user must belong to the requested department. When {@code active}
+     * is {@code true}, only unresolved warnings within the date range are returned.
+     *
+     * @param user      the authenticated user making the request
+     * @param id        the department UUID
+     * @param active    if {@code true}, returns only unresolved warnings in the range
+     * @param startDate start of the date range (inclusive)
+     * @param endDate   end of the date range (inclusive)
+     * @return list of {@link WarningDTO}s
+     * @throws NotFoundException  if the department does not exist
+     * @throws ForbiddenException if the user does not belong to the requested department
+     */
     @Override
     public List<WarningDTO> getDetailedViolationLogForDepartment(Userx user, UUID id,
                                                                  boolean active,
                                                                  LocalDate startDate,
                                                                  LocalDate endDate) {
-
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Department with id " + id + " was not found."));
 
@@ -317,6 +408,14 @@ public class WarningServiceImpl implements WarningService {
         return mapToDTOs(warnings);
     }
 
+    /**
+     * Returns the total count of currently active (unresolved) warnings across all
+     * rooms in the given building.
+     *
+     * @param id the building UUID
+     * @return an {@link ActiveViolationBuildingStats} containing the active warning count
+     * @throws NotFoundException if the building does not exist
+     */
     @Override
     public ActiveViolationBuildingStats getActiveViolationsForBuilding(UUID id) {
         Building building = buildingRepository.findById(id).orElseThrow(
@@ -329,6 +428,14 @@ public class WarningServiceImpl implements WarningService {
         return new ActiveViolationBuildingStats(warningsRepository.findByRoomMonitoring_RoomIdInAndResolvedAtIsNull(roomIds).size());
     }
 
+    /**
+     * Looks up an active (unresolved) warning by ID.
+     *
+     * @param warningId the warning UUID
+     * @return the active {@link Warnings} entity
+     * @throws NotFoundException  if no warning with that ID exists
+     * @throws ForbiddenException if the warning is already resolved
+     */
     private Warnings findActiveWarningById(UUID warningId) {
         Warnings warning = warningsRepository.findById(warningId)
                 .orElseThrow(() -> new NotFoundException(
@@ -341,19 +448,46 @@ public class WarningServiceImpl implements WarningService {
         return warning;
     }
 
+    /**
+     * Returns {@code true} if the given user holds the specified authority.
+     *
+     * @param user      the user to check
+     * @param authority the authority string to look for
+     * @return {@code true} if the authority is present
+     */
     private boolean hasAuthority(Userx user, String authority) {
         return user.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals(authority));
     }
 
+    /**
+     * Returns a {@link LocalDateTime} representing the start of the given date
+     * (00:00:00.000).
+     *
+     * @param date the date
+     * @return midnight at the start of the day
+     */
     private LocalDateTime startOfDay(LocalDate date) {
         return LocalDateTime.of(date, LocalTime.MIN);
     }
 
+    /**
+     * Returns a {@link LocalDateTime} representing the end of the given date
+     * (23:59:59.999...).
+     *
+     * @param date the date
+     * @return the last instant of the day
+     */
     private LocalDateTime endOfDay(LocalDate date) {
         return LocalDateTime.of(date, LocalTime.MAX);
     }
 
+    /**
+     * Maps a list of {@link Warnings} entities to {@link WarningDTO}s.
+     *
+     * @param warnings the entities to map
+     * @return list of DTOs
+     */
     private List<WarningDTO> mapToDTOs(List<Warnings> warnings) {
         return warnings.stream()
                 .map(warningMapper::mapTo)
