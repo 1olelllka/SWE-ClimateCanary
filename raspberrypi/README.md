@@ -10,7 +10,7 @@
 
 ## General Setup Overview 
 
-- Static information is configured in `conf.yaml` this includes the server url from the webapp and authentication credentials. This is the only thing that need manual configuration in the entire setup process. An example is given below
+- Static information is configured in `conf.yaml` this includes the server url from the webapp and authentication credentials. This is the only thing that need manual configuration in the entire setup process (when starting the G1T4 project, only the `server_url` needs configuration). An example is given below
 
 ```yaml
 webapp:
