@@ -1,6 +1,36 @@
-# PlatformIO Setup in VS Code
+# Arduino Setup
 
-This guide explains how to set up and troubleshoot a PlatformIO project in Visual Studio Code for the Arduino module of the `g1t4` software engineering project.
+## Hardware Setup
+Wire the sensor station according to `arduino/docs/cicuit_breadboard.png`. We can see the main wiring there. For our project we use an RGB-LED. Important to note is that we received an LED with the colors `green` and `blue` being switched. So instead of `RED-GREEN-BLUE`, we have `RED-BLUE-GREEN`, hence the unusual wiring.
+
+**Since the Arduino LED doesn't provide a good-enough color yellow, we use blue for the violation status yellow.**
+
+To look at the specific values of some components, like the resistors, we can look at `arduino/docs/circuit_circuit_plan.png`. Here we can notice, that we use **220 Ohm** for red and **100 Ohm** for green and blue. We do this since the color red of a LED demands less current than green or blue. 
+
+We use three buttons. One button (connected to pin `D4`) is used to switch between the three modes:
+
+1. **Regular Mode**
+2. **Warning Mode** (in case of temperature, humidity, air quality violations)
+3. **Error Mode** (in case of an connection, sensor or setup error) 
+
+The other two buttons (connected to pins `D2` and `D3`) are used to switch between the pages inside each mode, here we have:
+
+1. **Regular Mode**
+    - Current Temperature
+    - Current Humidity
+    - Current Index of Air Quality
+2. **Warning Mode**
+    - Warning Text (Information of Cause of Trigger)
+    - Violated Threshold
+    - Tip to fix the temperature/humidity/air quality violation
+3. **Error Mode**
+    - Error Code with the current error 
+
+We used a Pullup Mode for the buttons. It was important to consider the debounce time when implementing the logic of the buttons.
+
+## PlatformIO Setup in VS Code
+
+This guide explains how to set up and troubleshoot a PlatformIO project in Visual Studio Code for the Arduino module of `g1t4`.
 
 The examples assume this repository layout:
 
@@ -73,26 +103,6 @@ lib_deps =
     adafruit/Adafruit Unified Sensor
     arduino-libraries/ArduinoBLE
     seeed-studio/Grove - LCD RGB Backlight
-```
-
-Incorrect:
-
-```ini
-git[env:nano33ble]
-```
-
-That will cause an error like:
-
-```text
-File contains no section headers.
-file: '.../platformio.ini', line: 1
-'git[env:nano33ble]\n'
-```
-
-Fix it by changing the first line to:
-
-```ini
-[env:nano33ble]
 ```
 
 ## 3. Required VS Code extensions
