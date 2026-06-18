@@ -3,6 +3,11 @@
 ## Hardware Setup
 Wire the sensor station according to `arduino/docs/cicuit_breadboard.png`. We can see the main wiring there. For our project we use an RGB-LED. Important to note is that we received an LED with the colors `green` and `blue` being switched. So instead of `RED-GREEN-BLUE`, we have `RED-BLUE-GREEN`, hence the unusual wiring.
 
+**LED Modes**
+- **green, blue, red:** violation status
+- **off:** no connection
+- **white:** connection established and no warnings
+
 **Since the Arduino LED doesn't provide a good-enough color yellow, we use blue for the violation status yellow.**
 
 To look at the specific values of some components, like the resistors, we can look at `arduino/docs/circuit_circuit_plan.png`. Here we can notice, that we use **220 Ohm** for red and **100 Ohm** for green and blue. We do this since the color red of a LED demands less current than green or blue. 
