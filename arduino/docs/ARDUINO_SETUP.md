@@ -33,6 +33,14 @@ The other two buttons (connected to pins `D2` and `D3`) are used to switch betwe
 
 We used a Pullup Mode for the buttons. It was important to consider the debounce time when implementing the logic of the buttons.
 
+## Add Sensorstaion
+After the Webapp has generated the Read- and Write UUIDs, we can enter them and the generated Name in `arduino/include/config` like this:
+
+- `STATION_NAME "<Station Name>"`
+ - `BLE_TX_UUID "<UUID>"`
+ - `BLE_RX_UUID "<UUID>"`
+
+
 ## PlatformIO Setup in VS Code
 
 This guide explains how to set up and troubleshoot a PlatformIO project in Visual Studio Code for the Arduino module of `g1t4`.
