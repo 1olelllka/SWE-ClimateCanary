@@ -8,8 +8,15 @@
     <artifactId>skeleton</artifactId>
     <version>2.1</version>
     <packaging>jar</packaging>
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3.0</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-    <name>skeleton</name>
+    <name>ClimateCanary</name>
     <description>
         A skeleton project to be used as starting point for the courses
         "Software Engineering" offered by the University of Innsbruck.
@@ -47,6 +54,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-aspects</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
