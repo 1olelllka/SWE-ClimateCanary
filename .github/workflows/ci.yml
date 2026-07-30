@@ -9,6 +9,7 @@ on:
       - main
 
 jobs:
+
   backend-unit-tests:
     name: Backend Unit Tests
     runs-on: ubuntu-latest
@@ -27,3 +28,28 @@ jobs:
       - name: Run unit tests
         working-directory: webapp
         run: mvn clean verify -Dskip.frontend=true
+
+
+  raspberrypi-unit-tests:
+    name: Raspberry Pi Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r raspberrypi/requirements.txt
+
+      - name: Run tests
+        run: |
+          python -m pytest raspberrypi/tests/ \
+            --cov=raspberrypi/app \
+            --cov-report=xml:raspberrypi/coverage.xml \
+            --cov-config=raspberrypi/.coveragerc \
+            --rootdir=.
